@@ -506,8 +506,11 @@ function buildShip(p) {
   }
   const eng = M.glow(p.engine, p.engineGlow);
   for (const s of [-1, 1]) {
-    g.add(cyl(W * 0.16, W * 0.19, L * 0.16, dark, 12, -L * 0.44, 0, s * W * 0.34)).rotation.z = Math.PI / 2;
-    g.add(cyl(W * 0.13, W * 0.13, 0.12, eng, 12, -L * 0.52, 0, s * W * 0.34)).rotation.z = Math.PI / 2;
+    // g.add() 返回的是 g 自己：链式写 .rotation 会把整架飞机转 90°，发动机只能先建后设
+    const nac = cyl(W * 0.16, W * 0.19, L * 0.16, dark, 12, -L * 0.44, 0, s * W * 0.34);
+    nac.rotation.z = Math.PI / 2; g.add(nac);
+    const noz = cyl(W * 0.13, W * 0.13, 0.12, eng, 12, -L * 0.52, 0, s * W * 0.34);
+    noz.rotation.z = Math.PI / 2; g.add(noz);
   }
   if (p.turrets) for (const s of [-1, 1]) {
     g.add(cyl(W * 0.14, W * 0.18, H * 0.24, dark, 10, s * L * 0.16, H * 0.5, 0));

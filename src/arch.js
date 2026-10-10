@@ -1382,6 +1382,27 @@ function buildBrownstone(p) {
       g.add(box(W * 0.23, 0.14, 0.3, M.stone(0xbdb6ab, 0.85), x, y - H / p.storeys * 0.34, D / 2 + 0.04));
     }
   }
+  // 檐口托架 + 窗铁栏 + 门套 + 地下室采光井栏杆
+  const brk = [];
+  for (let i = 0; i < Math.max(4, Math.round(W / 0.9)); i++)
+    brk.push({ p: [(i / Math.max(4, Math.round(W / 0.9)) - 0.5) * (W - 0.6), H - 0.62, D / 2 + 0.12], s: [0.16, 0.34, 0.16] });
+  const bk = batch(new THREE.BoxGeometry(1, 1, 1), trim, brk);
+  if (bk) g.add(bk);
+  for (let f = 0; f < p.storeys; f++) {
+    const y = 0.7 + (f + 0.5) * (H / p.storeys);
+    for (let i = 0; i < 3; i++) {
+      const x = (i - 1) * (W * 0.3);
+      if (f === 0) {                                                                     // 一层窗外铁艺护栏
+        const bar = [];
+        for (let k = 0; k < 5; k++) bar.push({ p: [x + (k / 4 - 0.5) * W * 0.2, y - H / p.storeys * 0.24, D / 2 + 0.22], s: [0.03, 0.5, 0.03] });
+        const bb = batch(new THREE.BoxGeometry(1, 1, 1), M.metal(0x2b2f36, 0.6, 0.7), bar);
+        if (bb) g.add(bb);
+        g.add(box(W * 0.22, 0.04, 0.1, M.metal(0x2b2f36, 0.6, 0.7), x, y + H / p.storeys * 0.01, D / 2 + 0.22));
+      }
+      g.add(box(0.04, H / p.storeys * 0.62, 0.05, trim, x, y, D / 2 + 0.11));            // 中梃
+    }
+  }
+  g.add(box(W * 0.34, H * 0.26, 0.16, trim, -W * 0.28, 1.55 + p.steps * 0.18, D / 2 + 0.03));   // 门套
   g.add(box(W * 0.24, H * 0.2, 0.2, M.paint(0x3a2a20, 0.6), -W * 0.28, 1.55 + p.steps * 0.18, D / 2 + 0.02));
   for (let i = 0; i < p.steps; i++) g.add(box(3.0, 0.18, 0.4, M.stone(0xbdb6ab, 0.9), -W * 0.28, 0.09 + i * 0.18, D / 2 + 0.6 - i * 0.4));
   g.add(box(3.2, 0.16, 0.5, M.stone(0xbdb6ab, 0.9), -W * 0.28, 0.18 + p.steps * 0.18, D / 2 + 0.55));
@@ -1408,25 +1429,81 @@ function buildWhiteChurch(p) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
     g.add(box(p.w * 0.13, p.h * 0.55, 0.14, M.glassy(0x18242e, 0.5, 0, 0.4), Math.cos(a) * p.w * 0.2, p.h * 0.62, -p.d * 0.1 + Math.sin(a) * p.d * 0.3));
   }
-  g.add(box(p.w * 0.24, p.h * 0.62, 0.16, M.paint(0x2b2118, 0.6), 0, p.h * 0.31, p.d * 0.42 + p.w * 0.17 + 0.02));
-  for (let i = 0; i < 4; i++) g.add(box(p.w * 0.34, 0.15, 0.36, M.stone(0xbdb6ab, 0.9), 0, 0.075 + i * 0.15, p.d * 0.42 + p.w * 0.17 + 0.5 - i * 0.36));   // 贴着门前踏跺（旧版摆在十米外的空地上）
+  g.add(box(p.w * 1.1, 0.6, p.d * 1.1, M.stone(0xbdb6ab, 0.92), 0, 0.3, -p.d * 0.1));    // 石基
+  for (let i = 0; i < 3; i++) {                                                          // 两侧拱窗
+    const z = -p.d * 0.42 + i * p.d * 0.34;
+    for (const sx of [-1, 1]) {
+      g.add(box(0.12, p.h * 0.5, p.w * 0.16, M.glassy(0x2b3a46, 0.2, 0.15, 0.55), sx * (p.w / 2 + 0.02), p.h * 0.55, z));
+      g.add(box(0.09, p.h * 0.56, p.w * 0.19, M.paint(0xf2efe8, 0.7), sx * (p.w / 2 + 0.02), p.h * 0.55, z));
+      g.add(box(0.2, 0.1, p.w * 0.22, M.paint(0xf2efe8, 0.7), sx * (p.w / 2 + 0.02), p.h * 0.83, z));
+    }
+  }
+  // 塔身：檐口 + 钟室 + 十字架
+  g.add(box(p.w * 0.44, 0.22, p.w * 0.44, M.paint(0xf2efe8, 0.7), 0, p.h * 1.35, p.d * 0.42));
+  const belfry = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    belfry.add(box(0.1, p.w * 0.2, 0.1, M.paint(0xf2efe8, 0.7), Math.cos(a) * p.w * 0.17, 0, Math.sin(a) * p.w * 0.17));
+  }
+  belfry.add(box(p.w * 0.4, 0.1, p.w * 0.4, M.paint(0xf2efe8, 0.7), 0, p.w * 0.1, 0));
+  belfry.position.set(0, p.h * 1.35 + p.w * 0.11, p.d * 0.42);
+  g.add(belfry);
+  g.add(box(0.07, 0.9, 0.07, M.metal(0xd8c07a, 0.3, 0.9), 0, p.h * 1.35 + p.steeple + 1.2, p.d * 0.42));   // 十字架竖杆
+  g.add(box(0.42, 0.07, 0.07, M.metal(0xd8c07a, 0.3, 0.9), 0, p.h * 1.35 + p.steeple + 1.42, p.d * 0.42)); // 横杆
+  // 入口门廊：4 根柱子 + 山花 + 门 + 踏跺
+  const pz = p.d * 0.42 + p.w * 0.17;
+  g.add(box(p.w * 0.62, 0.16, 1.9, M.paint(0xf2efe8, 0.7), 0, p.h * 0.62, pz + 0.85));   // 门廊顶板
+  g.add(box(p.w * 0.66, 0.14, 2.0, M.paint(0xf2efe8, 0.7), 0, p.h * 0.62 + 0.15, pz + 0.85));
+  for (let i = 0; i < 4; i++) {
+    const x = (i / 3 - 0.5) * p.w * 0.52;
+    g.add(cyl(0.13, 0.15, p.h * 0.56, M.paint(0xf2efe8, 0.7), 12, x, 0.6 + p.h * 0.28, pz + 1.65));
+    g.add(box(0.34, 0.1, 0.34, M.paint(0xf2efe8, 0.7), x, 0.65, pz + 1.65));            // 柱础
+    g.add(box(0.32, 0.12, 0.32, M.paint(0xf2efe8, 0.7), x, 0.6 + p.h * 0.56, pz + 1.65)); // 柱头
+  }
+  g.add(box(p.w * 0.62, 0.1, 1.8, M.stone(0xbdb6ab, 0.9), 0, 0.65, pz + 0.85));         // 门廊地坪
+  g.add(box(p.w * 0.24, p.h * 0.62, 0.16, M.paint(0x2b2118, 0.6), 0, p.h * 0.31, pz + 0.02));
+  g.add(box(p.w * 0.3, 0.12, 0.22, M.paint(0xf2efe8, 0.7), 0, p.h * 0.62, pz + 0.05));  // 门楣
+  for (let i = 0; i < 4; i++) g.add(box(p.w * 0.34, 0.15, 0.36, M.stone(0xbdb6ab, 0.9), 0, 0.075 + i * 0.15, pz + 1.95 - i * 0.36));   // 门前踏跺
   return cnShade(g);
 }
 function buildLighthouse(p) {
   const g = new THREE.Group();
   const w = M.paint(new THREE.Color(p.wall).getHex(), 0.75);
-  g.add(cyl(p.r * 0.62, p.r, p.h, w, 20, 0, p.h / 2, 0));
+  const red = M.paint(0xa8443a, 0.7);
+  const metal = M.metal(0x8b9299, 0.4, 0.8);
+  const H = p.h, R = p.r;
+  const rr = (y) => R * (1 - 0.38 * (y / H));                                          // 收分：任意高度处的半径
+  g.add(cyl(R * 1.5, R * 1.75, 0.5, M.stone(0x8b867c, 0.95), 14, 0, 0.25, 0));          // 岩基
+  g.add(cyl(R * 1.12, R * 1.2, 0.8, w, 20, 0, 0.9, 0));                                // 基座
+  g.add(cyl(R * 0.62, R, H, w, 20, 0, H / 2, 0));                                      // 塔身
   for (let i = 0; i < p.bands; i++) {
-    const y = p.h * (0.2 + (i / p.bands) * 0.66);
-    g.add(cyl(p.r * (1 - 0.38 * (y / p.h)) * 1.01, p.r * (1 - 0.38 * (y / p.h)) * 1.01, p.h * 0.06, M.paint(0xa8443a, 0.7), 20, 0, y, 0));
+    const y = H * (0.2 + (i / p.bands) * 0.66);
+    g.add(cyl(rr(y) * 1.01, rr(y) * 1.01, H * 0.06, red, 20, 0, y, 0));                // 红白环带
   }
-  g.add(box(0.001, 0.001, 0.001, w, 0, 0, 0));
-  g.add(cyl(p.r * 0.8, p.r * 0.8, 0.24, M.dark(0x2b3037, 0.7), 16, 0, p.h + 0.12, 0));
+  g.add(box(R * 0.5, 1.0, 0.1, M.paint(0x3a2a20, 0.6), 0, 1.6, R * 0.98));              // 门
+  g.add(box(R * 0.7, 0.12, 0.2, M.stone(0xbdb6ab, 0.9), 0, 2.15, R));                   // 门楣
+  for (let i = 0; i < 4; i++) {                                                        // 塔身小窗（注意：g.add() 返回的是 g 自己，不能链式设 rotation）
+    const y = H * (0.26 + i * 0.18);
+    const gl = cyl(0.16, 0.16, 0.08, M.glassy(0x2b3a46, 0.2, 0.2, 0.6), 10, 0, y, rr(y) + 0.02);
+    gl.rotation.x = Math.PI / 2; g.add(gl);
+    const fr = cyl(0.21, 0.21, 0.05, metal, 10, 0, y, rr(y) + 0.06);
+    fr.rotation.x = Math.PI / 2; g.add(fr);
+  }
+  g.add(cyl(R * 0.9, R * 0.86, 0.18, w, 20, 0, H + 0.09, 0));                          // 检修平台
+  g.add(cyl(R * 0.86, R * 0.86, 0.06, metal, 20, 0, H + 0.21, 0));                     // 平台面
+  for (let i = 0; i < 12; i++) {                                                       // 平台栏杆
+    const a = (i / 12) * Math.PI * 2;
+    g.add(box(0.05, 0.9, 0.05, metal, Math.cos(a) * R * 0.82, H + 0.66, Math.sin(a) * R * 0.82));
+  }
+  g.add(cyl(R * 0.84, R * 0.84, 0.06, metal, 20, 0, H + 1.08, 0));                     // 扶手圈
+  g.add(cyl(R * 0.8, R * 0.8, 0.24, M.dark(0x2b3037, 0.7), 16, 0, H + 0.5, 0));        // 灯室底
   const lamp = M.glow(p.lampColor, p.lamp);
-  g.add(cyl(p.r * 0.5, p.r * 0.5, 1.1, lamp, 12, 0, p.h + 0.8, 0));
-  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; g.add(box(0.08, 1.2, 0.08, M.metal(0x8b9299, 0.4, 0.8), Math.cos(a) * p.r * 0.55, p.h + 0.8, Math.sin(a) * p.r * 0.55)); }
-  g.add(cone(p.r * 0.72, 0.9, M.paint(0xa8443a, 0.7), 14, 0, p.h + 1.8, 0));
-  g.add(box(0.09, 0.7, 0.09, M.metal(0x8b9299, 0.4, 0.8), 0, p.h + 2.4, 0));
+  g.add(cyl(p.r * 0.5, p.r * 0.5, 1.1, lamp, 12, 0, H + 1.18, 0));                     // 灯
+  for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; g.add(box(0.08, 1.2, 0.08, metal, Math.cos(a) * p.r * 0.55, H + 1.18, Math.sin(a) * p.r * 0.55)); }
+  g.add(cyl(R * 0.58, R * 0.58, 0.1, metal, 16, 0, H + 1.8, 0));                       // 灯室顶圈
+  g.add(cone(p.r * 0.72, 0.9, red, 14, 0, H + 2.3, 0));                                // 顶盖
+  g.add(box(0.09, 0.7, 0.09, metal, 0, H + 2.9, 0));                                   // 避雷针
+  g.add(sph(0.1, metal, 8, 0, H + 3.28, 0));
   g.userData.glow = [lamp];
   return cnShade(g);
 }
@@ -1442,8 +1519,34 @@ function buildWaterTower(p) {
     g.add(cyl(0.12, 0.16, p.legs, wood, 8, x, p.legs / 2, z));
     g.add(box(p.r * 1.6, 0.09, 0.09, wood, 0, p.legs * (0.35 + (i % 2) * 0.35), 0));
   }
-  g.add(cyl(0.1, 0.1, p.legs + p.h, wood, 6, 0, (p.legs + p.h) / 2, p.r + 0.2));
+  for (let lvl = 0; lvl < 3; lvl++) {                                                   // 支腿交叉支撑
+    const y = p.legs * (0.25 + lvl * 0.28);
+    for (let i = 0; i < 4; i++) {
+      const a1 = (i / 4) * Math.PI * 2 + Math.PI / 4, a2 = ((i + 1) / 4) * Math.PI * 2 + Math.PI / 4;
+      const x1 = Math.cos(a1) * p.r * 0.8, z1 = Math.sin(a1) * p.r * 0.8;
+      const x2 = Math.cos(a2) * p.r * 0.8, z2 = Math.sin(a2) * p.r * 0.8;
+      const br = box(0.06, 0.06, Math.hypot(x2 - x1, z2 - z1), wood, (x1 + x2) / 2, y, (z1 + z2) / 2);
+      br.rotation.y = Math.atan2(x2 - x1, z2 - z1); g.add(br);
+    }
+  }
+  for (const sz of [-1, 1]) g.add(box(0.3, 0.3, 0.3, M.concrete(0x9a9488, 0.95), sz * p.r * 0.57, 0.15, sz * p.r * 0.57));  // 混凝土墩
+  // 爬梯（一侧）+ 检修走道 + 栏杆
+  const lad = [];
+  for (let i = 0; i < Math.max(4, Math.round(p.legs / 0.36)); i++)
+    lad.push({ p: [0, 0.4 + i * 0.36, p.r * 0.86], s: [0.7, 0.035, 0.035] });
+  const lb = batch(new THREE.BoxGeometry(1, 1, 1), wood, lad);
+  if (lb) g.add(lb);
+  for (const s of [-1, 1]) g.add(box(0.05, p.legs, 0.05, wood, s * 0.35, p.legs / 2, p.r * 0.86));
+  g.add(cyl(p.r * 0.92, p.r * 0.92, 0.08, wood, 20, 0, p.legs + 0.04, 0));               // 检修走道
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2;
+    g.add(box(0.05, 0.8, 0.05, wood, Math.cos(a) * p.r * 0.9, p.legs + 0.44, Math.sin(a) * p.r * 0.9));
+  }
+  g.add(cyl(p.r * 0.92, p.r * 0.92, 0.05, wood, 20, 0, p.legs + 0.85, 0));
+  for (let i = 0; i < 3; i++) g.add(cyl(p.r * 1.01, p.r * 1.01, 0.07, wood, 20, 0, p.legs + p.h * (0.25 + i * 0.25), 0));  // 箍板
+  g.add(cyl(0.1, 0.1, p.legs + p.h, wood, 6, 0, (p.legs + p.h) / 2, p.r + 0.2));         // 落水管
   g.add(box(1.0, 0.1, 0.9, wood, 0, p.legs + p.h, p.r * 0.6));
+  g.add(box(0.3, 0.3, 0.16, wood, 0, p.legs + p.h + 0.2, p.r * 0.86));                    // 检修口
   g.add(planeXZ(p.r * 2.4, p.r * 2.4, M.stone(0x8e8a82, 0.95), 0, 0.05, 0));
   return cnShade(g);
 }
@@ -1458,10 +1561,36 @@ function buildBarn(p) {
   // 檐口落在墙顶、脊上对拼（旧版坡度反了、板长只有 0.34D，四块板在脊上互相穿、板底还陷进墙里）
   const barnRoof = gableSlabs({ w: W + 0.45, d: D, y: H, rise: D * 0.36, ov: 0.6, th: 0.2, mat: roofM, gambrel: 0.62, fill: wall, cap: 0.24 });
   g.add(barnRoof);
-  g.add(box(W * 0.34, H * 0.62, 0.16, trim, 0, H * 0.31, D / 2 + 0.02));
-  g.add(box(W * 0.36, 0.16, 0.2, trim, 0, H * 0.62, D / 2 + 0.03));
-  g.add(box(0.16, H * 0.62, 0.2, trim, 0, H * 0.31, D / 2 + 0.03));
-  for (const s of [-1, 1]) g.add(box(0.34, 0.34, D * 0.5, trim, s * W * 0.44, H - 0.3, 0));   // 檐下挑梁（原先跑到屋面肚子里）
+  g.add(box(W + 0.3, 0.5, D + 0.3, M.stone(0xbdb6ab, 0.92), 0, 0.25, 0));              // 石基
+  // 大门：门框 + 两扇门板 + 白色 X 形斜撑（红谷仓的标志）
+  g.add(box(W * 0.4, H * 0.66, 0.14, trim, 0, H * 0.33, D / 2 + 0.02));
+  g.add(box(W * 0.34, H * 0.6, 0.1, M.paint(0x7a2f24, 0.8), 0, H * 0.33, D / 2 + 0.08));
+  g.add(box(0.06, H * 0.62, 0.06, trim, 0, H * 0.33, D / 2 + 0.13));
+  for (const s of [-1, 1]) {
+    const x1 = box(W * 0.3, 0.09, 0.05, trim, s * W * 0.005, H * 0.33, D / 2 + 0.14);
+    x1.rotation.z = s * Math.atan2(H * 0.6, W * 0.34); g.add(x1);
+  }
+  g.add(box(W * 0.44, 0.14, 0.22, trim, 0, H * 0.68, D / 2 + 0.06));                    // 门头横板
+  // 阁楼门 + 吊臂 + 山尖通风窗
+  g.add(box(W * 0.16, H * 0.26, 0.12, trim, 0, H * 0.86, D / 2 + 0.02));
+  g.add(box(W * 0.18, 0.1, 0.5, trim, 0, H * 1.02, D / 2 + 0.28));
+  g.add(box(0.07, 0.07, 0.4, M.metal(0x6f6a63, 0.6, 0.4), 0, H * 0.98, D / 2 + 0.3));
+  g.add(box(W * 0.1, 0.12, 0.06, M.dark(0x2b3037, 0.8), 0, H * 1.06, D / 2 + 0.03));
+  // 侧墙高窗 + 屋脊通风帽
+  for (const s of [-1, 1]) {
+    for (let i = 0; i < 2; i++)
+      g.add(box(0.1, 0.5, 0.42, trim, s * (W / 2 + 0.02), H * 0.62, (i - 0.5) * D * 0.4));
+    g.add(box(0.34, 0.34, D * 0.5, trim, s * W * 0.44, H - 0.3, 0));                    // 檐下挑梁（原先跑到屋面肚子里）
+  }
+  const cupY = barnRoof.userData.top || (H + D * 0.36);
+  for (const s of [-1, 1]) g.add(box(0.5, 0.7, 0.5, wall, s * 0.55, cupY + 0.35, 0));   // 屋脊阁楼小塔（cupola）
+  g.add(box(1.5, 0.9, 1.5, wall, 0, cupY + 0.85, 0));
+  g.add(box(1.7, 0.12, 1.7, trim, 0, cupY + 1.36, 0));
+  g.add(cone(1.15, 0.7, roofM, 4, 0, cupY + 1.77, 0));
+  g.children[g.children.length - 1].rotation.y = Math.PI / 4;
+  g.add(cyl(0.04, 0.05, 0.5, M.metal(0x8b9299, 0.4, 0.8), 6, 0, cupY + 2.35, 0));       // 风向标杆
+  const vane = box(0.42, 0.22, 0.03, M.metal(0x8b9299, 0.4, 0.8), 0.16, cupY + 2.5, 0);
+  g.add(vane);
   return cnShade(g);
 }
 function buildGazebo(p) {
@@ -1474,27 +1603,58 @@ function buildGazebo(p) {
     g.add(box(p.r * 0.72, 0.4, 0.07, w, Math.cos(a + Math.PI / 8) * p.r * 0.94, 0.5, Math.sin(a + Math.PI / 8) * p.r * 0.94));
     g.children[g.children.length - 1].rotation.y = -(a + Math.PI / 8) + Math.PI / 2;
   }
+  // 地板 + 两级踏步 + 柱间坐凳栏板（上一段的 8 根柱子已经在循环里建好）
+  g.add(cyl(p.r * 1.16, p.r * 1.16, 0.1, M.paint(0xc9bda9, 0.85), 8, 0, 0.35, 0));
+  g.add(box(p.r * 0.8, 0.1, 0.4, M.paint(0xc9bda9, 0.85), 0, 0.34, p.r + 0.42));        // 平台
+  g.add(box(p.r * 0.8, 0.12, 0.4, M.paint(0xc9bda9, 0.85), 0, 0.17, p.r + 0.82));       // 下一级
+  for (let i = 0; i < 8; i++) {                                                          // 柱间斜撑（挂落）
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    const br = box(p.r * 0.7, 0.09, 0.06, w, Math.cos(a) * p.r * 0.94, 0.3 + p.h - 0.28, Math.sin(a) * p.r * 0.94);
+    br.rotation.y = -a + Math.PI / 2; g.add(br);
+  }
   g.add(cyl(p.r * 1.3, p.r * 0.2, 0.9, roofSurf(new THREE.Color(p.roof).getHex(), 0.7), 8, 0, 0.3 + p.h + 0.45, 0));
+  g.add(cyl(p.r * 0.3, p.r * 0.3, 0.08, w, 8, 0, 0.3 + p.h + 0.94, 0));                  // 顶棚中心盘
   g.add(cone(p.r * 0.24, 0.7, w, 8, 0, 0.3 + p.h + 1.2, 0));
+  g.add(sph(0.13, w, 8, 0, 0.3 + p.h + 1.62, 0));                                        // 宝顶珠
   return cnShade(g);
 }
 function buildClockTower(p) {
   const g = new THREE.Group();
   const st = M.stone(new THREE.Color(p.wall).getHex(), 0.8);
-  g.add(box(p.w, p.h, p.w, st, 0, p.h / 2, 0));
-  g.add(box(p.w * 1.14, 0.4, p.w * 1.14, st, 0, p.h - 1.4, 0));
+  const trim = M.paint(0xe4dfd4, 0.75);
+  const W = p.w, H = p.h;
+  g.add(box(W * 1.24, 0.6, W * 1.24, trim, 0, 0.3, 0));                              // 基座
+  g.add(box(W * 1.1, 0.3, W * 1.1, st, 0, 0.75, 0));
+  g.add(box(W, H - 1.05, W, st, 0, 1.05 + (H - 1.05) / 2, 0));                       // 塔身
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])                                 // 四角隅石
+    g.add(box(0.28, H - 1.05, 0.28, trim, sx * (W / 2 - 0.14), 1.05 + (H - 1.05) / 2, sz * (W / 2 - 0.14)));
+  for (const fy of [0.34, 0.68]) g.add(box(W * 1.09, 0.22, W * 1.09, trim, 0, H * fy, 0));   // 两道腰线
+  g.add(box(W * 0.4, 1.9, 0.12, M.paint(0x4a3020, 0.6), 0, 1.9, W / 2 + 0.02));       // 门
+  g.add(box(W * 0.52, 0.16, 0.22, trim, 0, 2.93, W / 2 + 0.05));                      // 门楣
+  g.add(box(W * 0.62, 0.1, 0.34, M.stone(0xbdb6ab, 0.9), 0, 1.05, W / 2 + 0.15));     // 门前踏步
+  for (let i = 0; i < 3; i++) g.add(box(W * 0.2, 0.66, 0.1, M.glassy(0x2b3a46, 0.3, 0.1, 0.5), 0, H * (0.15 + i * 0.22), W / 2 + 0.02));  // 竖窗
+  g.add(box(W * 1.14, 0.4, W * 1.14, trim, 0, H - 1.4, 0));                           // 钟室挑檐
+  g.add(box(W * 1.2, 0.26, W * 1.2, st, 0, H - 1.05, 0));
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2;
-    const face = M.paint(0xf4efe4, 0.5);
-    const c = cyl(p.w * 0.3, p.w * 0.3, 0.14, face, 20, Math.sin(a) * p.w * 0.51, p.h - 2.6, Math.cos(a) * p.w * 0.51);
-    c.rotation.x = Math.PI / 2; c.rotation.z = a;
-    g.add(c);
-    const hand = box(0.1, p.w * 0.22, 0.06, M.dark(0x1c2026, 0.5), Math.sin(a) * (p.w * 0.51 + 0.1), p.h - 2.5, Math.cos(a) * (p.w * 0.51 + 0.1));
-    hand.rotation.y = -a; hand.rotation.z = 0.5;
-    g.add(hand);
+    const F = new THREE.Group();                                                       // 整面钟做成一个子组，整体转到对应墙面（局部 +Z = 朝外）
+    F.position.set(Math.sin(a) * (W * 0.51 + 0.06), H - 2.6, Math.cos(a) * (W * 0.51 + 0.06));
+    F.rotation.y = a;
+    const ring = cyl(W * 0.34, W * 0.34, 0.1, trim, 20); ring.rotation.x = Math.PI / 2; F.add(ring);
+    const face = cyl(W * 0.3, W * 0.3, 0.12, M.paint(0xf4efe4, 0.5), 20); face.rotation.x = Math.PI / 2; face.position.z = 0.03; F.add(face);
+    for (let k = 0; k < 12; k++) {                                                     // 12 个时刻刻度
+      const b = (k / 12) * Math.PI * 2, r = W * 0.25;
+      F.add(box(k % 3 === 0 ? 0.05 : 0.03, k % 3 === 0 ? 0.1 : 0.06, 0.02, M.dark(0x1c2026, 0.6), Math.cos(b) * r, Math.sin(b) * r, 0.1));
+    }
+    const hh = box(0.09, W * 0.18, 0.03, M.dark(0x1c2026, 0.5), 0, W * 0.07, 0.12); hh.rotation.z = 0.5; F.add(hh);
+    const mh = box(W * 0.14, 0.08, 0.03, M.dark(0x1c2026, 0.5), 0, -W * 0.05, 0.12); mh.rotation.z = -0.25; F.add(mh);
+    F.add(cyl(0.045, 0.045, 0.05, M.dark(0x1c2026, 0.5), 8, 0, 0, 0.14));
+    g.add(F);
   }
-  g.add(cone(p.w * 0.9, p.spire, roofSurf(new THREE.Color(p.roof).getHex(), 0.66), 4, 0, p.h + p.spire / 2 - 1.2, 0));
-  g.children[g.children.length - 1].rotation.y = Math.PI / 4;
+  const sp = cone(W * 0.9, p.spire, roofSurf(new THREE.Color(p.roof).getHex(), 0.66), 4, 0, p.h + p.spire / 2 - 1.2, 0);
+  sp.rotation.y = Math.PI / 4; g.add(sp);
+  g.add(cyl(0.05, 0.07, 0.9, M.metal(0x8b9299, 0.4, 0.8), 6, 0, p.h + p.spire - 1.0, 0));     // 避雷针
+  g.add(sph(0.12, M.metal(0xd8c07a, 0.3, 0.9), 8, 0, p.h + p.spire - 0.5, 0));
   return cnShade(g);
 }
 
@@ -1532,7 +1692,37 @@ function buildRoom(p) {
       g.add(box(open, p.h - 2.1, 0.12, wallM, 0, p.h - (p.h - 2.1) / 2, p.d / 2));
     } else g.add(box(p.w, p.h, 0.12, wallM, 0, p.h / 2, p.d / 2));
   }
-  if (p.cornice && p.ceiling) for (const s of [-1, 1]) g.add(box(p.w, 0.16, 0.16, sk, 0, p.h - 0.1, s * (p.d / 2 - 0.08)));
+  if (p.cornice && p.ceiling) {
+    for (const sz of [-1, 1]) g.add(box(p.w, 0.16, 0.16, sk, 0, p.h - 0.1, sz * (p.d / 2 - 0.08)));
+    for (const sx of [-1, 1]) g.add(box(0.16, 0.16, p.d, sk, sx * (p.w / 2 - 0.08), p.h - 0.1, 0));   // 顶角线四面交圈
+  }
+  // 踢脚线：四面交圈（旧版只有后墙一条）
+  const bsm = M.paint(0xfafbfc, 0.55);
+  if (p.back) g.add(box(p.w, 0.11, 0.04, bsm, 0, 0.055, -p.d / 2 + 0.08));
+  if (p.front) g.add(box(p.w, 0.11, 0.04, bsm, 0, 0.055, p.d / 2 - 0.08));
+  if (p.left) g.add(box(0.04, 0.11, p.d, bsm, -p.w / 2 + 0.08, 0.055, 0));
+  if (p.right) g.add(box(0.04, 0.11, p.d, bsm, p.w / 2 - 0.08, 0.055, 0));
+  if (p.back && p.window > 0) {                                                     // 窗套：两侧立挺 + 上樘
+    const ww = clamp(p.window, 0.5, p.w * 0.7), wh = clamp(p.wH || 1.6, 0.4, p.h * 0.7);
+    for (const sx of [-1, 1]) g.add(box(0.07, wh + 0.12, 0.12, sk, sx * (ww / 2 + 0.03), p.sill + wh / 2, -p.d / 2 + 0.09));
+    g.add(box(ww + 0.2, 0.07, 0.12, sk, 0, p.sill + wh + 0.1, -p.d / 2 + 0.09));
+    g.add(box(ww + 0.16, 0.04, 0.24, sk, 0, p.sill - 0.02, -p.d / 2 + 0.13));       // 窗台板
+  }
+  if (p.front && clamp(p.doorW || 0, 0, p.w * 0.6) > 0.05) {                        // 门套
+    const op = clamp(p.doorW, 0, p.w * 0.6);
+    for (const sx of [-1, 1]) g.add(box(0.06, 2.16, 0.14, sk, sx * (op / 2 + 0.03), 1.08, p.d / 2 - 0.09));
+    g.add(box(op + 0.18, 0.07, 0.14, sk, 0, 2.19, p.d / 2 - 0.09));
+  }
+  if (p.left) {                                                                     // 开关 + 插座
+    g.add(box(0.02, 0.12, 0.08, M.paint(0xf2f4f7, 0.4), -p.w / 2 + 0.14, 1.3, -p.d * 0.3));
+    g.add(box(0.02, 0.08, 0.08, M.paint(0xf2f4f7, 0.4), -p.w / 2 + 0.14, 0.35, p.d * 0.25));
+  }
+  if (p.ceiling) {                                                                  // 吸顶灯
+    g.add(cyl(0.24, 0.26, 0.06, M.paint(0xf6f7f9, 0.5), 18, 0, p.h - 0.15, 0));
+    const lm = M.glow(0xfff2d8, 1.4);
+    g.add(cyl(0.2, 0.22, 0.03, lm, 18, 0, p.h - 0.2, 0));
+    g.userData.glow = [...(g.userData.glow || []), lm];
+  }
   return shade(g, false, true);
 }
 function buildWallSeg(p) {
@@ -1546,7 +1736,20 @@ function buildWallSeg(p) {
     g.add(box(sW, p.height, p.thick, wall, (openW + sW) / 2, p.height / 2, 0));
     g.add(box(openW, Math.max(0, p.height - p.openH), p.thick, wall, 0, p.height - Math.max(0, p.height - p.openH) / 2, 0));
   } else g.add(box(p.length, p.height, p.thick, wall, 0, p.height / 2, 0));
-  if (p.trim) g.add(box(p.length, 0.1, p.thick + 0.06, M.paint(0xf2f4f7, 0.7), 0, 0.05, 0));
+  if (p.trim) {
+    g.add(box(p.length, 0.1, p.thick + 0.06, M.paint(0xf2f4f7, 0.7), 0, 0.05, 0));                  // 踢脚线
+    g.add(box(p.length, 0.02, p.thick + 0.07, M.paint(0xe2e5e9, 0.7), 0, 0.105, 0));                // 踢脚压条
+  }
+  g.add(box(p.length, 0.05, p.thick + 0.03, M.paint(0xe9ebee, 0.8), 0, p.height - 0.02, 0));        // 压顶
+  for (const sx of [-1, 1]) g.add(box(0.03, p.height, p.thick + 0.02, M.paint(0xe9ebee, 0.8), sx * (p.length / 2 - 0.015), p.height / 2, 0));   // 两端阳角
+  if (p.length > 1.6) {                                                                              // 一个插座 + 一条挂镜线
+    g.add(box(0.09, 0.13, 0.02, M.paint(0xf2f4f7, 0.4), p.length * 0.3, 0.36, p.thick / 2 + 0.005));
+    g.add(box(p.length - 0.12, 0.03, 0.015, M.paint(0xe2e5e9, 0.7), 0, p.height * 0.72, p.thick / 2 + 0.005));
+  }
+  if (openW > 0.05) {                                                                                // 门洞两侧立挺 + 过梁
+    for (const sx of [-1, 1]) g.add(box(0.06, p.openH, 0.03, M.paint(0xf2f4f7, 0.6), sx * (openW / 2 + 0.03), p.openH / 2, p.thick / 2 + 0.01));
+    g.add(box(openW + 0.18, 0.06, 0.03, M.paint(0xf2f4f7, 0.6), 0, p.openH + 0.03, p.thick / 2 + 0.01));
+  }
   return shade(g, true, true);
 }
 function buildSofa(p) {
@@ -1562,28 +1765,79 @@ function buildSofa(p) {
     g.add(box((w - 0.7) / n - 0.06, 0.16, p.d - 0.4, m, x, 0.68, 0.08));
     g.add(box((w - 0.7) / n - 0.06, 0.44, 0.16, m, x, 0.86, -p.d / 2 + 0.28));
   }
-  for (const s of [-1, 1]) g.add(cyl(0.06, 0.06, 0.2, M.dark(0x2b2f36, 0.6), 8, s * (w / 2 - 0.2), 0.1, p.d / 2 - 0.2));
+  for (const s of [-1, 1]) {
+    g.add(cyl(0.05, 0.07, 0.2, M.dark(0x2b2f36, 0.6), 8, s * (w / 2 - 0.2), 0.1, p.d / 2 - 0.2));      // 木脚
+    g.add(cyl(0.05, 0.07, 0.2, M.dark(0x2b2f36, 0.6), 8, s * (w / 2 - 0.2), 0.1, -p.d / 2 + 0.2));
+    g.add(box(0.26, 0.5, 0.05, M.paint(0xbfb6a6, 0.9), s * (w / 2 - 0.12), 0.55, p.d / 2 - 0.01));     // 扶手前脸
+    g.add(sph(0.09, m, 8, s * (w / 2 - 0.12), 0.79, p.d / 2 - 0.14));                                   // 扶手卷头
+  }
+  g.add(box(w - 0.1, 0.08, p.d - 0.06, M.paint(0xbfb6a6, 0.9), 0, 0.22, 0));                            // 底裙压条
+  for (let i = 0; i < n; i++) {                                                                          // 绷扣
+    const x = (i / (n - 1) - 0.5) * (w - 0.7);
+    for (const by of [-0.12, 0.12]) g.add(sph(0.016, M.paint(0xbfb6a6, 0.9), 6, x, 0.86 + by, -p.d / 2 + 0.28 - 0.08));
+  }
+  for (const s of [-1, 1]) {                                                                            // 抱枕
+    const pil = box(0.3, 0.09, 0.3, M.paint(s < 0 ? 0xd8c8a0 : 0x7a5a4a, 0.92), s * (w / 2 - 0.42), 0.8, -p.d / 2 + 0.42);
+    pil.rotation.z = s * 0.3; pil.rotation.y = 0.35; g.add(pil);
+  }
   return cnShade(g);
 }
 function buildChair(p) {
   const g = new THREE.Group();
-  const m = M.paint(new THREE.Color(p.color).getHex(), 0.7);
-  g.add(box(0.46, 0.07, 0.44, m, 0, 0.45, 0));
-  g.add(box(0.46, 0.5, 0.07, m, 0, 0.7, -0.19));
-  for (const [x, z] of [[-0.19, -0.17], [0.19, -0.17], [-0.19, 0.17], [0.19, 0.17]]) g.add(box(0.05, 0.45, 0.05, m, x, 0.22, z));
+  const m = M.wood(new THREE.Color(p.color).getHex(), 0.7);
+  const pad = M.paint(0xd9cfbe, 0.92);
+  const sY = 0.45, sW = 0.46, sD = 0.44;
+  g.add(box(sW, 0.06, sD, m, 0, sY, 0));                                              // 座板
+  g.add(box(sW - 0.07, 0.05, sD - 0.07, pad, 0, sY + 0.05, 0));                       // 软垫
+  for (const [x, z] of [[-0.19, -0.17], [0.19, -0.17], [-0.19, 0.17], [0.19, 0.17]]) {
+    g.add(box(0.05, sY - 0.06, 0.05, m, x, (sY - 0.06) / 2, z));                      // 4 腿
+    g.add(box(0.06, 0.02, 0.06, M.dark(0x2b2f36, 0.85), x, 0.01, z));                 // 脚垫
+  }
+  for (const sz of [-1, 1]) g.add(box(sW - 0.08, 0.04, 0.035, m, 0, sY - 0.15, sz * 0.17));   // 横撑
+  for (const sx of [-1, 1]) g.add(box(0.035, 0.04, sD - 0.08, m, sx * 0.19, sY - 0.15, 0));
+  for (const sx of [-1, 1]) g.add(box(0.05, 0.52, 0.05, m, sx * 0.19, sY + 0.24, -0.17));     // 后立柱
+  g.add(box(sW, 0.09, 0.05, m, 0, sY + 0.47, -0.17));                                  // 顶冠
+  for (let i = 0; i < 2; i++) g.add(box(0.035, 0.34, 0.03, m, (i - 0.5) * 0.17, sY + 0.21, -0.17));   // 靠背竖棂
   return cnShade(g);
 }
 function buildTable(p) {
   const g = new THREE.Group();
   const top = M.paint(new THREE.Color(p.top).getHex(), p.gloss > 0.5 ? 0.25 : 0.7, p.gloss > 0.5 ? 0.1 : 0.02);
   const leg = M.paint(new THREE.Color(p.leg).getHex(), 0.5, 0.2);
+  const ap = 0.09;                                                                  // 牙板高
   if (p.shape === 'round') {
     g.add(cyl(p.w / 2, p.w / 2, 0.07, top, 26, 0, p.h, 0));
-    if (p.legs === 1) { g.add(cyl(0.14, 0.2, p.h - 0.05, leg, 12, 0, (p.h - 0.05) / 2, 0)); g.add(cyl(p.w * 0.28, p.w * 0.3, 0.06, leg, 18, 0, 0.03, 0)); }
+    g.add(cyl(p.w / 2 - 0.05, p.w / 2 - 0.05, 0.03, top, 26, 0, p.h - 0.05, 0));    // 台面收边
+    if (p.legs === 1) {
+      g.add(cyl(0.14, 0.2, p.h - 0.05, leg, 12, 0, (p.h - 0.05) / 2, 0));
+      g.add(cyl(p.w * 0.28, p.w * 0.3, 0.06, leg, 18, 0, 0.03, 0));
+      g.add(cyl(0.17, 0.14, 0.05, leg, 12, 0, p.h - 0.13, 0));                      // 柱头
+      g.add(cyl(0.22, 0.19, 0.04, leg, 12, 0, 0.34, 0));                            // 柱脚
+    } else {
+      const rr = p.w / 2 - 0.14;
+      for (let i = 0; i < p.legs; i++) {
+        const a = (i / p.legs) * Math.PI * 2 + Math.PI / 4;
+        g.add(cyl(0.035, 0.05, p.h - 0.05, leg, 8, Math.cos(a) * rr, (p.h - 0.05) / 2, Math.sin(a) * rr));
+      }
+      g.add(cyl(p.w * 0.3, p.w * 0.3, 0.05, leg, 20, 0, 0.26, 0));                  // 下横圈
+    }
   } else {
     g.add(box(p.w, 0.07, p.d, top, 0, p.h, 0));
-    if (p.legs === 4) for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.add(box(0.08, p.h, 0.08, leg, sx * (p.w / 2 - 0.14), p.h / 2, sz * (p.d / 2 - 0.14)));
-    else { g.add(box(p.w * 0.1, p.h, p.d * 0.7, leg, -p.w * 0.38, p.h / 2, 0)); g.add(box(p.w * 0.1, p.h, p.d * 0.7, leg, p.w * 0.38, p.h / 2, 0)); }
+    g.add(box(p.w - 0.08, 0.03, p.d - 0.08, top, 0, p.h - 0.05, 0));
+    g.add(box(p.w - 0.12, ap, p.d - 0.12, leg, 0, p.h - 0.07 - ap / 2, 0));         // 牙板
+    if (p.legs === 4) {
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const x = sx * (p.w / 2 - 0.14), z = sz * (p.d / 2 - 0.14);
+        g.add(box(0.08, p.h, 0.08, leg, x, p.h / 2, z));
+        g.add(box(0.1, 0.03, 0.1, M.dark(0x2b2f36, 0.85), x, 0.015, z));            // 脚垫
+      }
+      for (const sz of [-1, 1]) g.add(box(p.w - 0.28, 0.04, 0.04, leg, 0, p.h * 0.42, sz * (p.d / 2 - 0.14)));
+      for (const sx of [-1, 1]) g.add(box(0.04, 0.04, p.d - 0.28, leg, sx * (p.w / 2 - 0.14), p.h * 0.42, 0));
+    } else {
+      g.add(box(p.w * 0.1, p.h, p.d * 0.7, leg, -p.w * 0.38, p.h / 2, 0));
+      g.add(box(p.w * 0.1, p.h, p.d * 0.7, leg, p.w * 0.38, p.h / 2, 0));
+      g.add(box(p.w * 0.86, 0.05, p.d * 0.6, leg, 0, p.h * 0.32, 0));               // 下隔板
+    }
   }
   return cnShade(g);
 }
@@ -1592,24 +1846,44 @@ function buildBed(p) {
   const frame = M.paint(new THREE.Color(p.frame).getHex(), 0.7);
   const sheet = M.paint(0xf1f3f6, 0.9);
   const quilt = M.paint(new THREE.Color(p.quilt).getHex(), 0.86);
-  g.add(box(p.w, 0.32, p.d, frame, 0, 0.16, 0));
-  g.add(box(p.w - 0.1, 0.2, p.d - 0.1, sheet, 0, 0.42, 0));
+  g.add(box(p.w, 0.26, p.d, frame, 0, 0.13, 0));                                     // 床箱
+  g.add(box(p.w + 0.06, 0.06, p.d + 0.06, frame, 0, 0.29, 0));                       // 箱沿
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])                                // 4 只床脚
+    g.add(box(0.1, 0.12, 0.1, M.dark(0x2b2f36, 0.8), sx * (p.w / 2 - 0.1), 0.06, sz * (p.d / 2 - 0.1)));
+  g.add(box(p.w - 0.1, 0.2, p.d - 0.1, sheet, 0, 0.42, 0));                          // 床垫
+  g.add(box(p.w - 0.06, 0.05, p.d - 0.06, sheet, 0, 0.52, 0));                       // 床单
+  // 床头板：立柱 + 3 块镶板 + 顶冠
   g.add(box(p.w, 0.9, 0.12, frame, 0, 0.6, -p.d / 2));
-  g.add(box(p.w - 0.3, 0.16, p.d * 0.6, quilt, 0, 0.56, p.d * 0.16));
+  for (let i = 0; i < 3; i++)
+    g.add(box(p.w / 3 - 0.12, 0.62, 0.04, M.paint(0xd9cebb, 0.85), -p.w / 3 + i * (p.w / 3), 0.6, -p.d / 2 + 0.09));
+  g.add(box(p.w + 0.12, 0.1, 0.2, frame, 0, 1.1, -p.d / 2 + 0.02));                  // 床头顶冠
+  g.add(box(p.w - 0.16, 0.42, 0.1, frame, 0, 0.4, p.d / 2 - 0.04));                  // 床尾板
+  g.add(box(p.w - 0.3, 0.16, p.d * 0.6, quilt, 0, 0.56, p.d * 0.16));                // 被子
+  g.add(box(p.w - 0.3, 0.1, 0.14, quilt, 0, 0.62, p.d * 0.16 - p.d * 0.3));          // 翻边
+  g.add(box(p.w - 0.5, 0.04, 0.5, M.paint(0x8a6a4a, 0.9), 0, 0.63, p.d * 0.36));     // 床旗
   for (const s of [-1, 1]) g.add(box(p.w * 0.36, 0.16, 0.4, M.paint(0xffffff, 0.92), s * p.w * 0.22, 0.58, -p.d * 0.3));
+  g.add(box(p.w * 0.44, 0.14, 0.2, M.paint(0xe8e2d6, 0.92), 0, 0.6, -p.d * 0.36));   // 长枕
   if (p.nightstand) for (const s of [-1, 1]) g.add(box(0.5, 0.5, 0.42, frame, s * (p.w / 2 + 0.35), 0.25, -p.d * 0.3));
   return cnShade(g);
 }
 function buildWardrobe(p) {
   const g = new THREE.Group();
   const m = M.paint(new THREE.Color(p.color).getHex(), 0.55, 0.06);
-  g.add(box(p.w, p.h, p.d, m, 0, p.h / 2, 0));
+  const trim = M.paint(0xe3e7ec, 0.5, 0.05);
   const doors = Math.max(2, p.doors);
+  g.add(box(p.w, 0.1, p.d + 0.04, M.dark(0x3a3f46, 0.85), 0, 0.05, 0));              // 踢脚座
+  g.add(box(p.w, p.h - 0.2, p.d, m, 0, 0.1 + (p.h - 0.2) / 2, 0));                   // 柜体
+  g.add(box(p.w + 0.1, 0.1, p.d + 0.06, trim, 0, p.h - 0.05, 0));                    // 顶冠
+  g.add(box(p.w + 0.06, 0.06, p.d + 0.03, trim, 0, p.h - 0.13, 0));
   for (let i = 0; i < doors; i++) {
     const x = (i / (doors - 1) - 0.5) * (p.w - 0.1);
-    g.add(box(p.w / doors - 0.06, p.h - 0.14, 0.03, M.paint(0xdadfe6, 0.4, 0.1), x, p.h / 2, p.d / 2 + 0.02));
-    g.add(box(0.04, 0.22, 0.05, M.metal(0xb9c0c8, 0.3, 0.8), x + p.w / doors * 0.32, p.h * 0.5, p.d / 2 + 0.05));
+    const dw = p.w / doors - 0.06;
+    g.add(box(dw, p.h - 0.34, 0.03, trim, x, 0.1 + (p.h - 0.34) / 2, p.d / 2 + 0.02));   // 门板
+    g.add(box(dw - 0.16, p.h * 0.42, 0.02, m, x, 0.1 + (p.h - 0.34) * 0.62, p.d / 2 + 0.04)); // 门芯板
+    g.add(box(dw - 0.16, p.h * 0.3, 0.02, m, x, 0.1 + (p.h - 0.34) * 0.22, p.d / 2 + 0.04));
+    g.add(box(0.03, 0.26, 0.04, M.metal(0xb9c0c8, 0.3, 0.8), x + dw * 0.34, p.h * 0.5, p.d / 2 + 0.05));
   }
+  g.add(box(p.w - 0.14, 0.02, 0.01, M.glassy(0x2f4a5c, 0.1, 0.4, 0.85), 0, p.h * 0.55, p.d / 2 + 0.06)); // 中间那扇的镜面
   return cnShade(g);
 }
 function buildShelf(p) {
@@ -1688,10 +1962,16 @@ function buildKitchen(p) {
 }
 function buildLampStand(p) {
   const g = new THREE.Group();
-  g.add(cyl(0.22, 0.26, 0.05, M.dark(0x2b3037, 0.6), 14, 0, 0.03, 0));
-  g.add(cyl(0.03, 0.03, p.h, M.metal(0x9aa2ab, 0.4, 0.8), 8, 0, p.h / 2, 0));
+  const pole = M.metal(0x9aa2ab, 0.4, 0.8);
+  g.add(cyl(0.24, 0.26, 0.04, M.dark(0x2b3037, 0.6), 16, 0, 0.02, 0));                // 底盘
+  g.add(cyl(0.18, 0.24, 0.06, M.dark(0x33383f, 0.6), 16, 0, 0.07, 0));                // 配重块
+  g.add(cyl(0.045, 0.055, 0.06, pole, 10, 0, 0.13, 0));                               // 柱础
+  g.add(cyl(0.03, 0.03, p.h, pole, 10, 0, p.h / 2 + 0.13, 0));                        // 灯杆
+  g.add(cyl(0.05, 0.038, 0.05, pole, 10, 0, p.h + 0.16, 0));                          // 灯头座
   const lampMat = M.glow(p.color, p.glow);
-  g.add(cyl(0.18, 0.26, 0.34, lampMat, 14, 0, p.h + 0.1, 0));
+  g.add(cyl(0.18, 0.26, 0.34, lampMat, 18, 0, p.h + 0.36, 0));                        // 灯罩
+  g.add(cyl(0.19, 0.19, 0.03, M.paint(0xe8e2d6, 0.8), 18, 0, p.h + 0.53, 0));         // 顶圈
+  g.add(cyl(0.185, 0.185, 0.025, M.paint(0xe8e2d6, 0.8), 18, 0, p.h + 0.19, 0));      // 底圈
   g.userData.glow = [lampMat];
   return cnShade(g);
 }
@@ -1703,18 +1983,52 @@ function buildRug(p) {
   const b = M.paint(new THREE.Color(p.border).getHex(), 0.95);
   b.side = THREE.DoubleSide;
   g.add(planeXZ(p.w + 0.2, p.d + 0.2, b, 0, 0.008, 0));
+  g.add(planeXZ(p.w - 0.16, p.d - 0.16, m, 0, 0.016, 0));                            // 主毯面（压在边框之上，做出一圈边）
+  const fr = M.paint(new THREE.Color(p.border).getHex(), 0.95);                       // 两端流苏（合成一次绘制）
+  const nf = clamp(Math.round(p.w / 0.09), 6, 60), fArr = [];
+  for (const sz of [-1, 1]) for (let i = 0; i < nf; i++)
+    fArr.push({ p: [(i / nf - 0.5) * p.w, 0.01, sz * (p.d / 2 + 0.06)], s: [0.02, 0.008, 0.11] });
+  const fb = batch(new THREE.BoxGeometry(1, 1, 1), fr, fArr);
+  if (fb) g.add(fb);
   return shade(g, false, true);
 }
 function buildStairsIn(p) {
   const g = new THREE.Group();
   const m = M.paint(new THREE.Color(p.color).getHex(), 0.6);
+  const trim = M.paint(0xf2f4f7, 0.7);
   const n = Math.max(3, Math.round(p.height / p.rise));
+  const rise = p.height / n, run = p.run, L = n * run;
   for (let i = 0; i < n; i++) {
-    g.add(box(p.width, p.rise, p.run, m, 0, p.rise * (i + 0.5), i * p.run + p.run / 2));
+    const y = rise * (i + 1), z = i * run + run / 2;
+    g.add(box(p.width, rise * 0.34, run, m, 0, y - rise * 0.17, z));                  // 踏步板
+    g.add(box(p.width, rise * 0.7, 0.03, trim, 0, y - rise * 0.5, z - run / 2 + 0.015));  // 踢面板
+    g.add(box(p.width, 0.03, 0.05, trim, 0, y - 0.015, z + run / 2 - 0.02));          // 防滑条
   }
+  // 梯梁：下端水平落地、上端竖直切（整块旋转斜板的两端会斜插到地板下面，把整挂楼梯顶起来）
+  const bh = Math.max(0.14, p.height * 0.9), zA = Math.min(L * 0.92, (bh / p.height) * L);
+  const sp = new THREE.Shape();
+  sp.moveTo(0, 0); sp.lineTo(zA, 0); sp.lineTo(L, p.height - bh); sp.lineTo(L, p.height); sp.closePath();
+  const sg = new THREE.ExtrudeGeometry(sp, { depth: 0.07, bevelEnabled: false });
+  sg.translate(0, 0, -0.035);
   for (const s of [-1, 1]) {
-    const rail = box(0.07, 0.9, n * p.run * 1.06, m, s * (p.width / 2 + 0.04), p.height / 2 + 0.5, n * p.run / 2);
-    rail.rotation.x = -Math.atan2(p.height, n * p.run);
+    const mm = new THREE.Mesh(sg, m);
+    mm.rotation.y = -Math.PI / 2;
+    mm.position.set(s * (p.width / 2 + 0.04), 0, 0);
+    g.add(mm);
+  }
+  const ang = Math.atan2(p.height, L);
+  for (const s of [-1, 1]) {                                                          // 望柱 + 扶手 + 栏板
+    g.add(box(0.11, 1.05, 0.11, m, s * (p.width / 2 + 0.04), 0.52, -0.05));
+    g.add(box(0.13, 1.05, 0.13, m, s * (p.width / 2 + 0.04), p.height + 0.52, L + 0.05));
+    const bal = [];
+    for (let i = 0; i < n; i++) {
+      const z = i * run + run * 0.5;
+      bal.push({ p: [s * (p.width / 2 + 0.04), rise * (i + 1) + 0.42, z], s: [0.04, 0.84, 0.04] });
+    }
+    const bi = batch(new THREE.BoxGeometry(1, 1, 1), trim, bal);
+    if (bi) g.add(bi);
+    const rail = box(0.08, 0.09, Math.hypot(L, p.height) * 1.04, m, s * (p.width / 2 + 0.04), p.height / 2 + 0.98, L / 2);
+    rail.rotation.x = -ang;
     g.add(rail);
   }
   return cnShade(g);
@@ -1724,8 +2038,16 @@ function buildPlantPot(p) {
   const pot = M.paint(new THREE.Color(p.pot).getHex(), 0.75);
   g.add(cyl(p.r * 1.1, p.r * 0.8, p.h, pot, 14, 0, p.h / 2, 0));
   g.add(cyl(p.r * 1.16, p.r * 1.1, 0.06, pot, 14, 0, p.h, 0));
-  const leaf = M.leaf(new THREE.Color(p.leaf).getHex(), 0.85);
+  g.add(cyl(p.r * 1.2, p.r * 1.2, 0.04, M.dark(0x3a3228, 0.9), 14, 0, 0.02, 0));      // 托盘
+  g.add(cyl(p.r * 1.06, p.r * 1.06, 0.03, M.paint(0x4a3b2c, 0.95), 14, 0, p.h - 0.05, 0)); // 土面
+  const stem = M.paint(0x4a6a34, 0.9);
   const rng = makeRng(p.seed);
+  for (let i = 0; i < 4; i++) {                                                        // 枝干
+    const a = rng() * Math.PI * 2, hh = p.h * (1.1 + rng() * 0.9);
+    const st = cyl(0.012, 0.018, hh, stem, 5, Math.cos(a) * p.r * 0.3, p.h + hh / 2, Math.sin(a) * p.r * 0.3);
+    st.rotation.z = (rng() - 0.5) * 0.3; g.add(st);
+  }
+  const leaf = M.leaf(new THREE.Color(p.leaf).getHex(), 0.85);
   for (let i = 0; i < 9; i++) {
     const a = rng() * Math.PI * 2, r = rng() * p.r * 0.5;
     const hh = 0.5 + rng() * p.h * 1.6;
@@ -1739,10 +2061,23 @@ function buildPlantPot(p) {
 function buildTvWall(p) {
   const g = new THREE.Group();
   const panel = M.paint(new THREE.Color(p.panel).getHex(), 0.6);
-  g.add(box(p.w, p.h, 0.12, panel, 0, p.h / 2 + 0.2, 0));
+  const trim = M.paint(0x2a2f36, 0.7);
+  g.add(box(p.w, p.h, 0.12, panel, 0, p.h / 2 + 0.2, 0));                              // 背景板
+  g.add(box(p.w + 0.08, 0.06, 0.18, trim, 0, p.h + 0.23, 0.02));                       // 上收口
+  for (const sx of [-1, 1]) g.add(box(0.06, p.h, 0.18, trim, sx * (p.w / 2 + 0.02), p.h / 2 + 0.2, 0.02));
+  const sh = p.w * 0.62 * 0.56, sw = p.w * 0.62;
+  g.add(box(sw + 0.06, sh + 0.06, 0.05, M.dark(0x14181d, 0.9), 0, p.h * 0.6 + 0.2, 0.1));  // 机身黑边
   const scr = M.glow(p.screen, p.bright);
-  g.add(box(p.w * 0.62, p.w * 0.62 * 0.56, 0.06, scr, 0, p.h * 0.6 + 0.2, 0.09));
-  g.add(box(p.w * 0.8, 0.3, 0.44, panel, 0, 0.35, 0.3));
+  g.add(box(sw, sh, 0.06, scr, 0, p.h * 0.6 + 0.2, 0.13));                             // 屏幕
+  g.add(box(0.16, 0.02, 0.05, M.dark(0x14181d, 0.9), 0, p.h * 0.6 + 0.2 - sh / 2 - 0.03, 0.14));  // 下logo条
+  g.add(box(p.w * 0.8, 0.3, 0.44, panel, 0, 0.35, 0.3));                               // 电视柜
+  g.add(box(p.w * 0.84, 0.05, 0.48, trim, 0, 0.52, 0.3));                              // 柜台面
+  for (let i = 0; i < 2; i++) {                                                        // 抽屉 + 拉手
+    g.add(box(p.w * 0.36, 0.24, 0.02, trim, (i - 0.5) * p.w * 0.4, 0.34, 0.52));
+    g.add(box(p.w * 0.2, 0.02, 0.02, M.metal(0xb9c0c8, 0.3, 0.8), (i - 0.5) * p.w * 0.4, 0.34, 0.535));
+  }
+  g.add(box(p.w * 0.5, 0.06, 0.09, M.dark(0x1c2126, 0.85), 0, 0.58, 0.44));            // 回音壁
+  g.add(box(0.22, 0.04, 0.14, M.dark(0x14181d, 0.9), p.w * 0.3, 0.55, 0.46));          // 机顶盒
   g.userData.glow = [scr];
   return cnShade(g);
 }
