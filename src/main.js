@@ -879,4 +879,23 @@ if (import.meta.env.DEV) {
     buildAsset, defaultsFor, LEVELS, setDetailLevel, detailLevel, detailMaps, textureStats, pruneTextureCache, texOn,
   };
   window.__scenes = { SCENES, applyScene };
+  // 外部浏览器 HMR websocket 可能不通：失焦回来时探测关键文件 ETag，版本不一致自动刷新
+  window.__bootAt = Date.now();
+  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css'];
+  const etagOf = async (u) => {
+    const r = await fetch(u, { method: 'HEAD', cache: 'no-store' });
+    return r.headers.get('etag') || r.headers.get('last-modified') || '';
+  };
+  const fingerprint = async () => (await Promise.all(PROBES.map(etagOf))).join('|');
+  let bootFp = '';
+  window.__staleCheck = async () => {
+    if (!bootFp) bootFp = await fingerprint();
+    const now = await fingerprint();
+    return { boot: bootFp, now, stale: now !== bootFp };
+  };
+  addEventListener('focus', () => {
+    window.__staleCheck().then((s) => { if (s.stale) location.reload(); }).catch(() => {});
+  });
+  fingerprint().then((fp) => { bootFp = fp; }).catch(() => {});
+  if (import.meta.hot) import.meta.hot.on('vite:serverRestart', () => location.reload());
 }
