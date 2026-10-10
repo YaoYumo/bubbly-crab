@@ -492,12 +492,19 @@ function flight(p, mat, rng) {
       g.add(bar);
     }
   }
-  // 梯梁（两侧斜板）
+  // 梯梁（两侧斜板）：上端竖直切、下端水平落在地面上。
+  // 旧版是一整块旋转矩形，两端斜角会戳到地板下 1m，整挂楼梯被「底面贴地」抬起来悬在空中。
+  const bh = Math.max(0.14, H * 0.55);
+  const zA = Math.min(depth * 0.92, (bh / H) * depth);
+  const sp = new THREE.Shape();
+  sp.moveTo(0, 0); sp.lineTo(zA, 0); sp.lineTo(depth, H - bh); sp.lineTo(depth, H); sp.closePath();
+  const sg = new THREE.ExtrudeGeometry(sp, { depth: 0.1, bevelEnabled: false });
+  sg.translate(0, 0, -0.05);
   for (const sx of [-1, 1]) {
-    const s = box(0.1, H * 0.55, Math.hypot(depth, H) * 1.02, mat, sx * (W / 2 + 0.06), H / 2 - 0.06, depth / 2);
-    s.rotation.x = Math.atan2(H, depth);
-    s.rotation.z = 0;
-    g.add(s);
+    const m = new THREE.Mesh(sg, mat);
+    m.rotation.y = -Math.PI / 2;
+    m.position.set(sx * (W / 2 + 0.06), 0, 0);
+    g.add(m);
   }
   return { g, depth, top: { y: H, z: depth } };
 }

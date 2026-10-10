@@ -1163,8 +1163,8 @@ function buildMoonGate(p) {
     if (H - yHi > 0.04) g.add(box(bw2, H - yHi, T, wall, xc, yHi + (H - yHi) / 2, 0));
   }
   g.add(box(L + 0.18, 0.14, T + 0.24, grey, 0, H - 0.07, 0));                                     // 上檐枋（通长）
-  g.add(box(L + 0.4, 0.16, T + 0.3, brick, 0, H + 0.1, 0));                                            // 墙帽（披水）
-  const rY = H + 0.2;
+  g.add(box(L + 0.4, 0.2, T + 0.3, brick, 0, H + 0.12, 0));                                            // 墙帽（披水）
+  const rY = H + 0.06;                                                                                  // 卷棚压在墙帽上，别悬空
   g.add(curvedRoof({ w: L + 0.5, d: T + 1.1, h: 0.5, kind: 'juan', brim: 0.25, eaveUp: 0.16, mat: roof, seg: 16, y0: rY }));
   // 墙帽是卷棚、两端不出脊：旧版还排了 roofTrim 的脊件 / 起翘，墙头两头就顶出两块黑色「断件」
   // 门槛 + 门枕石 + 抱鼓
@@ -1635,19 +1635,55 @@ function buildShelf(p) {
 }
 function buildKitchen(p) {
   const g = new THREE.Group();
-  const cab = M.paint(new THREE.Color(p.cabinet).getHex(), 0.5, 0.05);
+  const cabC = new THREE.Color(p.cabinet).getHex();
+  const cab = M.paint(cabC, 0.5, 0.05);
+  const cabD = M.paint(new THREE.Color(cabC).multiplyScalar(0.84).getHex(), 0.55, 0.05);
   const topM = M.paint(new THREE.Color(p.top).getHex(), 0.24, 0.12);
-  const L = p.length;
-  g.add(box(L, 0.86, p.d, cab, 0, 0.43, 0));
-  g.add(box(L + 0.06, 0.06, p.d + 0.06, topM, 0, 0.89, 0));
-  for (let i = 0; i < Math.max(2, Math.round(L / 1.2)); i++) {
-    const x = (i / Math.max(1, Math.round(L / 1.2)) - 0.5) * L + 0.3;
-    g.add(box(0.02, 0.12, 0.04, M.metal(0xc3c9d0, 0.3, 0.85), x + 0.3, 0.62, p.d / 2 + 0.02));
+  const steel = M.metal(0xc3c9d0, 0.28, 0.9);
+  const dark = M.metal(0x3a4048, 0.42, 0.6);
+  const L = Math.max(1.5, num(p.length, 5)), D = Math.max(0.4, num(p.d, 0.64)), top = 0.92;
+  // 地柜：踢脚 → 柜体 → 门板 + 拉手（旧版只有两个光盒，连门都没有）
+  g.add(box(L - 0.1, 0.09, D - 0.12, M.dark(0x2b2f36, 0.85), 0, 0.045, 0.03));
+  g.add(box(L, 0.79, D, cab, 0, 0.485, 0));
+  const nDr = clamp(Math.round(L / 0.55), 2, 12);
+  for (let i = 0; i < nDr; i++) {
+    const x = -L / 2 + (i + 0.5) * (L / nDr);
+    g.add(box(L / nDr - 0.03, 0.68, 0.014, cabD, x, 0.53, D / 2 - 0.006));
+    g.add(box(0.16, 0.022, 0.03, steel, x, 0.83, D / 2 + 0.008));
   }
-  g.add(box(L * 0.22, 0.02, p.d * 0.6, M.metal(0x2b2f36, 0.5, 0.4), -L * 0.2, 0.93, 0));
-  g.add(box(L * 0.16, 0.1, 0.5, M.metal(0x3a4048, 0.4, 0.6), L * 0.2, 0.95, 0));
-  g.add(box(L, 0.7, 0.06, M.paint(0xdfe4ea, 0.5), 0, 1.9, -p.d / 2 + 0.03));
-  if (p.island) { g.add(box(L * 0.6, 0.86, p.d * 0.8, cab, 0, 0.43, p.d * 1.9)); g.add(box(L * 0.64, 0.07, p.d * 0.86, topM, 0, 0.89, p.d * 1.9)); }
+  for (const sx of [-1, 1]) g.add(box(0.022, 0.88, D, cabD, sx * (L / 2 - 0.011), 0.53, 0));
+  g.add(box(L + 0.06, 0.06, D + 0.06, topM, 0, top + 0.03, 0));
+  // 水槽（下沉盆）+ 抽拉龙头
+  g.add(box(L * 0.24, 0.03, D * 0.62, steel, -L * 0.18, top - 0.005, 0));
+  g.add(box(L * 0.2, 0.17, D * 0.5, M.metal(0xa8b0b8, 0.22, 0.95), -L * 0.18, top - 0.1, 0));
+  g.add(cyl(0.02, 0.024, 0.32, steel, 8, -L * 0.18, top + 0.16, -D * 0.2));
+  g.add(cyl(0.014, 0.014, 0.2, steel, 8, -L * 0.18, top + 0.31, -D * 0.13));
+  // 灶台 + 4 个灶眼 + 旋钮条
+  g.add(box(L * 0.2, 0.02, D * 0.56, dark, L * 0.21, top + 0.01, 0));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    g.add(cyl(0.07, 0.07, 0.014, M.dark(0x1e2228, 0.7), 12, L * 0.21 + sx * L * 0.042, top + 0.028, sz * D * 0.11));
+  for (let i = 0; i < 4; i++) g.add(cyl(0.015, 0.015, 0.028, steel, 8, L * 0.21 - 0.1 + i * 0.07, top + 0.03, D * 0.23));
+  // 后挡墙：把整排吊柜接回台面（旧版吊柜悬在半空）
+  g.add(box(L, 1.3, 0.05, M.paint(0xdfe4ea, 0.62), 0, top + 0.67, -D / 2 + 0.005));
+  const upL = L * 0.56, upX = -L * 0.22;
+  g.add(box(upL, 0.7, D * 0.42, cab, upX, 1.9, -D / 2 + D * 0.21 + 0.03));
+  const nUp = clamp(Math.round(upL / 0.6), 2, 10);
+  for (let i = 0; i < nUp; i++) {
+    const x = upX - upL / 2 + (i + 0.5) * (upL / nUp);
+    g.add(box(upL / nUp - 0.03, 0.6, 0.014, cabD, x, 1.9, -D / 2 + D * 0.42 + 0.035));
+    g.add(box(0.14, 0.022, 0.03, steel, x, 1.63, -D / 2 + D * 0.42 + 0.052));
+  }
+  // 抽油烟机（右侧，避开吊柜）
+  g.add(box(L * 0.24, 0.32, D * 0.5, steel, L * 0.3, 1.72, -D / 2 + D * 0.25 + 0.03));
+  g.add(box(L * 0.28, 0.05, D * 0.56, steel, L * 0.3, 1.55, -D / 2 + D * 0.28 + 0.03));
+  g.add(cyl(0.085, 0.085, 0.62, steel, 10, L * 0.3, 2.19, -D / 2 + D * 0.25 + 0.03));
+  g.add(box(L * 0.3, 0.08, D * 0.6, steel, L * 0.3, 2.52, -D / 2 + D * 0.25 + 0.03));
+  if (p.island) {
+    g.add(box(L * 0.6, 0.79, D * 0.8, cab, 0, 0.485, D * 1.9));
+    g.add(box(L * 0.64, 0.07, D * 0.86, topM, 0, top + 0.035, D * 1.9));
+    g.add(box(L * 0.56, 0.09, D * 0.72, M.dark(0x2b2f36, 0.85), 0, 0.045, D * 1.9));
+    for (let i = 0; i < 3; i++) g.add(box(0.14, 0.022, 0.03, steel, (i - 1) * 0.3, 0.72, D * 1.9 + D * 0.41));
+  }
   return cnShade(g);
 }
 function buildLampStand(p) {
@@ -1720,9 +1756,17 @@ function buildCurtain(p) {
     const d = (i % 2 ? 0.14 : 0.02);
     g.add(box(p.w / n, p.h, d, m, x, p.h / 2 + 0.1, d));
   }
-  const rod = cyl(0.03, 0.03, p.w + 0.3, M.metal(0x9aa2ab, 0.4, 0.8), 8, 0, p.h + 0.2, 0);
+  // 帘杆：贴着帘顶装（旧版抬高 0.2，帘子跟杆之间空一条缝，看着像杆浮在墙上）+ 吊环 + 两端杆头
+  const rod = cyl(0.03, 0.03, p.w + 0.3, M.metal(0x9aa2ab, 0.4, 0.8), 8, 0, p.h + 0.13, 0);
   rod.rotation.z = Math.PI / 2;
   g.add(rod);
+  for (let i = 0; i <= n; i += 2) {
+    const x = (i / n - 0.5) * p.w;
+    const ring = cyl(0.045, 0.045, 0.016, M.metal(0xb6bdc5, 0.3, 0.85), 8, x, p.h + 0.13, 0.12);
+    ring.rotation.z = Math.PI / 2;
+    g.add(ring);
+  }
+  for (const sx of [-1, 1]) g.add(sph(0.055, M.metal(0x9aa2ab, 0.35, 0.85), 10, sx * (p.w / 2 + 0.17), p.h + 0.13, 0));
   return cnShade(g);
 }
 
