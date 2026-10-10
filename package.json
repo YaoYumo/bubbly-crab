@@ -1,0 +1,22 @@
+{
+  "name": "previz-lab",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0 --port 5173",
+    "build:single": "node scripts/build-single.mjs",
+    "all": "npm run build && npm run build:single",
+    "test": "bash test/runsuite.sh"
+  },
+  "dependencies": {
+    "three": "0.169.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^23.11.1",
+    "vite": "5.4.10"
+  }
+}

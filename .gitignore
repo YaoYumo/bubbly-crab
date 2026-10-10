@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.local
+
+# verification renders / scratch screenshots
+.shots/
+
+# env & secrets
+.env
+.env.*
+*.pem
+*.key
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+npm-debug.log*
+yarn-error.log*
+*.log

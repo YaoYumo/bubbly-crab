@@ -1,0 +1,14 @@
+import puppeteer from 'puppeteer';
+const b = await puppeteer.launch({ headless:'shell', args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+const p = await b.newPage(); await p.setViewport({width:1600,height:900});
+await p.goto('http://localhost:5173/?fresh=1',{waitUntil:'networkidle2'});
+await p.waitForFunction(()=>window.app&&window.app.objects.length>3,{timeout:60000});
+await new Promise(r=>setTimeout(r,900));
+await p.evaluate(() => { window.app.state.aspect = '2.39'; window.app.setPreview(true); window.app.state.time = 4.6; window.app.bus.emit('time'); });
+await new Promise(r=>setTimeout(r,1400));
+await p.screenshot({ path: 'test/07-preview-239.png' });
+await p.evaluate(() => { window.app.state.aspect = '9:16'; window.app.state.time = 1.2; });
+await new Promise(r=>setTimeout(r,1000));
+await p.screenshot({ path: 'test/08-preview-916.png' });
+await b.close();
+console.log('done');
