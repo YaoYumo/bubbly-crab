@@ -6,6 +6,7 @@ import { Stage, ASPECTS } from './stage.js';
 import { Lighting } from './lighting.js';
 import { Shot, MOVE_BY_ID, SENSORS } from './camera.js';
 import { LIB, LIB_INDEX, buildAsset, defaultsFor, shade } from './assets.js';
+import { mergeSimilar, bakeMerge } from './geo.js';
 import { updateChar, setCharAnim, stepCrowd, ANIMS } from './character.js';
 import { LEVELS, setDetailLevel, setTexForce, textureStats, pruneTextureCache, texOn } from './detail.js';
 
@@ -31,6 +32,7 @@ export class SceneObj {
     this.root.userData.so = this;
     this.visible = j.visible !== false;
     this.locked = !!j.locked;
+    this.merged = !!j.merged;          // 批量造景时烘过几何：重建 / 载入后要再烘一次保持一致
     this.motion = j.motion || { keys: [], anim: 'idle', autoFace: true, speed: 1, easing: 'linear', loop: true, active: false };
     if (j.pos) this.root.position.fromArray(j.pos);
     if (j.rot) this.root.rotation.set(j.rot[0], j.rot[1], j.rot[2]);
@@ -83,6 +85,7 @@ export class SceneObj {
   serialize() {
     return {
       id: this.id, name: this.name, key: this.key, type: this.type, params: this.params,
+      merged: this.merged ? 1 : undefined,
       pos: this.root.position.toArray(), rot: [this.root.rotation.x, this.root.rotation.y, this.root.rotation.z],
       scale: this.root.scale.toArray(), visible: this.visible, locked: this.locked,
       motion: this.motion ? { ...this.motion, keys: (this.motion.keys || []).map((k) => ({ t: +k.t.toFixed(4), p: k.p.map((v) => +v.toFixed(3)) })) } : null,
@@ -521,11 +524,13 @@ export class App {
     this.beginOp('放置 ' + (item.name || key));
     const params = { ...defaultsFor(item), ...(opts.params || {}) };
     const root = buildAsset(item, params);
+    if (opts.merge) this.mergeRoot(root);
     const arr = Array.isArray(point) ? point : point?.pos;
     const src = arr ? { x: arr[0], y: arr[1], z: arr[2] } : (point || {});
     const g = (v, d = 0) => (Number.isFinite(v) ? v : d);
     const so = new SceneObj(this, {
       name: opts.name || nextName(this, item.name), key, type: item.type, params, root,
+      merged: !!opts.merge,
       pos: [g(src.x), this.groundY(g(src.x), g(src.z), opts.keepY ? g(src.y) : null), g(src.z)],
     });
     if (item.anim) so.motion.anim = params.anim || 'idle';
@@ -544,10 +549,19 @@ export class App {
     if (item.elev) so.pad = true;
     so.root.userData.itemKey = key;
     this.objects.push(so);
-    this.select({ kind: 'obj', so });
-    this.lighting.applyGlow(this.lighting.p.glow);
-    this.bus.emit('objects');
+    // 批量造景（一句话街区）期间由调用方统一刷新 UI，避免每个物体重绘一次面板
+    if (!this._quietAdd) {
+      this.select({ kind: 'obj', so });
+      this.lighting.applyGlow(this.lighting.p.glow);
+      this.bus.emit('objects');
+    }
     return so;
+  }
+  /** 批量造景减 draw call：同规格重复件实例化 + 同材质零碎件烘成一个几何（geo.js 既有工具，外观不变） */
+  mergeRoot(root) {
+    mergeSimilar(root, { min: 2 });
+    bakeMerge(root);
+    return root;
   }
   /** 精度切换：按当前 params 重建所有程序化资产（段数/倒角/贴图都会变），只刷一次 UI */
   rebuildAll() {
@@ -558,6 +572,7 @@ export class App {
       const old = so.root;
       const pos = old.position.clone(), rot = old.rotation.clone(), scl = old.scale.clone();
       const root = buildAsset(so.item, so.params);
+      if (so.merged) this.mergeRoot(root);
       so.root = root;
       root.userData.so = so;
       root.position.copy(pos); root.rotation.copy(rot); root.scale.copy(scl);
@@ -609,6 +624,7 @@ export class App {
     const old = so.root;
     const pos = old.position.clone(), rot = old.rotation.clone(), scl = old.scale.clone();
     const root = buildAsset(item, so.params);
+    if (so.merged) this.mergeRoot(root);
     so.root = root;
     root.userData.so = so;
     root.position.copy(pos); root.rotation.copy(rot); root.scale.copy(scl);
@@ -1239,8 +1255,9 @@ export class App {
       const item = o.key ? LIB_INDEX.get(o.key) : null;
       if (item) root = buildAsset(item, o.params || {});
       else root = this._importPlaceholder(o);
+      if (o.merged && item) this.mergeRoot(root);
       const so = new SceneObj(this, {
-        id: o.id, name: o.name, key: o.key, type: o.type, params: o.params || {}, root,
+        id: o.id, name: o.name, key: o.key, type: o.type, params: o.params || {}, root, merged: !!o.merged,
         pos: o.pos, rot: o.rot, scale: o.scale, visible: o.visible, locked: o.locked,
         motion: o.motion ? { ...o.motion, curvePts: normalizePts(o.motion.curve), mover: o.motion.keys?.length > 1 ? new Mover(o.motion.keys, false, { ease: o.motion.easing || 'linear', scope: o.motion.scope || 'global', arc: o.motion.arc !== false, rot: 'slerp' }) : null } : null,
       });

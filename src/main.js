@@ -17,6 +17,7 @@ import { ANIMS } from './character.js';
 import { ATMOS } from './lighting.js';
 import { WEATHER } from './weather.js';
 import { Mover } from './mover.js';
+import { openTownDialog } from './townui.js';
 import { el, clear, clamp, fmt, copy, downloadBlob, snap } from './util.js';
 
 const host = document.getElementById('stage');
@@ -120,6 +121,12 @@ top.appendChild(shareBtn);
 
 /* 工具按钮组（精简：保留核心操作，其余收入下拉菜单） */
 const toolRow = el('div', { class: 'tool-row' });
+
+/* 一句话生成街区：本地关键词解析 → 程序化造镇（Scene 页专属，随工具条显隐） */
+toolRow.appendChild(tbtn('一句话生成', {
+  icon: '✦', cls: 'pri', title: '一句话生成街区（本地解析，不联网、不消耗积分）',
+  onClick: () => openTownDialog(app),
+}));
 
 const gizmoBtns = [];
 for (const [m, l, ico, key] of [['translate', '移动', '✥', 'W'], ['rotate', '旋转', '⟳', 'E'], ['scale', '缩放', '⤢', 'R']]) {

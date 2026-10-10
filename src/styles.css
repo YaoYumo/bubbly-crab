@@ -658,3 +658,40 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 .dd-item .dd-ico{width:14px;text-align:center;font-size:12px;opacity:.8}
 .dd-sep{height:1px;background:var(--line);margin:4px 8px}
 .dd-label{font-size:10px;color:var(--fg3);padding:4px 10px 2px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ============================ 一句话生成街区 ============================ */
+.tg-mask{position:fixed;inset:0;z-index:400;display:grid;place-items:center;
+  background:rgba(26,26,46,.28);backdrop-filter:blur(2px);opacity:0;transition:opacity .16s}
+.tg-mask.on{opacity:1}
+.tg-modal{width:min(560px,92vw);background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r3);box-shadow:var(--shadow3);overflow:hidden;transform:translateY(6px) scale(.99);transition:.16s}
+.tg-mask.on .tg-modal{transform:none}
+.tg-head{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--card2);border-bottom:1px solid var(--line)}
+.tg-head b{font-size:13.5px;color:var(--fg);font-weight:600}
+.tg-sub{font-size:10.5px;color:var(--fg3);flex:1}
+.tg-x{width:24px;height:24px;border:0;border-radius:6px;background:transparent;color:var(--fg3);cursor:pointer;font-size:12px}
+.tg-x:hover{background:var(--bg2);color:var(--fg)}
+.tg-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.tg-input{width:100%;resize:vertical;min-height:64px;padding:9px 10px;font:inherit;font-size:12.5px;line-height:1.55;
+  color:var(--fg);background:var(--card);border:1px solid var(--line2);border-radius:var(--r)}
+.tg-input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(74,79,176,.12)}
+.tg-examples{display:flex;flex-wrap:wrap;gap:5px}
+.tg-plabel{font-size:10px;color:var(--fg3);letter-spacing:.06em;text-transform:uppercase}
+.tg-chips{display:flex;flex-wrap:wrap;gap:5px}
+.tg-chip{border:1px solid var(--line2);background:var(--card2);color:var(--fg2);border-radius:20px;
+  padding:3px 9px;font-size:11px;white-space:nowrap}
+.tg-chip.act{cursor:pointer;transition:.13s}
+.tg-chip.act:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-light)}
+.tg-examples .tg-chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tg-note{display:flex;flex-direction:column;gap:3px;min-height:14px}
+.tg-warnline{font-size:11px;color:#b06a2c;line-height:1.5}
+.tg-warnline.dim{color:var(--fg3)}
+.tg-status{font-size:11.5px;color:var(--acc);min-height:14px}
+.tg-foot{display:flex;align-items:center;gap:8px;padding:11px 14px;border-top:1px solid var(--line);background:var(--card2)}
+.tg-hint{flex:1;font-size:10.5px;color:var(--fg3);line-height:1.4}
+.tg-btn{height:30px;padding:0 13px;border:1px solid var(--line2);border-radius:var(--r);
+  background:var(--card);color:var(--fg2);font-size:12px;cursor:pointer;transition:.13s}
+.tg-btn:hover:not(:disabled){background:var(--bg2);color:var(--fg)}
+.tg-btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.tg-btn.pri:hover:not(:disabled){background:var(--acc2);color:#fff}
+.tg-btn:disabled{opacity:.55;cursor:default}
