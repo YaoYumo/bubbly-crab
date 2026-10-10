@@ -331,19 +331,24 @@ function buildWatchtower(p) {
       g.add(b);
       const b2 = box(0.09, 0.09, W, m, s * W / 2, y, 0);
       g.add(b2);
-      const d = box(W * 1.4, 0.07, 0.07, m, 0, y - 1.1, s * W / 2);
-      d.rotation.z = s * 0.5;
+      // 斜撑：从下一道横杆（第一道从地面起）斜拉到这一道，长度/角度按实际层高算
+      // 旧版是定长 W×1.4 定角 0.5rad 的杆，最下一根会斜插到地面以下 1m
+      const y0 = k === 0 ? 0 : 1.1 + (k - 1) * 2.2, hb = y - y0;
+      const d = box(Math.hypot(W, hb), 0.07, 0.07, m, 0, (y0 + y) / 2, s * W / 2);
+      d.rotation.z = s * Math.atan2(hb, W);
       g.add(d);
     }
   }
-  g.add(box(W + 1.2, 0.16, W + 1.2, M.paint(0x3a4048, 0.7), 0, H + 0.6, 0));
-  g.add(box(W + 0.6, 1.1, W + 0.6, M.paint(0x2f353d, 0.75), 0, H + 1.3, 0));
-  const roof = cone((W + 1.6) * 0.85, 0.9, M.paint(0x454c55, 0.7), 4, 0, H + 2.3, 0);
+  // 平台 / 岗亭 / 屋顶一层压一层坐在柱顶上（旧版平台悬在柱顶上方 0.6m，岗亭又离平台 0.07m，整组浮空）
+  const deckY = H + 0.08;
+  g.add(box(W + 1.2, 0.16, W + 1.2, M.paint(0x3a4048, 0.7), 0, deckY, 0));
+  g.add(box(W + 0.6, 1.1, W + 0.6, M.paint(0x2f353d, 0.75), 0, deckY + 0.63, 0));
+  const roof = cone((W + 1.6) * 0.85, 0.9, M.paint(0x454c55, 0.7), 4, 0, deckY + 1.63, 0);
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
   if (p.light) {
     const lm = M.glow(p.lightColor, 2.6);
-    g.add(box(0.5, 0.4, 0.5, lm, 0, H + 1.0, W / 2 + 0.7));
+    g.add(box(0.5, 0.4, 0.5, lm, 0, deckY + 0.63, W / 2 + 0.55));
     g.userData.glow = [lm];
   }
   return shade(g);
@@ -655,11 +660,14 @@ function buildPylon(p) {
     g.add(box(p.w * (1 - t * 0.42), 1.5, p.w * (1 - t * 0.42), stone, 0, 0.8 + i * 1.5, 0));
   }
   const em = M.glow(p.beam, p.glow);
-  g.add(box(p.w * 0.34, p.beamH, p.w * 0.34, em, 0, 0.8 + n * 1.5 + p.beamH / 2, 0));
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(p.shield, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.beam), transparent: true, opacity: p.shieldOp, wireframe: true }));
-  shell.position.y = p.shield * 0.35;
-  shell.scale.y = 0.72;
-  g.add(shell);
+  const topY = 0.05 + 1.5 * n;                                       // 最上一节的顶面
+  g.add(box(p.w * 0.34, p.beamH, p.w * 0.34, em, 0, topY + p.beamH / 2, 0));   // 光柱落在塔顶（旧版悬空 0.75m）
+  if (p.shield > 0.05) {                                             // 半径 0 时不必建一个退化球
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(p.shield, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.beam), transparent: true, opacity: p.shieldOp, wireframe: true }));
+    shell.position.y = p.shield * 0.35;
+    shell.scale.y = 0.72;
+    g.add(shell);
+  }
   g.userData.glow = [em];
   return shade(g);
 }

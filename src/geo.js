@@ -291,6 +291,25 @@ export function batch(geo, mat, items) {
   return im;
 }
 
+/** 把「默认沿 +Y 的圆柱」摆正：轴指向 (dx,dy,dz)，且柱体局部 +X 朝下。
+ *  这样滴水（三棱柱，第一个顶点在局部 +X）不管朝哪个方向，尖端一律朝下。
+ *  旧版直接用欧拉角 [π/2, -ac, π/4] 硬凑：攒尖 / 塔的八个面里有一半以上瓦当是歪的（有的甚至翘起 45°）。 */
+/** 小球段数：望柱头 / 走兽脑袋这类 10cm 以下的小件，按精度档给固定段数，
+ *  绝不跟着 seg() 放大（seg(10)×seg(8) 在标准档是 15×12 = 330 面/个，一个球比一整扇门还贵）。 */
+const ballSeg = () => (Q.level === 'lite' ? [6, 4] : (Q.level === 'fine' ? [12, 9] : [9, 6]));
+const Y_UP = new THREE.Vector3(0, 1, 0), Y_DN = new THREE.Vector3(0, -1, 0);
+const _ax = new THREE.Vector3(), _ay = new THREE.Vector3(), _az = new THREE.Vector3(), _ab = new THREE.Matrix4(), _ae = new THREE.Euler();
+function aimCyl(dx, dy, dz) {
+  _ay.set(dx, dy, dz).normalize();
+  if (Math.abs(_ay.dot(Y_UP)) > 0.999) return [0, 0, 0];
+  _ax.copy(Y_DN);
+  _az.crossVectors(_ax, _ay).normalize();
+  _ax.crossVectors(_ay, _az).normalize();
+  _ab.makeBasis(_ax, _ay, _az);
+  _ae.setFromRotationMatrix(_ab, 'XYZ');
+  return [_ae.x, _ae.y, _ae.z];
+}
+
 /** 檐口木作：檐椽 + 瓦当（圆）+ 滴水（尖）+ 檐檩，绕屋面底边一圈。
  *  外沿尺寸约定与 curvedRoof 一致：W = w + 2·brim，D = d + 2·brim；檐口随翼角起翘抬升。 */
 export function eaveCornice(o = {}) {
@@ -303,6 +322,12 @@ export function eaveCornice(o = {}) {
   const nX = clamp(Math.round(W / step), 3, 30), nZ = clamp(Math.round(D / step), 3, 24);
   const raft = [], caps = [], drops = [];
   const lift = (u) => eaveUp * rh * u * u;               // 越靠角抬得越多（翼角起翘）
+  // 瓦作小件的段数：是檐口上一圈 8cm 的小件，段数按精度档给死了，不能跟着 seg() 放大
+  // （旧版瓦当 15 段 = 180 面、滴水 12 段 = 144 面，一座七层塔 1182 件就是 12.8 万面）；
+  // 屋面本体是单张曲面 + 程序化瓦垄贴图，瓦的「一垄垄」靠贴图，不靠堆几何。
+  const capSeg = Q.level === 'lite' ? 5 : (Q.level === 'fine' ? 12 : 8);
+  const capGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.07, capSeg);
+  const dropGeo = new THREE.CylinderGeometry(0.075, 0.05, 0.06, 3, 1, false, Math.PI / 2);   // 3 段 = 三角板，尖端在局部 +X
   const sn = Math.max(0, Math.round(o.sides || 0));
   if (sn >= 3) {
     // 正多边形檐口：沿每条边排布，角部抬得最高（亭 / 塔用；方檐口的 max() 会把菱角卡到两柱之间）
@@ -318,8 +343,8 @@ export function eaveCornice(o = {}) {
         const x = ux * Rb + px * off, z = uz * Rb + pz * off;
         const yy = y + eaveUp * rh * (0.28 + 0.72 * Math.pow(Math.min(1, Math.abs(t) * 2), 3));
         raft.push({ p: [x, yy - 0.03, z], r: [0, -ac, 0], s: [sideLen / nE * 0.95, 0.085, 0.5] });
-        caps.push({ p: [x + ux * 0.36, yy + 0.045, z + uz * 0.36], r: [Math.PI / 2, -ac, 0], s: [1, 1, 1] });
-        drops.push({ p: [x + ux * 0.42, yy - 0.03, z + uz * 0.42], r: [Math.PI / 2, -ac, Math.PI / 4], s: [1, 1, 0.6] });
+        caps.push({ p: [x + ux * 0.36, yy + 0.045, z + uz * 0.36], r: aimCyl(ux, 0, uz) });
+        drops.push({ p: [x + ux * 0.42, yy - 0.03, z + uz * 0.42], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
       }
     }
   } else
@@ -328,8 +353,8 @@ export function eaveCornice(o = {}) {
       const x = (i / nX - 0.5) * W;
       const yy = y + lift(clamp(Math.abs(x) / (W / 2), 0, 1));
       raft.push({ p: [x, yy - 0.03, sz * (D / 2 - 0.16)], r: [sz * 0.14, 0, 0], s: [0.085, 0.085, 0.5] });
-      caps.push({ p: [x, yy + 0.045, sz * (D / 2 + 0.2)], r: [Math.PI / 2, 0, 0] });
-      drops.push({ p: [x, yy - 0.03, sz * (D / 2 + 0.24)], r: [Math.PI / 2, 0, Math.PI / 4], s: [1, 1, 0.6] });
+      caps.push({ p: [x, yy + 0.045, sz * (D / 2 + 0.2)], r: aimCyl(0, 0, sz) });
+      drops.push({ p: [x, yy - 0.03, sz * (D / 2 + 0.24)], r: aimCyl(0, 0, sz), s: [1, 1, 0.6] });
     }
   }
   for (const sx of [1, -1]) {
@@ -337,16 +362,16 @@ export function eaveCornice(o = {}) {
       const z = (i / nZ - 0.5) * D;
       const yy = y + lift(clamp(Math.abs(z) / (D / 2), 0, 1));
       raft.push({ p: [sx * (W / 2 - 0.16), yy - 0.03, z], r: [0, 0, sx * 0.14], s: [0.5, 0.085, 0.085] });
-      caps.push({ p: [sx * (W / 2 + 0.2), yy + 0.045, z], r: [0, 0, Math.PI / 2] });
-      drops.push({ p: [sx * (W / 2 + 0.24), yy - 0.03, z], r: [0, 0, Math.PI * 0.75], s: [1, 1, 0.6] });
+      caps.push({ p: [sx * (W / 2 + 0.2), yy + 0.045, z], r: aimCyl(sx, 0, 0) });
+      drops.push({ p: [sx * (W / 2 + 0.24), yy - 0.03, z], r: aimCyl(sx, 0, 0), s: [1, 1, 0.6] });
     }
   }
   const g = new THREE.Group();
   const r1 = batch(new THREE.BoxGeometry(1, 1, 1), wood, raft);
   if (r1) g.add(r1);
-  const r2 = batch(new THREE.CylinderGeometry(0.085, 0.085, 0.07, seg(10)), tile, caps);   // 瓦当
+  const r2 = batch(capGeo, tile, caps);                                                   // 瓦当
   if (r2) g.add(r2);
-  const r3 = batch(new THREE.CylinderGeometry(0.075, 0.05, 0.06, seg(8)), tile, drops);   // 滴水
+  const r3 = batch(dropGeo, tile, drops);                                                 // 滴水
   if (r3) g.add(r3);
   for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y + 0.16, sz * (D / 2 - 0.34)));   // 檐檩
   for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y + 0.16, 0));
@@ -380,7 +405,8 @@ export function hipRidge(o = {}) {
     }
     const b1 = batch(new THREE.BoxGeometry(1, 1, 1), bm, bodies);
     if (b1) g.add(b1);
-    const b2 = batch(new THREE.SphereGeometry(1, seg(10), seg(8)), bm, heads);
+    const bs = ballSeg();
+    const b2 = batch(new THREE.SphereGeometry(1, bs[0], bs[1]), bm, heads);
     if (b2) g.add(b2);
     g.add(box(0.26 * s, 0.1 * s, 0.15 * s, bm, len * 0.16 - 0.02 * s, rise * 0.16 + 0.06 * s, 0));   // 仙人骑凤
     g.add(cone(0.1 * s, 0.2 * s, bm, seg(5), len * 0.16 - 0.18 * s, rise * 0.16 + 0.06 * s, 0));
@@ -417,7 +443,9 @@ export function stoneRail(o = {}) {
   }
   const p2 = batch(new THREE.BoxGeometry(1, 1, 1), mat, posts);        // 望柱
   if (p2) g.add(p2);
-  const p3 = batch(new THREE.SphereGeometry(1, seg(12), seg(8)), cap, heads);  // 望柱柱头
+  // 望柱柱头是 10cm 的小球：旧版 SphereGeometry(1,18,12) = 396 面/个，一座塔 296 个就是 11.7 万面
+  const bs = ballSeg();
+  const p3 = batch(new THREE.SphereGeometry(1, bs[0], bs[1]), cap, heads);      // 望柱柱头
   if (p3) g.add(p3);
   for (const sx of [1, -1]) g.add(box(0.62, h * 0.86, 0.24, mat, sx * (span / 2 + 0.34), y + h * 0.43, 0, 0.08));  // 抱鼓石
   void half;
