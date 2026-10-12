@@ -101,6 +101,31 @@ export function buildPrompt(app) {
     for (let i = 0; i < tr.h.length; i++) { if (tr.h[i] < mn) mn = tr.h[i]; if (tr.h[i] > mx) mx = tr.h[i]; }
     return `地形：${(BIOMES[tr.biome] || {}).name || tr.biome}，${tr.n}×${tr.n} 高度场 · ${tr.size}m，高差 ${(mx - mn).toFixed(1)}m${tr.state.water ? ` · 水面 ${tr.state.waterY.toFixed(2)}m` : ''}。`;
   })() : '';
+  // ---- 8.3 行结构：五个方括号行，字段全部取自场景实时状态 ----
+  let nBld = 0, nTree = 0, nRoad = 0;
+  for (const o of app.objects) {
+    const ic = o.item?.icon;
+    if (ic === 'tree') nTree++;
+    else if (ic === 'house' || ic === 'building') nBld++;
+    else if (ic === 'road' || o.type === 'road_brush' || o.type === 'road_intersection') nRoad++;
+  }
+  const wx = app.weather?.type || null;
+  const wxEn = { rain: 'steady rainfall', snow: 'falling snow', sand: 'wind-blown dust', storm: 'a thunderstorm with lightning' }[wx] || '';
+  const biomeEn = { grass: 'grassland', forest: 'wooded', desert: 'desert', snow: 'snow-covered' }[app.terrain?.biome] || 'suburban';
+  const anamorphic = aspect === '2.39' || aspect === '2.35';
+  const l83 = [
+    `[Visual Description]: 8k cinematic shot, photorealistic ${biomeEn} neighborhood with ${nBld} buildings and ${nTree} trees`
+    + `${nRoad ? `, ${nRoad} paved road segments with painted crosswalks` : ''}${chars ? `, ${chars} pedestrians in motion` : ''}.`,
+    `[Cinematography]: ${sum.move?.en || 'custom keyframed camera path'}, ${fmt(sum.focal, 0)}mm ${anamorphic ? 'anamorphic ' : ''}lens, ${speedEn} smooth continuous motion over ${sum.dur}s.`,
+    `[Lighting & Mood]: ${atmos.en}${wxEn ? ` with ${wxEn}` : ''}, filmic color grading, warm-cool contrast.`,
+    `[Audio & Dynamics]: ${wx === 'rain' ? 'Rain pattering on rooftops, low distant thunder.'
+      : wx === 'storm' ? 'Heavy rain, rolling thunder, strong wind gusts.'
+        : wx === 'snow' ? 'Muffled wind, the soft silence of falling snow.'
+          : wx === 'sand' ? 'Dry wind hissing, grit tapping against surfaces.'
+            : nTree ? 'Gentle breeze rustling foliage, distant suburban birds chirping.'
+              : 'Quiet ambient air, faint distant traffic.'}`,
+    '[Negative Prompt]: blur, morphing, low resolution, distorted geometry, flickering, oversaturated, watermark.',
+  ];
   const lines = [
     `【运镜参考 · ${sum.name}】`,
     `镜头：${sum.move ? sum.move.name : '手工关键帧'}｜${fmt(sum.focal, 0)}mm（水平视角 ${sum.fov0}°，${sum.sensor.l}）｜${sum.dur}s｜${speed}。`,
@@ -118,6 +143,9 @@ export function buildPrompt(app) {
     + `${sum.keys} keyframed positions, ${sum.turn}° of pan/roll, ${Math.abs(sum.lift)}m vertical change, `
     + `${chars ? 'low-poly blocking characters performing a walk cycle as action reference, ' : ''}simple massing architecture as set dressing, `
     + `no text or logos, camera-ready reference footage, natural motion blur, 24fps filmic shutter.`,
+    '',
+    '▶ 结构化提示词（8.3 行结构，逐行可替换）：',
+    ...l83,
     '',
     '▶ 建议：把导出的视频/首帧一起作为「运镜 + 动作」参考上传给模型，提示词中只保留场景内容与情绪描述。',
   ];

@@ -17,6 +17,7 @@ import { ANIMS } from './character.js';
 import { ATMOS } from './lighting.js';
 import { WEATHER } from './weather.js';
 import { Mover } from './mover.js';
+import { openTownDialog } from './townui.js';
 import { el, clear, clamp, fmt, copy, downloadBlob, snap } from './util.js';
 
 const host = document.getElementById('stage');
@@ -120,6 +121,12 @@ top.appendChild(shareBtn);
 
 /* 工具按钮组（精简：保留核心操作，其余收入下拉菜单） */
 const toolRow = el('div', { class: 'tool-row' });
+
+/* 一句话生成街区：本地关键词解析 → 程序化造镇（Scene 页专属，随工具条显隐） */
+toolRow.appendChild(tbtn('一句话生成', {
+  icon: '✦', cls: 'pri', title: '一句话生成街区（本地解析，不联网、不消耗积分）',
+  onClick: () => openTownDialog(app),
+}));
 
 const gizmoBtns = [];
 for (const [m, l, ico, key] of [['translate', '移动', '✥', 'W'], ['rotate', '旋转', '⟳', 'E'], ['scale', '缩放', '⤢', 'R']]) {
@@ -879,4 +886,23 @@ if (import.meta.env.DEV) {
     buildAsset, defaultsFor, LEVELS, setDetailLevel, detailLevel, detailMaps, textureStats, pruneTextureCache, texOn,
   };
   window.__scenes = { SCENES, applyScene };
+  // 外部浏览器 HMR websocket 可能不通：失焦回来时探测关键文件 ETag，版本不一致自动刷新
+  window.__bootAt = Date.now();
+  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css'];
+  const etagOf = async (u) => {
+    const r = await fetch(u, { method: 'HEAD', cache: 'no-store' });
+    return r.headers.get('etag') || r.headers.get('last-modified') || '';
+  };
+  const fingerprint = async () => (await Promise.all(PROBES.map(etagOf))).join('|');
+  let bootFp = '';
+  window.__staleCheck = async () => {
+    if (!bootFp) bootFp = await fingerprint();
+    const now = await fingerprint();
+    return { boot: bootFp, now, stale: now !== bootFp };
+  };
+  addEventListener('focus', () => {
+    window.__staleCheck().then((s) => { if (s.stale) location.reload(); }).catch(() => {});
+  });
+  fingerprint().then((fp) => { bootFp = fp; }).catch(() => {});
+  if (import.meta.hot) import.meta.hot.on('vite:serverRestart', () => location.reload());
 }
