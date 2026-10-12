@@ -1790,7 +1790,7 @@ function buildChair(p) {
   g.add(box(sW, 0.06, sD, m, 0, sY, 0));                                              // 座板
   g.add(box(sW - 0.07, 0.05, sD - 0.07, pad, 0, sY + 0.05, 0));                       // 软垫
   for (const [x, z] of [[-0.19, -0.17], [0.19, -0.17], [-0.19, 0.17], [0.19, 0.17]]) {
-    g.add(box(0.05, sY - 0.06, 0.05, m, x, (sY - 0.06) / 2, z));                      // 4 腿
+    g.add(box(0.05, sY, 0.05, m, x, sY / 2, z));                      // 4 腿
     g.add(box(0.06, 0.02, 0.06, M.dark(0x2b2f36, 0.85), x, 0.01, z));                 // 脚垫
   }
   for (const sz of [-1, 1]) g.add(box(sW - 0.08, 0.04, 0.035, m, 0, sY - 0.15, sz * 0.17));   // 横撑
