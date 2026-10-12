@@ -440,29 +440,33 @@ function buildCapeCod(p) {
   const run = d / 2 + ohZ;
   const rise = run * 0.92;                                                        // 陡坡（≈43°）—— 鳕鱼角的招牌坡度
   const slope = Math.hypot(run, rise), th = Math.atan2(rise, run);
-  const roofW = w + ohX * 2, roofTop = foundH + wallH + rise, eaveY = foundH + wallH;
+  const roofW = w + ohX * 2, eaveY = foundH + wallH;
+  // 屋面直线必须过「墙外皮 + 墙顶」：旧版让它过檐口外沿 (run, eaveY)，于是墙外皮处屋面底
+  // 比墙顶高出 (ohZ/run)·rise（本例 0.386m），整条檐口下通长一道缝，屋顶看着浮在墙上。
+  const drop = (run - d / 2) / run * rise;
+  const roofTop = eaveY + rise - drop;
   const slopes = [];
   for (const s of [1, -1]) {
-    const sl = box(roofW, 0.16, slope, roofMat, 0, eaveY + rise / 2, s * run / 2);
+    const sl = box(roofW, 0.16, slope, roofMat, 0, eaveY + rise / 2 - drop, s * run / 2);
     sl.rotation.x = s * th; g.add(sl); slopes.push(sl);
     g.add(shingleCourses(sl, Math.max(8, Math.round(slope / 0.34)), roofMat));
-    g.add(box(roofW + 0.2, 0.22, 0.07, trimMat, 0, eaveY + 0.02, s * (run + 0.02)));   // 封檐板
+    g.add(box(roofW + 0.2, 0.22, 0.07, trimMat, 0, eaveY + 0.02 - drop, s * (run + 0.02)));   // 封檐板
     const nRaft = Math.max(4, Math.round(roofW / 0.42));                               // 出挑椽尾
     for (let i = 0; i < nRaft; i++) {
       const x = -roofW / 2 + (i + 0.5) * (roofW / nRaft);
-      g.add(box(0.09, 0.13, 0.32, roofMat, x, eaveY - 0.01, s * (run - 0.16)));
+      g.add(box(0.09, 0.13, 0.32, roofMat, x, eaveY - drop - 0.01, s * (run - 0.16)));
     }
   }
   const nCourse = Math.max(8, Math.round(slope / 0.34));
   void nCourse;
   g.add(box(roofW + 0.1, 0.16, 0.16, roofMat, 0, roofTop - 0.03, 0));              // 正脊
   for (const sx of [1, -1]) for (const sz of [1, -1]) {                            // 山墙博风板
-    const b = box(0.09, 0.16, slope, trimMat, sx * (w / 2 + ohX - 0.03), eaveY + rise / 2, sz * run / 2);
+    const b = box(0.09, 0.16, slope, trimMat, sx * (w / 2 + ohX - 0.03), eaveY + rise / 2 - drop, sz * run / 2);
     b.rotation.x = sz * th; g.add(b);
   }
   {
     const gsh = new THREE.Shape();
-    gsh.moveTo(-d / 2 - 0.05, 0); gsh.lineTo(d / 2 + 0.05, 0); gsh.lineTo(0, rise - 0.04); gsh.closePath();
+    gsh.moveTo(-d / 2 - 0.05, 0); gsh.lineTo(d / 2 + 0.05, 0); gsh.lineTo(0, rise - drop - 0.04); gsh.closePath();
     const ggeo = new THREE.ExtrudeGeometry(gsh, { depth: 0.14, bevelEnabled: false });
     ggeo.rotateY(-Math.PI / 2); ggeo.translate(-0.07, 0, 0);
     for (const s of [-1, 1]) {
@@ -622,31 +626,35 @@ function buildCraftsman(p) {
   const ohX = 0.62;                                                               // 山面出檐
   const run = w / 2 + ohX, rise = w * 0.22, slope = Math.hypot(run, rise);
   const th = Math.atan2(rise, run), eaveY = foundH + wallH;
+  // 屋面直线必须过「墙外皮 + 墙顶」这一点：旧版让它过檐口外沿 (run, eaveY)，
+  // 于是屋面在墙外皮处已经抬起 ohX/run·rise，底面比墙顶高出 13.5cm —— 整条檐口下通长一道缝，
+  // 看着就是屋顶浮在墙上。把整组屋面向下落 drop 即可。
+  const drop = (run - w / 2) / run * rise;
   for (const s of [1, -1]) {
-    const sl = box(slope, 0.2, d + 1.4, roofMat, s * run / 2, eaveY + rise / 2, 0);
+    const sl = box(slope, 0.2, d + 1.4, roofMat, s * run / 2, eaveY + rise / 2 - drop, 0);
     sl.rotation.z = -s * th; g.add(sl);
     g.add(shingleCourses(sl, Math.max(7, Math.round(slope / 0.4)), roofMat));
-    const rake = box(slope, 0.14, 0.09, trimMat, s * run / 2, eaveY + rise / 2 + 0.16, d / 2 + 0.7);
+    const rake = box(slope, 0.14, 0.09, trimMat, s * run / 2, eaveY + rise / 2 + 0.16 - drop, d / 2 + 0.7);
     rake.rotation.z = -s * th; g.add(rake);
     const rake2 = rake.clone(); rake2.position.z = -d / 2 - 0.7; g.add(rake2);
-    g.add(box(0.07, 0.24, d + 1.42, trimMat, s * (run + 0.02), eaveY + 0.03, 0));  // 封檐板
+    g.add(box(0.07, 0.24, d + 1.42, trimMat, s * (run + 0.02), eaveY - drop + 0.03, 0));  // 封檐板
     const nRaft = Math.max(4, Math.round((d + 1.2) / 0.42));                        // 出挑椽尾（贴在檐口下）
     for (let i = 0; i < nRaft; i++) {
       const z = -(d + 1.2) / 2 + (i + 0.5) * ((d + 1.2) / nRaft);
-      g.add(box(0.32, 0.13, 0.09, roofMat, s * (run - 0.16), eaveY - 0.01, z));
+      g.add(box(0.32, 0.13, 0.09, roofMat, s * (run - 0.16), eaveY - drop + (0.16 * rise) / run - 0.01, z));
     }
   }
-  g.add(box(0.16, 0.16, d + 1.5, roofMat, 0, foundH + wallH + rise - 0.08, 0));     // 正脊
-  for (const sz of [-1, 1]) {                                                       // 山墙面
+  g.add(box(0.16, 0.16, d + 1.5, roofMat, 0, eaveY + rise - drop - 0.08, 0));       // 正脊
+  for (const sz of [-1, 1]) {                                                       // 山墙面（高度跟着 drop 收）
     const shp = new THREE.Shape();
-    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise); shp.closePath();
+    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise - drop); shp.closePath();
     const tri = new THREE.Mesh(new THREE.ExtrudeGeometry(shp, { depth: 0.12, bevelEnabled: false }), wood);
-    tri.position.set(0, foundH + wallH, sz * (d / 2));
+    tri.position.set(0, eaveY, sz * (d / 2));
     if (sz < 0) tri.rotation.y = Math.PI;
     g.add(tri);
   }
-  g.add(box(0.5, 0.34, 0.08, trimMat, 0, foundH + wallH + rise * 0.5, d / 2 + 0.16)); // 山墙通风百叶
-  for (let i = 0; i < 3; i++) g.add(box(0.44, 0.035, 0.03, M.dark(0x2a2620, 0.9), 0, foundH + wallH + rise * 0.5 - 0.11 + i * 0.11, d / 2 + 0.21));
+  g.add(box(0.5, 0.34, 0.08, trimMat, 0, eaveY + (rise - drop) * 0.5, d / 2 + 0.16)); // 山墙通风百叶
+  for (let i = 0; i < 3; i++) g.add(box(0.44, 0.035, 0.03, M.dark(0x2a2620, 0.9), 0, eaveY + (rise - drop) * 0.5 - 0.11 + i * 0.11, d / 2 + 0.21));
   // 前廊：落地门廊台 + 石砌柱墩 + 收分方柱（4 边形棱台）+ 斜撑 + 车木栏杆
   const porchD = 2.4, colH = wallH * 0.72, pierH = 0.62;
   const deckTop = foundH - 0.06, colTopY = deckTop + colH;
@@ -661,8 +669,10 @@ function buildCraftsman(p) {
     shaft.rotation.y = Math.PI / 4; g.add(shaft);                                    // 收分方柱
     g.add(box(0.34, 0.1, 0.34, trimMat, cx, colTopY - 0.13, cz));                    // 柱头线脚
     g.add(box(0.4, 0.12, 0.4, trimMat, cx, colTopY - 0.02, cz));
-    const brace = box(0.09, 0.62, 0.09, trimMat, cx - s * 0.2, colTopY - 0.44, cz);
-    brace.rotation.z = -s * 0.62; g.add(brace);                                      // 斜撑
+    // 斜撑：下端落柱身、上端顶廊檐横梁底（旧版只有上端搭住柱子，下端 0.6m 悬在空中）
+    const bw = 0.58;
+    const brace = box(0.09, Math.hypot(bw, bw), 0.09, trimMat, cx - s * bw / 2, colTopY - bw / 2 + 0.05, cz);
+    brace.rotation.z = s * Math.PI / 4; g.add(brace);
   }
   g.add(box(w - 0.5, 0.2, 0.2, wood, 0, colTopY + 0.1, d / 2 + porchD - 0.3));       // 廊檐横梁
   g.add(box(w + 0.3, 0.1, porchD + 0.3, roofMat, 0, colTopY + 0.25, d / 2 + porchD / 2));
@@ -694,7 +704,8 @@ function buildCraftsman(p) {
     g.add(onWall(winUnit(0.9, 0.9, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 1 }), x, foundH + wallH * 0.56, -d / 2, 'z', -1));
   }
   // 石砌烟囱
-  const chX = -w * 0.35, chTop = foundH + wallH + rise * 0.5;
+  const chX = -w * 0.35;
+  const chTop = eaveY + (rise - drop) * (1 - Math.abs(chX) / (w / 2)) + 0.5;
   g.add(box(0.56, chTop, 0.5, stoneMat, chX, chTop / 2, 0));
   for (let i = 0; i < 5; i++) g.add(box(0.58, 0.045, 0.52, M.concrete(0x86705e), chX, 0.4 + i * 0.5, 0));
   g.add(box(0.66, 0.1, 0.6, M.concrete(0x7a6050), chX, chTop + 0.05, 0));
@@ -1192,19 +1203,22 @@ function buildCraftsmanCafe(p) {
   const ohX = 0.52;                                                               // 山面出檐
   const run = w / 2 + ohX, rise = w * 0.25, slope = Math.hypot(run, rise);
   const th = Math.atan2(rise, run), eaveY = foundH + wallH;
+  // 同 house:craftsman / house:cape_cod：屋面直线必须过「墙外皮 + 墙顶」，否则墙外皮处
+  // 屋面底比墙顶高出 (ohX/run)·rise（本例 0.236m），整条檐口下通长一道缝。
+  const drop = (run - w / 2) / run * rise;
   for (const s of [1, -1]) {
-    const sl = box(slope, 0.2, d + 1.2, roofMat, s * run / 2, eaveY + rise / 2, 0);
+    const sl = box(slope, 0.2, d + 1.2, roofMat, s * run / 2, eaveY + rise / 2 - drop, 0);
     sl.rotation.z = -s * th; g.add(sl);
     g.add(shingleCourses(sl, Math.max(7, Math.round(slope / 0.42)), roofMat));
-    g.add(box(0.07, 0.24, d + 1.22, trimMat, s * (run + 0.02), eaveY + 0.03, 0));   // 封檐板
+    g.add(box(0.07, 0.24, d + 1.22, trimMat, s * (run + 0.02), eaveY + 0.03 - drop, 0));   // 封檐板
     const raftN = Math.max(6, Math.floor((d + 1.0) / 0.36));
     for (let i = 0; i < raftN; i++)
-      g.add(box(0.3, 0.12, 0.08, roofMat, s * (run - 0.15), eaveY - 0.01, -(d + 1.0) / 2 + (i + 0.5) * ((d + 1.0) / raftN)));
+      g.add(box(0.3, 0.12, 0.08, roofMat, s * (run - 0.15), eaveY - drop - 0.01, -(d + 1.0) / 2 + (i + 0.5) * ((d + 1.0) / raftN)));
   }
-  g.add(box(0.16, 0.16, d + 1.3, roofMat, 0, foundH + wallH + rise - 0.08, 0));
+  g.add(box(0.16, 0.16, d + 1.3, roofMat, 0, eaveY + rise - drop - 0.08, 0));
   for (const sz of [-1, 1]) {
     const shp = new THREE.Shape();
-    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise); shp.closePath();
+    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise - drop); shp.closePath();
     const tri = new THREE.Mesh(new THREE.ExtrudeGeometry(shp, { depth: 0.12, bevelEnabled: false }), wood);
     tri.position.set(0, foundH + wallH, sz * (d / 2));
     if (sz < 0) tri.rotation.y = Math.PI;
@@ -1212,7 +1226,7 @@ function buildCraftsmanCafe(p) {
   }
   // 主招牌：钉在正面山墙三角上（旧版整块浮在屋脊上方 0.62m，像「起飞」）
   const signMat = M.paint(p.signColor, 0.6);
-  const signY = eaveY + rise * 0.30, signH = Math.max(0.5, rise * 0.34), signW = w * 0.46;
+  const signY = eaveY + (rise - drop) * 0.30, signH = Math.max(0.5, (rise - drop) * 0.34), signW = w * 0.46;
   g.add(bevelSign(signW, signH, 0.16, signMat, 0, signY, d / 2 + 0.12));
   g.add(bevelSign(signW * 0.88, signH * 0.72, 0.06, trimMat, 0, signY, d / 2 + 0.21));
   for (const s of [-1, 1]) g.add(box(0.09, 0.09, 0.34, M.metal(0x2a2a2a, 0.5, 0.8), s * signW * 0.33, signY - signH * 0.42, d / 2 + 0.02));
