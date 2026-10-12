@@ -18,7 +18,7 @@ export const M = {
   metal: (c = 0x8d949c, r = 0.35, m = 0.9) => mk('metal', { color: c, roughness: r, metalness: m, envMapIntensity: 1.4 }),
   dark: (c = 0x2c3138, r = 0.8) => mk('paint', { color: c, roughness: r, metalness: 0.1 }),
   paint: (c = 0xcccccc, r = 0.6) => mk('paint', { color: c, roughness: r, metalness: 0.05 }),
-  glass: (c = 0x88bbdd) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.6 }),
+  glass: (c = 0x88bbdd) => { const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.6 }); m.userData.role = 'glass'; return m; },
   tile: (c = 0xb85c38, r = 0.7) => mk('tile', { color: c, roughness: r, metalness: 0.02 }),
 };
 
@@ -64,6 +64,7 @@ function slabTop(w, t, d, mat, x = 0, y = 0, z = 0) {
  *  暗腔贴墙、玻璃比框面内退 5.5cm → 斜看有真实的 5~10cm 景深 */
 function winUnit(w, h, o = {}) {
   const G = new THREE.Group();
+  G.userData.role = 'window';
   const frameMat = o.frameMat || M.paint(0xf0ece4, 0.7);
   const glassMat = o.glassMat || M.glass(0x8fb4cc);
   const darkMat = o.darkMat || M.dark(0x151a20, 0.95);
@@ -106,6 +107,19 @@ function winUnit(w, h, o = {}) {
   return G;
 }
 
+/** 门窗套：两侧樘 + 过梁 + 窗台，中间留空。
+ *  旧版用一整块实心板做套，把门窗整扇（连气窗）盖死、还横跨两层压住上层窗。
+ *  openW/openH = 洞口净尺寸（要能容下门窗组件含扇/气窗的全部高度），t = 套线宽 */
+function surroundFrame(openW, openH, t, depth, mat, x, y, z, o = {}) {
+  const G = new THREE.Group();
+  G.userData.role = 'trim';
+  G.add(box(t, openH + t, depth, mat, -(openW / 2 + t / 2), t / 2, 0));
+  G.add(box(t, openH + t, depth, mat, openW / 2 + t / 2, t / 2, 0));
+  G.add(box(openW + t * 2, t, depth, mat, 0, openH / 2 + t / 2, 0));
+  if (o.sill !== false) G.add(box(openW + t * 2 + 0.12, 0.09, depth + 0.1, mat, 0, -openH / 2 - 0.045, 0.02));
+  G.position.set(x, y, z);
+  return G;
+}
 /** 内缩板门组件。原点 = 洞口中心，+Z = 墙外法线；门扇比框面内退 ~6cm */
 function doorUnit(w, h, o = {}) {
   const G = new THREE.Group();
@@ -114,8 +128,11 @@ function doorUnit(w, h, o = {}) {
   const panelMat = o.panelMat || M.paint(o.panelColor ?? 0x3d2c1a, 0.68);
   const darkMat = o.darkMat || M.dark(0x151a20, 0.95);
   const dep = o.dep ?? 0.1, ft = 0.09;
+  G.userData.role = 'door';
   G.add(box(w + 0.02, h + 0.02, 0.016, darkMat, 0, 0, 0.008));
-  G.add(box(w, h, 0.05, doorMat, 0, 0, dep - 0.06));
+  const leaf = box(w, h, 0.05, doorMat, 0, 0, dep - 0.06);
+  leaf.userData.role = 'doorleaf';
+  G.add(leaf);
   const pz = dep - 0.022;
   const pcols = o.panelCols ?? 2, prows = o.panelRows ?? 3;
   const cw = (w - 0.16) / pcols, chh = (h - 0.22) / prows;
@@ -146,6 +163,7 @@ function doorUnit(w, h, o = {}) {
     G.add(box(w + ft * 2 + 0.1, 0.08, dep + 0.04, frameMat, 0, h / 2 + ft + rF + 0.05, dep / 2));
   }
   if (o.lintel) G.add(box(w + ft * 2 + 0.14, 0.14, dep + 0.06, o.lintelMat || frameMat, 0, h / 2 + ft + 0.07, dep / 2 + 0.01));
+
   if (o.sidelights) for (const s of [-1, 1]) {                                     // 门侧采光条（窄窗组件）
     const sl = winUnit(0.18, h * 0.7, { frameMat, glassMat: M.glass(0x99bbcc), muntins: false, ft: 0.05, dep });
     sl.position.set(s * (w / 2 + ft + 0.15), 0, 0);
@@ -244,6 +262,7 @@ function bevelSign(w, h, d, mat, x = 0, y = 0, z = 0) {
 /** 连续橱窗带：暗腔 + 内退玻璃 + 竖框 + 上下外凸框 → 橱窗带真实深度。沿 X 布置 */
 function storefrontBand(w, h, o = {}) {
   const G = new THREE.Group();
+  G.userData.role = 'window';
   const frameMat = o.frameMat || M.paint(0x2c3138, 0.55);
   const glassMat = o.glassMat || M.glass(0x99ccdd);
   const darkMat = o.darkMat || M.dark(0x10141a, 0.95);
@@ -476,7 +495,7 @@ function buildCapeCod(p) {
   const dw = Math.min(2.1, Math.max(1.15, w * 0.21)), dd = 1.5;
   const zf = d / 2 - 0.45;                                                        // 正立面比外墙退进一点
   const yRoof = roofTop - (zf / run) * rise;                                      // 该处屋面标高
-  const dyTop = yRoof + 0.62, dyBot = yRoof - 0.85;                               // 上探出屋面 / 下埋进屋面
+  const dyTop = yRoof + 1.15, dyBot = yRoof - 0.85;                               // 上探出屋面 / 下埋进屋面（抬高 0.53，窗组件才装得进）
   const dRise = dw * 0.34, dSlope = Math.hypot(dw / 2, dRise), dth = Math.atan2(dRise, dw / 2);
   for (let i = 0; i < nDorm; i++) {
     const dx = nDorm === 1 ? 0 : (i * 2 - 1) * w * 0.25;
@@ -491,7 +510,7 @@ function buildCapeCod(p) {
     g.add(box(0.1, 0.1, dd + 0.42, roofMat, dx, dyTop + dRise - 0.03, zc + 0.08));   // 小正脊
     g.add(box(dw + 0.2, 0.18, 0.07, trimMat, dx, dyTop - 0.07, zf + 0.03));          // 正面檐板
     g.add(box(dw + 0.26, 0.09, 0.05, trimMat, dx, dyBot + 0.9, zf + 0.05));          // 正面下檐
-    g.add(onWall(winUnit(dw * 0.5, 0.62, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 1, sill: true, shutters: true, shutterMat }), dx, yRoof + 0.28, zf, 'z', 1));
+    g.add(onWall(winUnit(dw * 0.5, 0.56, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 1, sill: true, shutters: true, shutterMat }), dx, yRoof + 0.58, zf, 'z', 1));
   }
   // 烟囱：砖砌，穿过正脊出屋面
   const chimneyX = w * 0.34, chimneyTop = roofTop + 0.62;
@@ -522,9 +541,18 @@ function buildBrownstone(p) {
   const trimMat = M.concrete(0x8a8478);
   g.add(box(w + 0.06, 0.5, d + 0.06, stoneMat, 0, 0.25, 0));
   g.add(box(w, h, d, brick, 0, 0.5 + h / 2, 0));
+  const stoopH = 1.2, dCy = stoopH + 1.125;                                       // 门廊台高 / 门中心
+  const fanTop = dCy + 2.25 / 2 + 0.09 + 0.01 + 0.59;                             // 气窗拱顶
+  const entY0 = stoopH, entY1 = fanTop + 0.14, entHX = (1.18 + 0.28) / 2;         // 入口竖向范围 / 门套半宽
   for (let f = 0; f <= floors; f++) {                                              // 层间腰线
-    const cy = 0.5 + f * floorH;
-    g.add(box(w + 0.12, 0.15, d + 0.12, trimMat, 0, cy + 0.075, 0));
+    const cy = 0.5 + f * floorH, by = cy + 0.075;
+    if (by + 0.075 > entY0 && by - 0.075 < entY1) {                                // 与入口相碰 → 正面断开让开门套
+      g.add(box(w + 0.12, 0.15, d + 0.06, trimMat, 0, by, -0.03));
+      for (const sgm of [-1, 1]) {
+        const a = sgm > 0 ? entHX : -(w / 2 + 0.06), b = sgm > 0 ? w / 2 + 0.06 : -entHX;
+        g.add(box(b - a, 0.15, 0.12, trimMat, (a + b) / 2, by, d / 2 + 0.03));
+      }
+    } else g.add(box(w + 0.12, 0.15, d + 0.12, trimMat, 0, by, 0));
   }
   for (const sx of [-1, 1]) for (let f = 0; f < floors; f++) {                     // 墙角隅石
     const cy = 0.5 + f * floorH + floorH / 2;
@@ -532,7 +560,7 @@ function buildBrownstone(p) {
     g.add(box(0.14, floorH - 0.15, 0.14, stoneMat, sx * (w / 2 - 0.07), cy, -d / 2 - 0.07));
   }
   // 台阶门廊（stoop）+ 铁艺栏杆：整座是实心砌体，踏步不再一片片悬在空中
-  const stoopH = 1.2, stoopW = w * 0.5, nStep = 4, stepD = 0.36, stepH = stoopH / nStep;
+  const stoopW = w * 0.5, nStep = 4, stepD = 0.36, stepH = stoopH / nStep;
   g.add(box(stoopW, stoopH, 2.0, stoneMat, 0, stoopH / 2, d / 2 + 1.0));           // 平台（实心到地）
   g.add(box(stoopW + 0.06, 0.06, 2.06, trimMat, 0, stoopH + 0.03, d / 2 + 1.0));   // 平台压顶
   for (let i = 0; i < nStep; i++) {
@@ -549,11 +577,12 @@ function buildBrownstone(p) {
     rail.position.set(sx * (stoopW / 2 - 0.02), stoopH, d / 2 + 1.05);
     g.add(rail);
   }
-  // 内缩板门 + 石门套 + 扇形气窗
+  // 内缩板门 + 石门套 + 扇形气窗（门套做成樘+过梁，洞口留空，不再整块压死门窗）
   const doorSurround = M.concrete(0x7a7468);
-  g.add(box(1.35, 2.6, 0.16, doorSurround, 0, stoopH + 1.3, d / 2 + 0.08));
-  g.add(onWall(doorUnit(1.0, 2.25, { frameMat: stoneMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true }), 0, stoopH + 1.125, d / 2, 'z', 1));
-  g.add(box(0.55, 0.34, 0.14, doorSurround, 0, stoopH + 2.72, d / 2 + 0.07));      // 拱心石
+  // 门中心 dCy / 气窗拱顶 fanTop 已在上面算好
+  g.add(surroundFrame(1.18, fanTop - stoopH, 0.14, 0.16, doorSurround, 0, stoopH + (fanTop - stoopH) / 2, d / 2 + 0.04, { sill: false }));
+  g.add(onWall(doorUnit(1.0, 2.25, { frameMat: stoneMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true }), 0, dCy, d / 2, 'z', 1));
+  g.add(box(0.55, 0.28, 0.14, doorSurround, 0, fanTop + 0.21, d / 2 + 0.05));      // 拱心石
   // 内缩窗：每层前 3 后 3，石材窗台 / 首层石过梁
   const winMat = M.glass(0x88aabb);
   for (let f = 0; f < floors; f++) {
@@ -562,7 +591,8 @@ function buildBrownstone(p) {
     const ww = f === 0 ? 0.9 : 0.8, wh = f === 0 ? 1.5 : 1.2;
     for (let i = 0; i < 3; i++) {
       const x = -w / 2 + (i + 0.5) * (w / 3);
-      g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, lintel: f > 0, lintelMat: stoneMat, sill: true }), x, wy, d / 2, 'z', 1));
+      if (!(f === 0 && i === 1))                                                   // 首层正中被门廊占据，不开窗
+        g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, lintel: f > 0, lintelMat: stoneMat, sill: true }), x, wy, d / 2, 'z', 1));
       g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, muntins: true }), x, wy, -d / 2, 'z', -1));
     }
   }
@@ -756,7 +786,9 @@ function buildSouthernColonial(p) {
       g.add(onWall(winUnit(0.85, 1.4, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 3 }), sx * (w / 2), wy, 0, 'x', sx));
     }
   }
-  g.add(box(1.5, 2.72, 0.14, trimMat, 0, foundH + 1.36, d / 2 + 0.07));             // 门套
+  // 门套：樘 + 过梁留空（旧版一整块实心板把门扇和气窗一起盖死）
+  const scOpenH = 2.35 / 2 + 0.09 + 0.64 + 0.05 + 0.04 + 1.175;                     // 门底到气窗顶盖
+  g.add(surroundFrame(1.86, scOpenH, 0.14, 0.14, trimMat, 0, foundH + scOpenH / 2, d / 2 + 0.04, { sill: false }));
   g.add(onWall(doorUnit(1.1, 2.35, { frameMat: trimMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true, sidelights: true }), 0, foundH + 1.175, d / 2, 'z', 1));
   // 烟囱
   const chX = w * 0.36, chTop = foundH + h + rise * 0.42;
@@ -775,9 +807,12 @@ function buildAdobe(p) {
   g.add(box(w, wallH, d, adobe, 0, foundH + wallH / 2, 0));
   g.add(box(w + 0.16, 0.14, d + 0.16, adobe, 0, foundH + wallH + 0.07, 0));          // 女儿墙压顶
   g.add(box(w + 0.08, 0.22, 0.08, adobe, 0, foundH + wallH - 0.11, d / 2 + 0.04));
-  const wingW = w * 0.5, wingD = d * 0.6, wingH = wallH * 0.7;
-  g.add(box(wingW, wingH, wingD, adobe, w * 0.15, foundH + wingH / 2, 0));
-  g.add(box(wingW + 0.14, 0.12, wingD + 0.14, adobe, w * 0.15, foundH + wingH + 0.06, 0));
+  // 侧翼比主体浅（0.5d）——必须向前凸出，否则整只埋进主体里、翼上的窗完全看不见；
+  // 同时贴右端布置、右缘不超过 w/2，才能不压住正立面门窗和右侧墙窗
+  const wingW = w * 0.24, wingD = d * 0.5, wingH = wallH * 0.7;
+  const wingX = w / 2 - wingW / 2, wingFront = d / 2 + 0.35, wingZ = wingFront - wingD / 2;
+  g.add(box(wingW, wingH, wingD, adobe, wingX, foundH + wingH / 2, wingZ));
+  g.add(box(wingW + 0.14, 0.12, wingD + 0.14, adobe, wingX, foundH + wingH + 0.06, wingZ));
   // 木梁（vigas）与排水槽（canales）：8 边形原木，两端出挑
   const vigas = M.paint(0x6b4e35, 0.85);
   const vigaSpacing = 0.8;
@@ -792,7 +827,7 @@ function buildAdobe(p) {
   const nV2 = Math.max(2, Math.floor((wingD - 0.4) / vigaSpacing));
   for (let i = 0; i <= nV2; i++) {
     const z = -wingD / 2 + 0.2 + i * ((wingD - 0.4) / nV2);
-    const v = cylRaw(0.06, 0.07, 0.34, vigas, 8, w * 0.15 + wingW / 2 + 0.1, foundH + wingH - 0.14, z);
+    const v = cylRaw(0.06, 0.07, 0.34, vigas, 8, wingX + wingW / 2 + 0.1, foundH + wingH - 0.14, wingZ + z);
     v.rotation.z = Math.PI / 2; g.add(v);
   }
   for (const sx of [-1, 1]) {                                                       // canales
@@ -823,12 +858,12 @@ function buildAdobe(p) {
   g.add(onWall(doorUnit(0.86, 1.94, { frameMat: vigas, doorMat, panelCols: 1, panelRows: 2, panelColor: 0x4a3525, dep: 0.14 }), 0, foundH + 0.97, d / 2, 'z', 1));
   const winMat = M.glass(0x99aabb);
   for (const sx of [-1, 1]) {
-    const wx = sx * w * 0.28;
+    const wx = sx * w * 0.20;
     g.add(box(1.02, 0.14, 0.2, vigas, wx, foundH + wallH * 0.55 + 0.5, d / 2 + 0.05));   // 窗过梁
     g.add(onWall(winUnit(0.78, 0.78, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 2, ft: 0.09, dep: 0.13 }), wx, foundH + wallH * 0.55, d / 2, 'z', 1));
     g.add(box(0.94, 0.1, 0.24, stoneMat, wx, foundH + wallH * 0.55 - 0.52, d / 2 + 0.1)); // 石窗台
   }
-  g.add(onWall(winUnit(0.66, 0.66, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 1, ft: 0.09, dep: 0.13 }), w * 0.15 + wingW / 2, foundH + wingH * 0.55, wingD / 2, 'z', 1));
+  g.add(onWall(winUnit(0.66, 0.66, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 1, ft: 0.09, dep: 0.13 }), wingX, foundH + wingH * 0.55, wingFront, 'z', 1));
   g.add(onWall(winUnit(0.62, 0.62, { frameMat: vigas, glassMat: winMat, muntins: false, ft: 0.08, dep: 0.13 }), -w / 2, foundH + wallH * 0.6, -d * 0.1, 'x', -1));
   for (let i = 0; i < 4; i++) {                                                     // 壁龛（nicho）
     const nx = w * 0.34 - i * 0.5;
@@ -919,7 +954,7 @@ function buildSpanishColonial(p) {
   }
   g.add(planeXZ(w + 0.2, archDep + 0.1, M.concrete(0xc4a882), 0, foundH + 0.012, d / 2 + archDep / 2));
   // 铁艺阳台：托梁 + 石板 + 6 边形铁栏柱 + 卷草
-  const balconyH = foundH + wallH * 0.62, balW = w * 0.72, balD = 1.2;
+  const balconyH = foundH + wallH * 0.68, balW = w * 0.72, balD = 1.2;
   g.add(box(balW, 0.13, balD, M.concrete(0x9a9488), 0, balconyH - 0.065, d / 2 + balD / 2));
   g.add(box(balW + 0.06, 0.07, balD + 0.06, M.concrete(0x8a8478), 0, balconyH - 0.16, d / 2 + balD / 2));
   const ironMat = M.metal(0x2a2a2a, 0.5, 0.8);
@@ -944,26 +979,29 @@ function buildSpanishColonial(p) {
     br.rotation.x = 0.36; g.add(br);
   }
   // 内缩窗 + 铁窗栅 + 拱心窗
+  // 竖向排布（旧版三层互相打架：阳台托梁横穿一层窗、阳台拱窗整扇埋进正面山墙）：
+  //   一层窗顶 → 阳台托梁底 → 阳台面 → 阳台拱窗 → 墙顶（山墙起点）
   const winMat = M.glass(0x88aabb);
+  const wy1 = foundH + wallH * 0.38;
   for (const x of [-w * 0.31, w * 0.31]) {
-    const wy = foundH + wallH * 0.5;
-    const wu = winUnit(0.9, 1.3, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13, ft: 0.1 });
-    for (const ss of [-1, 1]) wu.add(box(0.035, 1.44, 0.035, ironMat, ss * 0.56, 0, 0.07));
-    for (let k = 0; k < 4; k++) wu.add(box(1.16, 0.03, 0.03, ironMat, 0, -0.58 + k * 0.38, 0.07));
-    g.add(onWall(wu, x, wy, d / 2, 'z', 1));
+    const wu = winUnit(0.9, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13, ft: 0.1 });
+    for (const ss of [-1, 1]) wu.add(box(0.035, 1.34, 0.035, ironMat, ss * 0.56, 0, 0.07));
+    for (let k = 0; k < 4; k++) wu.add(box(1.16, 0.03, 0.03, ironMat, 0, -0.53 + k * 0.38, 0.07));
+    g.add(onWall(wu, x, wy1, d / 2, 'z', 1));
   }
   for (const sx of [-1, 1]) for (let i = 0; i < 2; i++) {
-    g.add(onWall(winUnit(0.8, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13 }), sx * (w / 2), foundH + wallH * 0.5, -d * 0.24 + i * d * 0.44, 'x', sx));
+    g.add(onWall(winUnit(0.8, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13 }), sx * (w / 2), wy1, -d * 0.24 + i * d * 0.44, 'x', sx));
   }
   for (const x of [-w * 0.24, w * 0.24]) {
-    g.add(onWall(winUnit(0.62, 0.7, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: false, arch: true, dep: 0.13 }), x, balconyH + 0.92, d / 2, 'z', 1));
+    g.add(onWall(winUnit(0.5, 0.4, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: false, arch: true, dep: 0.13 }), x, foundH + wallH * 0.8, d / 2, 'z', 1));
   }
-  // 拱门 + 铁饰门钉
+  // 拱门 + 铁饰门钉（门套改成樘+过梁，洞口留空；拱券落回门头上，旧版悬空 0.25m）
   const doorMat = M.paint(0x5a4030, 0.7);
-  g.add(box(1.24, 2.34, 0.2, stucco, 0, foundH + 1.17, d / 2 + 0.1));
+  const archTop = foundH + 2.09 + 0.5;
+  g.add(surroundFrame(1.12, archTop - foundH, 0.13, 0.2, stucco, 0, foundH + (archTop - foundH) / 2, d / 2 + 0.06, { sill: false }));
   const doorArch = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 12, 1, false, 0, Math.PI), stucco);
   doorArch.rotation.z = Math.PI / 2; doorArch.rotation.y = Math.PI / 2;
-  doorArch.position.set(0, foundH + 2.34, d / 2 + 0.1); g.add(doorArch);
+  doorArch.position.set(0, foundH + 2.09, d / 2 + 0.08); g.add(doorArch);
   g.add(onWall(doorUnit(0.94, 2.0, { frameMat: M.paint(0x6b4e35, 0.85), doorMat, panelCols: 2, panelRows: 2, panelColor: 0x4a3525, dep: 0.16 }), 0, foundH + 1.0, d / 2, 'z', 1));
   g.add(box(0.5, 0.09, 0.05, ironMat, 0.3, foundH + 1.05, d / 2 + 0.17));
   g.add(cylRaw(0.028, 0.028, 0.1, ironMat, 8, 0.3, foundH + 1.05, d / 2 + 0.2));
@@ -1035,13 +1073,14 @@ function buildColonialChurch(p) {
   const st = stairRun(2.6, 3, foundH / 3, 0.32, M.concrete(0x9a9488));
   st.position.set(0, 0, d / 2 + portD + 0.35); g.add(st);
   const winMat = M.glass(0x88aacc);
-  g.add(box(1.5, 2.62, 0.16, trimMat, 0, foundH + 1.31, d / 2 + 0.08));
+  const ccOpenH = 2.32 + 0.7;                                                       // 门底到拱券顶
+  g.add(surroundFrame(1.44, ccOpenH, 0.14, 0.16, trimMat, 0, foundH + ccOpenH / 2, d / 2 + 0.04, { sill: false }));
   for (const s of [-1, 1])                                                          // 双扇门
     g.add(onWall(doorUnit(0.6, 2.3, { frameMat: trimMat, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 3, dep: 0.14 }), s * 0.33, foundH + 1.15, d / 2, 'z', 1));
   const doorArch = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.1, 12, 1, false, 0, Math.PI), trimMat);
   doorArch.rotation.z = Math.PI / 2; doorArch.rotation.y = Math.PI / 2;
-  doorArch.position.set(0, foundH + 2.32, d / 2 + 0.08); g.add(doorArch);
-  g.add(box(1.6, 0.12, 0.2, trimMat, 0, foundH + 3.06, d / 2 + 0.1));
+  doorArch.position.set(0, foundH + 2.32, d / 2 + 0.06); g.add(doorArch);
+  g.add(box(1.6, 0.12, 0.2, trimMat, 0, foundH + 3.22, d / 2 + 0.1));
   // 拱心长窗（正立面）+ 侧立面拱窗
   for (const x of [-w * 0.31, w * 0.31])
     g.add(onWall(winUnit(0.7, 1.25, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 1, rows: 2, arch: true, ft: 0.09, dep: 0.12 }), x, foundH + wallH * 0.5, d / 2, 'z', 1));
@@ -1094,17 +1133,17 @@ function buildGoogieDiner(p) {
   bandL.position.set(-w * 0.3, foundH + 1.15, d / 2); g.add(bandL);
   const bandR = storefrontBand(w * 0.34, 2.1, { glassMat: winMat, frameMat: M.metal(0xc6ccd2, 0.28, 0.75), dep: 0.14, bulk: 0.62, mullionGap: 1.3 });
   bandR.position.set(w * 0.3, foundH + 1.15, d / 2); g.add(bandR);
-  const doorDep = 0.16;
-  g.add(box(1.4, 2.4, 0.03, M.dark(0x10141a, 0.95), 0, foundH + 1.2, d / 2 + 0.01));
-  g.add(box(1.1, 2.1, 0.03, winMat, 0, foundH + 1.15, d / 2 + doorDep - 0.07));
-  g.add(box(1.34, 2.36, 0.05, M.paint(0xcc3333, 0.6), 0, foundH + 1.18, d / 2 + doorDep / 2 - 0.14));
-  g.add(box(1.06, 2.06, 0.02, M.paint(0xcc3333, 0.6), 0, foundH + 1.18, d / 2 + doorDep / 2 - 0.12));
-  g.add(box(1.1, 2.1, 0.03, winMat, 0, foundH + 1.15, d / 2 + doorDep - 0.08));
+  const doorDep = 0.16, dCy = foundH + 1.15;
+  const redMat = M.paint(0xcc3333, 0.6);
+  g.add(box(1.4, 2.4, 0.03, M.dark(0x10141a, 0.95), 0, foundH + 1.2, d / 2 + 0.015));   // 洞口暗腔
+  g.add(box(1.1, 2.1, 0.03, winMat, 0, dCy, d / 2 + 0.05));                              // 玻璃（只留一片）
+  for (const sy of [1, -1]) g.add(box(1.34, 0.14, 0.05, redMat, 0, dCy + sy * 1.12, d / 2 + 0.075));
+  for (const sx of [1, -1]) g.add(box(0.14, 2.38, 0.05, redMat, sx * 0.6, dCy, d / 2 + 0.075));
   g.add(box(1.5, 0.12, doorDep + 0.1, M.metal(0xc6ccd2, 0.28, 0.75), 0, foundH + 2.4, d / 2 + doorDep / 2));
-  g.add(box(0.09, 0.34, 0.09, M.metal(0xd4af37, 0.3, 0.8), 0.44, foundH + 1.1, d / 2 + doorDep - 0.02));
+  g.add(box(0.09, 0.34, 0.09, M.metal(0xd4af37, 0.3, 0.8), 0.44, foundH + 1.1, d / 2 + 0.14));
   for (const s of [-1, 1]) {                                                        // 侧立面带形窗
-    g.add(box(0.16, 1.1, d * 0.6, M.dark(0x10141a, 0.95), s * (w / 2 + 0.01), foundH + wallH * 0.55, 0));
-    g.add(box(0.05, 0.95, d * 0.58, winMat, s * (w / 2 + 0.05), foundH + wallH * 0.55, 0));
+    g.add(box(0.16, 1.1, d * 0.6, M.dark(0x10141a, 0.95), s * (w / 2 - 0.02), foundH + wallH * 0.55, 0));
+    g.add(box(0.05, 0.95, d * 0.58, winMat, s * (w / 2 + 0.09), foundH + wallH * 0.55, 0));
     g.add(box(0.2, 0.09, d * 0.62, M.metal(0xc6ccd2, 0.28, 0.75), s * (w / 2 + 0.03), foundH + wallH * 0.55 + 0.6, 0));
     g.add(box(0.2, 0.09, d * 0.62, M.metal(0xc6ccd2, 0.28, 0.75), s * (w / 2 + 0.03), foundH + wallH * 0.55 - 0.6, 0));
   }
@@ -1112,10 +1151,10 @@ function buildGoogieDiner(p) {
   const chrome = M.metal(0xc6ccd2, 0.28, 0.75);
   const porthole = (x, y, z, rot) => {
     const P = new THREE.Group();
-    const ring = cylRaw(0.4, 0.4, 0.14, chrome, 12); ring.rotation.x = Math.PI / 2; P.add(ring);
-    const cav = cylRaw(0.33, 0.33, 0.05, M.dark(0x10141a, 0.95), 12); cav.rotation.x = Math.PI / 2; cav.position.z = -0.05; P.add(cav);
-    const gl = cylRaw(0.31, 0.31, 0.03, winMat, 12); gl.rotation.x = Math.PI / 2; gl.position.z = 0.05; P.add(gl);
-    for (let i = 0; i < 2; i++) { const bar = box(0.64, 0.045, 0.05, chrome, 0, 0, 0.07); bar.rotation.z = i * Math.PI / 2; P.add(bar); }
+    const cav = cylRaw(0.34, 0.34, 0.05, M.dark(0x10141a, 0.95), 12); cav.rotation.x = Math.PI / 2; cav.position.z = -0.02; P.add(cav);
+    const gl = cylRaw(0.31, 0.31, 0.03, winMat, 12); gl.rotation.x = Math.PI / 2; gl.position.z = 0.03; P.add(gl);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.365, 0.045, 6, 12), chrome); rim.position.z = 0.05; P.add(rim);
+    for (let i = 0; i < 2; i++) { const bar = box(0.62, 0.045, 0.05, chrome, 0, 0, 0.07); bar.rotation.z = i * Math.PI / 2; P.add(bar); }
     P.position.set(x, y, z); P.rotation.y = rot; return P;
   };
   for (let i = 0; i < 5; i++) g.add(porthole(-w * 0.36 + i * w * 0.18, foundH + wallH * 0.56, -d / 2, Math.PI));
@@ -1199,10 +1238,15 @@ function buildCraftsmanCafe(p) {
   g.add(box(w - 0.2, 0.16, 0.18, wood, 0, colTop + 0.08, d / 2 + porchD - 0.2));
   g.add(box(w + 0.2, 0.09, porchD + 0.2, roofMat, 0, colTop + 0.21, d / 2 + porchD / 2 - 0.1));
   g.add(box(w + 0.24, 0.13, 0.09, trimMat, 0, colTop + 0.2, d / 2 + porchD + 0.02));
+  // 店面：橱窗带与门都贴在墙外皮（旧版 z = d/2-0.42，整片玻璃被实心墙吞掉），
+  // 门居左、橱窗带居右，两者横向不重叠（旧版门落在橱窗带里，门扇与玻璃互穿）
   const winMat = M.glass(0x99bbcc);
-  const band = storefrontBand(w * 0.8, 1.95, { frameMat: wood, glassMat: winMat, dep: 0.14, bulk: 0.55, mullionGap: 1.15 });
-  band.position.set(0, foundH + 1.02, d / 2 - 0.42); g.add(band);
-  g.add(onWall(doorUnit(0.95, 2.05, { frameMat: wood, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 2, panelColor: 0x4a3525, lintel: true, lintelMat: trimMat, dep: 0.14 }), -w * 0.33, foundH + 1.025, d / 2 - 0.42, 'z', 1));
+  const faceZ = d / 2 + 0.01;
+  const doorX = -w * 0.33, doorHalf = 0.95 / 2 + 0.09 + 0.07;                     // 含门套与门楣
+  const bandL = doorX + doorHalf + 0.18, bandR = w / 2 - 0.4;
+  const band = storefrontBand(bandR - bandL, 1.95, { frameMat: wood, glassMat: winMat, dep: 0.14, bulk: 0.55, mullionGap: 1.15 });
+  band.position.set((bandL + bandR) / 2, foundH + 1.02, faceZ); g.add(band);
+  g.add(onWall(doorUnit(0.95, 2.05, { frameMat: wood, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 2, panelColor: 0x4a3525, lintel: true, lintelMat: trimMat, dep: 0.14 }), doorX, foundH + 1.025, faceZ, 'z', 1));
   for (const s of [-1, 1]) g.add(onWall(winUnit(0.8, 1.1, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 3, rows: 1 }), s * (w / 2), foundH + wallH * 0.58, 0, 'x', s));
   const entry = stairRun(w * 0.3, 2, deckTop / 2, 0.3, stoneMat);
   entry.position.set(-w * 0.33, 0, d / 2 + porchD + 0.55); g.add(entry);
@@ -1286,14 +1330,15 @@ function buildSpanishLibrary(p) {
     g.add(tri);
   }
   // 入口柱廊：两根 12 边形圆柱 + 横梁 + 2 段倒角匾额
-  const colH = wallH * 0.8, colZ = d / 2 + 0.55;
+  // 柱位从 0.3w 外移到 0.42w：旧版两根柱正好压在立面拱窗中央，把窗挡掉六成
+  const colH = wallH * 0.8, colZ = d / 2 + 0.55, colX = w * 0.42;
   for (const s of [-1, 1]) {
     const c = porchColumn(colH, 0.22, trimMat, 12);
-    c.position.set(s * w * 0.3, foundH, colZ); g.add(c);
+    c.position.set(s * colX, foundH, colZ); g.add(c);
   }
-  g.add(box(w * 0.78, 0.26, 0.34, trimMat, 0, foundH + colH + 0.13, colZ));
-  g.add(box(w * 0.82, 0.1, 0.42, trimMat, 0, foundH + colH + 0.31, colZ));
-  g.add(box(w * 0.8, 0.12, colZ - d / 2 + 0.2, stucco, 0, foundH + colH + 0.42, d / 2 + (colZ - d / 2) / 2));
+  g.add(box(colX * 2 + 0.66, 0.26, 0.34, trimMat, 0, foundH + colH + 0.13, colZ));
+  g.add(box(colX * 2 + 0.86, 0.1, 0.42, trimMat, 0, foundH + colH + 0.31, colZ));
+  g.add(box(colX * 2 + 0.7, 0.12, colZ - d / 2 + 0.2, stucco, 0, foundH + colH + 0.42, d / 2 + (colZ - d / 2) / 2));
   g.add(bevelSign(w * 0.34, 0.42, 0.09, M.paint(0xb4552f, 0.62), 0, foundH + colH - 0.5, d / 2 + 0.12));
   g.add(bevelSign(w * 0.28, 0.28, 0.05, trimMat, 0, foundH + colH - 0.5, d / 2 + 0.18));
   const st = stairRun(w * 0.4, 3, foundH / 3, 0.34, M.concrete(0x9a9488));
@@ -1383,12 +1428,12 @@ function buildColumnsBank(p) {
   g.add(box(w + 0.3, 0.14, 0.9, stone, 0, baseY + colH + 0.43, d / 2 + 0.2));
   g.add(planeXZ(w + 0.2, 0.9, M.concrete(0x9a9488), 0, baseY + 0.012, d / 2 + 0.25));
   // 内缩铜门 + 石过梁 + 内缩窗
-  g.add(box(1.56, 2.96, 0.18, trimMat, 0, baseY + 1.48, d / 2 + 0.09));
+  g.add(surroundFrame(1.43, 2.79, 0.14, 0.18, trimMat, 0, baseY + 1.395, d / 2 + 0.05, { sill: false }));
   g.add(box(1.72, 0.18, 0.24, trimMat, 0, baseY + 3.05, d / 2 + 0.12));
   g.add(onWall(doorUnit(1.25, 2.7, { frameMat: trimMat, doorMat: M.metal(0x8a6a3a, 0.35, 0.75), panelCols: 2, panelRows: 3, panelColor: 0x6d5327, dep: 0.16 }), 0, baseY + 1.35, d / 2, 'z', 1));
   const winMat = M.glass(0x88aacc);
   for (const x of [-w * 0.31, w * 0.31]) {
-    g.add(box(1.16, 2.0, 0.14, trimMat, x, baseY + wallH * 0.5, d / 2 + 0.07));
+    g.add(surroundFrame(1.1, 1.99, 0.12, 0.14, trimMat, x, baseY + wallH * 0.5, d / 2 + 0.04, { sill: false }));
     g.add(onWall(winUnit(0.9, 1.75, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 3, ft: 0.1, dep: 0.14 }), x, baseY + wallH * 0.5, d / 2, 'z', 1));
   }
   for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
@@ -1413,27 +1458,31 @@ function buildSchool(p) {
   g.add(box(w, h, d, brick, 0, h / 2, 0));
   g.add(box(w + 0.14, 0.5, d + 0.14, roofMat, 0, h - 0.25, 0));
   g.add(box(w + 0.3, 0.24, d + 0.3, trim, 0, h + 0.12, 0));
-  const wingH = h * 0.72, wingX = w / 2 + w * 0.13;
+  // 侧翼比主体浅（旧版 0.82d 几乎包住整片侧墙，把侧墙窗全挡死、屋面板还切穿二层窗）
+  const wingH = h * 0.72, wingX = w / 2 + w * 0.13, wingD = d * 0.62;
   for (const sx of [-1, 1]) {
-    g.add(box(w * 0.26, wingH, d * 0.82, brick, sx * wingX, wingH / 2, 0));
-    g.add(box(w * 0.26 + 0.12, 0.4, d * 0.82 + 0.12, roofMat, sx * wingX, wingH - 0.2, 0));
-    g.add(box(w * 0.26 + 0.26, 0.2, d * 0.82 + 0.26, trim, sx * wingX, wingH + 0.1, 0));
+    g.add(box(w * 0.26, wingH, wingD, brick, sx * wingX, wingH / 2, 0));
+    g.add(box(w * 0.26 + 0.12, 0.4, wingD + 0.12, roofMat, sx * wingX, wingH - 0.2, 0));
+    g.add(box(w * 0.26 + 0.26, 0.2, wingD + 0.26, trim, sx * wingX, wingH + 0.1, 0));
     for (let f = 0; f < 2; f++) for (let i = 0; i < 3; i++)
-      g.add(box(0.95, 1.15, 0.08, winMat, sx * wingX + (i - 1) * (w * 0.08), 1.5 + f * floorH, d * 0.41 + 0.03));
+      g.add(box(0.95, 1.15, 0.08, winMat, sx * wingX + (i - 1) * (w * 0.08), wingH * (0.28 + f * 0.42), wingD / 2 + 0.03));
   }
+  const bayW = w * 0.24;                                                          // 入口凸出体，正面窗要避开它
   for (let f = 0; f < floors; f++) {
+    const wy = floorH * 0.52 + f * floorH;
     for (let i = 0; i < 6; i++) {
       const x = -w * 0.4 + i * (w * 0.16);
-      g.add(box(1.15, 1.35, 0.07, winMat, x, floorH * 0.52 + f * floorH, d / 2 + 0.035));
-      g.add(box(1.3, 0.12, 0.14, trim, x, floorH * 0.52 + f * floorH - 0.74, d / 2 + 0.06));
-      g.add(box(1.15, 1.35, 0.07, winMat, x, floorH * 0.52 + f * floorH, -d / 2 - 0.035));
+      g.add(box(1.15, 1.35, 0.07, winMat, x, wy, -d / 2 - 0.035));                 // 背面：无凸出体，整排都留
+      if (Math.abs(x) < bayW / 2 + 0.75) continue;                                 // 正面：让开中央入口
+      g.add(box(1.15, 1.35, 0.07, winMat, x, wy, d / 2 + 0.035));
+      g.add(box(1.3, 0.12, 0.14, trim, x, wy - 0.74, d / 2 + 0.06));
     }
-    for (const sx of [-1, 1]) for (let i = 0; i < 3; i++)
-      g.add(box(0.07, 1.35, 1.15, winMat, sx * (w / 2 + 0.035), floorH * 0.52 + f * floorH, -d * 0.28 + i * d * 0.28));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1])                           // 侧墙窗：贴侧翼前后，避让侧翼与侧翼屋面板
+      g.add(box(0.07, 1.35, 1.15, winMat, sx * (w / 2 + 0.035), wy, sz * d * 0.415));
     g.add(box(w + 0.08, 0.14, d + 0.08, trim, 0, f * floorH + 0.07, 0));
   }
   // 中央入口山墙 + 台阶 + 双开门
-  const bayW = w * 0.24, bayH = h + 1.0;
+  const bayH = h + 1.0;
   g.add(box(bayW, bayH, 0.5, brick, 0, bayH / 2, d / 2 + 0.25));
   g.add(box(bayW + 0.3, 0.24, 0.7, trim, 0, bayH + 0.12, d / 2 + 0.25));
   const ped = new THREE.Mesh(new THREE.ConeGeometry(bayW * 0.78, 1.0, 4), roofMat);
@@ -1471,9 +1520,9 @@ function buildFireStation(p) {
     for (let j = 0; j < 5; j++) g.add(box(bayW * 0.94, 0.07, 0.05, M.metal(0xb9c0c8, 0.5, 0.7), x, 0.45 + j * 0.62, d / 2 + 0.16));
     g.add(box(0.5, 0.4, 0.1, M.dark(0x22262b, 0.9), x, bayH + 0.55, d / 2 + 0.08));
   }
-  for (const sx of [-1, 1]) {
-    g.add(box(0.14, 0.9, 0.9, trimMat, sx * (w * 0.45), 2.6, d / 2 + 0.02));
-    g.add(box(0.08, 0.7, 0.7, winMat, sx * (w * 0.45), 2.6, d / 2 + 0.08));
+  for (const sx of [-1, 1]) {                                                      // 立面小窗：玻璃薄轴必须与墙面法线一致
+    g.add(box(0.9, 0.9, 0.14, trimMat, sx * (w * 0.45), 2.6, d / 2 + 0.02));
+    g.add(box(0.7, 0.7, 0.08, winMat, sx * (w * 0.45), 2.6, d / 2 + 0.12));
   }
   // 瞭望塔（ Hose tower）+ 挑檐 + 爬梯
   const towerW = 1.9, towerH = 4.2, tx = w * 0.32;
@@ -2105,9 +2154,10 @@ function buildFrontDoor(p) {
   g.add(box(w + 0.5, 0.1, 0.42, M.concrete(0xb8b2a6, 0.9), 0, 0.05, 0.16));
   g.add(box(w + 0.66, 0.1, 0.5, M.concrete(0xb8b2a6, 0.9), 0, 0.0, 0.28));
   // 门套（casing）+ 门楣 + 内缩门组件（扇形亮子 + 侧窗）
-  g.add(box(w + 0.42, h + 0.42, 0.1, trim, 0, (h + 0.42) / 2 + 0.1, -0.01));
-  g.add(box(w + 0.62, 0.14, 0.16, trim, 0, h + 0.56, 0.02));
-  g.add(box(w + 0.74, 0.09, 0.2, trim, 0, h + 0.67, 0.03));
+  // 门楣/檐口要抬到扇形亮子之上（旧版横压在亮子中间，把气窗挡掉四成）
+  g.add(box(w + 0.42, h + 0.9, 0.1, trim, 0, (h + 0.9) / 2 + 0.1, -0.01));
+  g.add(box(w + 0.62, 0.14, 0.16, trim, 0, h + 0.89, 0.02));
+  g.add(box(w + 0.74, 0.09, 0.2, trim, 0, h + 1.005, 0.03));
   const du = doorUnit(w, h, { frameMat: trim, doorMat, panelColor: 0x4a3020, panelCols: 2, panelRows: 3, fanlight: true, dep: 0.12 });
   du.position.set(0, h / 2 + 0.1, 0); g.add(du);
   for (const s of [-1, 1]) {
@@ -2116,7 +2166,7 @@ function buildFrontDoor(p) {
     g.add(box(0.3, 0.06, 0.16, trim, s * (w / 2 + 0.2), 0.12, 0.02));
   }
   // 门牌 + 双壁灯 + 地垫
-  g.add(box(0.26, 0.13, 0.025, M.metal(0x8a6a3a, 0.35, 0.75), 0, h + 0.44, 0.06));
+  g.add(box(0.26, 0.13, 0.025, M.metal(0x8a6a3a, 0.35, 0.75), 0, h * 0.62, 0.10));   // 门牌钉在门扇上，不再浮在气窗前
   for (const s of [-1, 1]) {
     g.add(box(0.1, 0.16, 0.09, M.metal(0x2c3138, 0.4, 0.7), s * (w / 2 + 0.44), h * 0.74, 0.03));
     g.add(box(0.08, 0.12, 0.07, M.paint(0xfff0c8, 0.5), s * (w / 2 + 0.44), h * 0.74, 0.08));
