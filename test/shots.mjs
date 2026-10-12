@@ -291,23 +291,30 @@ main{padding:14px 18px 60px}
 <div id="lb"><div class="t" id="lbt"></div><img id="lbi" alt=""></div>
 <script>
 const DATA=${JSON.stringify(data)}, GROUPS=${JSON.stringify(groups)};
-let cur='', q='';
+let cur='', q='', shown=[], idx=0;
 const gEl=document.getElementById('g'), grid=document.getElementById('grid'), cnt=document.getElementById('cnt');
 const lb=document.getElementById('lb'), lbi=document.getElementById('lbi'), lbt=document.getElementById('lbt');
 function draw(){
-  const list=DATA.filter(d=>(!cur||d.g===cur)&&(!q||(d.g+':'+d.t).includes(q)));
-  grid.innerHTML=list.map(d=>\`<div class="card" data-f="\${d.f}" data-t="\${d.g}:\${d.t}">
+  shown=DATA.filter(d=>(!cur||d.g===cur)&&(!q||(d.g+':'+d.t).includes(q)));
+  grid.innerHTML=shown.map((d,i)=>\`<div class="card" data-i="\${i}">
     <img src="\${d.f}" loading="lazy" alt="\${d.g}:\${d.t}">
     <div class="cap"><b>\${d.t}</b>\${d.b?\`<span class="badge" title="四视图+俯仰视都露不了面的构件数">\${d.b} 隐</span>\`:''}<span class="grp">\${d.g} · \${d.s}</span></div></div>\`).join('');
-  cnt.textContent=list.length+' 张';
+  cnt.textContent=shown.length+' 张';
 }
+function open(i){ if(i<0||i>=shown.length)return; idx=i; const d=shown[i];
+  lbi.src=d.f; lbt.textContent=\`\${d.g}:\${d.t}　\${d.s} m　\${i+1} / \${shown.length}　← → 翻页，Esc 关闭\`; lb.classList.add('on'); }
 gEl.innerHTML='<button data-g="" class="on">全部</button>'+GROUPS.map(g=>\`<button data-g="\${g.id}">\${g.name}</button>\`).join('');
 gEl.onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.g;
   [...gEl.children].forEach(x=>x.classList.toggle('on',x===b));draw();};
 document.getElementById('q').oninput=e=>{q=e.target.value.trim();draw();};
-grid.onclick=e=>{const c=e.target.closest('.card');if(!c)return;lbi.src=c.dataset.f;lbt.textContent=c.dataset.t;lb.classList.add('on');};
-lb.onclick=()=>lb.classList.remove('on');
-document.onkeydown=e=>{if(e.key==='Escape')lb.classList.remove('on');};
+grid.onclick=e=>{const c=e.target.closest('.card');if(c)open(+c.dataset.i);};
+lb.onclick=e=>{if(e.target!==lbi)lb.classList.remove('on');};
+document.onkeydown=e=>{
+  if(!lb.classList.contains('on'))return;
+  if(e.key==='Escape')lb.classList.remove('on');
+  else if(e.key==='ArrowRight'){open(idx+1);e.preventDefault();}
+  else if(e.key==='ArrowLeft'){open(idx-1);e.preventDefault();}
+};
 draw();
 </script></body></html>`;
   fs.writeFileSync(path.join(OUT, 'index.html'), html);
