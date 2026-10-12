@@ -1863,7 +1863,7 @@ function buildBed(p) {
   g.add(box(p.w - 0.5, 0.04, 0.5, M.paint(0x8a6a4a, 0.9), 0, 0.63, p.d * 0.36));     // 床旗
   for (const s of [-1, 1]) g.add(box(p.w * 0.36, 0.16, 0.4, M.paint(0xffffff, 0.92), s * p.w * 0.22, 0.58, -p.d * 0.3));
   g.add(box(p.w * 0.44, 0.14, 0.2, M.paint(0xe8e2d6, 0.92), 0, 0.6, -p.d * 0.36));   // 长枕
-  if (p.nightstand) for (const s of [-1, 1]) g.add(box(0.5, 0.5, 0.42, frame, s * (p.w / 2 + 0.35), 0.25, -p.d * 0.3));
+  if (p.nightstand) for (const s of [-1, 1]) g.add(box(0.5, 0.5, 0.42, frame, s * (p.w / 2 + 0.25), 0.25, -p.d * 0.3));   // 贴床沿（原 +0.35 离床 10cm 单摆着）
   return cnShade(g);
 }
 function buildWardrobe(p) {

@@ -94,7 +94,7 @@ const rows = [];
 for (const g of LIB) {
   if (only[0] && g.id !== only[0]) continue;
   for (const it of g.items) {
-    if (only[1] && it.type !== only[1]) continue;
+    if (only.length > 1 && !only.slice(1).includes(it.type)) continue;   // 支持多类型：imgcheck bld wall doorroll …
     let root;
     try { root = buildAsset(it, defaultsFor(it)); }
     catch (e) { if (!only.length) console.log(`  skip ${g.id}:${it.type} ${e.message}`); continue; }

@@ -73,7 +73,7 @@ function wallRun(p, mat, opt = {}) {
       g.add(box(o.w + 0.16, 0.05, T + 0.13, mat, o.x, Math.max(0.01, o.b - 0.006), 0));     // 窗台板外挑（门洞处即门槛石）
       if (!o.door && glaze) {
         const gl = opt.glass || M.glassy(0x2f4a5c, 0.12, 0.5, 0.44);
-        g.add(box(Math.max(0.06, o.w - 0.1), Math.max(0.06, oh - 0.1), 0.018, gl, o.x, oy, -T * 0.16));
+        g.add(box(Math.max(0.06, o.w - 0.04), Math.max(0.06, oh - 0.04), 0.018, gl, o.x, oy, -T * 0.16));   // 玻璃嵌进洞口内壁（原来四周各空 2cm，玻璃悬在洞中间）
       }
     }
     cur = Math.max(cur, x1);
@@ -277,8 +277,9 @@ function buildDoorRoll(p) {
   g.add(drum);
   if (show > 0.06) {
     const n = Math.max(2, Math.round(show / 0.16));
-    const slats = row((i) => box(w, 0.15, 0.05, i % 2 ? M.metal(0x9aa2ab, 0.45, 0.6) : steel, 0, 0, 0), n, 0.001, 'x');
-    slats.children.forEach((c, i) => { c.position.set(0, h - 0.07 - (i * show) / n, 0.02); });
+    const sh = show / n + 0.012;                                        // 片高 = 片距 + 12mm 搭接（原来固定 0.15 < 片距 0.16，整条帘子缝成虚线）
+    const slats = row((i) => box(w, sh, 0.05, i % 2 ? M.metal(0x9aa2ab, 0.45, 0.6) : steel, 0, 0, 0), n, 0.001, 'x');
+    slats.children.forEach((c, i) => { c.position.set(0, h - sh / 2 - (i * show) / n, 0.02); });
     g.add(slats);
     g.add(box(w + 0.06, 0.07, 0.1, M.metal(0x6e757d, 0.5, 0.6), 0, bottom + 0.03, 0.05));    // 帘板下沿拉手
     for (const sx of [-1, 1]) g.add(box(0.05, 0.5, 0.05, M.metal(0x6e757d, 0.5, 0.6), sx * (w / 2 - 0.2), bottom - 0.2, 0.05));   // 拉手指扣
@@ -535,7 +536,7 @@ function buildStairSwitch(p) {
   const p1 = { ...p, rise: half, rail: false };
   const A = flight(p1, mat);
   const W = Math.max(0.5, p.w);
-  const land = box(W + 0.3, 0.12, W + 0.3, mat, 0, half, A.depth + (W + 0.3) / 2);
+  const land = box((W + 0.3) * 2, 0.12, W + 0.3, mat, (W + 0.3) / 2, half, A.depth + (W + 0.3) / 2);   // 平台跨两跑（与 stairOpen 洞口同宽同轴；原来只盖第一跑，第二跑整段悬空）
   g.add(A.g, land);
   const B = flight(p1, mat);
   const bgrp = new THREE.Group();
@@ -543,7 +544,10 @@ function buildStairSwitch(p) {
   bgrp.rotation.y = Math.PI;
   bgrp.position.set(W + 0.3, half + 0.06, A.depth + (W + 0.3));
   g.add(bgrp);
-  if (p.rail) for (let i = 0; i < 4; i++) g.add(box(0.05, 0.9, 0.05, M.metal(0x8f979f, 0.4, 0.7), -W / 2 - 0.06 + i * 0.02, half * 0.5 + 0.45 + i * half * 0.12, i * 0.4));
+  if (p.rail) for (let i = 0; i < 4; i++) {
+    const pz = i * 0.4;                                                          // 立柱脚踩斜梁顶边（原公式 half*0.5 让整排立柱悬空 ~0.73m）
+    g.add(box(0.05, 0.9, 0.05, M.metal(0x8f979f, 0.4, 0.7), -W / 2 - 0.06 + i * 0.02, pz * half / A.depth + 0.087 + 0.45, pz));
+  }
   const depth = A.depth * 2 + (W + 0.3);
   const hl2 = n0(p.holeLen, 2.4, 0, 20);
   const end2 = W + 0.3;                                              // 上跑梯顶（走下来进二层的那条边）

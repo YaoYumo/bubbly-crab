@@ -468,7 +468,7 @@ function buildCapeCod(p) {
     const gsh = new THREE.Shape();
     gsh.moveTo(-d / 2 - 0.05, 0); gsh.lineTo(d / 2 + 0.05, 0); gsh.lineTo(0, rise - drop - 0.04); gsh.closePath();
     const ggeo = new THREE.ExtrudeGeometry(gsh, { depth: 0.14, bevelEnabled: false });
-    ggeo.rotateY(-Math.PI / 2); ggeo.translate(-0.07, 0, 0);
+    ggeo.rotateY(-Math.PI / 2);                                        // 挤出面正好落在墙面 x=±w/2 上，与外墙齐平
     for (const s of [-1, 1]) {
       const m = new THREE.Mesh(ggeo, wall);
       m.position.set(s * w / 2, eaveY, 0);
@@ -759,7 +759,8 @@ function buildSouthernColonial(p) {
   g.add(box(w - 0.2, 0.26, 0.26, trimMat, 0, foundH + h + 0.13, d / 2 + porchD / 2));
   g.add(box(w + 0.3, 0.14, porchD + 0.2, trimMat, 0, foundH + h + 0.33, d / 2 + porchD / 2));
   g.add(box(w + 0.34, 0.2, 0.1, trimMat, 0, foundH + h + 0.36, d / 2 + porchD + 0.05));
-  g.add(planeXZ(w + 0.2, porchD, stoneMat, 0, foundH + 0.01, d / 2 + porchD / 2));
+  g.add(box(w + 0.2, 0.12, porchD, stoneMat, 0, foundH + 0.01 - 0.06, d / 2 + porchD / 2));  // 门廊地板（旧版是零厚度 plane，无厚度无边缘，侧看等于没有）
+  g.add(box(w + 0.24, 0.16, 0.07, trimMat, 0, foundH - 0.02, d / 2 + porchD + 0.03));            // 门廊台沿
   const balconyD = porchD, balconyH = foundH + floorH;                                // 阳台板顶到墙外皮（旧版 1.5 深，离墙 1m 悬空）
   g.add(box(w - 0.3, 0.13, balconyD, stoneMat, 0, balconyH - 0.065, d / 2 + porchD - balconyD / 2));
   g.add(box(w - 0.34, 0.06, 0.08, trimMat, 0, balconyH - 0.16, d / 2 + porchD - 0.1));
@@ -2421,29 +2422,30 @@ function buildRollTopDesk(p) {
   const deskH = h * 0.62;
   // 桌面（微倒角）+ 皮垫 + 侧板 + 背板 + 踢脚
   g.add(slabTop(w + 0.06, 0.05, d + 0.04, woodMat, 0, deskH, 0));
-  g.add(box(w - 0.14, 0.012, d - 0.16, M.paint(0x3a4a3a, 0.8), 0, deskH + 0.032, 0.02));
-  for (const sx of [-1, 1]) g.add(box(0.05, deskH - 0.08, d - 0.06, woodMat, sx * (w / 2 - 0.025), (deskH - 0.08) / 2, 0));
+  g.add(box(w - 0.14, 0.012, d - 0.36, M.paint(0x3a4a3a, 0.8), 0, deskH + 0.031, 0.12));            // 皮垫前移（原位置压在鸽笼格底下）
+  for (const sx of [-1, 1]) g.add(box(0.05, deskH - 0.08, d - 0.06, woodMat, sx * (w / 2 - 0.025), (deskH + 0.08) / 2, 0));  // 侧板：顶插进桌面、底压住踢脚（原中心算错，顶离桌底 5.5cm 整段悬空）
   g.add(box(w - 0.1, deskH - 0.1, 0.03, darkWood, 0, (deskH - 0.1) / 2, -d / 2 + 0.04));
   for (const sx of [-1, 1]) g.add(box(0.1, 0.08, d - 0.1, darkWood, sx * (w / 2 - 0.06), 0.04, 0));
-  // 卷帘顶：半圆筒 + 木条压线
-  const rollR = d * 0.42, rollY = deskH + 0.03;
+  // 卷帘顶：半圆筒 + 木条压线（圆筒轴沿桌宽方向；曾多转 90° 导致筒身横穿进深、前后各探出一截）
+  const rollR = d * 0.42;
+  const cubY = deskH + 0.025, cubH = rollR * 0.8;                       // 鸽笼格直接坐在桌面上（原来悬空 3.5cm）
+  const rollY = cubY + cubH + 0.0125 - rollR * 0.42;                    // 卷帘弦面正好压在鸽笼格顶板上
   const roll = new THREE.Mesh(new THREE.CylinderGeometry(rollR, rollR, w - 0.08, 12, 1, false, 0, Math.PI), woodMat);
-  roll.rotation.z = Math.PI / 2; roll.rotation.y = Math.PI / 2;
+  roll.rotation.z = Math.PI / 2;
   roll.position.set(0, rollY + rollR * 0.42, -d / 2 + rollR);
   g.add(roll);
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * Math.PI * 0.92 + 0.06;
-    g.add(box(w - 0.1, 0.014, 0.014, darkWood,
+  for (let i = 0; i < 16; i++) {                                        // 密排帘片：厚度=片距（片贴片），底端收在桌面高度
+    const a = (i / 15) * Math.PI * 0.79 + 0.06;
+    g.add(box(w - 0.1, 0.05, 0.05, darkWood,
       0, rollY + rollR * 0.42 + Math.cos(a) * (rollR + 0.005), -d / 2 + rollR + Math.sin(a) * (rollR + 0.005)));
   }
   g.add(box(w - 0.06, 0.06, 0.05, woodMat, 0, rollY + rollR * 0.42 + rollR, -d / 2 + rollR));
   g.add(box(0.16, 0.03, 0.04, brass, 0, rollY + rollR * 0.42 + rollR - 0.05, -d / 2 + rollR + 0.03));
   // 内部鸽笼格 + 小抽屉 + 中央柜门
-  const cubY = deskH + 0.06, cubH = rollR * 0.8;
   g.add(box(w - 0.14, 0.025, d * 0.4, darkWood, 0, cubY + cubH / 2, -d / 2 + d * 0.22));
   g.add(box(w - 0.14, 0.025, d * 0.4, darkWood, 0, cubY + cubH, -d / 2 + d * 0.22));
   for (let i = 0; i < 6; i++) {
-    g.add(box(0.02, cubH, d * 0.38, woodMat, -w * 0.36 + i * w * 0.144, cubY + cubH * 0.75, -d / 2 + d * 0.22));
+    g.add(box(0.02, cubH, d * 0.38, woodMat, -w * 0.36 + i * w * 0.144, cubY + cubH * 0.5, -d / 2 + d * 0.22));  // 隔板中心归位（原 0.75 使隔板下悬 6cm、上穿顶板 5cm）
   }
   for (const sx of [-1, 1]) {
     g.add(box(0.02, cubH * 0.5, d * 0.38, woodMat, sx * (w / 2 - 0.09), cubY + cubH * 0.25, -d / 2 + d * 0.22));
@@ -2454,6 +2456,7 @@ function buildRollTopDesk(p) {
     }
   }
   // 下部：3 抽屉 + 2 柜门 + 铜拉手
+  g.add(box(w - 0.1, deskH - 0.1, 0.03, darkWood, 0, 0.08 + (deskH - 0.1) / 2, d / 2 - 0.04));   // 背板：上插桌底、下落踢脚、两侧贴侧板（原抽屉柜门上下都不着边）
   const dh = (deskH - 0.2) / 3;
   for (let i = 0; i < 3; i++) {
     const y = 0.12 + dh * (i + 0.5);
