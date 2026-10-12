@@ -760,7 +760,7 @@ function buildSouthernColonial(p) {
   g.add(box(w + 0.3, 0.14, porchD + 0.2, trimMat, 0, foundH + h + 0.33, d / 2 + porchD / 2));
   g.add(box(w + 0.34, 0.2, 0.1, trimMat, 0, foundH + h + 0.36, d / 2 + porchD + 0.05));
   g.add(planeXZ(w + 0.2, porchD, stoneMat, 0, foundH + 0.01, d / 2 + porchD / 2));
-  const balconyD = 1.5, balconyH = foundH + floorH;
+  const balconyD = porchD, balconyH = foundH + floorH;                                // 阳台板顶到墙外皮（旧版 1.5 深，离墙 1m 悬空）
   g.add(box(w - 0.3, 0.13, balconyD, stoneMat, 0, balconyH - 0.065, d / 2 + porchD - balconyD / 2));
   g.add(box(w - 0.34, 0.06, 0.08, trimMat, 0, balconyH - 0.16, d / 2 + porchD - 0.1));
   const balFront = balustrade(w - 0.6, 0.9, trimMat, { spacing: 0.32, belly: false });
@@ -779,8 +779,10 @@ function buildSouthernColonial(p) {
     rail.position.set(s * (stairW / 2 + segL / 2), foundH, d / 2 + porchD - 0.2);
     g.add(rail);
   }
-  const st = stairRun(stairW, 4, foundH / 4, 0.34, stoneMat);
-  st.position.set(0, 0, d / 2 + porchD + 0.42); g.add(st);
+  const stN = 4, stRise = (foundH + 0.01) / stN, stRun = 0.34;                       // 总升高 = 门廊地面标高，末级顶面与地面齐平
+  const st = stairRun(stairW, stN, stRise, stRun, stoneMat);
+  // 最高一级的顶面正好落在门廊前沿（旧版整段塞在门廊底下，只露出 0.42m）
+  st.position.set(0, 0, d / 2 + porchD + stN * stRun); g.add(st);                    // 末级后沿正好贴住门廊前沿
   // 内缩窗（含百叶）+ 扇形气窗门 + 门侧采光条
   const winMat = M.glass(0x88aabb);
   const shutterMat = M.paint(0x2a4a3a, 0.75);
@@ -1246,8 +1248,10 @@ function buildCraftsmanCafe(p) {
     const shaft = cylRaw(0.1, 0.13, shaftH, trimMat, 4, cx, deckTop + 0.58 + shaftH / 2, cz);
     shaft.rotation.y = Math.PI / 4; g.add(shaft);                                   // 收分方柱
     g.add(box(0.32, 0.14, 0.32, trimMat, cx, colTop - 0.07, cz));                   // 柱头
-    const br = box(0.08, 0.5, 0.08, trimMat, cx - s * 0.18, colTop - 0.34, cz);
-    br.rotation.z = -s * 0.6; g.add(br);                                            // 斜撑
+    // 斜撑：下端落柱身、上端顶廊檐横梁底（旧版下端悬在柱身外 0.3m，旋转方向也是反的）
+    const bw = 0.58;
+    const br = box(0.08, Math.hypot(bw, bw), 0.08, trimMat, cx - s * bw / 2, colTop - bw / 2 + 0.05, cz);
+    br.rotation.z = s * Math.PI / 4; g.add(br);
   }
   g.add(box(w - 0.2, 0.16, 0.18, wood, 0, colTop + 0.08, d / 2 + porchD - 0.2));
   g.add(box(w + 0.2, 0.09, porchD + 0.2, roofMat, 0, colTop + 0.21, d / 2 + porchD / 2 - 0.1));
