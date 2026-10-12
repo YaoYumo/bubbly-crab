@@ -27,6 +27,21 @@ const MIME = {
 };
 http.createServer((req, res) => {
   let p = decodeURIComponent((req.url || '/').split('?')[0]);
+  // /dl/<文件名> —— 把 docs/ 里的文档作为附件下载（如 /dl/model-handoff.md）
+  if (p.startsWith('/dl/')) {
+    const name = path.basename(p);
+    const df = path.join(process.cwd(), 'docs', name);
+    fs.readFile(df, (e, d) => {
+      if (e) { res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('404 ' + name); return; }
+      res.writeHead(200, {
+        'content-type': 'text/markdown; charset=utf-8',
+        'content-disposition': `attachment; filename="${name}"`,
+        'cache-control': 'no-cache',
+      });
+      res.end(d);
+    });
+    return;
+  }
   if (p === '/' || p === '') p = '/index.html';
   const f = path.join(ROOT, p);
   if (!f.startsWith(ROOT + path.sep) && f !== ROOT) { res.writeHead(403).end('403'); return; }
