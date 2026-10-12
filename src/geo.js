@@ -165,7 +165,8 @@ function jinRoofGeo(sn, a, h, eaveUp, y0, seg) {
       const c0 = corner[side], c1 = corner[(side + 1) % sn];
       const x = (c0[0] + (c1[0] - c0[0]) * f) * k, z = (c0[1] + (c1[1] - c0[1]) * f) * k;
       const cwr = Math.pow(1 - Math.abs(2 * f - 1), 0.55);                  // 角端 1、边中点 0 → 起翘只抬角
-      pos.setXYZ(r * cols + c, x, h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9)) + eaveUp * h * Math.pow(1 - t, 3.2) * (0.18 + 0.55 * cwr) + y0, z);
+      // 举折基线：檐口(t=0)落 y0、脊(t=1)到 0.76h —— 檐口不再整体悬空 0.24h
+      pos.setXYZ(r * cols + c, x, h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6)) + eaveUp * h * Math.pow(1 - t, 3.2) * 0.73 * cwr + y0, z);
       uv.setXY(r * cols + c, c / (sn * per), k);                             // u 沿檐口一圈、v 由心到檐：瓦垄自然放射到宝顶
     }
   }
@@ -196,7 +197,11 @@ export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, 
   const maxR = Math.hypot(W / 2, D / 2);
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), z = pos.getZ(i);
-    let u, cwr = 0;
+    // 角权重：四角 1、檐边中点 0 → 起翘只抬翼角，檐口中线稳稳压在 y0 上
+    const cwx = Math.pow(clamp((Math.abs(x) / (W / 2) - 0.5) / 0.5, 0, 1), 0.55);
+    const cwz = Math.pow(clamp((Math.abs(z) / (D / 2) - 0.5) / 0.5, 0, 1), 0.55);
+    let u;
+    const cwr = cwx * cwz;
     if (kind === 'jin') {
       u = clamp(Math.max(Math.abs(x) / (W / 2), Math.abs(z) / (D / 2)), 0, 1);
     } else if (kind === 'juan') {
@@ -204,11 +209,12 @@ export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, 
     } else {
       const dz = Math.abs(z) / (D / 2);
       const dx = Math.max(0, Math.abs(x) - xr) / Math.max(0.5, W / 2 - xr);
-      u = kind === 'xie' ? clamp(Math.max(dz * (dz > 0.62 ? 0.86 : 1), dx * 0.92), 0, 1) : clamp(Math.hypot(dz * 0.92, dx * 0.86), 0, 1);
+      // 边界处 u 必须到 1（t=0），檐口才能落在 y0：旧版 0.92/0.86 系数让檐口悬了 ~0.08h
+      u = kind === 'xie' ? clamp(Math.max(dz, dx * 0.92), 0, 1) : clamp(Math.hypot(dz, dx * 0.86), 0, 1);
     }
     const t = 1 - u;                                   // 1 = 脊, 0 = 檐
-    let yy = h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9));
-    yy += eaveUp * h * Math.pow(1 - t, 3.2) * (kind === 'juan' ? 0.35 : 1) * (sn >= 3 ? 0.18 + 0.55 * cwr : 1);   // 起翘集中在翼角
+    let yy = h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6));
+    yy += eaveUp * h * Math.pow(1 - t, 3.2) * (kind === 'juan' ? 0.35 : 1) * (kind === 'juan' ? cwx : cwr);   // 起翘集中在翼角
     if (kind === 'xie' && dzOf(z, D) > 0.66) yy *= 0.92;
     pos.setY(i, yy + y0);
   }
@@ -341,7 +347,8 @@ export function eaveCornice(o = {}) {
         const t = i / nE - 0.5;
         const off = sideLen * t;
         const x = ux * Rb + px * off, z = uz * Rb + pz * off;
-        const yy = y + eaveUp * rh * (0.28 + 0.72 * Math.pow(Math.min(1, Math.abs(t) * 2), 3));
+        // 边中点抬升 0（檐口中线压 y0），角部起翘 —— 旧版整体抬 0.28·eaveUp·h 悬在屋面上
+        const yy = y + eaveUp * rh * 0.72 * Math.pow(Math.min(1, Math.abs(t) * 2), 3);
         raft.push({ p: [x, yy - 0.03, z], r: [0, -ac, 0], s: [sideLen / nE * 0.95, 0.085, 0.5] });
         caps.push({ p: [x + ux * 0.36, yy + 0.045, z + uz * 0.36], r: aimCyl(ux, 0, uz) });
         drops.push({ p: [x + ux * 0.42, yy - 0.03, z + uz * 0.42], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
@@ -373,8 +380,9 @@ export function eaveCornice(o = {}) {
   if (r2) g.add(r2);
   const r3 = batch(dropGeo, tile, drops);                                                 // 滴水
   if (r3) g.add(r3);
-  for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y + 0.16, sz * (D / 2 - 0.34)));   // 檐檩
-  for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y + 0.16, 0));
+  // 檐檩藏在檐口线以下（旧版 y+0.16  protrude 出屋面成悬浮横带）
+  for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y - 0.06, sz * (D / 2 - 0.34)));   // 檐檩
+  for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y - 0.06, 0));
   g.userData.marker = '檐口椽瓦';
   return g;
 }
@@ -721,15 +729,17 @@ export function gableSlabs({ w = 8, d = 6, y = 3, rise = 2, th = 0.16, ov = 0.4,
     g.add(e);                                                                                  // 封檐板
   }
   if (fill) {
+    // 山墙填充多边形：底边 + 右坡上到脊 + 左坡下回檐口（旧版漏画右坡，山尖敞开露白）
     const sh = new THREE.Shape();
-    sh.moveTo(-d / 2, 0); sh.lineTo(d / 2, 0);
-    for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i][0], pts[i][1]);
+    sh.moveTo(-half, 0); sh.lineTo(half, 0);
+    for (let i = pts.length - 2; i >= 0; i--) sh.lineTo(pts[i][0], pts[i][1]);
+    for (let i = 1; i < pts.length - 1; i++) sh.lineTo(-pts[i][0], pts[i][1]);
     sh.closePath();
     const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: false });
     geo.rotateY(Math.PI / 2);
     for (const s of [-1, 1]) {
       const m = new THREE.Mesh(geo, fill);
-      m.position.set(s * (w / 2 - (s > 0 ? 0 : 0.1)), y, 0);
+      m.position.set(s > 0 ? w / 2 - 0.1 : -w / 2, y, 0);
       m.castShadow = true; m.receiveShadow = true;
       g.add(m);
     }

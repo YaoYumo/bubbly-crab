@@ -234,7 +234,9 @@ function buildDoorSingle(p) {
   open.position.set(-w / 2, 0, 0);
   open.rotation.y = -(clamp(p.open, 0, 110) * Math.PI) / 180;
   const lf = leaf(w, h - 0.06, t * 0.9, dm, p.color);
-  lf.children.push(box(0.05, 0.24, 0.16, M.metal(0xc9b26a, 0.3, 0.8), w - 0.12, h * 0.46, t * 0.8));
+  // 执手必须 add 进门扇组（children.push 不设 parent，世界矩阵不跟随开合 → 悬空）
+  // z 中心 t*0.6、厚 0.2：与门扇（半厚 t*0.45）实体相交，不贴图皮
+  lf.add(box(0.05, 0.24, 0.2, M.metal(0xc9b26a, 0.3, 0.8), w - 0.12, h * 0.46, t * 0.45));
   open.add(lf);
   g.add(open);
   if (p.transom) g.add(box(w, 0.06, t, fr, 0, h * 0.78, 0));
@@ -255,7 +257,9 @@ function buildDoorDouble(p) {
     // leaf() 的几何本来就从「门轴原点」向 +x 铺开；再位移一个门宽就会跨过中线压到另一扇上
     lf.position.x = 0;
     lf.rotation.y = sgn < 0 ? 0 : Math.PI;
-    for (const sz of [1, -1]) pivot.add(box(0.05, 0.24, 0.13, M.metal(0xb9c0c7, 0.35, 0.85), -sgn * (half - 0.17), h * 0.46, sz * (t * 0.45 + 0.07)));
+    pivot.add(lf);                                    // 旧版漏了这行：门扇没进场景图，只剩框和悬空的拉手
+    // 拉手 z 中心 ±(t*0.45+0.02)、厚 0.13 → 与门扇面（半厚 t*0.45）相交 4.5cm，不再离缝
+    for (const sz of [1, -1]) pivot.add(box(0.05, 0.24, 0.13, M.metal(0xb9c0c7, 0.35, 0.85), -sgn * (half - 0.17), h * 0.46, sz * (t * 0.45 + 0.02)));
     g.add(pivot);
   }
   g.add(box(w + 0.3, 0.05, t + 0.3, fr, 0, 0.025, 0));                                      // 门槛
@@ -579,12 +583,26 @@ function buildStairSpiral(p) {
     holder.add(step);
     g.add(holder);
     if (p.rail) {
-      const bal = box(0.04, 0.85, 0.04, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
+      const bal = box(0.04, 0.88, 0.04, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
       const bh = new THREE.Group();
       bh.rotation.y = -a;
-      bal.position.set(R + 0.02, y + 0.42, 0);
+      bal.position.set(R + 0.02, y + 0.41, 0);        // 底端插进踏步 3cm
       bh.add(bal);
       g.add(bh);
+      // 扶手：相邻立柱顶之间的螺旋段（旧版只有立柱、扶手整圈缺失）
+      if (i < n - 1) {
+        const a2 = ((i + 2) / n) * turn, y2 = ((i + 2) / n) * H;
+        const da = a2 - a, rr = R + 0.02;
+        const chord = 2 * rr * Math.sin(da / 2), dy = y2 - y;
+        const len = Math.hypot(chord, dy) + 0.06;
+        const rail = box(0.05, 0.06, len, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
+        const rh = new THREE.Group();
+        rh.rotation.y = -(a + da / 2);
+        rail.position.set(rr, (y + y2) / 2 + 0.82, 0);
+        rail.rotation.x = Math.atan2(dy, chord);
+        rh.add(rail);
+        g.add(rh);
+      }
     }
   }
   g.add(box(0.5, 0.05, 0.5, mat, 0, H + 0.03, 0));                                          // 顶部小平台

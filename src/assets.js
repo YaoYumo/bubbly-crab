@@ -1829,19 +1829,23 @@ function buildWorkbench(p) {
   g.add(box(0.17, 0.15, 0.012, black, vx, h + 0.14, d / 2 - 0.038));
   const screw = cylRaw(0.024, 0.024, 0.24, steel, 8, vx, h + 0.12, d / 2 - 0.15);
   screw.rotation.x = Math.PI / 2; g.add(screw);
-  const hnd = cylRaw(0.011, 0.011, 0.26, steel, 6, vx, h + 0.12, d / 2 + 0.02);
+  const hnd = cylRaw(0.011, 0.011, 0.26, steel, 6, vx, h + 0.12, d / 2 - 0.04);   // 穿过丝杆前端，旧版悬在钳口外
   hnd.rotation.z = Math.PI / 2; g.add(hnd);
-  for (const s of [-1, 1]) g.add(cylRaw(0.022, 0.022, 0.035, steel, 6, vx + s * 0.13, h + 0.12, d / 2 + 0.02));
+  for (const s of [-1, 1]) g.add(cylRaw(0.022, 0.022, 0.035, steel, 6, vx + s * 0.13, h + 0.12, d / 2 - 0.04));
   // 端钳（左端）
   g.add(box(0.06, 0.16, d - 0.2, steel, -w / 2 + 0.03, h + 0.08, 0));
   g.add(box(0.05, 0.13, d * 0.4, darkWood, -w / 2 - 0.02, h + 0.08, 0));
   // 夹式工作灯
   g.add(box(0.09, 0.06, 0.14, black, -w / 2 + 0.14, h - 0.1, -d / 2 + 0.1));
-  const arm1 = box(0.03, 0.36, 0.03, steel, -w / 2 + 0.14, h + 0.09, -d / 2 + 0.1);
-  arm1.rotation.z = 0.22; g.add(arm1);
-  const arm2 = box(0.03, 0.3, 0.03, steel, -w / 2 + 0.24, h + 0.36, -d / 2 + 0.1);
+  // 灯臂逐级铰接：上臂底端 = 下臂顶端，灯头贴上臂顶（旧版三段互不接触）
+  const a1 = 0.22, lx = -w / 2 + 0.14, lz = -d / 2 + 0.1;
+  const arm1 = box(0.03, 0.36, 0.03, steel, lx, h + 0.09, lz);
+  arm1.rotation.z = a1; g.add(arm1);
+  const jx = lx + Math.sin(a1) * 0.18, jy = h + 0.09 + Math.cos(a1) * 0.18;
+  // 上臂轴线穿过下臂顶（旧版肘部在 z 向错开 8cm，侧视/轴测灯头悬空）
+  const arm2 = box(0.03, 0.34, 0.03, steel, jx, jy - 0.07, lz);
   arm2.rotation.x = 0.5; g.add(arm2);
-  const shadeM = cylRaw(0.03, 0.075, 0.09, M.metal(0xd8dee4, 0.35, 0.7), 8, -w / 2 + 0.24, h + 0.5, -d / 2 + 0.2);
+  const shadeM = cylRaw(0.03, 0.075, 0.09, M.metal(0xd8dee4, 0.35, 0.7), 8, jx, jy + 0.09, lz + 0.05);
   shadeM.rotation.x = 0.5; g.add(shadeM);
   // 下层料箱
   for (let i = 0; i < 2; i++) {
@@ -1976,7 +1980,7 @@ function buildToolChest(p) {
   // 侧拉手 + 锁 + 脚轮
   for (const sx of [-1, 1]) {
     g.add(box(0.04, 0.16, 0.04, steel, sx * (w / 2 + 0.01), h * 0.72, 0));
-    const hd = cylRaw(0.016, 0.016, 0.14, steel, 6, sx * (w / 2 + 0.05), h * 0.72, 0);
+    const hd = cylRaw(0.016, 0.016, 0.14, steel, 6, sx * (w / 2 + 0.035), h * 0.72, 0);  // 贴着支座，旧版离缝 4mm
     g.add(hd);
   }
   g.add(box(0.09, 0.07, 0.03, steel, 0, h * 0.52, d / 2 + 0.03));
@@ -1989,7 +1993,7 @@ function buildToolChest(p) {
     g.add(cylRaw(0.014, 0.014, 0.045, steel, 6, wx, 0.055, wz));
   }
   // 侧面挂杆 + 顶部工具槽
-  const bar = cylRaw(0.014, 0.014, d - 0.2, steel, 6, w / 2 + 0.04, h * 0.4, 0);
+  const bar = cylRaw(0.014, 0.014, d - 0.2, steel, 6, w / 2 + 0.012, h * 0.4, 0);   // 贴侧板，旧版悬空 2.6cm
   bar.rotation.x = Math.PI / 2; g.add(bar);
   for (let i = 0; i < 4; i++) g.add(box(0.02, 0.05, 0.16, black, -w * 0.3 + i * w * 0.2, h + 0.09, 0));
   shade(g); return g;
@@ -2241,11 +2245,12 @@ function buildDiningSet(p) {
   // 圆桌：桌面 + 边裙 + 中柱 + 三爪底座
   g.add(cylRaw(tableR, tableR, 0.045, woodMat, 18, 0, tableH - 0.022, 0));
   g.add(cylRaw(tableR - 0.02, tableR - 0.02, 0.07, darkWood, 18, 0, tableH - 0.08, 0));
-  g.add(cylRaw(0.075, 0.11, tableH - 0.12, woodMat, 12, 0, (tableH - 0.12) / 2 + 0.06, 0));
-  g.add(cylRaw(0.13, 0.16, 0.09, woodMat, 12, 0, 0.06, 0));
+  // 支撑链落地：爪足/底座贴 y=0，中柱从底座顶穿到边裙底（旧版整张桌悬空 1.5cm）
+  g.add(cylRaw(0.075, 0.11, tableH - 0.14, woodMat, 12, 0, 0.05 + (tableH - 0.14) / 2, 0));
+  g.add(cylRaw(0.13, 0.16, 0.09, woodMat, 12, 0, 0.045, 0));
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
-    const foot = box(0.1, 0.06, tableR * 0.62, woodMat, Math.cos(a) * tableR * 0.28, 0.045, Math.sin(a) * tableR * 0.28);
+    const foot = box(0.1, 0.06, tableR * 0.62, woodMat, Math.cos(a) * tableR * 0.28, 0.03, Math.sin(a) * tableR * 0.28);
     foot.rotation.y = -a + Math.PI / 2; g.add(foot);
   }
   // 4 把椅子：软座（微倒角）+ 4 腿 + 靠背立柱 + 顶冠板 + 前撑

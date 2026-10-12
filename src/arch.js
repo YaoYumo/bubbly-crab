@@ -44,23 +44,24 @@ function buildHall(p) {
   if (ph > 0.04) {
     g.add(box(pw, ph * 0.66, pd, stone, 0, ph * 0.33, 0));
     g.add(box(pw + 0.34, Math.max(0.08, ph * 0.16), pd + 0.34, stone, 0, ph * 0.74, 0, 0.03));
+    g.add(box(pw + 0.2, ph * 0.2 + 0.06, pd + 0.2, stone, 0, ph - (ph * 0.2 + 0.06) / 2, 0)); // 顶面阶条石：台基顶精确到 ph（栏杆/柱墙以此为基准）
     g.add(box(pw + 0.5, Math.max(0.06, ph * 0.14), pd + 0.5, M.stone(0xa49e93, 0.94), 0, ph * 0.07, 0, 0.03));
     g.add(box(pw + 0.86, 0.06, pd + 0.86, M.stone(0x98928a, 0.95), 0, 0.03, 0));            // 散水
   }
-  const y0 = ph;
+  const y0 = ph - 0.08;                       // 柱墙插入台基顶 8cm（旧版共面/悬空，侧视剪影裂开）
   const railH = clamp(ph * 0.8, 0.4, 0.86);
   if (p.rail !== false && ph > 0.2) {                                                        // 台顶石栏杆
     const gapW = Math.min(pw * 0.3, num(p.bay, 4) * 1.9);
     const segLen = Math.max(1, (pw - gapW) / 2);
     for (const sx of [1, -1]) {
-      const r1 = stoneRail({ len: segLen, h: railH, y: ph, mat: stone, step: Math.max(0.9, ph * 1.4) });
+      const r1 = stoneRail({ len: segLen, h: railH, y: ph - 0.02, mat: stone, step: Math.max(0.9, ph * 1.4) });
       r1.position.set(sx * (gapW / 2 + segLen / 2), 0, pd / 2 - 0.14);
       g.add(r1);
     }
-    const rb = stoneRail({ len: pw - 0.3, h: railH, y: ph, mat: stone });
+    const rb = stoneRail({ len: pw - 0.3, h: railH, y: ph - 0.02, mat: stone });
     rb.position.z = -pd / 2 + 0.14; g.add(rb);
     for (const sx of [1, -1]) {
-      const rs = stoneRail({ len: pd - 0.3, h: railH, y: ph, mat: stone, axis: 'z' });
+      const rs = stoneRail({ len: pd - 0.3, h: railH, y: ph - 0.02, mat: stone, axis: 'z' });
       rs.position.x = sx * (pw / 2 - 0.14); g.add(rs);
     }
   }
@@ -302,7 +303,7 @@ function roofTrim(g, o = {}) {
   }
   if (!trim) return;
   if (kind === 'jin') { g.add(ridgeOrnament(w, 'jin', rMat, ry)); return; }
-  const eaveY = y0 + eaveUp * h * 0.8;               // 檐角（起翘后）
+  const eaveY = y0 + eaveUp * h;                     // 檐角（起翘后）：与 curvedRoof 角端抬升一致
   if (kind === 'juan') {                             // 悬山：博风板 + 悬鱼 + 惹草
     const L = Math.hypot(D / 2, h) * 1.04;
     for (const sx of [1, -1]) for (const sz of [1, -1]) {
@@ -517,8 +518,13 @@ function buildPavilion(p) {
   g.add(cyl(R * 1.3, R * 1.36, 0.16, M.stone(0xa6a096, 0.93), seg(s), 0, 0.48, 0));
   const y0 = 0.56;
   const nStep = 3;
-  for (let i = 0; i < nStep; i++) g.add(box(R * 0.8, 0.18, 0.34, stone, 0, 0.09 + i * 0.18, R * 1.52 + 0.34 * (nStep - i) - 0.17));
-  if (trim) { const rl = stoneRail({ len: R * 1.7, h: 0.52, y: y0, mat: stone, step: R * 0.42 }); rl.position.z = R * 1.48; rl.position.x = 0; g.add(rl); }
+  // 踏步逐级搭接、顶级嵌入台身；旧版整跑离台基悬空 0.1R
+  for (let i = 0; i < nStep; i++) g.add(box(R * 0.8, 0.18, 0.34, stone, 0, 0.09 + i * 0.18, R * 1.4 + 0.3 * (nStep - i)));
+  if (trim) for (const sx of [-1, 1]) {                                                     // 踏跺两侧短栏，让出正中入口
+    const rl = stoneRail({ len: R * 0.7, h: 0.52, y: y0 - 0.02, mat: stone, step: R * 0.42 });
+    rl.position.set(sx * R * 0.72, 0, R * 1.28);
+    g.add(rl);
+  }
   // 檐柱 + 柱础 + 额枋 + 坐凳美人靠
   const edge = R * 2 * Math.sin(Math.PI / s);
   const inR = R * Math.cos(Math.PI / s);
@@ -556,7 +562,7 @@ function buildPavilion(p) {
   if (p.dougong) for (let i = 0; i < s; i++) {
     const a = (i / s) * Math.PI * 2 + Math.PI / s;
     const dg = dougong(wood, 0.78, { gold: M.metal(0xb08a3e, 0.4, 0.7) });
-    dg.position.set(Math.cos(a) * R, y0 + H + 0.14, Math.sin(a) * R);
+    dg.position.set(Math.cos(a) * R, y0 + H + 0.1, Math.sin(a) * R);   // 底咬进额枋顶
     dg.rotation.y = -a + Math.PI / 2;
     g.add(dg);
   }
@@ -649,8 +655,9 @@ function buildGate(p) {
   }
   if (p.ramp !== false) {                                                          // 登城马道
     const n = clamp(Math.round(H / 0.34), 3, 22), stH = H / n;
-    for (let i = 0; i < n; i++) g.add(box(2.0, stH, 0.44, stone, W / 2 + 1.4, stH * (i + 0.5), D / 2 - 0.3 - (n - i) * 0.44));
-    g.add(box(0.3, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 0.42, H * 0.47, D / 2 - n * 0.22 - 0.3));
+    // 踏步内端嵌入城台 10cm、内侧夹墙贴进台身 8cm —— 旧版整条马道离城台悬空 0.3m
+    for (let i = 0; i < n; i++) g.add(box(2.5, stH, 0.44, stone, W / 2 + 1.15, stH * (i + 0.5), D / 2 - 0.3 - (n - i) * 0.44));
+    g.add(box(0.35, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 0.12, H * 0.47, D / 2 - n * 0.22 - 0.3));
     g.add(box(0.3, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 2.4, H * 0.47, D / 2 - n * 0.22 - 0.3));
   }
   // ── 城楼：台明 + 檐柱一周 + 墙体 + 匾额 + 屋顶（含脊兽檐口）────────
@@ -808,18 +815,18 @@ function buildCorridor(p) {
   for (let i = 0; i < n; i++) {
     const x = -len / 2 + i * (len / (n - 1));
     for (const s of [-1, 1]) {
-      g.add(cyl(0.13, 0.15, H, wood, seg(12), x, y0 + H / 2, s * cw / 2));
-      g.add(cyl(0.24, 0.26, 0.1, stone, seg(10), x, y0 + 0.05, s * cw / 2));      // 柱础
+      g.add(cyl(0.13, 0.15, H + 0.02, wood, seg(12), x, y0 + H / 2, s * cw / 2));
+      g.add(cyl(0.24, 0.26, 0.1, stone, seg(10), x, y0 + 0.03, s * cw / 2));      // 柱础（咬进台明 2cm，旧版共面）
       g.add(box(0.42, 0.14, 0.42, stone, x, y0 + 0.13, s * cw / 2, 0.03));         // 磉石
       if (i < n - 1) {
         const seg2 = len / (n - 1);
         g.add(box(seg2, 0.2, 0.2, wood, x + seg2 / 2, y0 + H + 0.1, s * cw / 2));  // 檐枋
         g.add(box(seg2, 0.12, 0.14, dark, x + seg2 / 2, y0 + H - 0.06, s * cw / 2)); // 小额枋
-        g.add(box(seg2 * 0.9, 0.06, 0.3, wood, x + seg2 / 2, y0 + 0.5, 0));         // 穿枋（联系两根檐柱）
+        g.add(box(seg2, 0.06, 0.3, wood, x + seg2 / 2, y0 + 0.5, s * (cw / 2 - 0.02))); // 穿枋（贴檐柱线、两端入柱，旧版悬在廊中线）
         if (trim) g.add(caihua(seg2 * 0.96, caihuaMats, { h: 0.18, y: y0 + H - 0.14, z: s * (cw / 2 + 0.11), x: x + seg2 / 2 }));
-        if (p.railing) {                                                             // 坐凳 + 美人靠
-          g.add(box(seg2 * 0.9, 0.07, 0.36, wood, x + seg2 / 2, y0 + 0.44, s * (cw / 2 - 0.2)));
-          g.add(box(seg2 * 0.9, 0.06, 0.06, wood, x + seg2 / 2, y0 + 0.86, s * (cw / 2 - 0.34)));
+        if (p.railing) {                                                             // 坐凳 + 美人靠（通长到柱，旧版 90% 长两头悬空）
+          g.add(box(seg2, 0.07, 0.36, wood, x + seg2 / 2, y0 + 0.44, s * (cw / 2 - 0.2)));
+          g.add(box(seg2, 0.06, 0.06, wood, x + seg2 / 2, y0 + 0.86, s * (cw / 2 - 0.34)));
           const sp2 = [];
           for (let k = 0; k < 4; k++) sp2.push({ p: [x + seg2 * (0.14 + k * 0.24), y0 + 0.65, s * (cw / 2 - 0.3)], s: [0.05, 0.42, 0.05] });
           const mm = batch(new THREE.BoxGeometry(1, 1, 1), wood, sp2);
@@ -836,7 +843,7 @@ function buildCorridor(p) {
     }
     if (trim) {
       const dg = dougong(wood, 0.52, { gold });
-      dg.position.set(x, y0 + H + 0.22, 0);
+      dg.position.set(x, y0 + H + 0.16, 0);       // 斗拱底咬进檐枋顶（旧版留 4cm 缝）
       g.add(dg);
       for (const s of [-1, 1]) { const d2 = dg.clone(); d2.position.z = s * cw / 2; d2.scale.setScalar(0.8); g.add(d2); }
     }
@@ -1163,7 +1170,7 @@ function buildMoonGate(p) {
     if (H - yHi > 0.04) g.add(box(bw2, H - yHi, T, wall, xc, yHi + (H - yHi) / 2, 0));
   }
   g.add(box(L + 0.18, 0.14, T + 0.24, grey, 0, H - 0.07, 0));                                     // 上檐枋（通长）
-  g.add(box(L + 0.4, 0.2, T + 0.3, brick, 0, H + 0.12, 0));                                            // 墙帽（披水）
+  g.add(box(L + 0.4, 0.2, T + 0.3, brick, 0, H + 0.08, 0));                                            // 墙帽（披水，下沿咬住上檐枋 2cm）
   const rY = H + 0.06;                                                                                  // 卷棚压在墙帽上，别悬空
   g.add(curvedRoof({ w: L + 0.5, d: T + 1.1, h: 0.5, kind: 'juan', brim: 0.25, eaveUp: 0.16, mat: roof, seg: 16, y0: rY }));
   // 墙帽是卷棚、两端不出脊：旧版还排了 roofTrim 的脊件 / 起翘，墙头两头就顶出两块黑色「断件」
@@ -1583,7 +1590,7 @@ function buildBarn(p) {
     g.add(box(0.34, 0.34, D * 0.5, trim, s * W * 0.44, H - 0.3, 0));                    // 檐下挑梁（原先跑到屋面肚子里）
   }
   const cupY = barnRoof.userData.top || (H + D * 0.36);
-  for (const s of [-1, 1]) g.add(box(0.5, 0.7, 0.5, wall, s * 0.55, cupY + 0.35, 0));   // 屋脊阁楼小塔（cupola）
+  for (const s of [-1, 1]) g.add(box(0.5, 0.85, 0.5, wall, s * 0.55, cupY + 0.275, 0));   // 屋脊阁楼小塔（cupola，腿下探 0.15 咬住脊压顶，旧版 0.01 搭缝侧视裂块）
   g.add(box(1.5, 0.9, 1.5, wall, 0, cupY + 0.85, 0));
   g.add(box(1.7, 0.12, 1.7, trim, 0, cupY + 1.36, 0));
   g.add(cone(1.15, 0.7, roofM, 4, 0, cupY + 1.77, 0));
@@ -1624,10 +1631,10 @@ function buildClockTower(p) {
   const trim = M.paint(0xe4dfd4, 0.75);
   const W = p.w, H = p.h;
   g.add(box(W * 1.24, 0.6, W * 1.24, trim, 0, 0.3, 0));                              // 基座
-  g.add(box(W * 1.1, 0.3, W * 1.1, st, 0, 0.75, 0));
-  g.add(box(W, H - 1.05, W, st, 0, 1.05 + (H - 1.05) / 2, 0));                       // 塔身
+  g.add(box(W * 1.1, 0.3, W * 1.1, st, 0, 0.72, 0));
+  g.add(box(W, H - 0.85, W, st, 0, 0.85 + (H - 0.85) / 2, 0));                       // 塔身（落进基座顶，旧版悬 15cm）
   for (const sx of [-1, 1]) for (const sz of [-1, 1])                                 // 四角隅石
-    g.add(box(0.28, H - 1.05, 0.28, trim, sx * (W / 2 - 0.14), 1.05 + (H - 1.05) / 2, sz * (W / 2 - 0.14)));
+    g.add(box(0.28, H - 0.85, 0.28, trim, sx * (W / 2 - 0.14), 0.85 + (H - 0.85) / 2, sz * (W / 2 - 0.14)));
   for (const fy of [0.34, 0.68]) g.add(box(W * 1.09, 0.22, W * 1.09, trim, 0, H * fy, 0));   // 两道腰线
   g.add(box(W * 0.4, 1.9, 0.12, M.paint(0x4a3020, 0.6), 0, 1.9, W / 2 + 0.02));       // 门
   g.add(box(W * 0.52, 0.16, 0.22, trim, 0, 2.93, W / 2 + 0.05));                      // 门楣
@@ -1964,12 +1971,12 @@ function buildLampStand(p) {
   const g = new THREE.Group();
   const pole = M.metal(0x9aa2ab, 0.4, 0.8);
   g.add(cyl(0.24, 0.26, 0.04, M.dark(0x2b3037, 0.6), 16, 0, 0.02, 0));                // 底盘
-  g.add(cyl(0.18, 0.24, 0.06, M.dark(0x33383f, 0.6), 16, 0, 0.07, 0));                // 配重块
+  g.add(cyl(0.18, 0.24, 0.08, M.dark(0x33383f, 0.6), 16, 0, 0.07, 0));                // 配重块（上下各咬 1cm，旧版共面贴缝）
   g.add(cyl(0.045, 0.055, 0.06, pole, 10, 0, 0.13, 0));                               // 柱础
-  g.add(cyl(0.03, 0.03, p.h, pole, 10, 0, p.h / 2 + 0.13, 0));                        // 灯杆
+  g.add(cyl(0.03, 0.03, p.h + 0.08, pole, 10, 0, p.h / 2 + 0.16, 0));                 // 灯杆（顶端插入灯头座，旧版差 5mm）
   g.add(cyl(0.05, 0.038, 0.05, pole, 10, 0, p.h + 0.16, 0));                          // 灯头座
   const lampMat = M.glow(p.color, p.glow);
-  g.add(cyl(0.18, 0.26, 0.34, lampMat, 18, 0, p.h + 0.36, 0));                        // 灯罩
+  g.add(cyl(0.18, 0.26, 0.34, lampMat, 18, 0, p.h + 0.35, 0));                        // 灯罩（下沿咬住灯头座）
   g.add(cyl(0.19, 0.19, 0.03, M.paint(0xe8e2d6, 0.8), 18, 0, p.h + 0.53, 0));         // 顶圈
   g.add(cyl(0.185, 0.185, 0.025, M.paint(0xe8e2d6, 0.8), 18, 0, p.h + 0.19, 0));      // 底圈
   g.userData.glow = [lampMat];
@@ -2089,7 +2096,7 @@ function buildCurtain(p) {
   for (let i = 0; i <= n; i++) {
     const x = (i / n - 0.5) * p.w;
     const d = (i % 2 ? 0.14 : 0.02);
-    g.add(box(p.w / n, p.h, d, m, x, p.h / 2 + 0.1, d));
+    g.add(box(p.w / n, p.h, d, m, x, p.h / 2 + 0.13, d));   // 帘顶插入帘杆 6cm（旧版共面离缝）
   }
   // 帘杆：贴着帘顶装（旧版抬高 0.2，帘子跟杆之间空一条缝，看着像杆浮在墙上）+ 吊环 + 两端杆头
   const rod = cyl(0.03, 0.03, p.w + 0.3, M.metal(0x9aa2ab, 0.4, 0.8), 8, 0, p.h + 0.13, 0);
@@ -2097,7 +2104,7 @@ function buildCurtain(p) {
   g.add(rod);
   for (let i = 0; i <= n; i += 2) {
     const x = (i / n - 0.5) * p.w;
-    const ring = cyl(0.045, 0.045, 0.016, M.metal(0xb6bdc5, 0.3, 0.85), 8, x, p.h + 0.13, 0.12);
+    const ring = cyl(0.06, 0.06, 0.016, M.metal(0xb6bdc5, 0.3, 0.85), 8, x, p.h + 0.13, 0.065); // 吊环跨接帘杆(z≈0)与帘面(z 0.07..0.21)，旧版偏到 0.12 侧视裂缝
     ring.rotation.z = Math.PI / 2;
     g.add(ring);
   }
