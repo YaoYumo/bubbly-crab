@@ -128,6 +128,74 @@ const ring = (cx, cz, rx, rz, n, squash = 0.28) => {
   return pts;
 };
 
+/** 射线 x=const（从 z0 朝 zEdge 方向）与折线的首个交点 z —— 支路在环路处 T 形断开用 */
+const crossZ = (x, z0, zEdge, pts) => {
+  let best = null;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [px, pz] = pts[i], [qx, qz] = pts[i + 1];
+    if (px === qx || (px - x) * (qx - x) > 0) continue;
+    const z = pz + ((x - px) / (qx - px)) * (qz - pz);
+    if ((z - z0) * (z - zEdge) > 0) continue;                  // 交点必须在行进方向上
+    if (best === null || Math.abs(z - z0) < Math.abs(best - z0)) best = z;
+  }
+  return best;
+};
+
+/** 线段正交求交（返回夹角弧度与交点；端点相接不算穿越） */
+const segAngle = (a1, a2, b1, b2) => {
+  const r = [a2[0] - a1[0], a2[1] - a1[1]], sp = [b2[0] - b1[0], b2[1] - b1[1]];
+  const den = r[0] * sp[1] - r[1] * sp[0];
+  if (Math.abs(den) < 1e-9) return null;
+  const q = [b1[0] - a1[0], b1[1] - a1[1]];
+  const t = (q[0] * sp[1] - q[1] * sp[0]) / den, u = (q[0] * r[1] - q[1] * r[0]) / den;
+  if (t < 1e-6 || t > 1 - 1e-6 || u < 1e-6 || u > 1 - 1e-6) return null;
+  let ang = Math.abs(Math.atan2(r[1], r[0]) - Math.atan2(sp[1], sp[0])) % Math.PI;
+  if (ang > Math.PI / 2) ang = Math.PI - ang;
+  return { ang, p: [a1[0] + t * r[0], a1[1] + t * r[1]] };
+};
+
+/**
+ * 斜交整治：<50° 的穿越切成 T 形路口（断"开放"的那条；两条都闭合则跳过）。
+ * 正交穿越（≥50°，方格网/放射口）保持四岔不动。
+ */
+function splitOblique(roads) {
+  const TH = (50 * Math.PI) / 180;
+  const closed = (r) => r.pts.length > 2
+    && Math.hypot(r.pts[0][0] - r.pts.at(-1)[0], r.pts[0][1] - r.pts.at(-1)[1]) < 1;
+  let changed = true, guard = 0;
+  while (changed && guard++ < 40) {
+    changed = false;
+    scan: for (let i = 0; i < roads.length; i++) for (let j = i + 1; j < roads.length; j++) {
+      const A = roads[i], B = roads[j];
+      for (let ai = 0; ai < A.pts.length - 1; ai++) for (let bi = 0; bi < B.pts.length - 1; bi++) {
+        const hit = segAngle(A.pts[ai], A.pts[ai + 1], B.pts[bi], B.pts[bi + 1]);
+        if (!hit || hit.ang >= TH) continue;
+        if (closed(A) && closed(B)) continue;
+        const cutIdx = closed(B) ? i : j;              // 闭合的那条不切（环路保持闭合）
+        const R = roads[cutIdx];
+        // 定位交点所在段，切成两段（端点都落在对方中心线上 → T 形）
+        let seg = -1, best = 1e9;
+        for (let k = 0; k < R.pts.length - 1; k++) {
+          const d = ptSeg2(hit.p, R.pts[k], R.pts[k + 1]);
+          if (d < best) { best = d; seg = k; }
+        }
+        if (seg < 0 || best > 1) continue;
+        const p1 = R.pts.slice(0, seg + 1).concat([hit.p]);
+        const p2 = [hit.p].concat(R.pts.slice(seg + 1));
+        if (p1.length < 2 || p2.length < 2) continue;
+        roads.splice(cutIdx, 1, { ...R, pts: p1 }, { ...R, name: R.name, pts: p2 });
+        changed = true;
+        break scan;
+      }
+    }
+  }
+}
+const ptSeg2 = (p, a, b) => {
+  const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx * dx + dz * dz;
+  const t = L2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dz) / L2)) : 0;
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dz));
+};
+
 /**
  * 生成路网骨架（纯 [x,z] 折线，不含高度）。
  * @returns {Array<{name:string, pts:number[][], width:number, roadType:string, minor?:boolean}>}
@@ -151,8 +219,9 @@ export function layoutRoads(s) {
     if (mid) { mid.roadType = 'asphalt'; mid.width = 9; mid.minor = false; }
   } else if (s.roadTopology === 'radial') {
     const spokes = s.density > 0.65 ? 8 : 6;
+    const off = rng() * Math.PI * 2;                             // 整星随种子旋转，辐条之间保持等分
     for (let i = 0; i < spokes; i++) {
-      const a = (i / spokes) * Math.PI * 2 + rng() * 0.12;
+      const a = off + (i / spokes) * Math.PI * 2;
       roads.push({
         name: '放射干道', minor: i % 2 === 1, width: i % 2 === 0 ? 9 : 6,
         roadType: i % 2 === 0 ? 'asphalt' : minorType,
@@ -160,30 +229,41 @@ export function layoutRoads(s) {
       });
     }
     for (const f of [0.36, 0.68]) {
-      roads.push({ name: '环路', pts: ring(0, 0, S * f * 0.5, S * f * 0.5, 20), width: 7, roadType: 'asphalt' });
+      const fj = f * (0.93 + rng() * 0.14);
+      roads.push({ name: '环路', pts: ring(0, 0, S * fj * 0.5, S * fj * 0.5, 20), width: 7, roadType: 'asphalt' });
     }
   } else {
     // spine_and_loop（默认）：一条主干道横穿 + 一环 + 若干支路
-    const segs = 9;
+    const segs = 16;
+    // 主干道 = 整条一个平滑 S 弯：振幅/相位随种子变（路网有变化），曲线本身不逐点抖（无锯齿）
+    const sAmp = S * (0.012 + rng() * 0.014), sPh = rng() * Math.PI * 2;
+    const spineZ = (x) => Math.sin(((x + half - M) / (half * 2 - M * 2)) * Math.PI * 2 + sPh) * sAmp;
     const spine = [];
     for (let i = 0; i <= segs; i++) {
       const x = -half + M + ((half * 2 - M * 2) * i) / segs;
-      spine.push([x, Math.sin(i * 1.1 + rng() * 0.4) * S * 0.035]);
+      spine.push([x, spineZ(x)]);
     }
     roads.push({ name: '主干道', pts: spine, width: 9, roadType: 'asphalt' });
-    roads.push({ name: '环路', pts: ring(0, 0, S * 0.3, S * 0.24, 22), width: 7, roadType: 'asphalt' });
+    const rK = 0.92 + rng() * 0.16;
+    const ringRoad = { name: '环路', pts: ring(0, 0, S * 0.3 * rK, S * 0.24 * rK, 22), width: 7, roadType: 'asphalt' };
+    roads.push(ringRoad);
     const branches = s.density > 0.65 ? 6 : s.density < 0.35 ? 3 : 4;
     for (let i = 0; i < branches; i++) {
-      const x = -half + M + ((half * 2 - M * 2) * (i + 0.5)) / branches + (rng() - 0.5) * S * 0.04;
+      // 均匀分槽、无横向抖动；起点精确落在主干道中心线上（T 形衔接，不再悬空）
+      const x = -half + M + ((half * 2 - M * 2) * ((i + 0.5) + (rng() - 0.5) * 0.5)) / branches;   // 槽内 ±25% 抖动
       const up = i % 2 === 0 ? 1 : -1;
-      const z0 = Math.sin((x / S) * 3) * S * 0.03;
-      roads.push({
-        name: '支路', minor: true, width: 6, roadType: minorType,
-        pts: [[x, z0], [x + (rng() - 0.5) * S * 0.05, z0 + up * (half - M - Math.abs(z0))]],
-      });
+      const z0 = spineZ(x);
+      const zEdge = z0 + up * (half - M - Math.abs(z0));
+      // 在与环路的交点处切成两段：内段（主干道→环路）+ 外段（环路→边界）——不再整条斜穿环路
+      const hit = crossZ(x, z0, zEdge, ringRoad.pts);
+      const segs2 = hit !== null && Math.abs(hit - z0) > 8 && Math.abs(zEdge - hit) > 8
+        ? [[[x, z0], [x, hit]], [[x, hit], [x, zEdge]]]
+        : [[[x, z0], [x, zEdge]]];
+      for (const seg of segs2) roads.push({ name: '支路', minor: true, width: 6, roadType: minorType, pts: seg });
     }
   }
-  return roads.filter((r) => r.pts.length >= 2).slice(0, 16);
+  splitOblique(roads);                                                     // 斜交一律改 T 形
+  return roads.filter((r) => r.pts.length >= 2).slice(0, 24);
 }
 
 /** 简易占位栅格：地块/树互不重叠 */

@@ -98,7 +98,7 @@ const RULES = [
   // ---- 路网 ----
   {
     field: 'roadTopology', label: '路网',
-    re: [/(方格|网格|棋盘|grid|曼哈顿)/gi, /(放射|环形放射|radial|辐条)/gi,
+    re: [/(方格|网格|棋盘|grid|曼哈顿|整齐|整洁|横平竖直|规整|方方正正)/gi, /(放射|环形放射|radial|辐条)/gi,
       /(环路|环线|回路|loop)/gi, /(主干道|主街|大街|spine|main\s*street|high\s*street)/gi],
     apply: (s, m, i) => {
       s.roadTopology = i === 0 ? 'grid' : i === 1 ? 'radial' : i === 2 ? 'spine_and_loop' : 'spine_and_loop';
