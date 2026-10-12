@@ -409,6 +409,23 @@ buildSceneAssets(app, document.getElementById('library-scene'));
 buildObjectList(app, document.getElementById('objlist-scene'));
 buildSceneInspector(app, document.getElementById('inspector-scene'));
 
+/* 模型库收进二级入口：默认收起，点头部展开（主入口是顶栏 ✦ 一句话生成） */
+{
+  const libBtn = document.getElementById('lib-toggle');
+  const libBox = document.getElementById('library-scene');
+  const libState = document.getElementById('lib-toggle-state');
+  if (libBtn && libBox) {
+    const setLib = (open) => {
+      libBox.style.display = open ? '' : 'none';
+      if (libState) libState.textContent = open ? '收起 ▾' : '展开 ▸';
+      libBtn.classList.toggle('on', open);
+      libBtn.title = open ? '收起模型库' : `展开模型库（${libBox.querySelectorAll('.card').length} 个模型）`;
+    };
+    libBtn.addEventListener('click', () => setLib(libBox.style.display === 'none'));
+    setLib(false);
+  }
+}
+
 /* ---- S3 Camera Path 面板 ---- */
 buildKeyframesList(app, document.getElementById('keyframes-list'));
 buildCameraInspector(app, document.getElementById('inspector-camera'));
@@ -873,12 +890,21 @@ if (FRESH) {
 }
 app.updateAspectOverlay();
 syncHud();
+/* 落地即「一句话生成」：启动直接进 Scene 页（boot 遮罩尚未撤下，无闪跳） */
+switchPage('scene');
+/* 每个标签页首访自动弹出生成对话框；自动化（webdriver）与 ?fresh 调试路径不受影响 */
+try {
+  if (!navigator.webdriver && !FRESH && !sessionStorage.getItem('tg-first')) {
+    sessionStorage.setItem('tg-first', '1');
+    setTimeout(() => openTownDialog(app), 250);
+  }
+} catch (e) { /* 存储不可用时静默跳过 */ }
 window.__previzBooted = true;
 if (window.__bootWatch) clearTimeout(window.__bootWatch);
 document.getElementById('boot')?.remove();
 setInterval(syncHud, 1000);
 loop();
-setTimeout(() => toast('试试：拖动蓝色关键帧节点 → 按 P 预览 → 右侧导出视频'), 900);
+setTimeout(() => toast('场景空着？点顶栏 ✦ 一句话生成：「黄昏的加州林荫小镇，商业30%，丘陵」'), 900);
 
 if (import.meta.env.DEV) {
   window.__t = {

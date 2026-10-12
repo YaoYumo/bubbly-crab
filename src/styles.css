@@ -469,6 +469,10 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 #library-scene{overflow:auto;padding:8px;flex:1 1 55%;min-height:0}
 #objlist-scene{display:flex;flex-direction:column;flex:1 1 45%;min-height:110px;border-top:1px solid var(--line)}
 #objlist-scene .objlist{border-top:0}
+/* 模型库二级入口：默认收起，点标题展开（主入口 = 顶栏 ✦ 一句话生成） */
+#left-scene .libph{width:100%;background:none;border:0;border-bottom:1px solid var(--line);color:inherit;cursor:pointer;text-align:left;font:inherit;letter-spacing:inherit;-webkit-appearance:none;appearance:none}
+#left-scene .libph:hover{background:var(--acc-light)}
+#left-scene .libph.on b{color:var(--acc)}
 #inspector-scene{overflow:auto;padding:10px;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
 
 /* Scene Builder cards (Transform / Atmosphere) */

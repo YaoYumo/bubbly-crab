@@ -264,7 +264,7 @@ export function buildObjectList(app, host) {
       el('b', { text: `场景物体 ${app.objects.length}` }),
       el('span', { class: 'mini', text: '点选 · 双击重命名' }),
     ]));
-    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '从左侧把建筑 / 人物拖进场景' }));
+    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '点上方「模型库」展开拖入，或用 ✦ 一句话生成造景' }));
     for (const so of app.objects) {
       const sel = app.selObj === so;
       const row = el('div', { class: 'orow' + (sel ? ' on' : '') });
