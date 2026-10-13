@@ -11,7 +11,7 @@ import { mul, Q } from './detail.js';
 function cnShade(g) {
   shade(g);
   try {
-    mergeSimilar(g, { min: 2 });      // 同规格重复件 → 一次实例化绘制（比烘顶点更省：几何只有一份）
+    if (globalThis.__noInst !== 1) mergeSimilar(g, { min: 2 });      // 同规格重复件 → 一次实例化绘制（比烘顶点更省：几何只有一份）；__noInst=1 时保留逐件节点（工作台部件编辑用）
     if (globalThis.__noBake !== 1) bakeMerge(g);                     // 剩下的零碎件按材质烘成一个几何 → 节点数 / draw call 再降一档
   } catch (err) {
     if (!cnShade._warned) { cnShade._warned = 1; console.warn('[previz] 构件合并跳过：', err && err.message); }
