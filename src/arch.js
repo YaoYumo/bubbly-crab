@@ -97,7 +97,7 @@ function buildHall(p) {
     if (!multi) {                                                     // 单层台基（hall2 等）：保留旧版整跑御路直达地坪
       const L = Math.hypot(ph, n * run);
       const rp = box(sw * 0.44, 0.1, L, M.stone(0xaba59c, 0.9), 0, ph * 0.5, pd / 2 - 0.14 + n * run * 0.5);
-      rp.rotation.x = -Math.atan2(ph, n * run);
+      rp.rotation.x = Math.atan2(ph, n * run);   // 坡向约定：正角 = 向外（+Z）逐级降，与踏步同向；旧负号让御路"外高内低"反埋（修补单[5][19] 的 rot Z=180° 翻转正是在修这个）
       g.add(rp);
       const rp2 = box(sw * 0.2, 0.06, L * 0.92, M.stone(0xc6c0b4, 0.86), 0, ph * 0.5 + 0.09, pd / 2 - 0.14 + n * run * 0.5);     // 御路雕龙石
       rp2.rotation.x = rp.rotation.x;
@@ -107,7 +107,7 @@ function buildHall(p) {
       // 上跑御路[4][5]：与台阶同坡度，后端咬入台基顶阶条石、前端咬入行走面 cap 石；加厚 0.15（旧版 0.06 读成纸片），底版[133]取消
       const drop1 = ph - walk2 + 0.14, run1 = drop1 / tanA;
       const rp2 = box(sw * 0.2, 0.15, Math.hypot(drop1, run1) + 0.04, M.stone(0xc6c0b4, 0.86), 0, (ph - 0.07 + walk2 - 0.21) / 2, pd / 2 + 0.05 + run1 / 2);
-      rp2.rotation.x = -Math.atan2(drop1, run1);
+      rp2.rotation.x = Math.atan2(drop1, run1);
       g.add(rp2);
       // 下跑[2][3][17][18]：平台板（比行走面低一级）+ 踏步石（余降对半分），都实体落到落脚面，不留空腔
       const zA0 = pd / 2 + p.bay / 2 + 0.14, topA = walk2 - stH;
@@ -120,7 +120,7 @@ function buildHall(p) {
         // 下跑御路[19]：从行走面沿边跨过下跑降到散水，前后端各咬入 ~7cm
         const yB = walk2 - 0.075, yF = walk1 - 0.07, run2 = 1.42;
         const rp3 = box(sw * 0.2, 0.15, Math.hypot(yB - yF, run2) + 0.06, M.stone(0xc6c0b4, 0.86), 0, (yB + yF) / 2, zA0 + 0.03 + run2 / 2);
-        rp3.rotation.x = -Math.atan2(yB - yF, run2);
+        rp3.rotation.x = Math.atan2(yB - yF, run2);
         g.add(rp3);
       }
     }
