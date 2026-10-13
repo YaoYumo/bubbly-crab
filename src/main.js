@@ -875,9 +875,10 @@ window.addEventListener('beforeunload', () => app.saveLocal());
 app.bus.on('gizmo', () => { });
 app.bus.on('toast', (d) => toast(typeof d === 'string' ? d : d?.msg, typeof d === 'object' && d?.kind ? d.kind : 'info'));
 const FRESH = /[?&]fresh/.test(location.search);
-if (!FRESH && !app.maybeRestore()) {
-  // Demo disabled - start with empty scene
-}
+const didRestore = !FRESH && app.maybeRestore();
+/* 恢复提示：自动存档是【几何点位】原样回放——旧版大环路会跟着回魂，必须让用户知道
+   这是上次的场景而不是新生成的（开新场：一键清空 或 ?fresh=1） */
+const restored = didRestore && app.objects.length > 0;
 if (FRESH) {
   const pick = new URLSearchParams(location.search).get('scene');
   if (pick && SCENES.some((s) => s.id === pick)) applyScene(app, pick);
@@ -898,7 +899,10 @@ if (window.__bootWatch) clearTimeout(window.__bootWatch);
 document.getElementById('boot')?.remove();
 setInterval(syncHud, 1000);
 loop();
-setTimeout(() => toast('场景空着？点顶栏 ✦ 一句话生成：「黄昏的加州林荫小镇，商业30%，丘陵」'), 900);
+setTimeout(() => {
+  if (restored) toast('已恢复上次自动保存的场景（含旧版路网几何）· 开新场：点顶栏「一键清空」，或地址后加 ?fresh=1', 'info', 7000);
+  else if (!app.objects.length) toast('场景空着？点顶栏 ✦ 一句话生成：「黄昏的加州林荫小镇，商业30%，丘陵」');
+}, 900);
 
 if (import.meta.env.DEV) {
   window.__t = {

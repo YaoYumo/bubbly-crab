@@ -9,7 +9,7 @@ import { clamp, makeRng } from './util.js';
 export const TOWN_DEFAULTS = () => ({
   mapSize: 256, // m，边长（128 / 192 / 256 / 384 / 512 / 768 / 1024）
   theme: 'suburb',
-  roadTopology: 'spine_and_loop', // grid | spine_and_loop | radial
+  roadTopology: 'grid', // grid | axis | spine_and_loop | radial —— 默认方格网（无环路；环形布局需显式点选或写关键词）
   density: 0.5, // 0..1 地块细分密度
   zoning: { commercialRatio: 0.15, residentialRatio: 0.85 },
   vegetationDensity: 0.4, // 0..1

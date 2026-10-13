@@ -45,10 +45,11 @@ for (const topo of ['spine_and_loop', 'grid', 'axis', 'radial']) {
   ok(`${topo}: 主干道宽 9`, roads.some((r) => r.width === 9));
 }
 
-// 同种子同路网，换种子必换
-const ra = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256 }));
-const rb = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256 }));
-const rc = layoutRoads(normalizeSchema({ seed: 78, mapSize: 256 }));
+// 同种子同路网，换种子必换（显式 spine_and_loop：路径由 rng 驱动；
+// 默认已改为 grid——方格是确定性布局，不随种子变，属设计行为）
+const ra = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256, roadTopology: 'spine_and_loop' }));
+const rb = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256, roadTopology: 'spine_and_loop' }));
+const rc = layoutRoads(normalizeSchema({ seed: 78, mapSize: 256, roadTopology: 'spine_and_loop' }));
 ok('路网可复现', JSON.stringify(ra) === JSON.stringify(rb));
 ok('换种子换路网', JSON.stringify(ra) !== JSON.stringify(rc));
 
