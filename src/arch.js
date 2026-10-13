@@ -83,7 +83,7 @@ function buildHall(p) {
   if (p.steps && ph > 0.2) {                                          // 踏跺（两侧阶 + 中间御路斜石）
     const n = clamp(Math.round(ph / 0.17), 2, 14), stH = ph / n, run = 0.42;
     for (const sx of [1, -1]) {
-      for (let i = 0; i < n; i++) g.add(box(sw * 0.44, stH, run, stone, sx * (sw * 0.3), ph - stH * (i + 0.5), pd / 2 - 0.14 + (n - i) * run));
+      for (let i = 0; i < n; i++) g.add(box(sw * 0.44, stH, run, stone, sx * (sw * 0.3), ph - stH * (i + 0.5), pd / 2 - 0.14 + i * run));   // i=0 顶级咬入台基 face，向外逐级降（旧版反向）
       g.add(box(sw * 0.1, ph * 0.9, n * run * 1.02, stone, sx * (sw * 0.56), ph * 0.45, pd / 2 - 0.14 + n * run * 0.5, 0.03));   // 垂带石
     }
     const L = Math.hypot(ph, n * run);
@@ -187,8 +187,21 @@ function buildHall(p) {
     g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
     g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, -w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
     for (const sz of [1, -1]) g.add(box(w * 0.8 + 0.2, 0.26, 0.1, M.paint(0x2f5b8a, 0.6), 0, sy0 + rh * 0.16 + upH - 0.12, sz * (d * 0.4 + 0.06)));   // 上檐彩画带
+    if (p.dougong !== false) {                                                     // 上檐斗拱环：托住上檐檐口（旧版檐圈浮空）
+      const uw = w * 0.8, ud = d * 0.8, uy = sy0 + rh * 0.16 + upH + 0.24;
+      const mk = () => dougong(wood, 0.8, { gold: M.metal(0xb08a3e, 0.4, 0.7) });
+      const nf = clamp(Math.round(uw / 3), 3, 12), nsd = clamp(Math.round(ud / 3), 2, 10);
+      const fr = row(mk, nf, uw); fr.position.set(0, uy, ud / 2); g.add(fr);
+      const bk = fr.clone(); bk.position.z = -ud / 2; g.add(bk);
+      const sr = row(mk, nsd, ud); sr.rotation.y = Math.PI / 2; sr.position.set(uw / 2, uy, 0); g.add(sr);
+      const sr2 = sr.clone(); sr2.position.x = -uw / 2; g.add(sr2);
+      g.add(box(uw + 0.34, 0.3, 0.3, wood, 0, uy + 0.3, ud / 2));                    // 上檐普拍枋连续梁：斗拱间剪影不断开
+      g.add(box(uw + 0.34, 0.3, 0.3, wood, 0, uy + 0.3, -ud / 2));
+      g.add(box(0.3, 0.3, ud + 0.34, wood, uw / 2, uy + 0.3, 0));
+      g.add(box(0.3, 0.3, ud + 0.34, wood, -uw / 2, uy + 0.3, 0));
+    }
   }
-  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56) + (e2 ? 0.04 + rh * 0.16 + upH + 0.36 : 0);   // 檐口落在斗拱/上层墙顶之上
+  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56) + (e2 ? 0.04 + rh * 0.16 + upH + 0.3 + (p.dougong === false ? 0.1 : 0.5) : 0);   // 檐口落在斗拱/上层墙顶之上
   const rw2 = e2 ? w * 0.84 : w, rd2 = e2 ? d * 0.84 : d;
   g.add(curvedRoof({ w: rw2, d: rd2, h: rh, kind: p.kind, ridge: p.ridge, brim: p.bay * 0.75, eaveUp, mat: roofMat, seg: 26, y0: ry0 }));
   roofTrim(g, { w: rw2, d: rd2, h: rh, brim: p.bay * 0.75, eaveUp, y0: ry0, kind: p.kind, ridge: p.ridge, tile: roofMat, woodMat: wood, ridgeMat: M.paint(new THREE.Color(p.ridgeColor).getHex(), 0.6), trim, beasts: Math.round(num(p.beasts, 5)), drip: p.drip !== false });
@@ -327,14 +340,17 @@ function buildPagoda(p) {
     const eaveR = (rr * 1.38) / Math.cos(Math.PI / sides);
     const apoth = eaveR * Math.cos(Math.PI / sides);
     const rh2 = fh * 0.62, y0 = py + 0.3;
-    g.add(curvedRoof({ w: apoth * 2, d: apoth * 2, h: rh2, kind: 'jin', brim: 0, eaveUp: 0.34, mat: tile, seg: 14, y0, sides }));
+    const isTop = i === levels - 1;
+    const rrNext = R0 * (1 - (i + 1) * taper);
+    const hole = isTop ? 0 : clamp((rrNext * 0.92) / apoth, 0.2, 0.85);          // 环状檐：内圈咬入上一层塔身（旧版整锥，层层「顶尖」分离）
+    g.add(curvedRoof({ w: apoth * 2, d: apoth * 2, h: rh2, kind: 'jin', brim: 0, eaveUp: 0.34, mat: tile, seg: 14, y0, sides, hole }));
     if (trim) {
       if (Q.level !== 'lite') g.add(eaveCornice({ w: apoth * 2, d: apoth * 2, brim: 0, eaveUp: 0.34, h: rh2, y: y0 + 0.02, mat: wood, tileMat: tile, sides }));
       for (let k = 0; Q.level !== 'lite' && k < sides; k++) {                                          // 每角一条垂脊到檐角
         const a = (k / sides) * Math.PI * 2 + Math.PI / sides;
         const cx = Math.cos(a) * eaveR * 0.94, cz = Math.sin(a) * eaveR * 0.94;
-        const sample3 = (t) => jinRoofY(0.93 * t, { h: rh2, eaveUp: 0.34, y0 });   // 沿翼角线与锥面同场
-        const rr3 = hipRidge({ len: Math.hypot(cx, cz) * 0.93, curve: sample3, mat: tile, beastMat: gold, beasts: 0, s: 0.7, w: 0.15 });
+        const sample3 = (t) => jinRoofY(t * (1 - hole), { h: rh2, eaveUp: 0.34, y0 });   // 沿翼角线与锥面同场（环状檐止于内圈）
+        const rr3 = hipRidge({ len: Math.hypot(cx, cz) * (1 - hole) * 1.0, curve: sample3, mat: tile, beastMat: gold, beasts: 0, s: 0.7, w: 0.15 });
         rr3.position.set(cx, sample3(0), cz);
         rr3.rotation.y = Math.PI - Math.atan2(cz, cx);   // +x 绕 y 转 φ 落到 (cosφ, -sinφ)：朝圆心是 π-φ，不是 φ+π
         g.add(rr3);
@@ -345,7 +361,7 @@ function buildPagoda(p) {
       }
     }
     lastE = { R: eaveR, y: y0, rh: rh2 };
-    y = y0 + rh2 * 0.72;
+    y = y0 + rh2 * (isTop ? 0.72 : 0.34);   // 环状檐：上一层塔身从檐内圈里升起
   }
   // 塔刹：仰莲 + 相轮九重 + 覆钵 + 宝珠 + 垂链
   const sH = clamp(num(p.spire, 3.4), 0.6, 10);
@@ -805,6 +821,9 @@ function buildGate(p) {
     for (let i = 0; i < n; i++) g.add(box(2.5, stH, 0.44, stone, W / 2 + 1.15, stH * (i + 0.5), D / 2 - 0.3 - (n - i) * 0.44));
     g.add(box(0.35, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 0.12, H * 0.47, D / 2 - n * 0.22 - 0.3));
     g.add(box(0.3, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 2.4, H * 0.47, D / 2 - n * 0.22 - 0.3));
+    g.add(box(3.6, 0.26, 2.0, stone, W / 2 + 0.7, H + 0.13, D / 2 - 0.74 - 1.0));          // 马道顶平台：搭接城顶与梯头（旧版梯顶悬断）
+    for (const sx of [1, -1]) g.add(box(0.24, 0.62, 2.0, stone, W / 2 + 0.7 + sx * 1.7, H + 0.44, D / 2 - 0.74 - 1.0));
+    g.add(box(3.6, 0.62, 0.24, stone, W / 2 + 0.7, H + 0.44, D / 2 - 0.74 - 2.0 + 0.12));
   }
   // ── 城楼：台明 + 檐柱一周 + 墙体 + 匾额 + 屋顶（含脊兽檐口）────────
   const y0 = H + 0.18;
@@ -905,10 +924,11 @@ function buildCityWall(p) {
   if (p.stairs !== false) {                                         // 登城步梯（一侧）+ 马道
     const nS = clamp(Math.round(H / 0.3), 4, 26), stH = H / nS;
     const steps = [];
-    for (let i = 0; i < nS; i++) steps.push({ p: [L / 2 - 2.4, stH * (i + 0.5), T / 2 + 0.9 + (nS - i) * 0.001 - (nS - i) * 0.0 + i * 0 + (nS - i) * 0], s: [1.8, stH, 0.42] });
-    for (let i = 0; i < nS; i++) { steps[i].p[2] = T / 2 + 0.9 + (nS - i) * 0.42 - nS * 0.21; }
+    for (let i = 0; i < nS; i++) steps.push({ p: [L / 2 - 2.4, stH * (i + 0.5), T / 2 + 0.21 + (nS - 1 - i) * 0.42], s: [1.8, stH, 0.42] });   // 顶级贴墙面（旧版没入墙身）
     const st = batch(new THREE.BoxGeometry(1, 1, 1), stone2, steps);
     if (st) g.add(st);
+    g.add(box(2.6, 0.26, 1.6, stone2, L / 2 - 2.4, H + 0.13, T / 2 - 0.6));                 // 步梯顶平台接通城顶
+    for (const sx of [1, -1]) g.add(box(0.22, 0.6, 1.6, stone, L / 2 - 2.4 + sx * 1.2, H + 0.42, T / 2 - 0.6));
     for (const sz of [1, -1]) {
       const wall2 = box(0.26, H * 0.9, nS * 0.42, stone, L / 2 - 2.4 + sz * 1.0, H * 0.45, T / 2 + 0.9);
       wall2.rotation.y = 0;

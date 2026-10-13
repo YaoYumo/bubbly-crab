@@ -146,7 +146,7 @@ export function scatter(fn, n, w, d, seed = 3, minR = 0) {
  */
 /** 攒尖（多边形）屋面的正确搭法：网格直接沿正多边形铺，檐口 = 边中点在内切半径 a 上、角端在 a/cos(π/s)。
  *  用方网格再按 cos 归一化不行：方网的角到不了多边形角端，翘起反而长错方向，垂脊/脊兽会悬在屋面外面。 */
-function jinRoofGeo(sn, a, h, eaveUp, y0, seg) {
+function jinRoofGeo(sn, a, h, eaveUp, y0, seg, hole = 0) {
   // 关键：仍然用 PlaneGeometry（屋面在别处一律按「变形过的面片」被识别：材质分类、bake 档案、构件统计），
   // 只是把网格重排成「同心多边形环 × 檐口周长」，这样角端正好落在 a/cos(π/s) 上。
   const per = Math.max(4, Math.round(seg / sn) + 1);
@@ -158,7 +158,7 @@ function jinRoofGeo(sn, a, h, eaveUp, y0, seg) {
   const pos = geo.attributes.position, uv = geo.attributes.uv;
   const cols = sn * per + 1;
   for (let r = 0; r <= rings; r++) {
-    const k = r / rings, t = 1 - k;
+    const k = hole + (1 - hole) * (r / rings), t = 1 - k;   // hole>0：环状檐（内圈收进，供塔身穿升）
     for (let c = 0; c < cols; c++) {
       const j = c % (sn * per);
       const side = Math.floor(j / per), f = (j % per) / per;
@@ -185,14 +185,14 @@ export function jinRoofY(tRing, o = {}) {
 
 /** 曲面屋顶（庑殿 / 歇山 / 卷棚 / 攒尖）：把一张 PlaneGeometry 按举折 + 起翘抬高。
  *  `sides >= 3` 的攒尖走 jinRoofGeo（同心多边形环），檐口正多边形、角端对正檐柱。 */
-export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0 } = {}) {
+export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0, hole = 0 } = {}) {
   seg = Math.max(8, Math.round(mul(seg)));   // 举折曲线的密度随精度档走
   const W = Math.max(1, w + brim * 2), D = Math.max(1, d + brim * 2);
   const nx = Math.max(6, Math.round(seg * (W / Math.max(W, D)))), nz = Math.max(6, seg);
   const sn = Math.max(0, Math.round(sides));
   if (kind === 'jin' && sn >= 3) {
     const a = Math.min(W, D) / 2;
-    const pm = new THREE.Mesh(jinRoofGeo(sn, a, h, eaveUp, y0, seg), mat || M.paint(0x3a4048, 0.85));
+    const pm = new THREE.Mesh(jinRoofGeo(sn, a, h, eaveUp, y0, seg, hole), mat || M.paint(0x3a4048, 0.85));
     pm.material.side = THREE.DoubleSide;
     pm.castShadow = true; pm.receiveShadow = true;
     pm.userData.roofA = a; pm.userData.roofSides = sn;
