@@ -510,7 +510,7 @@ function buildPaifang(p) {
     if (c.sh || Math.abs(c.x) > span * 0.5 - 0.01) {                           // 端柱抱鼓石：鼓座 + 立鼓（鼓面朝街）+ 鼓顶兽
       for (const sx of [1, -1]) {
         const bx = c.x + sx * R * 4.6;
-        g.add(box(R * 1.5, 0.5, R * 3.3, M.stone(0x9c978d, 0.93), bx, 0.25, 0, 0.06));
+        g.add(box(R * 1.5, 0.62, R * 3.3, M.stone(0x9c978d, 0.93), bx, 0.31, 0, 0.06));   // 加高咬住鼓身（旧版差 6cm 悬空）
         const drum = cyl(R * 1.34, R * 1.34, 0.22, stone, seg(16), bx, 0.86, 0);
         drum.rotation.z = Math.PI / 2;                                          // 圆柱横倒 → 鼓面正对街道
         g.add(drum);
@@ -1506,6 +1506,11 @@ function buildSpiritWay(p) {
     g.add(box(1.9, 0.7, 0.72, stone, 0, 4.3, z, 0.12));                            // 碑额（螭首）
     for (const sx of [1, -1]) g.add(sph(0.22, stone2, seg(8), sx * 0.6, 4.5, z + 0.2));
     g.add(box(1.1, 2.2, 0.06, M.stone(0x8b8b83, 0.9), 0, 2.4, z + 0.25));          // 碑心（刻字面）
+  }
+  {                                                                                  // 神道铺地 + 两侧路缘：石像生/望柱/碑共坐一条道（旧版各自落地、碑丛成孤立剪影）
+    const z0 = -L / 2 - 3.4, z1 = L / 2 + 4.2;
+    g.add(box(gap * 2 + 2.4, 0.14, z1 - z0, stone2, 0, 0.07, (z0 + z1) / 2, 0.03));
+    for (const s of [-1, 1]) g.add(box(0.3, 0.26, z1 - z0, stone, s * (gap + 1.35), 0.13, (z0 + z1) / 2));
   }
   g.userData.way = { pairs, pillars: p.pillars !== false, stele: p.stele !== false };
   return cnShade(g);
