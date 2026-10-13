@@ -340,7 +340,7 @@ export function eaveCornice(o = {}) {
   const W = w + brim * 2, D = d + brim * 2;
   const step = 0.46 / clamp(mul(1), 0.55, 1.8);          // 排布密度随精度档
   const nX = clamp(Math.round(W / step), 3, 30), nZ = clamp(Math.round(D / step), 3, 24);
-  const raft = [], caps = [], drops = [];
+  const raft = [], caps = [], drops = [], bands = [];
   const lift = (u) => eaveUp * rh * Math.pow(clamp((u - 0.5) / 0.5, 0, 1), 0.55);   // 与屋面 cwx/cwz 同权重（旧版 u² 让檐口中段瓦当凸出檐口 Above）
   // 瓦作小件的段数：是檐口上一圈 8cm 的小件，段数按精度档给死了，不能跟着 seg() 放大
   // （旧版瓦当 15 段 = 180 面、滴水 12 段 = 144 面，一座七层塔 1182 件就是 12.8 万面）；
@@ -368,7 +368,19 @@ export function eaveCornice(o = {}) {
         drops.push({ p: [x + ux * 0.06, yy - 0.05, z + uz * 0.06], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
       }
     }
-  } else
+    for (let k = 0; k < sn; k++) {                                  // 檐檩分段环梁：沿多边形檐边、跟 0.73 角线同曲线（旧恒 y 方环吊在翼角下）
+      const ac = (k / sn) * Math.PI * 2;
+      const ux = Math.cos(ac), uz = Math.sin(ac), tx = -uz, tz = ux;
+      const yaw = Math.atan2(-tz, tx);
+      const nB = clamp(Math.round(sideLen / 1.0), 3, 16);
+      const py = (t) => y + eaveUp * rh * 0.73 * Math.pow(Math.min(1, Math.abs(t) * 2), 0.55);
+      for (let i = 0; i < nB; i++) {
+        const t0 = i / nB - 0.5, t1 = (i + 1) / nB - 0.5, tm = (t0 + t1) / 2;
+        const dy = py(t1) - py(t0), off = sideLen * tm;
+        bands.push({ p: [ux * (Rb - 0.34) + tx * off, py(tm) - 0.06, uz * (Rb - 0.34) + tz * off], r: [0, yaw, Math.atan2(dy, sideLen / nB)], s: [sideLen / nB * 1.08, 0.16, 0.2] });
+      }
+    }
+  } else {
   for (const sz of [1, -1]) {
     for (let i = 0; i <= nX; i++) {
       const x = (i / nX - 0.5) * W;
@@ -387,6 +399,19 @@ export function eaveCornice(o = {}) {
       drops.push({ p: [sx * (W / 2 + 0.06), yy - 0.05, z], r: aimCyl(sx, 0, 0), s: [1, 1, 0.6] });
     }
   }
+  // 矩形檐口的檐檩分段环梁：跟 lift() 同曲线，翼角随檐口抬起（旧恒 y 直环吊在翼角下 = 悬浮矩形横梁）
+  const nBx = clamp(Math.round(W / 1.0), 4, 20), nBz = clamp(Math.round(D / 1.0), 4, 20);
+  for (const sz of [1, -1]) for (let i = 0; i < nBx; i++) {
+    const t0 = i / nBx - 0.5, t1 = (i + 1) / nBx - 0.5, tm = (t0 + t1) / 2;
+    const dy = lift(Math.abs(t1) * 2) - lift(Math.abs(t0) * 2);
+    bands.push({ p: [tm * W, y + lift(Math.abs(tm) * 2) - 0.06, sz * (D / 2 - 0.34)], r: [0, 0, Math.atan2(dy, W / nBx)], s: [W / nBx * 1.08, 0.16, 0.2] });
+  }
+  for (const sx of [1, -1]) for (let i = 0; i < nBz; i++) {
+    const t0 = i / nBz - 0.5, t1 = (i + 1) / nBz - 0.5, tm = (t0 + t1) / 2;
+    const dy = lift(Math.abs(t1) * 2) - lift(Math.abs(t0) * 2);
+    bands.push({ p: [sx * (W / 2 - 0.34), y + lift(Math.abs(tm) * 2) - 0.06, tm * D], r: [0, -Math.PI / 2, Math.atan2(dy, D / nBz)], s: [D / nBz * 1.08, 0.16, 0.2] });
+  }
+  }
   const g = new THREE.Group();
   const r1 = batch(new THREE.BoxGeometry(1, 1, 1), wood, raft);
   if (r1) g.add(r1);
@@ -394,11 +419,8 @@ export function eaveCornice(o = {}) {
   if (r2) g.add(r2);
   const r3 = batch(dropGeo, tile, drops);                                                 // 滴水
   if (r3) g.add(r3);
-  // 檐檩藏在檐口线以下（旧版 y+0.16  protrude 出屋面成悬浮横带）；band:false 整圈取消（宫殿大殿修补单：檐檩带与瓦面脱读，甲方删除）
-  if (o.band !== false) {
-    for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y - 0.06, sz * (D / 2 - 0.34)));   // 檐檩
-    for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y - 0.06, 0));
-  }
+  // 檐檩分段环梁（一步 batch）：与椽身同曲线的连续环梁，翼角随檐口起翘；band:false 整圈取消（宫殿大殿重檐修补单）
+  if (o.band !== false) { const rb = batch(new THREE.BoxGeometry(1, 1, 1), wood, bands); if (rb) g.add(rb); }
   g.userData.marker = '檐口椽瓦';
   return g;
 }
