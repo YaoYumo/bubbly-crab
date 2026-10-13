@@ -51,7 +51,9 @@ function buildHall(p) {
       const ins = (tiers - 1 - ti) * p.bay * 0.5;                    // 下层外挑成月台
       const t0 = tH * ti, tw = pw + ins * 2, td = pd + ins * 2;
       g.add(box(tw, tH * 0.62, td, stone, 0, t0 + tH * 0.31, 0));
-      g.add(box(tw + 0.3, Math.max(0.08, tH * 0.16), td + 0.3, stone, 0, t0 + tH * 0.7, 0, 0.03));
+      // 修补单[1]：踏跺落脚层（tiers-2）的 cap 石下沉 7cm —— 旧版露沿高出台步 0.07，与下跑平台板接缝错位
+      const capDrop = ti === tiers - 2 ? 0.07 : 0;
+      g.add(box(tw + 0.3, Math.max(0.08, tH * 0.16), td + 0.3, stone, 0, t0 + tH * 0.7 - capDrop, 0, 0.03));
       g.add(box(tw + 0.16, tH * 0.24 + 0.06, td + 0.16, stone, 0, t0 + tH - (tH * 0.24 + 0.06) / 2, 0));  // 阶条石顶 = 层顶
       if (ti === 0) g.add(box(tw + 0.86, 0.06, td + 0.86, M.stone(0x98928a, 0.95), 0, 0.03, 0));          // 散水
       if (ti < tiers - 1) {                                          // 层顶石栏杆（正面让出踏跺口）
@@ -82,17 +84,46 @@ function buildHall(p) {
   }
   if (p.steps && ph > 0.2) {                                          // 踏跺（两侧阶 + 中间御路斜石）
     const n = clamp(Math.round(ph / 0.17), 2, 14), stH = ph / n, run = 0.42;
+    // 修补单[2-5][17-19]：多层台基时旧版一跑台阶直冲到地坪 —— 下半段台阶埋进第二层台基、
+    // 御路底版戳穿散水（y −0.05）。改两段式：上跑落在下一层行走面，下跑（平台板+一步）再降到散水面。
+    const multi = tiers >= 2;
+    const walk2 = ph * (tiers - 1) / tiers;                           // 上跑落脚的行走面（阶条石顶 = tH×(tiers-1)）
+    const walk1 = ph * Math.max(0, tiers - 2) / tiers;                // 下跑落脚面（再下一层顶；单层台基 = 地坪）
+    const nUp = multi ? clamp(Math.round((ph - walk2) / stH) + 2, 2, n) : n;   // +2 级尾端埋进落脚层，行走面边缘不露缝
     for (const sx of [1, -1]) {
-      for (let i = 0; i < n; i++) g.add(box(sw * 0.44, stH, run, stone, sx * (sw * 0.3), ph - stH * (i + 0.5), pd / 2 - 0.14 + i * run));   // i=0 顶级咬入台基 face，向外逐级降（旧版反向）
+      for (let i = 0; i < nUp; i++) g.add(box(sw * 0.44, stH, run, stone, sx * (sw * 0.3), ph - stH * (i + 0.5), pd / 2 - 0.14 + i * run));   // i=0 顶级咬入台基 face，向外逐级降（旧版反向）
       g.add(box(sw * 0.1, ph * 0.9, n * run * 1.02, stone, sx * (sw * 0.56), ph * 0.45, pd / 2 - 0.14 + n * run * 0.5, 0.03));   // 垂带石
     }
-    const L = Math.hypot(ph, n * run);
-    const rp = box(sw * 0.44, 0.1, L, M.stone(0xaba59c, 0.9), 0, ph * 0.5, pd / 2 - 0.14 + n * run * 0.5);
-    rp.rotation.x = -Math.atan2(ph, n * run);
-    g.add(rp);
-    const rp2 = box(sw * 0.2, 0.06, L * 0.92, M.stone(0xc6c0b4, 0.86), 0, ph * 0.5 + 0.09, pd / 2 - 0.14 + n * run * 0.5);     // 御路雕龙石
-    rp2.rotation.x = rp.rotation.x;
-    g.add(rp2);
+    if (!multi) {                                                     // 单层台基（hall2 等）：保留旧版整跑御路直达地坪
+      const L = Math.hypot(ph, n * run);
+      const rp = box(sw * 0.44, 0.1, L, M.stone(0xaba59c, 0.9), 0, ph * 0.5, pd / 2 - 0.14 + n * run * 0.5);
+      rp.rotation.x = -Math.atan2(ph, n * run);
+      g.add(rp);
+      const rp2 = box(sw * 0.2, 0.06, L * 0.92, M.stone(0xc6c0b4, 0.86), 0, ph * 0.5 + 0.09, pd / 2 - 0.14 + n * run * 0.5);     // 御路雕龙石
+      rp2.rotation.x = rp.rotation.x;
+      g.add(rp2);
+    } else {
+      const tanA = ph / (n * run);
+      // 上跑御路[4][5]：与台阶同坡度，后端咬入台基顶阶条石、前端咬入行走面 cap 石；加厚 0.15（旧版 0.06 读成纸片），底版[133]取消
+      const drop1 = ph - walk2 + 0.14, run1 = drop1 / tanA;
+      const rp2 = box(sw * 0.2, 0.15, Math.hypot(drop1, run1) + 0.04, M.stone(0xc6c0b4, 0.86), 0, (ph - 0.07 + walk2 - 0.21) / 2, pd / 2 + 0.05 + run1 / 2);
+      rp2.rotation.x = -Math.atan2(drop1, run1);
+      g.add(rp2);
+      // 下跑[2][3][17][18]：平台板（比行走面低一级）+ 踏步石（余降对半分），都实体落到落脚面，不留空腔
+      const zA0 = pd / 2 + p.bay / 2 + 0.14, topA = walk2 - stH;
+      if (topA - walk1 > 0.12) {                                      // 台基矮到摆不开下跑（组合直调的小台基）就整体省略
+        const drop2 = (topA - walk1) / 2, topB = walk1 + drop2;
+        for (const sx of [1, -1]) {
+          g.add(box(sw * 0.44, topA - walk1, run, stone, sx * (sw * 0.3), (topA + walk1) / 2, zA0 + run * 0.5));
+          g.add(box(sw * 0.44, topB - walk1, run, stone, sx * (sw * 0.3), (topB + walk1) / 2, zA0 + run * 1.5));
+        }
+        // 下跑御路[19]：从行走面沿边跨过下跑降到散水，前后端各咬入 ~7cm
+        const yB = walk2 - 0.075, yF = walk1 - 0.07, run2 = 1.42;
+        const rp3 = box(sw * 0.2, 0.15, Math.hypot(yB - yF, run2) + 0.06, M.stone(0xc6c0b4, 0.86), 0, (yB + yF) / 2, zA0 + 0.03 + run2 / 2);
+        rp3.rotation.x = -Math.atan2(yB - yF, run2);
+        g.add(rp3);
+      }
+    }
   }
   // ── 檐柱一圈（柱础 + 额枋 + 斗拱）+ 金柱─────────────────────────
   const cols = Math.max(2, Math.round(num(p.bays, 5)) * 2 + 2);
@@ -179,15 +210,19 @@ function buildHall(p) {
   const upH = e2 ? cH * 0.42 : 0;
   if (e2) {
     const sy0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56) + 0.04, eU2 = Math.min(0.4, eaveUp * 1.6);
-    g.add(curvedRoof({ w: w + 0.8, d: d + 0.8, h: rh * 0.34, kind: p.kind === 'xie' ? 'xie' : 'wu', ridge: 0.95, brim: p.bay * 0.55, eaveUp: eU2, mat: roofMat, seg: 20, y0: sy0 }));
-    if (trim) g.add(eaveCornice({ w: w + 0.8, d: d + 0.8, brim: p.bay * 0.55, eaveUp: eU2, h: rh * 0.34, y: sy0 + 0.02, mat: wood, tileMat: roofMat }));
-    g.add(box(w * 0.8, upH + 0.3, d * 0.8, wall, 0, sy0 + rh * 0.16 + (upH + 0.3) / 2, 0));       // 上檐墙身（坐进下檐面）
-    g.add(box(w * 0.8 + 0.4, 0.34, 0.34, wood, 0, sy0 + rh * 0.16 + upH + 0.1, d * 0.4));
-    g.add(box(w * 0.8 + 0.4, 0.34, 0.34, wood, 0, sy0 + rh * 0.16 + upH + 0.1, -d * 0.4));
-    g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
-    g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, -w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
+    // 修补单[6][7-10]：下檐瓦面整体抬 0.14（檐线收紧、与檐口椽瓦贴合），檐檩横带整圈取消（band:false）
+    g.add(curvedRoof({ w: w + 0.8, d: d + 0.8, h: rh * 0.34, kind: p.kind === 'xie' ? 'xie' : 'wu', ridge: 0.95, brim: p.bay * 0.55, eaveUp: eU2, mat: roofMat, seg: 20, y0: sy0 + 0.14 }));
+    if (trim) g.add(eaveCornice({ w: w + 0.8, d: d + 0.8, brim: p.bay * 0.55, eaveUp: eU2, h: rh * 0.34, y: sy0 + 0.16, mat: wood, tileMat: roofMat, band: false }));
+    // 修补单[11]：上檐墙身整体降 0.26 —— 旧版墙顶冒出檐枋环 3cm 成错缝；降后墙顶收进枋带内，
+    // 底端仍深埋下檐瓦面（瓦面已抬 0.14，墙体随单下沉，咬合更深）
+    g.add(box(w * 0.8, upH + 0.3, d * 0.8, wall, 0, sy0 + rh * 0.16 + (upH + 0.3) / 2 - 0.26, 0));       // 上檐墙身（坐进下檐面）
+    // 修补单[12]联动：上檐枋环 / 斗拱环 / 普拍枋 / 上檐屋面整体随抬 0.09，斗拱顶与檐线保持 3cm 咬合
+    g.add(box(w * 0.8 + 0.4, 0.34, 0.34, wood, 0, sy0 + rh * 0.16 + upH + 0.19, d * 0.4));
+    g.add(box(w * 0.8 + 0.4, 0.34, 0.34, wood, 0, sy0 + rh * 0.16 + upH + 0.19, -d * 0.4));
+    g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, w * 0.4, sy0 + rh * 0.16 + upH + 0.19, 0));
+    g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, -w * 0.4, sy0 + rh * 0.16 + upH + 0.19, 0));
     if (p.dougong !== false) {                                                     // 上檐斗拱环：托住上檐檐口（旧版檐圈浮空）
-      const uw = w * 0.8, ud = d * 0.8, uy = sy0 + rh * 0.16 + upH + 0.24;
+      const uw = w * 0.8, ud = d * 0.8, uy = sy0 + rh * 0.16 + upH + 0.33;   // 修补单[12]：斗拱环随上檐屋面同抬 0.09
       const mk = () => dougong(wood, 0.8, { gold: M.metal(0xb08a3e, 0.4, 0.7) });
       const nf = clamp(Math.round(uw / 3), 3, 12), nsd = clamp(Math.round(ud / 3), 2, 10);
       const fr = row(mk, nf, uw); fr.position.set(0, uy, ud / 2); g.add(fr);
@@ -200,10 +235,11 @@ function buildHall(p) {
       g.add(box(0.3, 0.3, ud + 0.34, wood, -uw / 2, uy + 0.3, 0));
     }
   }
-  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56) + (e2 ? 0.04 + rh * 0.16 + upH + 0.3 + (p.dougong === false ? 0.1 : 0.5) : 0);   // 檐口落在斗拱/上层墙顶之上
+  // 修补单[12][13-16]：上檐檐线随斗拱环抬 0.09（0.04→0.13）；重檐时上下檐檩带都取消（band:!e2，单层 hall2 保持原样）
+  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56) + (e2 ? 0.13 + rh * 0.16 + upH + 0.3 + (p.dougong === false ? 0.1 : 0.5) : 0);   // 檐口落在斗拱/上层墙顶之上
   const rw2 = e2 ? w * 0.84 : w, rd2 = e2 ? d * 0.84 : d;
   g.add(curvedRoof({ w: rw2, d: rd2, h: rh, kind: p.kind, ridge: p.ridge, brim: p.bay * 0.75, eaveUp, mat: roofMat, seg: 26, y0: ry0 }));
-  roofTrim(g, { w: rw2, d: rd2, h: rh, brim: p.bay * 0.75, eaveUp, y0: ry0, kind: p.kind, ridge: p.ridge, tile: roofMat, woodMat: wood, ridgeMat: M.paint(new THREE.Color(p.ridgeColor).getHex(), 0.6), trim, beasts: Math.round(num(p.beasts, 5)), drip: p.drip !== false });
+  roofTrim(g, { w: rw2, d: rd2, h: rh, brim: p.bay * 0.75, eaveUp, y0: ry0, kind: p.kind, ridge: p.ridge, tile: roofMat, woodMat: wood, ridgeMat: M.paint(new THREE.Color(p.ridgeColor).getHex(), 0.6), trim, beasts: Math.round(num(p.beasts, 5)), drip: p.drip !== false, band: !e2 });
   if (p.kind === 'xie') {                                          // 歇山山花/博风/悬鱼：山花退脊端内侧，博风沿垂脊线
     const brim2 = p.bay * 0.75, W2 = rw2 + brim2 * 2, D2 = rd2 + brim2 * 2;
     const xr2 = Math.max(0.6, rw2 * 0.5 * p.ridge);
@@ -400,7 +436,7 @@ function roofTrim(g, o = {}) {
   const trim = o.trim !== false, drip = o.drip !== false;
   const W = w + brim * 2, D = d + brim * 2;
   const xr = Math.max(0.35, w * 0.5 * ridge);
-  if (trim && drip) g.add(eaveCornice({ w, d, brim, eaveUp, h, y: y0 + 0.03, mat: wood, tileMat: tile }));
+  if (trim && drip) g.add(eaveCornice({ w, d, brim, eaveUp, h, y: y0 + 0.03, mat: wood, tileMat: tile, band: o.band }));
   // 正脊：两层脊身 + 两端正吻（鸱吻，尾尖内吞）
   const ry = y0 + h * 0.76;                      // curvedRoof 的脊高就是 0.76h：正脊落在屋面上，不再悬空
   const rl = kind === 'juan' ? W + 0.3 : kind === 'jin' ? 0.6 : xr * 2 + 0.5;

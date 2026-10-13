@@ -394,9 +394,11 @@ export function eaveCornice(o = {}) {
   if (r2) g.add(r2);
   const r3 = batch(dropGeo, tile, drops);                                                 // 滴水
   if (r3) g.add(r3);
-  // 檐檩藏在檐口线以下（旧版 y+0.16  protrude 出屋面成悬浮横带）
-  for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y - 0.06, sz * (D / 2 - 0.34)));   // 檐檩
-  for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y - 0.06, 0));
+  // 檐檩藏在檐口线以下（旧版 y+0.16  protrude 出屋面成悬浮横带）；band:false 整圈取消（宫殿大殿修补单：檐檩带与瓦面脱读，甲方删除）
+  if (o.band !== false) {
+    for (const sz of [1, -1]) g.add(box(W, 0.16, 0.2, wood, 0, y - 0.06, sz * (D / 2 - 0.34)));   // 檐檩
+    for (const sx of [1, -1]) g.add(box(0.2, 0.16, D, wood, sx * (W / 2 - 0.34), y - 0.06, 0));
+  }
   g.userData.marker = '檐口椽瓦';
   return g;
 }
