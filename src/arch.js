@@ -1349,6 +1349,195 @@ function buildCourtyard(p) {
   g.userData.yard = { gate: !!p.gate, screen: p.screen !== false, corr: p.corr !== false && !!p.wings, trim };
   return cnShade(g);
 }
+// ── 夯土台（版筑台基）：收分台身 + 砖砌下碱 + 顶面墁砖 + 宇墙栏杆 + 柱础 + 实心步梯 + 夯土墙筋 ──
+function buildEarthTerrace(p) {
+  const g = new THREE.Group();
+  const earth = M.earth(new THREE.Color(p.earth).getHex(), 0.95);
+  const brick = M.brick(0x9c978d, 0.92);
+  const stone2 = M.stone(0x9c978d, 0.93);
+  const W = Math.max(4, num(p.w, 12)), D = Math.max(4, num(p.d, 10)), H = Math.max(1.2, num(p.h, 4.2));
+  const bat = H * 0.3;                                                                        // 收分
+  const frust = (wt, dt, wb, db, h, y, mat) => {                                              // 矩形截锥（收分台身）
+    const geo = new THREE.CylinderGeometry(1, wb / wt, 1, 4, 1);
+    geo.rotateY(Math.PI / 4);
+    const m = new THREE.Mesh(geo, mat);
+    m.scale.set(wt / Math.SQRT2, h, dt / Math.SQRT2);
+    m.position.y = y + h / 2;
+    m.castShadow = m.receiveShadow = true;
+    return m;
+  };
+  g.add(frust(W + 2 * bat * 0.62 + 0.1, D + 2 * bat * 0.62 + 0.1, W + 2 * bat + 0.1, D + 2 * bat + 0.1, H * 0.36, 0, brick));   // 砖砌下碱（包脚）
+  g.add(frust(W, D, W + 2 * bat * 0.62, D + 2 * bat * 0.62, H * 0.72, H * 0.28, earth));      // 夯土台身（底咬进下碱）
+  const bands = [];                                                                           // 版筑夯层线（嵌进斜面 3cm）
+  for (const fy of [0.45, 0.62, 0.79]) for (const [fx, fz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const y = H * fy, hx = W / 2 + bat * (1 - y / H), hz = D / 2 + bat * (1 - y / H);
+    bands.push(fx ? { p: [fx * (hx - 0.02), y, 0], r: [0, 0, -fx * Math.atan2(bat, H)], s: [0.1, 0.06, D * 0.86] }
+                  : { p: [0, y, fz * (hz - 0.02)], r: [fz * Math.atan2(bat, H), 0, 0], s: [W * 0.86, 0.06, 0.1] });
+  }
+  const bb = batch(new THREE.BoxGeometry(1, 1, 1), M.earth(0x8a6a48, 0.95), bands);
+  if (bb) g.add(bb);
+  g.add(box(W + 0.4, 0.18, D + 0.4, stone2, 0, H + 0.07, 0));                                 // 顶面墁砖板（咬进台顶 2cm）
+  const joints = [];
+  const nj = clamp(Math.round(mul(W / 1.5)), 4, 40);
+  for (let i = 0; i < nj; i++) joints.push({ p: [(-0.5 + (i + 0.5) / nj) * W, H + 0.17, 0], s: [0.05, 0.03, D * 0.96] });
+  const jb = batch(new THREE.BoxGeometry(1, 1, 1), M.stone(0x8f8a80, 0.9), joints);
+  if (jb) g.add(jb);
+  if (p.rail !== false) {                                                                     // 顶面宇墙栏杆（坐墁砖面）
+    for (const sz of [1, -1]) { const r1 = stoneRail({ len: W - 0.5, h: 0.55, y: H + 0.16, mat: stone2 }); r1.position.z = sz * (D / 2 - 0.16); g.add(r1); }
+    for (const sx of [1, -1]) { const r2 = stoneRail({ len: D - 0.5, h: 0.55, y: H + 0.16, mat: stone2, axis: 'z' }); r2.position.x = sx * (W / 2 - 0.16); g.add(r2); }
+  }
+  const nc = clamp(Math.round(num(p.cols, 6)), 0, 12);
+  for (let i = 0; i < nc; i++) {                                                              // 柱础（将来立屋之基）
+    const cx = ((i % 3) - 1) * W / 3.4, cz = (i < 3 ? -1 : 1) * D / 4.2;
+    g.add(box(0.66, 0.14, 0.66, stone2, cx, H + 0.23, cz));
+    g.add(cyl(0.26, 0.3, 0.42, stone2, seg(10), cx, H + 0.51, cz));
+  }
+  if (p.stairs !== false) {                                                                   // 登台阶梯：踏步 + 实心梯体 + 夹墙
+    const n = clamp(Math.round(H / 0.3), 4, 26), stH = H / n;
+    const st = [];
+    for (let i = 0; i < n; i++) st.push({ p: [0, stH * (i + 0.5), D / 2 + 0.1 + (n - 1 - i) * 0.4], s: [2.4, stH, 0.42] });
+    for (let i = 1; i < n; i++) st.push({ p: [0, stH * i / 2, D / 2 + 0.1 + (n - 1 - i) * 0.4], s: [2.4, stH * i + 0.02, 0.42] });   // 踏步下实心（防"楼梯下空"）
+    const sb = batch(new THREE.BoxGeometry(1, 1, 1), stone2, st);
+    if (sb) g.add(sb);
+    for (const sx of [1, -1]) g.add(box(0.24, H * 0.82, n * 0.4 + 0.7, stone2, sx * 1.44, H * 0.41, D / 2 + 0.1 + (n - 1) * 0.2));
+  }
+  const ties = [];                                                                            // 夯土墙筋（木骨）：嵌进斜面 0.4m、露头 7cm
+  for (const fy of [0.45, 0.62, 0.79]) for (const tz of [-0.25, 0, 0.25]) {
+    const y = H * fy, hx = W / 2 + bat * (1 - y / H);
+    ties.push({ p: [hx - 0.18, y, tz * D], r: [0, 0, -Math.atan2(bat, H)], s: [0.5, 0.14, 0.14] });
+  }
+  const tb = batch(new THREE.BoxGeometry(1, 1, 1), M.wood(0x6b452a, 0.7), ties);
+  if (tb) g.add(tb);
+  g.userData.terrace = { rail: p.rail !== false, stairs: p.stairs !== false, cols: nc };
+  return cnShade(g);
+}
+// ── 民居（硬山小青瓦）：台明 + 下碱砖裙 + 抹灰墙 + 板门门簪 + 格窗 + 硬山脊 + 墀头 + 檐口椽瓦 ──
+function buildFolkHouse(p) {
+  const g = new THREE.Group();
+  const plaster = M.paint(new THREE.Color(p.wall).getHex(), 0.82);
+  const brick = M.brick(0x9c978d, 0.92);
+  const wood = M.wood(0x8a6a48, 0.78);
+  const grey = M.stone(0x8f8a80, 0.9);
+  const tile = roofSurf(new THREE.Color(p.roof).getHex(), 0.66);
+  const w = Math.max(3, num(p.w, 6.4)), d = Math.max(3, num(p.d, 4.8)), h = Math.max(2, num(p.h, 3));
+  const rh = Math.max(0.6, num(p.roofH, 1.15));
+  g.add(box(w + 0.6, 0.24, d + 0.6, grey, 0, 0.12, 0));                                       // 台明
+  g.add(box(w + 0.08, h * 0.36, d + 0.08, brick, 0, 0.24 + h * 0.18, 0));                     // 下碱（青砖裙）
+  g.add(box(w, h, d, plaster, 0, 0.24 + h / 2, 0));                                           // 抹灰墙身
+  g.add(box(1.56, 0.16, 0.18, wood, 0, 0.24 + 2.02, d / 2 + 0.02));                           // 门楣
+  for (const sx of [-1, 1]) g.add(box(0.7, 1.9, 0.08, wood, sx * 0.37, 0.24 + 0.95, d / 2 + 0.06));   // 板门两扇
+  const hd = [];
+  for (const sx of [-1, 1]) hd.push({ p: [sx * 0.16, 0.24 + 1.05, d / 2 + 0.12], s: [0.09, 0.09, 0.09] });
+  const hb = batch(new THREE.SphereGeometry(1, seg(8), seg(6)), M.metal(0x3a3f45, 0.6), hd);  // 门环
+  if (hb) g.add(hb);
+  g.add(box(1.6, 0.16, 0.34, grey, 0, 0.24 + 0.08, d / 2 + 0.14));                            // 门槛石
+  g.add(box(1.9, 0.14, 0.5, grey, 0, 0.07, d / 2 + 0.45));                                    // 踏级（落地且搭住台明）
+  for (const sx of [-1, 1]) {                                                                 // 格窗：窗台+框+棂条
+    const x = sx * w * 0.32;
+    g.add(box(1.14, 0.1, 0.2, grey, x, 0.24 + 1.02, d / 2 + 0.04));
+    g.add(box(1.06, 1.12, 0.1, wood, x, 0.24 + 1.62, d / 2 + 0.05));
+    const lat = [];
+    for (let i = 0; i < 5; i++) lat.push({ p: [x + (i / 4 - 0.5) * 0.9, 0.24 + 1.62, d / 2 + 0.11], s: [0.04, 1.0, 0.05] });
+    for (let i = 0; i < 3; i++) lat.push({ p: [x, 0.24 + 1.32 + i * 0.3, d / 2 + 0.11], s: [0.96, 0.04, 0.05] });
+    const lb = batch(new THREE.BoxGeometry(1, 1, 1), wood, lat);
+    if (lb) g.add(lb);
+  }
+  const y0 = 0.24 + h - rh * 0.10;                                                            // 檐口：壳面在墙身面处高于墙顶（硬山坐梁），椽头仍咬进墙顶
+  g.add(curvedRoof({ w: w + 1.3, d: d + 1.5, h: rh, kind: 'juan', brim: 0.4, eaveUp: 0.18, mat: tile, seg: 16, y0 }));
+  for (const sx of [1, -1]) for (const zc of [-d * 0.375, -d * 0.125, d * 0.125, d * 0.375]) { // 山墙砌体：顶到瓦背下皮 4cm（藏进屋面内，不穿出瓦面）
+    const top = cnRoofY(w / 2 - 0.1, zc, { W: w + 1.3, D: d + 1.5, h: rh, kind: 'juan', eaveUp: 0.18, y0 }) - 0.05;   // 与屋面同场（cnRoofY），藏进瓦背下 5cm
+    const hh2 = top - (0.24 + h) + 0.06;
+    if (hh2 > 0.08) g.add(box(0.26, hh2, d / 4 + 0.06, brick, sx * (w / 2 - 0.1), 0.24 + h - 0.06 + hh2 / 2, zc));
+  }
+  for (const sx of [1, -1]) for (const sz of [1, -1]) {                                       // 墀头（山墙檐口三级挑出）
+    const x = sx * (w / 2 - 0.06), z = sz * (d / 2 + 0.02);
+    g.add(box(0.5, 0.16, 0.5, brick, x, y0 - 0.36, z));
+    g.add(box(0.42, 0.16, 0.42, brick, x, y0 - 0.2, z));
+    g.add(box(0.34, 0.16, 0.34, brick, x, y0 - 0.04, z));                                    // 三级顶藏檐口壳下
+  }
+  g.add(box(w + 0.5, 0.34, 0.34, grey, 0, y0 + rh * 0.76 - 0.06, 0));                          // 正脊（cnRoofY 脊顶 0.76h：深坐咬壳、露头 11cm）
+  for (const sx of [1, -1]) { const e2 = box(0.24, 0.36, 0.3, grey, sx * (w / 2 + 0.2), y0 + rh * 0.76 + 0.12, 0); e2.rotation.z = -sx * 0.35; g.add(e2); }   // 脊端起翘（咬脊顶）
+  g.add(eaveCornice({ w: w + 1.3, d: d + 1.5, brim: 0.4, eaveUp: 0.18, h: rh, y: y0 + 0.02, mat: wood, tileMat: tile }));
+  g.userData.folk = { w, d, h };
+  return cnShade(g);
+}
+// ── 街铺（两层铺面）：台明 + 铺面 + 柜台货殖 + 挑檐雨棚 + 招牌 + 幌子 + 二层窗 + 硬山顶 ──
+function buildStreetShop(p) {
+  const g = new THREE.Group();
+  const wood = M.wood(0x9c7a4e, 0.75);
+  const wood2 = M.wood(0x7d5c38, 0.78);
+  const grey = M.stone(0x8f8a80, 0.9);
+  const tile = roofSurf(new THREE.Color(p.roof).getHex(), 0.66);
+  const w = Math.max(4, num(p.w, 7.2)), d = Math.max(3, num(p.d, 5.6));
+  const h1 = 2.9, h2 = Math.max(2, num(p.h2, 2.8)), rh = Math.max(0.6, num(p.roofH, 1.05));
+  g.add(box(w + 0.6, 0.22, d + 1.6, grey, 0, 0.11, 0.4));                                    // 台明（前出挑廊）
+  g.add(box(w, h1, d, wood, 0, 0.22 + h1 / 2, 0));                                            // 一层铺面
+  g.add(box(w * 0.66, h1 * 0.62, 0.12, M.dark(0x181c22, 0.85), 0, 0.22 + h1 * 0.45, d / 2 - 0.08));   // 铺内暗腔
+  g.add(box(w * 0.4, 0.95, 0.75, wood2, w * 0.16, 0.22 + 0.48, d / 2 + 0.5));                 // 柜台（坐台明）
+  const jars = [], lids = [];
+  for (let i = 0; i < 6; i++) {
+    const jx = w * 0.16 + (i % 3 - 1) * 0.42, jz = d / 2 + 0.34 + Math.floor(i / 3) * 0.34;
+    jars.push({ p: [jx, 0.22 + 0.95 + 0.17, jz], s: [0.3, 0.34, 0.3] });
+    lids.push({ p: [jx, 0.22 + 0.95 + 0.38, jz], s: [0.22, 0.12, 0.22] });
+  }
+  const j1 = batch(new THREE.CylinderGeometry(0.5, 0.62, 1, seg(10)), M.paint(0x8a5a3a, 0.7), jars);
+  const j2 = batch(new THREE.ConeGeometry(0.5, 1, seg(8)), M.paint(0xb8342a, 0.7), lids);
+  if (j1) g.add(j1); if (j2) g.add(j2);                                                       // 货殖：坛罐成批
+  for (let i = 0; i < 3; i++) g.add(cyl(0.24, 0.19, 0.32, M.wood(0xa8845c, 0.8), seg(10), -w * 0.28 + i * 0.5, 0.22 + 0.16, d / 2 + 0.6));  // 箩筐
+  for (const sx of [-1, 1]) {                                                                 // 一层两侧排板窗
+    const x = sx * w * 0.34;
+    g.add(box(1.3, 0.12, 0.16, wood2, x, 0.22 + 1.0, d / 2 + 0.04));
+    g.add(box(1.3, 0.12, 0.16, wood2, x, 0.22 + 2.2, d / 2 + 0.04));
+    const pl = [];
+    for (let i = 0; i < 6; i++) pl.push({ p: [x + (i / 5 - 0.5) * 1.16, 0.22 + 1.6, d / 2 + 0.07], s: [0.17, 1.1, 0.07] });
+    const pb = batch(new THREE.BoxGeometry(1, 1, 1), wood, pl);
+    if (pb) g.add(pb);
+  }
+  const cy0 = 0.22 + h1 - 0.35;                                                               // 雨棚檐口（后缘咬进一层墙）
+  const cp = curvedRoof({ w: w + 0.9, d: 2.4, h: 0.45, kind: 'juan', brim: 0.3, eaveUp: 0.12, mat: tile, seg: 12, y0: cy0 });
+  cp.position.z = d / 2 + 0.2;
+  g.add(cp);
+  for (const sx of [-1, 1]) g.add(cyl(0.11, 0.13, cy0 + 0.27, wood2, seg(10), sx * (w / 2 - 0.3), (cy0 + 0.27) / 2 + 0.22, d / 2 + 1.15));  // 雨棚前柱（顶咬棚面）
+  g.add(box(w - 0.5, 0.18, 0.18, wood2, 0, 2.62, d / 2 + 1.15));                              // 柱头联系枋
+  const brk = [];
+  for (let i = 0; i < 6; i++) brk.push({ p: [(-0.5 + (i + 0.5) / 6) * (w - 0.8), 2.76, d / 2 + 1.2], s: [0.14, 0.16, 0.5] });
+  const bk = batch(new THREE.BoxGeometry(1, 1, 1), wood2, brk);                               // 雨棚檐下托木
+  if (bk) g.add(bk);
+  for (const sx of [-1, 1]) {                                                                 // 檐下红灯（弦索咬棚檐）
+    g.add(cyl(0.012, 0.012, 0.34, M.dark(0x2a2f36, 0.8), 4, sx * (w / 2 - 0.5), cy0 - 0.06, d / 2 + 1.3));
+    g.add(sph(0.17, M.paint(0xb8342a, 0.55), seg(10), sx * (w / 2 - 0.5), cy0 - 0.4, d / 2 + 1.3));
+    g.add(cyl(0.09, 0.09, 0.06, M.metal(0xc9a45c, 0.36, 0.8), seg(8), sx * (w / 2 - 0.5), cy0 - 0.24, d / 2 + 1.3));
+  }
+  g.add(box(w * 0.98, 0.24, d * 0.98, wood2, 0, 0.22 + h1 + 0.12, 0));                        // 楼隔板
+  g.add(box(w * 0.92, h2, d * 0.88, wood, 0, 0.46 + h1 + h2 / 2, 0));                         // 二层楼身
+  for (let i = 0; i < 3; i++) {                                                               // 二层排板窗
+    const x = (i - 1) * w * 0.3;
+    g.add(box(1.1, 0.1, 0.14, wood2, x, 0.46 + h1 + h2 * 0.28, d * 0.44 + 0.04));
+    g.add(box(1.1, 0.1, 0.14, wood2, x, 0.46 + h1 + h2 * 0.8, d * 0.44 + 0.04));
+    const pl = [];
+    for (let k = 0; k < 5; k++) pl.push({ p: [x + (k / 4 - 0.5) * 0.96, 0.46 + h1 + h2 * 0.54, d * 0.44 + 0.06], s: [0.16, h2 * 0.5, 0.06] });
+    const pb = batch(new THREE.BoxGeometry(1, 1, 1), wood, pl);
+    if (pb) g.add(pb);
+  }
+  g.add(box(w * 0.46, 0.66, 0.1, wood2, 0, 0.46 + h1 + h2 * 0.62, d * 0.44 + 0.02));          // 招牌（背嵌楼身）
+  g.add(box(w * 0.5, 0.08, 0.14, M.metal(0xc9a45c, 0.36, 0.8), 0, 0.46 + h1 + h2 * 0.62 + 0.36, d * 0.44 + 0.02));
+  const ry0 = 0.46 + h1 + h2 - rh * 0.2;
+  g.add(curvedRoof({ w: w * 0.92 + 1.2, d: d * 0.88 + 1.2, h: rh, kind: 'juan', brim: 0.4, eaveUp: 0.16, mat: tile, seg: 14, y0: ry0 }));
+  g.add(box(w * 0.92 + 0.5, 0.34, 0.32, grey, 0, ry0 + rh * 0.76 - 0.06, 0));                 // 正脊（cnRoofY 脊顶深坐）
+  g.add(eaveCornice({ w: w * 0.92 + 1.2, d: d * 0.88 + 1.2, brim: 0.4, eaveUp: 0.16, h: rh, y: ry0 + 0.02, mat: wood2, tileMat: tile }));
+  if (p.banner !== false) {                                                                   // 幌子（幌杆落地台明外）
+    const px = -(w / 2 + 0.5), pz = d / 2 + 0.7;
+    g.add(cyl(0.05, 0.07, 3.4, wood2, seg(8), px, 1.7, pz));
+    g.add(box(1.0, 0.07, 0.07, wood2, px + 0.2, 3.32, pz));
+    g.add(box(0.74, 1.7, 0.04, M.paint(0xd8d2c4, 0.85), px + 0.2, 2.44, pz));
+    const fr = [];
+    for (let i = 0; i < 5; i++) fr.push({ p: [px + 0.2 + (i / 4 - 0.5) * 0.66, 1.52, pz], s: [0.08, 0.16, 0.04] });
+    const fb = batch(new THREE.BoxGeometry(1, 1, 1), M.paint(0xd8d2c4, 0.85), fr);
+    if (fb) g.add(fb);
+  }
+  g.userData.shop = { banner: p.banner !== false };
+  return cnShade(g);
+}
 function buildMoonGate(p) {
   const g = new THREE.Group();
   const wall = M.paint(new THREE.Color(p.wall).getHex(), 0.82);
@@ -2352,6 +2541,9 @@ export const GROUP_CN = {
     { type: 'courtyard', name: '四合院单元', icon: 'yard', build: buildCourtyard, params: [PR('w', '院宽 m', 14, 60, 1, 26), PR('d', '院深 m', 14, 70, 1, 32), PR('wallH', '院墙高 m', 2, 6, 0.2, 3.4), PB('wings', '东西厢房', true), PB('gate', '街门牌楼', true), PB('screen','影壁',true), PB('corr','抄手游廊',true), PB('trim','墙脊瓦当',true), PT('gateText','街门题字','紫氣東來'), PC('wall', '墙色', '#e0d7c6'), PC('roof', '瓦色', '#454b53')] },
     { type: 'moongate', name: '月亮门院墙', icon: 'moongate', build: buildMoonGate, params: [PR('length', '墙长 m', 4, 30, 0.5, 10), PR('height', '墙高 m', 2, 6, 0.1, 3.4), PR('thick', '墙厚 m', 0.2, 1, 0.05, 0.36), PB('trim','墙帽脊饰',true), PC('wall', '墙色', '#eae3d6'), PC('roof', '瓦色', '#3f454d')] },
     { type: 'lanternpole', name: '宫灯杆', icon: 'lampcn', build: buildLanternPole, params: [PR('height', '杆高 m', 2.4, 8, 0.2, 4.2), PB('tassel','灯挂穗',true), PC('color', '灯色', '#ffb45e'), PR('glow', '亮度', 0, 4, 0.1, 1.6), PC('pole', '杆色', '#7c3a2c')] },
+    { type: 'earthterrace', name: '夯土台基', icon: 'terrace', build: buildEarthTerrace, params: [PR('w', '顶宽 m', 4, 24, 0.5, 12), PR('d', '顶深 m', 4, 24, 0.5, 10), PR('h', '台高 m', 1.2, 9, 0.2, 4.2), PB('rail','顶面栏杆',true), PB('stairs','登台阶梯',true), PI('cols','柱础数',0,12,1,6), PC('earth', '土色', '#b08d69')] },
+    { type: 'folkhouse', name: '民居硬山', icon: 'folk', build: buildFolkHouse, params: [PR('w', '面宽 m', 3, 14, 0.2, 6.4), PR('d', '进深 m', 3, 12, 0.2, 4.8), PR('h', '墙高 m', 2, 5, 0.1, 3), PR('roofH', '顶高 m', 0.6, 3, 0.1, 1.15), PC('wall', '墙色', '#e9e5dd'), PC('roof', '瓦色', '#41474f')] },
+    { type: 'streetshop', name: '街市铺面', icon: 'shop', build: buildStreetShop, params: [PR('w', '面宽 m', 4, 14, 0.2, 7.2), PR('d', '进深 m', 3, 12, 0.2, 5.6), PR('h2', '二层高 m', 2, 5, 0.1, 2.8), PR('roofH', '顶高 m', 0.6, 3, 0.1, 1.05), PB('banner','幌子',true), PC('roof', '瓦色', '#41474f')] },
     { type: 'ding', name: '鼎 / 香炉', icon: 'ding', build: buildDing, params: [PR('r', '半径 m', 0.3, 2.2, 0.05, 0.8), PR('h', '高 m', 0.3, 1.8, 0.05, 0.7), PR('leg', '足高 m', 0.05, 1, 0.05, 0.24), PC('color', '铜色', '#6f5a34')] },
     { type: 'spiritway', name: '石像生神道', icon: 'stone', build: buildSpiritWay, params: [PI('pairs', '对数', 1, 12, 1, 5), PR('length', '总长 m', 10, 120, 2, 44), PR('gap', '左右间距 m', 2, 12, 0.5, 5), PB('pillars','石望柱',true), PB('stele','神道碑',true), PC('color', '石色', '#a9a49a')] },
   ],
