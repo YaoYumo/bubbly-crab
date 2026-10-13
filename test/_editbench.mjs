@@ -122,6 +122,41 @@ await page.keyboard.press('f');
 const fok2 = await waitFocus();
 const fd = await camDist();
 ck('F 键手动聚焦生效', fok2 && fd < 0.15, `d=${fd}`);
+
+// ---- 复制部件 ----
+await page.evaluate(() => {
+  const cb = document.getElementById('eautofocus');
+  cb.checked = true; cb.dispatchEvent(new Event('change'));
+  R4.select(10);
+});
+await waitFocus();
+const dup = await page.evaluate(() => {
+  const n0 = R4.state.parts;
+  R4.duplicate();
+  const s = R4.state;
+  return { n0, n1: s.parts, sel: s.sel, mod: s.modified, label: document.getElementById('eslabel').textContent };
+});
+ck('复制 → 部件+1 且选中克隆', dup.n1 === dup.n0 + 1 && dup.sel === dup.n0, JSON.stringify({ n0: dup.n0, n1: dup.n1, sel: dup.sel }));
+ck('克隆标签注明来源件', dup.label.includes('(克隆#10)'), dup.label.slice(0, 70));
+ck('克隆计入已改', dup.mod >= 1, `modified=${dup.mod}`);
+const dupFok = await waitFocus();
+const dupD = await camDist();
+ck('自动聚焦到克隆体', dupFok && dupD < 0.15, `d=${dupD}`);
+r = await page.evaluate(() => { R4.undo(); const s = R4.state; return { parts: s.parts, sel: s.sel }; });
+ck('撤销移除克隆', r.parts === dup.n0 && r.sel === -1, JSON.stringify(r));
+r = await page.evaluate(() => { R4.redo(); return R4.state.parts; });
+ck('重做恢复克隆', r === dup.n1);
+// 存档回放：退出→重进，克隆按 add 记录复原
+await page.evaluate(() => R4.exit());
+await page.evaluate(() => R4.enter('hall'));
+await page.waitForFunction('R4.state.parts > 0', { timeout: 60000 });
+r = await page.evaluate(() => ({ parts: R4.state.parts, mod: R4.state.modified }));
+ck('存档回放恢复克隆', r.parts === dup.n1, JSON.stringify(r));
+const txt2 = await page.evaluate(() => R4.text());
+ck('修补单含 duplicate 操作', txt2.includes('复制部件 #10'), (txt2.split('\n').find((l) => l.includes('复制部件')) || '').trim());
+// 图板复原：克隆一并移除
+r = await page.evaluate(() => { R4.resetAll(); const s = R4.state; return { parts: s.parts, mod: s.modified }; });
+ck('图板复原 → 克隆移除且已改0', r.parts === dup.n0 && r.mod === 0, JSON.stringify(r));
 await page.evaluate(() => R4.exit());
 
 ck('无 pageerror', errs.length === 0, errs.slice(0, 4).join(' | '));

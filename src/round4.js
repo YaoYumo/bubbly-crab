@@ -222,7 +222,8 @@ renderer.setAnimationLoop(() => {
 // ===========================================================================
 // 部件编辑：勾选「✎ 部件编辑」→ 点左侧图板 → 该单体以「不烘顶点、不实例化」
 // 方式重建，每个构件都是独立节点；画布点选 / 清单点选 → gizmo 或数值面板调整，
-// 可隐藏、删除、撤销；「导出修补单」输出 JSON + 文字清单（可交回乙方改进源码）。
+// 可隐藏、删除、复制（D，克隆体登记为新部件）、撤销；「导出修补单」输出
+// JSON + 文字清单（可交回乙方改进源码）。
 // 改动按「图板 × 精度档」存 localStorage，刷新后自动恢复；「清空存档」还原库状态。
 // ===========================================================================
 const epanel = document.getElementById('epanel');
@@ -272,6 +273,11 @@ function partDims(m) {
   return `${f(s.x, m.scale.x)}×${f(s.y, m.scale.y)}×${f(s.z, m.scale.z)}m`;
 }
 
+function partLabelOf(m, idx, cloneOf) {
+  const inst = m.isInstancedMesh ? ` ×${m.count}批` : '';
+  return `#${idx} ${m.geometry ? m.geometry.type.replace(/Geometry$/, '') : '?'} ${matDesc(m)} ${partDims(m)}${inst}${cloneOf !== undefined ? ` (克隆#${cloneOf})` : ''}`;
+}
+
 function collectParts() {
   parts = [];
   editE.root.updateMatrixWorld(true);
@@ -279,19 +285,22 @@ function collectParts() {
     if (!o.isMesh) return;                       // InstancedMesh 也算：整批件当一个部件动
     const i = parts.length;
     o.userData.partIdx = i;
-    const inst = o.isInstancedMesh ? ` ×${o.count}批` : '';
-    const label = `#${i} ${o.geometry ? o.geometry.type.replace(/Geometry$/, '') : '?'} ${matDesc(o)} ${partDims(o)}${inst}`;
     const origW = o.getWorldPosition(_v1).toArray().map((n) => +n.toFixed(2));
-    parts.push({ i, mesh: o, label, origW, row: null,
+    parts.push({ i, mesh: o, label: partLabelOf(o, i), origW, row: null,
       orig: { p: o.position.toArray(), r: [o.rotation.x, o.rotation.y, o.rotation.z], s: o.scale.toArray() } });
   });
 }
 
+function xfDiffers(p) {
+  const m = p.mesh;
+  return !sameV(m.position, p.orig.p) || !sameV(m.rotation, p.orig.r) || !sameV(m.scale, p.orig.s);
+}
 function isModified(p) {
   const m = p.mesh;
   if (m.userData._del) return true;
   if (!m.visible) return true;
-  return !sameV(m.position, p.orig.p) || !sameV(m.rotation, p.orig.r) || !sameV(m.scale, p.orig.s);
+  if (p.cloneOf !== undefined) return true;      // 克隆体本身就是相对库状态的改动
+  return xfDiffers(p);
 }
 function nModified() { let n = 0; for (const p of parts) if (isModified(p)) n++; return n; }
 
@@ -301,9 +310,10 @@ function collectOps() {
   const ops = [];
   for (const p of parts) {
     const m = p.mesh;
+    if (p.cloneOf !== undefined) ops.push({ idx: p.i, op: 'add', src: p.cloneOf, p: p.orig.p, r: p.orig.r, s: p.orig.s });   // 先重放"新增"，再叠当前状态
     if (m.userData._del) ops.push({ idx: p.i, op: 'delete' });
     else if (!m.visible) ops.push({ idx: p.i, op: 'hide' });
-    else if (isModified(p)) ops.push({ idx: p.i, op: 'xf', p: m.position.toArray(), r: [m.rotation.x, m.rotation.y, m.rotation.z], s: m.scale.toArray() });
+    else if (xfDiffers(p)) ops.push({ idx: p.i, op: 'xf', p: m.position.toArray(), r: [m.rotation.x, m.rotation.y, m.rotation.z], s: m.scale.toArray() });
   }
   return ops;
 }
@@ -320,6 +330,10 @@ function applySaved() {
   try { ops = JSON.parse(localStorage.getItem(storeKey()) || 'null'); } catch (err) { return; }
   if (!Array.isArray(ops)) return;
   for (const o of ops) {
+    if (o.op === 'add') {                        // 克隆体重放：按原部件再复制一份，摆回存档位姿
+      if (Array.isArray(o.p) && Array.isArray(o.r) && Array.isArray(o.s)) addCloneFrom(o.src, o.idx, o.p, o.r, o.s);
+      continue;
+    }
     const p = parts[o.idx];
     if (!p) continue;
     if (o.op === 'delete') _delete(p.i);
@@ -330,6 +344,43 @@ function applySaved() {
       if (Array.isArray(o.s)) p.mesh.scale.fromArray(o.s);
     }
   }
+}
+
+// ---- 复制部件：从 srcIdx 部件克隆一份，摆到 (pos,rot,scl)，登记为清单末尾新部件 ----
+function addCloneFrom(srcIdx, idx, pos, rot, scl) {
+  const sp = parts[srcIdx];
+  if (!sp || idx !== parts.length) return null;  // 索引对不上（存档与当前档位不符）：放弃该条
+  const m2 = sp.mesh.clone();                    // 几何/材质共享引用，实例矩阵独立副本
+  if (sp.mesh.userData._omat !== undefined) m2.material = sp.mesh.userData._omat;   // 源件正被选中时材质是发光副本：克隆用回原材质
+  m2.userData = {};
+  m2.position.fromArray(pos);
+  m2.rotation.set(rot[0], rot[1], rot[2]);
+  m2.scale.fromArray(scl);
+  const par = sp.mesh.parent || sp.mesh.userData._par || editE.root;
+  par.add(m2);
+  m2.userData.partIdx = idx;
+  m2.updateMatrixWorld(true);
+  const np = { i: idx, mesh: m2, label: partLabelOf(m2, idx, srcIdx), row: null, par, cloneOf: srcIdx,
+    origW: m2.getWorldPosition(_v1).toArray().map((n) => +n.toFixed(2)),
+    orig: { p: pos.slice(), r: rot.slice(), s: scl.slice() } };
+  parts.push(np);
+  return np;
+}
+function opDuplicate(i) {
+  const p = parts[i];
+  if (!editE || !p || p.mesh.userData._del) return false;
+  const g = p.mesh.geometry;
+  let dx = 0.5;                                  // 往旁边错开一点，避免与原件完全重叠（z-fighting）
+  if (g) {
+    if (!g.boundingBox) g.computeBoundingBox();
+    dx = Math.min(1.5, Math.max(0.25, (g.boundingBox.max.x - g.boundingBox.min.x) * Math.abs(p.mesh.scale.x) * 0.6 + 0.15));
+  }
+  const pos = p.mesh.position.toArray(); pos[0] += dx;
+  const np = addCloneFrom(i, parts.length, pos, [p.mesh.rotation.x, p.mesh.rotation.y, p.mesh.rotation.z], p.mesh.scale.toArray());
+  if (!np) return false;
+  pushUndo(null, null, { addParts: [np] });
+  fillParts(); setSel(np.i); saveEdits(); infoEdit();
+  return true;
 }
 
 // ---- 撤销 / 重做 ----
@@ -363,30 +414,48 @@ function applySnap(s) {
   p.mesh.rotation.set(s.r[0], s.r[1], s.r[2]);
   p.mesh.scale.fromArray(s.s);
 }
-function pushUndo(before, after) {
-  undoS.push({ b: Array.isArray(before) ? before : [before], a: Array.isArray(after) ? after : [after] });
+function pushUndo(before, after, extra) {
+  undoS.push({ b: Array.isArray(before) ? before : before ? [before] : [],
+    a: Array.isArray(after) ? after : after ? [after] : [], ...(extra || {}) });
   if (undoS.length > 300) undoS.shift();
   redoS.length = 0;
   refreshFoot();
 }
-function afterOp() {
-  saveEdits(); refreshList();
+function removePart(p) {                          // 撤销"复制"/图板复原时把克隆体摘出场景与清单
+  if (selIdx === p.i) setSel(-1);
+  if (p.mesh.parent) { p.par = p.mesh.parent; p.mesh.parent.remove(p.mesh); }
+  const k = parts.indexOf(p);
+  if (k >= 0) parts.splice(k, 1);
+}
+function readdPart(p) {                           // 重做：把克隆体放回（总在清单末尾，索引不变）
+  parts.push(p);
+  p.mesh.userData.partIdx = p.i;
+  (p.par || editE.root).add(p.mesh);
+  p.mesh.updateMatrixWorld(true);
+}
+function afterOp(refill) {
+  saveEdits();
+  if (refill) fillParts(); else refreshList();
   if (selIdx >= 0) { const p = parts[selIdx]; if (p && !p.mesh.userData._del) tc.attach(p.mesh); }
   refreshNums(); infoEdit(); refreshFoot();
 }
 function undo() {
   const u = undoS.pop(); if (!u) return;
   tc.detach();
+  if (u.addParts) for (const p of u.addParts.slice().reverse()) removePart(p);
+  if (u.delParts) for (const p of u.delParts) readdPart(p);
   for (const s of u.b) applySnap(s);
   redoS.push(u);
-  afterOp();
+  afterOp(!!(u.addParts || u.delParts));
 }
 function redo() {
   const u = redoS.pop(); if (!u) return;
   tc.detach();
+  if (u.delParts) for (const p of u.delParts.slice().reverse()) removePart(p);
+  if (u.addParts) for (const p of u.addParts) readdPart(p);
   for (const s of u.a) applySnap(s);
   undoS.push(u);
-  afterOp();
+  afterOp(!!(u.addParts || u.delParts));
 }
 tc.addEventListener('mouseDown', () => { if (selIdx >= 0) undoOpen = snap(selIdx); });
 tc.addEventListener('mouseUp', () => {
@@ -411,11 +480,14 @@ function resetToOrig(p) {
 }
 function opResetOne(i) { const p = parts[i]; const b = snap(i); resetToOrig(p); const a = snap(i); if (snapsDiffer(b, a)) pushUndo(b, a); afterOp(); }
 function opResetAll() {
-  const b = parts.map((p) => snap(p.i));
-  for (const p of parts) resetToOrig(p);
-  const a = parts.map((p) => snap(p.i));
-  if (b.some((s, k) => snapsDiffer(s, a[k]))) pushUndo(b, a);
-  afterOp();
+  const clones = parts.filter((p) => p.cloneOf !== undefined);
+  const keep = parts.filter((p) => p.cloneOf === undefined);
+  const b = keep.map((p) => snap(p.i));
+  for (const p of keep) resetToOrig(p);
+  const a = keep.map((p) => snap(p.i));
+  for (const p of clones) removePart(p);          // 图板复原 = 回到库状态：克隆体一并移除（可撤销找回）
+  if (clones.length || b.some((s, k) => snapsDiffer(s, a[k]))) pushUndo(b, a, { delParts: clones });
+  afterOp(clones.length > 0);
 }
 
 // ---- 聚焦所选：相机飞到部件包围盒近景（编辑小构件必备） ----
@@ -493,6 +565,7 @@ function refreshNums() {
       m.scale.x, m.scale.y, m.scale.z];
   NUM.forEach((inp, k) => { inp.value = +vals[k].toFixed(k < 3 ? 3 : k < 6 ? 1 : 3); inp.disabled = del; });
   document.getElementById('efocus').disabled = del;
+  document.getElementById('edup').disabled = del;
   document.getElementById('ehide').disabled = del;
   document.getElementById('edel').disabled = del;
   for (const g of document.querySelectorAll('#egizrow button.g[data-giz]')) g.disabled = del;
@@ -591,7 +664,7 @@ efilter.oninput = () => fillParts();
 
 function infoEdit() {
   if (!editE) return;
-  infoEl.textContent = `✎ ${editE.no} ${editE.name.split(' · ')[0]} · ${parts.length} 件 · 已改 ${nModified()} 处${selIdx >= 0 ? ` · 选中 #${selIdx}` : ''} · 单击选中 / F聚焦 / W移动 E旋转 R缩放 / Del删除 H隐藏 / Ctrl+Z撤销`;
+  infoEl.textContent = `✎ ${editE.no} ${editE.name.split(' · ')[0]} · ${parts.length} 件 · 已改 ${nModified()} 处${selIdx >= 0 ? ` · 选中 #${selIdx}` : ''} · 单击选中 / F聚焦 D复制 / W移动 E旋转 R缩放 / Del删除 H隐藏 / Ctrl+Z撤销`;
 }
 function refreshFoot() { eundoB.disabled = !undoS.length; eredoB.disabled = !redoS.length; }
 
@@ -646,6 +719,7 @@ document.getElementById('eclose').onclick = () => { editOn = false; editChk.chec
 eundoB.onclick = undo;
 eredoB.onclick = redo;
 document.getElementById('efocus').onclick = () => focusSel();
+document.getElementById('edup').onclick = () => { if (selIdx >= 0) opDuplicate(selIdx); };
 document.getElementById('eautofocus').onchange = (ev) => { autoFocus = ev.target.checked; };
 document.getElementById('ereset1').onclick = () => { if (selIdx >= 0) opResetOne(selIdx); };
 document.getElementById('ehide').onclick = () => { if (selIdx >= 0) opHide(selIdx); };
@@ -668,12 +742,24 @@ function buildPatch() {
   for (const p of parts) {
     const m = p.mesh;
     const base = { idx: p.i, label: p.label, world0: p.origW };
-    if (m.userData._del) { ops.push({ ...base, op: 'delete' }); continue; }
-    if (!m.visible) { ops.push({ ...base, op: 'hide' }); continue; }
     const dp = [m.position.x - p.orig.p[0], m.position.y - p.orig.p[1], m.position.z - p.orig.p[2]];
     const drd = [m.rotation.x - p.orig.r[0], m.rotation.y - p.orig.r[1], m.rotation.z - p.orig.r[2]].map((r) => THREE.MathUtils.radToDeg(r));
     const ds = [m.scale.x / (p.orig.s[0] || 1), m.scale.y / (p.orig.s[1] || 1), m.scale.z / (p.orig.s[2] || 1)];
     const moved = dp.some((v) => Math.abs(v) > 1e-4), rot = drd.some((v) => Math.abs(v) > 0.01), sca = ds.some((v) => Math.abs(v - 1) > 1e-4);
+    if (p.cloneOf !== undefined) {
+      if (m.userData._del) continue;             // 复制后又删掉 = 净变化为零，不进修补单
+      const sp = parts[p.cloneOf];
+      const o = { ...base, op: 'duplicate', src: { idx: p.cloneOf, label: sp ? sp.label : `#${p.cloneOf}`, world0: sp ? sp.origW : null } };
+      if (moved) o.move = dp.map((v) => +v.toFixed(3));
+      if (rot) o.rotateDeg = drd.map((v) => +v.toFixed(1));
+      if (sca) o.scaleBy = ds.map((v) => +v.toFixed(3));
+      if (moved || rot || sca) o.world1 = m.getWorldPosition(_v1).toArray().map((v) => +v.toFixed(2));
+      if (!m.visible) o.hidden = true;
+      ops.push(o);
+      continue;
+    }
+    if (m.userData._del) { ops.push({ ...base, op: 'delete' }); continue; }
+    if (!m.visible) { ops.push({ ...base, op: 'hide' }); continue; }
     if (!moved && !rot && !sca) continue;
     ops.push({ ...base, op: 'adjust',
       move: moved ? dp.map((v) => +v.toFixed(3)) : null,
@@ -693,9 +779,11 @@ function patchText(patch) {
     if (o.op === 'delete') L.push('    删除（判定为游离/错误构件，移除）');
     else if (o.op === 'hide') L.push('    隐藏（仅视图隐藏，部件仍在）');
     else {
+      if (o.op === 'duplicate') L.push(`    复制部件 #${o.src.idx}${o.src.world0 ? `（源在世界(${o.src.world0.join(', ')})）` : ''} → 新件摆放到世界(${o.world0.join(', ')})`);
       if (o.move) L.push(`    移动 Δ(${o.move.map(fmtS).join(', ')}) → 世界(${o.world1.join(', ')})`);
       if (o.rotateDeg) L.push(`    旋转 Δ(${o.rotateDeg.map((v) => fmtS(v) + '°').join(', ')})`);
       if (o.scaleBy) L.push(`    缩放 ×(${o.scaleBy.join(', ')})`);
+      if (o.hidden) L.push('    （复制后已隐藏）');
     }
   });
   L.push('—— 请乙方按此修改 src/*.js 对应 builder，并重跑 shots / libblock / libaudit / imgcheck 验证。');
@@ -767,6 +855,7 @@ addEventListener('keydown', (ev) => {
   else if (k === 'e') setGiz('rotate');
   else if (k === 'r') setGiz('scale');
   else if (k === 'f') focusSel();
+  else if (k === 'd' && selIdx >= 0) opDuplicate(selIdx);
   else if (k === 'escape') setSel(-1);
   else if ((k === 'delete' || k === 'backspace') && selIdx >= 0) { ev.preventDefault(); opDelete(selIdx); }
   else if (k === 'h' && selIdx >= 0) opHide(selIdx);
@@ -784,6 +873,7 @@ window.R4 = {
   select: setSel,
   nudge(axis, d) { if (selIdx < 0 || parts[selIdx].mesh.userData._del) return false; const p = parts[selIdx]; const b = snap(selIdx); p.mesh.position[axis] += d; const a = snap(selIdx); if (snapsDiffer(b, a)) pushUndo(b, a); afterOp(); return true; },
   delete: opDelete, hide: opHide, restore: opRestore, resetOne: opResetOne, resetAll: opResetAll,
+  duplicate: () => (selIdx >= 0 ? opDuplicate(selIdx) : false),
   undo, redo,
   patch: () => (editE ? buildPatch() : null),
   text: () => (editE ? patchText(buildPatch()) : ''),
