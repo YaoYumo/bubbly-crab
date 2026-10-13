@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>第四轮图板重建 · 3D 工作台</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #dfe6ee; font: 14px/1.5 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #panel { position: fixed; left: 14px; top: 14px; width: 252px; max-height: calc(100% - 96px); overflow: auto;
+           background: rgba(20,24,30,.86); color: #e8ecf2; border-radius: 14px; padding: 12px; backdrop-filter: blur(6px);
+           box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+  #panel h1 { font-size: 15px; margin: 2px 4px 8px; color: #f4d9a0; letter-spacing: .5px; }
+  #list button { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 9px; border: 0; cursor: pointer;
+                 border-radius: 9px; background: rgba(255,255,255,.08); color: #e8ecf2; font: inherit; }
+  #list button:hover { background: rgba(244,217,160,.22); }
+  #list button.ov { background: rgba(120,170,255,.18); color: #cfe1ff; }
+  #list .no { display: inline-block; min-width: 22px; margin-right: 6px; color: #f4d9a0; font-weight: 700; }
+  #opts { display: flex; gap: 10px; align-items: center; margin: 8px 4px 2px; color: #c8d0da; font-size: 13px; }
+  #opts select { background: #2a303a; color: #e8ecf2; border: 0; border-radius: 6px; padding: 3px 6px; }
+  #info { position: fixed; left: 14px; bottom: 12px; max-width: 70%; background: rgba(20,24,30,.78); color: #dfe6ee;
+          border-radius: 10px; padding: 7px 12px; backdrop-filter: blur(6px); }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="panel">
+  <h1>第四轮图板重建 · 八单体</h1>
+  <div id="list"></div>
+  <div id="opts">
+    <label><input type="checkbox" id="spin" /> 转台</label>
+    <label>精度
+      <select id="lvl">
+        <option value="lite">lite</option>
+        <option value="std">std</option>
+        <option value="fine" selected>fine</option>
+      </select>
+    </label>
+  </div>
+</div>
+<div id="info"></div>
+<script type="module" src="/src/round4.js"></script>
+</body>
+</html>
