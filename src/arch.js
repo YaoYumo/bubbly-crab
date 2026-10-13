@@ -1261,10 +1261,32 @@ function buildDrumTower(p) {
       g.add(box(bw2 * 0.5 / nOpen, fh * 0.5, 0.12, lv === levels - 1 ? M.paint(0x2a2f36, 0.7) : M.glassy(0x121820, 0.8, 0.05, 0.4), x, y0 + fh * 0.44, sz * (bd2 / 2 + 0.02)));
       g.add(box(bw2 * 0.56 / nOpen, 0.09, 0.18, wood, x, y0 + fh * 0.7, sz * (bd2 / 2 + 0.02)));
     }
-    if (lv > 0 && p.rail !== false) {                                     // 上层平座栏杆
+    if (lv > 0 && p.rail !== false) {                                     // 上层平座：木平台层 + 木栏杆一周（图板修正：不要石栏）
       const py = y0 - 0.5;
-      g.add(box(bw2 * 1.24, 0.14, bd2 * 1.24, wood, 0, py, 0));
-      for (const sz of [1, -1]) { const rr2 = stoneRail({ len: bw2 * 1.2, h: 0.46, y: py + 0.08, mat: stone2 }); rr2.position.z = sz * bd2 * 0.6; g.add(rr2); }
+      g.add(box(bw2 * 1.26, 0.16, bd2 * 1.26, wood, 0, py, 0));            // 木平台层
+      for (const sz of [1, -1]) g.add(box(bw2 * 1.3, 0.12, 0.14, wood, 0, py - 0.13, sz * bd2 * 0.63));   // 周圈檐枋（叠层木作）
+      for (const sx of [1, -1]) g.add(box(0.14, 0.12, bd2 * 1.3, wood, sx * bw2 * 0.63, py - 0.13, 0));
+      const ry0 = py + 0.08, rh = 0.52;
+      const wp = [], wr = [];
+      for (const [ax, sgn] of [['z', 1], ['z', -1], ['x', 1], ['x', -1]]) {
+        const L = (ax === 'z' ? bw2 : bd2) * 1.24;
+        const off = (ax === 'z' ? bd2 : bw2) * 0.62;
+        g.add(ax === 'z' ? box(L, 0.09, 0.11, wood, 0, ry0 + rh, sgn * off) : box(0.11, 0.09, L, wood, sgn * off, ry0 + rh, 0));         // 寻杖
+        g.add(ax === 'z' ? box(L, 0.06, 0.08, wood, 0, ry0 + rh * 0.55, sgn * off) : box(0.08, 0.06, L, wood, sgn * off, ry0 + rh * 0.55, 0));   // 中枋
+        g.add(ax === 'z' ? box(L, 0.08, 0.1, wood, 0, ry0 + 0.06, sgn * off) : box(0.1, 0.08, L, wood, sgn * off, ry0 + 0.06, 0));       // 地栿
+        const n = clamp(Math.round(L / 1.5) + 1, 2, 24);
+        for (let i = 0; i < n; i++) {
+          const t = (i / (n - 1) - 0.5) * L;
+          wp.push(ax === 'z' ? { p: [t, ry0 + rh * 0.55, sgn * off], s: [0.11, rh + 0.1, 0.11] } : { p: [sgn * off, ry0 + rh * 0.55, t], s: [0.11, rh + 0.1, 0.11] });   // 望柱
+        }
+        const m = clamp(Math.round(L / 0.45), 4, 60);
+        for (let i = 0; i <= m; i++) {
+          const t = (i / m - 0.5) * L * 0.98;
+          wr.push(ax === 'z' ? { p: [t, ry0 + rh * 0.5, sgn * off], s: [0.045, rh * 0.8, 0.045] } : { p: [sgn * off, ry0 + rh * 0.5, t], s: [0.045, rh * 0.8, 0.045] }); // 蜀柱
+        }
+      }
+      const pb = batch(new THREE.BoxGeometry(1, 1, 1), wood, wp); if (pb) g.add(pb);
+      const rb = batch(new THREE.BoxGeometry(1, 1, 1), wood, wr); if (rb) g.add(rb);
     }
     if (p.drum !== false && lv === levels - 1) {                            // 鼓（顶层檐下的大鼓）
       const dr = cyl(W * 0.2, W * 0.2, W * 0.13, M.paint(0x8e2f26, 0.55), seg(18), 0, y0 + fh * 0.42, 0);
@@ -1284,7 +1306,7 @@ function buildDrumTower(p) {
   // ── 平座陈设：铜钟+钟架、铜壶滴漏（图板：BELL / WATER CLOCK）─────────
   const bronze = M.metal(0x8a6a3a, 0.45, 0.75);
   const sT = 1 - (levels - 1) * 0.14, bwT = W * 0.84 * sT;
-  const deckY = levels > 1 ? baseH + (levels - 1) * (fh + 1.0) - 0.5 + 0.07 : baseH + 0.02;
+  const deckY = levels > 1 ? baseH + (levels - 1) * (fh + 1.0) - 0.5 + 0.08 : baseH + 0.02;   // 木平台层面高 +0.08
   const bx = -bwT * 0.25, bz = bwT * 0.545;                                                   // 平座前檐廊带（身墙与栏杆之间）
   for (const sx of [-1, 1]) g.add(cyl(0.06, 0.07, 1.15, wood, seg(8), bx + sx * 0.5, deckY + 0.575, bz));
   g.add(box(1.3, 0.14, 0.14, wood, bx, deckY + 1.2, bz));
