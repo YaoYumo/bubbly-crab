@@ -660,14 +660,9 @@ function buildPavilion(p) {
   g.add(cyl(R * 1.38, R * 1.44, 0.2, stone, seg(s), 0, 0.3, 0));
   g.add(cyl(R * 1.3, R * 1.36, 0.16, M.stone(0xa6a096, 0.93), seg(s), 0, 0.48, 0));
   const y0 = 0.56;
-  const nStep = 3;
-  // 踏步逐级搭接、顶级嵌入台身；旧版整跑离台基悬空 0.1R
-  for (let i = 0; i < nStep; i++) g.add(box(R * 0.8, 0.18, 0.34, stone, 0, 0.09 + i * 0.18, R * 1.34 + 0.28 * (nStep - i)));   // 顶级咬入台身（旧版与台基投影只搭 1mm）
-  if (trim) for (const sx of [-1, 1]) {                                                     // 踏跺两侧短栏，让出正中入口
-    const rl = stoneRail({ len: R * 0.7, h: 0.52, y: y0 - 0.02, mat: stone, step: R * 0.42 });
-    rl.position.set(sx * R * 0.72, 0, R * 1.28);
-    g.add(rl);
-  }
+  // 修补单 03（2026-10-13 工作台导出，34 op）：正面踏跺与踏跺两侧短栏整组删除 ——
+  // 实测顶级踏步离台身仍悬 5cm、两侧短栏水平离台缘 0.9m 悬空（旧"咬入"注释名不副实），
+  // 台基正面改为敞开入口；三级台明保留。
   // 檐柱 + 柱础 + 额枋 + 坐凳美人靠
   const edge = R * 2 * Math.sin(Math.PI / s);
   const inR = R * Math.cos(Math.PI / s);
@@ -688,12 +683,7 @@ function buildPavilion(p) {
       br.position.set(mx, 0, mz);
       g.add(br);
     }
-    if (p.gehua !== false) {                                                  // 挂落（枋下镂空白花）
-      const gh = [];
-      for (let k = 0; k < 5; k++) gh.push({ p: [0, y0 + H - 0.34, (k / 4 - 0.5) * edge * 0.8], s: [0.05, 0.26, 0.05] });
-      const gm = batch(new THREE.BoxGeometry(1, 1, 1), wood, gh);
-      if (gm) { gm.rotation.y = -a2 + Math.PI / 2; gm.position.set(mx, 0, mz); g.add(gm); }
-    }
+    // 修补单 03：挂落整组删除 —— 实测挂落顶离额枋下皮悬空 0.12m（六面皆浮），按单移除。
   }
   // -top: 井口天花 + 宝顶
   g.add(cyl(R * 1.18, R * 1.18, 0.2, wood, seg(s), 0, y0 + H + 0.2, 0));
@@ -2351,7 +2341,7 @@ export const GROUP_CN = {
   cat: '中式古建', id: 'cn', items: [
     { type: 'hall', name: '宫殿大殿', icon: 'hall', build: buildHall, params: [PI('bays', '开间', 1, 11, 2, 5), PR('bay', '开间宽 m', 2.4, 6.5, 0.1, 4), PR('w', '面宽 m', 6, 46, 0.5, 20), PR('d', '进深 m', 5, 34, 0.5, 13), PR('h', '柱高 m', 2.6, 9, 0.1, 5), PR('roofH', '屋顶高 m', 1.2, 8, 0.1, 3.4), PS('kind', '屋顶', [{ v: 'wu', l: '庑殿' }, { v: 'xie', l: '歇山' }, { v: 'juan', l: '悬山' }], 'wu'), PR('ridge', '正脊比例', 0.1, 0.9, 0.02, 0.4), PR('eaveUp', '翼角起翘', 0, 0.5, 0.01, 0.16), PR('plinthH', '台基高 m', 0, 2.2, 0.05, 0.6), PB('steps', '踏跺', true), PB('dougong', '斗拱', true), PB('lattice', '槛窗', true), PB('rail','台基石栏杆',true), PB('innerCols','金柱（内槽）',true), PB('caihua','檐下彩画',true), PB('trim','脊兽·檐口椽瓦',true), PB('drip','瓦当滴水',true), PB('eaves2','重檐',true), PI('tiers','台基层数',1,3,1,3), PI('beasts','走兽数',0,9,1,5), PC('wall', '墙体色', '#d8cdb8'), PC('column', '柱色', '#8e3a2c'), PC('door', '门色', '#5c2c22'), PC('roof', '瓦色', '#41474f'), PC('ridgeColor', '脊色', '#2f353c'), PC('plinth', '台基色', '#b9b2a4')] },
     { type: 'hall2', name: '歇山殿宇', icon: 'hall', build: buildHall, params: [PI('bays', '开间', 1, 9, 2, 3), PR('bay', '开间宽 m', 2.4, 6, 0.1, 3.6), PR('w', '面宽 m', 6, 34, 0.5, 13), PR('d', '进深 m', 5, 24, 0.5, 9), PR('h', '柱高 m', 2.6, 8, 0.1, 4.2), PR('roofH', '屋顶高 m', 1, 6, 0.1, 2.6), PS('kind', '屋顶', [{ v: 'wu', l: '庑殿' }, { v: 'xie', l: '歇山' }, { v: 'juan', l: '悬山' }], 'xie'), PR('ridge', '正脊比例', 0.1, 0.9, 0.02, 0.34), PR('eaveUp', '翼角起翘', 0, 0.5, 0.01, 0.24), PR('plinthH', '台基高 m', 0, 2, 0.05, 0.45), PB('steps', '踏跺', true), PB('dougong', '斗拱', true), PB('lattice', '槛窗', true), PB('rail','台基石栏杆',true), PB('innerCols','金柱（内槽）',true), PB('caihua','檐下彩画',true), PB('trim','脊兽·檐口椽瓦',true), PB('drip','瓦当滴水',true), PB('eaves2','重檐',false), PI('tiers','台基层数',1,3,1,1), PI('beasts','走兽数',0,9,1,3), PC('wall', '墙体色', '#e2d9c6'), PC('column', '柱色', '#7c3a2c'), PC('door', '门色', '#4d2a20'), PC('roof', '瓦色', '#3b4149'), PC('ridgeColor', '脊色', '#2f353c'), PC('plinth', '台基色', '#b3ada3')] },
-    { type: 'pavilion', name: '攒尖亭', icon: 'pavilion', build: buildPavilion, params: [PR('r', '半径 m', 1.6, 8, 0.2, 3.2), PI('sides', '边数', 3, 10, 1, 6), PR('h', '柱高 m', 2, 7, 0.1, 3.2), PR('roofH', '屋顶高 m', 0.8, 4.5, 0.1, 1.9), PR('eaveUp', '翼角起翘', 0, 0.8, 0.02, 0.42), PB('railing', '坐凳栏杆', true), PB('dougong', '斗拱', false), PB('trim','垂脊·宝顶·檐口',true), PB('gehua','挂落',true), PI('beasts','垂脊走兽',0,5,1,3), PC('column', '柱色', '#8e3a2c'), PC('roof', '瓦色', '#41474f')] },
+    { type: 'pavilion', name: '攒尖亭', icon: 'pavilion', build: buildPavilion, params: [PR('r', '半径 m', 1.6, 8, 0.2, 3.2), PI('sides', '边数', 3, 10, 1, 6), PR('h', '柱高 m', 2, 7, 0.1, 3.2), PR('roofH', '屋顶高 m', 0.8, 4.5, 0.1, 1.9), PR('eaveUp', '翼角起翘', 0, 0.8, 0.02, 0.42), PB('railing', '坐凳栏杆', true), PB('dougong', '斗拱', false), PB('trim','垂脊·宝顶·檐口',true), PI('beasts','垂脊走兽',0,5,1,3), PC('column', '柱色', '#8e3a2c'), PC('roof', '瓦色', '#41474f')] },
     { type: 'paifang', name: '牌楼牌坊', icon: 'paifang', build: buildPaifang, params: [PI('bays', '间数', 1, 5, 2, 3, '三间四柱：4 根主柱 + 2 根出头柱（开「出头柱小楼」即三间四柱五楼）'), PR('span', '总宽 m', 4, 26, 0.5, 14), PR('h', '柱高 m', 3, 11, 0.2, 6.2), PR('roofH', '楼顶高 m', 0.4, 2, 0.05, 0.95), PR('eaveUp', '翼角起翘', 0, 0.8, 0.02, 0.5), PS('roofKind', '明间楼顶', [{ v: 'xie', l: '歇山顶' }, { v: 'wu', l: '庑殿顶' }, { v: 'juan', l: '悬山顶' }], 'xie'), PS('style', '柱式', [{ v: 'lou', l: '楼式（柱不出头）' }, { v: 'chong', l: '冲天式（柱出头带蹲兽）' }], 'lou'), PB('floors', '每间起楼', true), PB('shoulder', '出头柱小楼', true), PB('dougong', '斗拱', true), PI('dgN', '平身科攒数', 0, 6, 1, 3), PB('caihua', '枋间彩画', true), PB('trim', '脊兽·檐口椽瓦', true), PB('plaques', '匾额花板', true), PT('text', '匾额题字', '德厚流光', '自右向左读，最多 6 字'), PC('column', '柱色', '#8e3a2c'), PC('stone', '夹杆石色', '#b7b1a6'), PC('roof', '瓦色', '#41474f'), PC('ridgeColor', '脊色', '#2f353c')] },
     { type: 'pagoda', name: '楼阁式佛塔', icon: 'pagoda', build: buildPagoda, params: [PI('levels', '层数', 3, 13, 2, 7), PR('r', '底层半径 m', 2, 9, 0.2, 4.4), PR('floorH', '层高 m', 2, 6, 0.1, 3.4), PR('taper', '收分', 0.01, 0.1, 0.005, 0.055), PI('sides', '平面边数', 4, 10, 1, 8), PR('spire', '塔刹高 m', 1, 8, 0.2, 3.4), PS('body', '塔身', [{ v: 'brick', l: '砖石' }, { v: 'wood', l: '木构' }], 'brick'), PB('door', '券门', true), PB('rail','塔基栏杆',true), PB('pingzuo','平座栏杆',true), PB('brackets','檐下斗拱',true), PB('trim','垂脊·瓦当',true), PC('column', '木色', '#7d4a2c'), PC('roof', '瓦色', '#3a4048')] },
     { type: 'gate', name: '城门楼', icon: 'gatecn', build: buildGate, params: [PR('w', '城墙宽 m', 10, 46, 1, 22), PR('wallH', '城墙高 m', 5, 16, 0.5, 9), PR('d', '城墙厚 m', 4, 16, 0.5, 8), PR('openW', '门洞宽 m', 2.5, 12, 0.25, 5.5), PR('floorH', '城楼层高 m', 2.6, 7, 0.2, 4), PR('roofH', '屋顶高 m', 1.2, 5, 0.1, 2.4), PB('towers', '角亭', true), PB('ramp','登城马道',true), PB('plaque','门额题字',true), PT('text','门额文字','永安门','自右向左读'), PB('trim','城楼脊兽·椽瓦',true), PC('wall', '砖色', '#9c978d'), PC('column', '柱色', '#8e3a2c'), PC('roof', '瓦色', '#3f454d')] },
