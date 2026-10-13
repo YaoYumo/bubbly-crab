@@ -104,6 +104,7 @@
     </div>
     <div class="egiz">
       <label>吸附 <select id="esnap"></select></label>
+      <label title="选中部件后相机自动飞到该部件近景（关掉后可用 F 键/聚焦按钮手动飞）"><input type="checkbox" id="eautofocus" checked /> 选中自动聚焦</label>
     </div>
     <table id="enum">
       <tr><td>位置</td><td><input id="ex0" type="number" step="0.01"></td><td><input id="ex1" type="number" step="0.01"></td><td><input id="ex2" type="number" step="0.01"></td></tr>
@@ -111,6 +112,7 @@
       <tr><td>缩放</td><td><input id="es0" type="number" step="0.05"></td><td><input id="es1" type="number" step="0.05"></td><td><input id="es2" type="number" step="0.05"></td></tr>
     </table>
     <div class="eacts">
+      <button id="efocus" title="相机聚焦到选中部件（F）">◎ 聚焦 F</button>
       <button id="ehide">隐藏 H</button>
       <button id="edel" class="warn">删除 Del</button>
       <button id="ereset1">复位该件</button>
@@ -136,6 +138,6 @@
 </div>
 
 <div id="info"></div>
-<script type="module" src="../src/round4.js?v=20261013b"></script>
+<script type="module" src="../src/round4.js?v=20261013c"></script>
 </body>
 </html>

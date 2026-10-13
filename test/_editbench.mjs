@@ -67,15 +67,61 @@ st = await page.evaluate(() => R4.state);
 ck('存档恢复 → 已改1', st.modified === 1, JSON.stringify(st));
 await page.evaluate(() => { R4.resetAll(); R4.exit(); });
 
-// 画布点选：进入 hall，朝画面中心（模型主体）点一下
+// 画布点选 + 聚焦：软件渲染帧慢，全部用「轮询相机到位/静止」代替固定 sleep
+const camDist = () => page.evaluate(() => {
+  const s = R4.state; if (s.sel < 0) return 99;
+  const c = R4.cam(), b = R4.partBox(s.sel);
+  return b ? +Math.hypot(c.target[0] - b.center[0], c.target[1] - b.center[1], c.target[2] - b.center[2]).toFixed(3) : 99;
+});
+const waitTargetNear = (t, tol, timeout = 30000) => page.waitForFunction(
+  (tt, tl) => { const c = R4.cam().target; return Math.hypot(c[0] - tt[0], c[1] - tt[1], c[2] - tt[2]) < tl; },
+  { timeout, polling: 250 }, t, tol).then(() => true).catch(() => false);
+const waitFocus = async (timeout = 30000) => {
+  try {
+    await page.waitForFunction(
+      () => { const s = R4.state; if (s.sel < 0) return false; const c = R4.cam(), b = R4.partBox(s.sel);
+        return b && Math.hypot(c.target[0] - b.center[0], c.target[1] - b.center[1], c.target[2] - b.center[2]) < 0.08; },
+      { timeout, polling: 250 });
+    return true;
+  } catch (err) { return false; }
+};
+
 await page.evaluate(() => R4.enter('hall'));
 await page.waitForFunction('R4.state.parts > 0', { timeout: 60000 });
-await new Promise((z) => setTimeout(z, 1600));   // 等相机飞行落位
+const pc = await page.evaluate(() => R4.plateCenter());
+ck('进场飞行落位', await waitTargetNear(pc, 0.06), `plateCenter=${pc}`);   // 轮询到相机真正抵达图板中心
 const box = await page.evaluate(() => { const c = document.getElementById('gl'); const r = c.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 await page.mouse.click(box.x + box.w * 0.5, box.y + box.h * 0.62);
 await new Promise((z) => setTimeout(z, 300));
 st = await page.evaluate(() => R4.state);
 ck('画布点选命中部件', st.sel >= 0, `sel=${st.sel}`);
+
+// 选中自动聚焦（默认开）：target 飞到部件包围盒中心
+const fok = await waitFocus();
+let f = await page.evaluate(() => {
+  const c = R4.cam();
+  return { minDist: c.minDist, dist: +Math.hypot(c.pos[0] - c.target[0], c.pos[1] - c.target[1], c.pos[2] - c.target[2]).toFixed(2) };
+});
+f.d = await camDist();
+ck('选中自动聚焦 → 相机对准部件', fok && f.d < 0.15, JSON.stringify(f));
+ck('编辑态 minDistance 放宽 <1m', f.minDist < 1, `minDist=${f.minDist}`);
+
+// 关掉自动聚焦：再选部件不飞；F 键手动聚焦仍可用
+await new Promise((z) => setTimeout(z, 900));    // 等上一段聚焦飞行的最后一帧收尾（fly=null）
+await page.evaluate(() => {
+  const cb = document.getElementById('eautofocus');
+  cb.checked = false; cb.dispatchEvent(new Event('change'));
+  R4.select((R4.state.sel + 300) % R4.state.parts);
+});
+const held = await page.evaluate(() => R4.cam().target.slice());
+await new Promise((z) => setTimeout(z, 900));
+const held2 = await page.evaluate(() => R4.cam().target);
+const drift = Math.hypot(held2[0] - held[0], held2[1] - held[1], held2[2] - held[2]);
+ck('关自动聚焦后选中不再飞', drift < 0.05, `drift=${drift.toFixed(3)}`);
+await page.keyboard.press('f');
+const fok2 = await waitFocus();
+const fd = await camDist();
+ck('F 键手动聚焦生效', fok2 && fd < 0.15, `d=${fd}`);
 await page.evaluate(() => R4.exit());
 
 ck('无 pageerror', errs.length === 0, errs.slice(0, 4).join(' | '));

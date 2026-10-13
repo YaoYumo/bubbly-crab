@@ -418,6 +418,43 @@ function opResetAll() {
   afterOp();
 }
 
+// ---- 聚焦所选：相机飞到部件包围盒近景（编辑小构件必备） ----
+let autoFocus = true;
+function partBox(m) {
+  const g = m.geometry;
+  const bb = new THREE.Box3();
+  if (!g) return bb;
+  if (!g.boundingBox) g.computeBoundingBox();
+  m.updateMatrixWorld(true);
+  if (m.isInstancedMesh) {                       // 整批件：并上每个实例的世界包围盒
+    const mat = new THREE.Matrix4();
+    for (let k = 0; k < m.count; k++) {
+      m.getMatrixAt(k, mat);
+      bb.union(g.boundingBox.clone().applyMatrix4(mat).applyMatrix4(m.matrixWorld));
+    }
+    if (bb.isEmpty()) bb.copy(g.boundingBox).applyMatrix4(m.matrixWorld);
+  } else {
+    bb.copy(g.boundingBox).applyMatrix4(m.matrixWorld);
+  }
+  return bb;
+}
+function focusSel() {
+  if (selIdx < 0 || !parts[selIdx]) return false;
+  const m = parts[selIdx].mesh;
+  if (m.userData._del) return false;
+  const bb = partBox(m);
+  if (bb.isEmpty()) return false;
+  const target = bb.getCenter(new THREE.Vector3());
+  const size = bb.getSize(_v2);
+  const dist = Math.max(0.9, Math.max(size.x, size.y, size.z) * 2.4 + 0.5);
+  let dir = view.position.clone().sub(controls.target);   // 保持当前观察方向，只推近，不跳视角
+  if (dir.lengthSq() < 1e-6) dir.set(0.62, 0.42, 0.86);
+  dir.normalize();
+  fly = { t0: performance.now(), ms: 650, fromP: view.position.clone(), fromT: controls.target.clone(), toP: target.clone().add(dir.multiplyScalar(dist)), toT: target };
+  return true;
+}
+const _v2 = new THREE.Vector3();
+
 // ---- 选中 / 高亮 ----
 function setSel(i) {
   if (i === selIdx) { refreshNums(); return; }
@@ -434,6 +471,7 @@ function setSel(i) {
       if (Array.isArray(m.material)) m.material = m.material.map((mm) => { const c = mm.clone(); glow(c); return c; });
       else { const c = m.material.clone(); glow(c); m.material = c; }
       tc.attach(m); tc.setMode(gizMode); tc.setSpace(gizSpace);
+      if (autoFocus) focusSel();
     } else tc.detach();
   }
   markListSel(); refreshNums(); infoEdit();
@@ -454,6 +492,7 @@ function refreshNums() {
       THREE.MathUtils.radToDeg(m.rotation.x), THREE.MathUtils.radToDeg(m.rotation.y), THREE.MathUtils.radToDeg(m.rotation.z),
       m.scale.x, m.scale.y, m.scale.z];
   NUM.forEach((inp, k) => { inp.value = +vals[k].toFixed(k < 3 ? 3 : k < 6 ? 1 : 3); inp.disabled = del; });
+  document.getElementById('efocus').disabled = del;
   document.getElementById('ehide').disabled = del;
   document.getElementById('edel').disabled = del;
   for (const g of document.querySelectorAll('#egizrow button.g[data-giz]')) g.disabled = del;
@@ -552,7 +591,7 @@ efilter.oninput = () => fillParts();
 
 function infoEdit() {
   if (!editE) return;
-  infoEl.textContent = `✎ ${editE.no} ${editE.name.split(' · ')[0]} · ${parts.length} 件 · 已改 ${nModified()} 处${selIdx >= 0 ? ` · 选中 #${selIdx}` : ''} · 单击选中 / W移动 E旋转 R缩放 / Del删除 H隐藏 / Ctrl+Z撤销`;
+  infoEl.textContent = `✎ ${editE.no} ${editE.name.split(' · ')[0]} · ${parts.length} 件 · 已改 ${nModified()} 处${selIdx >= 0 ? ` · 选中 #${selIdx}` : ''} · 单击选中 / F聚焦 / W移动 E旋转 R缩放 / Del删除 H隐藏 / Ctrl+Z撤销`;
 }
 function refreshFoot() { eundoB.disabled = !undoS.length; eredoB.disabled = !redoS.length; }
 
@@ -560,6 +599,7 @@ function refreshFoot() { eundoB.disabled = !undoS.length; eredoB.disabled = !red
 function enterEdit(e) {
   if (editE === e) return;
   if (editE) exitEdit(true);
+  controls.minDistance = 0.8;                      // 编辑态允许贴近到 0.8m（默认 4m 看不清小构件）
   globalThis.__noBake = 1; globalThis.__noInst = 1;
   const item = GROUP_CN.items.find((it) => it.type === e.type);
   let root;
@@ -591,6 +631,7 @@ function exitEdit(keep) {
   e.box = box; e.center = box.getCenter(new THREE.Vector3());
   if (e.label) e.label.position.set(e.center.x, box.max.y + 3.2, e.center.z);
   editE = null; parts = [];
+  controls.minDistance = 4;
   for (const en of entries) if (en.btn) en.btn.classList.remove('ed');
   if (!keep) { epanel.hidden = true; showInfo(null); }
 }
@@ -604,6 +645,8 @@ editChk.onchange = () => {
 document.getElementById('eclose').onclick = () => { editOn = false; editChk.checked = false; exitEdit(); };
 eundoB.onclick = undo;
 eredoB.onclick = redo;
+document.getElementById('efocus').onclick = () => focusSel();
+document.getElementById('eautofocus').onchange = (ev) => { autoFocus = ev.target.checked; };
 document.getElementById('ereset1').onclick = () => { if (selIdx >= 0) opResetOne(selIdx); };
 document.getElementById('ehide').onclick = () => { if (selIdx >= 0) opHide(selIdx); };
 document.getElementById('edel').onclick = () => { if (selIdx >= 0) opDelete(selIdx); };
@@ -723,6 +766,7 @@ addEventListener('keydown', (ev) => {
   if (k === 'w') setGiz('translate');
   else if (k === 'e') setGiz('rotate');
   else if (k === 'r') setGiz('scale');
+  else if (k === 'f') focusSel();
   else if (k === 'escape') setSel(-1);
   else if ((k === 'delete' || k === 'backspace') && selIdx >= 0) { ev.preventDefault(); opDelete(selIdx); }
   else if (k === 'h' && selIdx >= 0) opHide(selIdx);
@@ -730,7 +774,11 @@ addEventListener('keydown', (ev) => {
 
 // ---- 控制台/测试钩子 ----
 window.R4 = {
-  get state() { return { editOn, plate: editE && editE.type, parts: parts.length, sel: selIdx, modified: editE ? nModified() : 0, undo: undoS.length, redo: redoS.length }; },
+  get state() { return { editOn, plate: editE && editE.type, parts: parts.length, sel: selIdx, modified: editE ? nModified() : 0, undo: undoS.length, redo: redoS.length, autoFocus }; },
+  cam: () => ({ pos: view.position.toArray().map((n) => +n.toFixed(2)), target: controls.target.toArray().map((n) => +n.toFixed(2)), minDist: controls.minDistance }),
+  plateCenter: () => (editE ? editE.center.toArray().map((n) => +n.toFixed(3)) : null),
+  partBox: (i) => { const p = parts[i]; if (!p) return null; const bb = partBox(p.mesh); if (bb.isEmpty()) return null; return { center: bb.getCenter(new THREE.Vector3()).toArray().map((n) => +n.toFixed(3)), size: bb.getSize(new THREE.Vector3()).toArray().map((n) => +n.toFixed(3)) }; },
+  focus: focusSel,
   enter(type) { const e = entries.find((x) => x.type === type); if (!e) return false; editOn = true; editChk.checked = true; enterEdit(e); flyTo(e); return true; },
   exit() { editOn = false; editChk.checked = false; exitEdit(); },
   select: setSel,
