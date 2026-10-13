@@ -91,7 +91,7 @@ function buildHall(p) {
     grp.add(box(0.86, 0.16, 0.24, wood, 0, cH + 0.38, 0));                      // 垫板
     grp.add(box(0.86, 0.34, 0.32, wood, 0, cH + 0.63, 0));                      // 上额枋
     if (tall) grp.add(queTi(wood, 0.5, 0.42, 0.12));
-    if (p.dougong) grp.add(dougong(wood, 0.9, { gold: M.metal(0xb08a3e, 0.4, 0.7) }));
+    if (p.dougong) { const dgg = dougong(wood, 0.9, { gold: M.metal(0xb08a3e, 0.4, 0.7) }); dgg.position.y = cH - 0.04; grp.add(dgg); }   // 斗拱坐柱头（旧版落在柱脚）
     return grp;
   };
   const front = row((i) => colAt(0, 0, true), cols, w);
@@ -160,7 +160,7 @@ function buildHall(p) {
     }
   }
   const roofMat = roofSurf(new THREE.Color(p.roof).getHex(), 0.62);
-  const ry0 = y0 + cH + 0.24;
+  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.48);   // 檐口落在斗拱顶（旧版 0.24 让斗拱穿出檐口）
   g.add(curvedRoof({ w, d, h: rh, kind: p.kind, ridge: p.ridge, brim: p.bay * 0.75, eaveUp: p.eaveUp, mat: roofMat, seg: 26, y0: ry0 }));
   roofTrim(g, { w, d, h: rh, brim: p.bay * 0.75, eaveUp: p.eaveUp, y0: ry0, kind: p.kind, ridge: p.ridge, tile: roofMat, woodMat: wood, ridgeMat: M.paint(new THREE.Color(p.ridgeColor).getHex(), 0.6), trim, beasts: Math.round(num(p.beasts, 5)), drip: p.drip !== false });
   g.userData.glow = [];
@@ -1015,7 +1015,7 @@ function buildDrumTower(p) {
         const grp = new THREE.Group();
         grp.add(cyl(0.16, 0.18, fh, wood, seg(12), 0, fh / 2, 0));
         grp.add(cyl(0.3, 0.32, 0.1, stone2, seg(10), 0, 0.05, 0));
-        if (p.dougong !== false) grp.add(dougong(wood, 0.66, { gold }));
+        if (p.dougong !== false) { const dgg = dougong(wood, 0.66, { gold }); dgg.position.y = fh - 0.04; grp.add(dgg); }   // 斗拱坐柱头（旧版落在柱脚）
         return grp;
       }, nCol, bw2);
       rw.position.set(0, y0, sz * bd2 / 2);

@@ -356,8 +356,8 @@ export function eaveCornice(o = {}) {
         // 边中点抬升 0（檐口中线压 y0），角部起翘 —— 旧版整体抬 0.28·eaveUp·h 悬在屋面上
         const yy = y + eaveUp * rh * 0.72 * Math.pow(Math.min(1, Math.abs(t) * 2), 3);
         raft.push({ p: [x, yy - 0.03, z], r: [0, -ac, 0], s: [sideLen / nE * 0.95, 0.085, 0.5] });
-        caps.push({ p: [x + ux * 0.36, yy + 0.045, z + uz * 0.36], r: aimCyl(ux, 0, uz) });
-        drops.push({ p: [x + ux * 0.42, yy - 0.03, z + uz * 0.42], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
+        caps.push({ p: [x + ux * 0.02, yy + 0.02, z + uz * 0.02], r: aimCyl(ux, 0, uz) });
+        drops.push({ p: [x + ux * 0.06, yy - 0.05, z + uz * 0.06], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
       }
     }
   } else
@@ -366,8 +366,8 @@ export function eaveCornice(o = {}) {
       const x = (i / nX - 0.5) * W;
       const yy = y + lift(clamp(Math.abs(x) / (W / 2), 0, 1));
       raft.push({ p: [x, yy - 0.03, sz * (D / 2 - 0.16)], r: [sz * 0.14, 0, 0], s: [0.085, 0.085, 0.5] });
-      caps.push({ p: [x, yy + 0.045, sz * (D / 2 + 0.2)], r: aimCyl(0, 0, sz) });
-      drops.push({ p: [x, yy - 0.03, sz * (D / 2 + 0.24)], r: aimCyl(0, 0, sz), s: [1, 1, 0.6] });
+      caps.push({ p: [x, yy + 0.02, sz * (D / 2 + 0.02)], r: aimCyl(0, 0, sz) });
+      drops.push({ p: [x, yy - 0.05, sz * (D / 2 + 0.06)], r: aimCyl(0, 0, sz), s: [1, 1, 0.6] });
     }
   }
   for (const sx of [1, -1]) {
@@ -375,8 +375,8 @@ export function eaveCornice(o = {}) {
       const z = (i / nZ - 0.5) * D;
       const yy = y + lift(clamp(Math.abs(z) / (D / 2), 0, 1));
       raft.push({ p: [sx * (W / 2 - 0.16), yy - 0.03, z], r: [0, 0, sx * 0.14], s: [0.5, 0.085, 0.085] });
-      caps.push({ p: [sx * (W / 2 + 0.2), yy + 0.045, z], r: aimCyl(sx, 0, 0) });
-      drops.push({ p: [sx * (W / 2 + 0.24), yy - 0.03, z], r: aimCyl(sx, 0, 0), s: [1, 1, 0.6] });
+      caps.push({ p: [sx * (W / 2 + 0.02), yy + 0.02, z], r: aimCyl(sx, 0, 0) });
+      drops.push({ p: [sx * (W / 2 + 0.06), yy - 0.05, z], r: aimCyl(sx, 0, 0), s: [1, 1, 0.6] });
     }
   }
   const g = new THREE.Group();
@@ -409,7 +409,9 @@ export function hipRidge(o = {}) {
   for (let i = 0; i < ns; i++) {
     const t0 = i / ns, t1 = (i + 1) / ns, tm = (t0 + t1) / 2;
     const hh = (0.24 - 0.07 * tm) * s;
-    g.add(box(len / ns * 1.05, hh, w * (1 - tm * 0.18) * s, mat, tm * len, yAt(tm) + hh / 2, 0));
+    const mb = box(len / ns * 1.05, hh, w * (1 - tm * 0.18) * s, mat, tm * len, yAt(tm) + hh / 2, 0);
+    mb.rotation.z = Math.atan2(yAt(t1) - yAt(t0), len / ns);   // 段身顺坡倾斜，拼成连续斜脊
+    g.add(mb);
   }
   g.add(box(0.34 * s, 0.3 * s, 0.34 * s, bm, len + 0.12 * s, yAt(1) + 0.2 * s, 0, 0.06));       // 垂兽
   g.add(cone(0.16 * s, 0.32 * s, bm, seg(6), len + 0.34 * s, yAt(1) + 0.44 * s, 0));
