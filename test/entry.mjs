@@ -121,6 +121,36 @@ const browser = await puppeteer.launch({
   await page.close();
 }
 
+/* ---- D：窄预览窗（900×640）整页必须完整显示 ---- */
+{
+  const page = await browser.newPage();
+  await page.setViewport({ width: 900, height: 640 });
+  await page.goto(URL0, { waitUntil: 'networkidle2', timeout: 120000 });
+  await page.waitForFunction(() => window.__previzBooted && window.app, { timeout: 120000 });
+  await new Promise((r) => setTimeout(r, 500));
+  const s = await page.evaluate(() => {
+    const top = document.getElementById('top');
+    const btns = [...document.querySelectorAll('#top .tb')];
+    const offscreen = btns.filter((b) => {
+      const r = b.getBoundingClientRect();
+      return b.offsetParent === null || r.right > innerWidth + 1 || r.left < -1 || r.bottom > innerHeight + 1;
+    }).map((b) => b.textContent.trim().slice(0, 12));
+    return {
+      hOverflow: document.scrollingElement.scrollWidth - innerWidth,
+      topClipped: top.scrollHeight - top.clientHeight,
+      offscreen,
+      btnCount: btns.length,
+      sidebarsHidden: getComputedStyle(document.getElementById('left-scene')).display === 'none',
+    };
+  });
+  ck('D1 窄窗无横向溢出', s.hOverflow <= 1, `overflow=${s.hOverflow}px`);
+  ck('D2 顶栏内容不被裁切', s.topClipped <= 2, `clip=${s.topClipped}px`);
+  ck('D3 顶栏全部按钮在可视区内', s.offscreen.length === 0, `${s.btnCount} 个按钮，出界: ${s.offscreen.join(',') || '无'}`);
+  ck('D4 ≤1000px 侧栏收起让宽给视口', s.sidebarsHidden);
+  await page.screenshot({ path: 'test/out/entry-narrow.png' }).catch(() => {});
+  await page.close();
+}
+
 await browser.close();
 console.log(fails.length ? `\nFAILED(${fails.length}):\n` + fails.join('\n') : '\nALL PASS');
 process.exit(fails.length ? 1 : 0);
