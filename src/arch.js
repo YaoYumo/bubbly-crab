@@ -1199,14 +1199,24 @@ function buildDrumTower(p) {
   const caihuaMats = { p: M.paint(0x2f5b8a, 0.6), q: M.paint(0x3c7a5e, 0.6), r: M.paint(0x8f3a2c, 0.6), g: gold };
   const trim = p.trim !== false && Q.level !== 'lite';   // 轻档：省掉脊兽 / 椽瓦 / 栏杆等细件
   // ── 城台：十字券洞 + 券脸 + 宇墙栏杆 ────────────────────────────
-  g.add(box(W, baseH, W, stone, 0, baseH / 2, 0));
-  g.add(box(W + 0.5, 0.2, W + 0.5, stone2, 0, 0.1, 0));
   const oh = Math.min(baseH * 0.72, W * 0.34), ow = W * 0.3;
+  const cw = (W - ow) / 2;                                                                    // 城台=四角墩+顶板：十字券洞真穿透
+  for (const sx of [1, -1]) for (const sz of [1, -1]) g.add(box(cw, oh, cw, stone, sx * (ow / 2 + cw / 2), oh / 2, sz * (ow / 2 + cw / 2)));
+  g.add(box(W, baseH - oh, W, stone, 0, oh + (baseH - oh) / 2, 0));
+  g.add(box(W + 0.5, 0.2, W + 0.5, stone2, 0, 0.1, 0));
   for (const rot of [0, Math.PI / 2]) {
     for (const sz of [1, -1]) {
-      const e = box(ow, oh, 0.3, M.dark(0x181c22, 0.85), 0, oh / 2, sz * (W / 2 + 0.02));
-      if (rot) { e.position.z = 0; e.position.x = sz * (W / 2 + 0.02); e.rotation.y = Math.PI / 2; }
-      g.add(e);
+      const vv = new THREE.Mesh(new THREE.CylinderGeometry(ow / 2, ow / 2, 1.3, seg(12), 1, true, 0, Math.PI), M.brick(0x8f8a80, 0.92));   // 砖券衬（半筒伏进洞口）
+      vv.material.side = 2;
+      vv.rotation.x = Math.PI / 2;
+      vv.position.set(0, oh - ow / 2, sz * (W / 2 - 0.3));
+      if (rot) { vv.position.set(sz * (W / 2 - 0.3), oh - ow / 2, 0); vv.rotation.set(Math.PI / 2, Math.PI / 2, 0); }
+      vv.castShadow = vv.receiveShadow = true;
+      g.add(vv);
+      const af = archFace({ w: ow, h: oh, th: 0.34, mat: stone2 });   // 券脸石
+      if (rot) { af.rotation.y = Math.PI / 2; af.position.x = sz * (W / 2 + 0.1); af.position.z = 0; }
+      else af.position.z = sz * (W / 2 + 0.1);
+      g.add(af);
       const fr = box(ow + 0.9, 0.34, 0.4, stone2, 0, oh + 0.2, sz * (W / 2 + 0.12));
       if (rot) { fr.position.x = sz * (W / 2 + 0.12); fr.position.y = oh + 0.2; fr.position.z = 0; fr.rotation.y = Math.PI / 2; }
       g.add(fr);
@@ -1269,6 +1279,22 @@ function buildDrumTower(p) {
     g.add(curvedRoof({ w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, kind: 'xie', eaveUp: 0.34, mat: tile, seg: 18, y0: ry }));
     roofTrim(g, { w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, brim: 0.5, eaveUp: 0.34, y0: ry, kind: 'xie', tile, woodMat: wood, ridgeMat: M.paint(0x31363d, 0.6), trim, beasts: lv === levels - 1 ? 4 : 2 });
   }
+  // ── 平座陈设：铜钟+钟架、铜壶滴漏（图板：BELL / WATER CLOCK）─────────
+  const bronze = M.metal(0x8a6a3a, 0.45, 0.75);
+  const sT = 1 - (levels - 1) * 0.14, bwT = W * 0.84 * sT;
+  const deckY = levels > 1 ? baseH + (levels - 1) * (fh + 1.0) - 0.5 + 0.07 : baseH + 0.02;
+  const bx = -bwT * 0.25, bz = bwT * 0.545;                                                   // 平座前檐廊带（身墙与栏杆之间）
+  for (const sx of [-1, 1]) g.add(cyl(0.06, 0.07, 1.15, wood, seg(8), bx + sx * 0.5, deckY + 0.575, bz));
+  g.add(box(1.3, 0.14, 0.14, wood, bx, deckY + 1.2, bz));
+  g.add(cyl(0.02, 0.02, 0.22, bronze, 4, bx, deckY + 1.02, bz));
+  g.add(cyl(0.24, 0.32, 0.46, bronze, seg(14), bx, deckY + 0.78, bz));
+  g.add(cyl(0.33, 0.33, 0.07, bronze, seg(14), bx, deckY + 0.56, bz));
+  g.add(sph(0.06, bronze, seg(8), bx, deckY + 1.04, bz));
+  const cx2 = bwT * 0.25, cz2 = -bwT * 0.545;
+  for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; g.add(cyl(0.03, 0.04, 0.16, bronze, 6, cx2 + Math.cos(a) * 0.14, deckY + 0.08, cz2 + Math.sin(a) * 0.14)); }
+  g.add(cyl(0.24, 0.18, 0.34, bronze, seg(14), cx2, deckY + 0.32, cz2));
+  const dial = cyl(0.2, 0.2, 0.05, bronze, seg(14), cx2, deckY + 0.52, cz2); dial.rotation.x = 0.45; g.add(dial);
+  g.add(cyl(0.02, 0.02, 0.16, bronze, 4, cx2, deckY + 0.58, cz2 - 0.04));
   g.userData.drum = { levels, rail: p.rail !== false, drum: p.drum !== false, trim };
   return cnShade(g);
 }
@@ -1288,7 +1314,7 @@ function buildCourtyard(p) {
       g.add(box(gateW, H * 0.24, d2, wallMat, x, H * 0.88, z));
       for (const sx of [1, -1]) g.add(box(0.5, H * 0.9, d2 + 0.2, brick, x + sx * (gateW / 2 + 0.2), H * 0.45, z, 0.04));   // 门框砖垛
       g.add(box(gateW + 1.2, 0.22, d2 + 0.4, brick, x, H * 0.78, z));                                                 // 过梁
-      for (const sx of [1, -1]) g.add(box(1.0, 0.5, 0.34, M.wood(0x6b452a, 0.7), x + sx * (gateW / 2 + 0.6), 0.25, z + d2 / 2 + 0.3, 0.05));  // 门墩 / 抱鼓石
+      for (const sx of [1, -1]) g.add(baoguShi(brick, 1.1, x + sx * (gateW / 2 + 0.7), 0, z + d2 / 2 + 0.42, sx * Math.PI / 2));   // 门墩抱鼓石
       g.add(box(gateW * 0.94, 0.1, 0.3, brick, x, 0.05, z));                                                            // 门槛
       const roofF = curvedRoof({ w: gateW + 2.2, d: d2 + 1.5, h: 0.7, kind: 'juan', brim: 0.3, eaveUp: 0.42, mat: roofMat, seg: 12, y0: H * 0.9 });
       roofF.position.set(x, 0, z + 0.2);
@@ -1313,7 +1339,7 @@ function buildCourtyard(p) {
     }
   }
   const addHall = (x, z, w3, d3, rot) => {
-    const h = buildHall({ w: w3, d: d3, h: 3.1, bays: 3, bay: 3, roofH: 2.0, kind: 'wu', ridge: 0.4, plinth: 0xb9b2a4, plinthH: 0.34, wall: 0xe6ddcd, column: 0x8e3a2c, door: 0x5c2c22, roof: p.roof, ridgeColor: 0x4a4f56, steps: true, lattice: false, dougong: true, trim, beasts: 3 });
+    const h = buildHall({ w: w3, d: d3, h: 3.1, bays: 3, bay: 3, roofH: 2.0, kind: 'wu', ridge: 0.4, plinth: 0xb9b2a4, plinthH: 0.34, wall: 0xe6ddcd, column: 0x8e3a2c, door: 0x5c2c22, roof: p.roof, ridgeColor: 0x4a4f56, steps: true, lattice: true, dougong: true, trim, beasts: 3 });
     h.position.set(x, 0, z); h.rotation.y = rot;
     g.add(h);
   };
@@ -1336,6 +1362,20 @@ function buildCourtyard(p) {
     rS.position.z = sy;
     g.add(rS);
     g.add(box(sw + 1.0, 0.14, 1.4, brick, 0, 0.42 + H * 0.68, sy));
+  }
+  if (p.chui !== false && p.gate !== false) {                       // 垂花门（二门：柱+梁+垂花柱+卷棚）
+    const cz = D / 2 - 9.5, chH = 2.5, cy0 = 0.3 + chH + 0.12;
+    g.add(box(3.8, 0.3, 2.4, brick, 0, 0.15, cz));
+    for (const sx of [-1, 1]) g.add(cyl(0.14, 0.16, chH, M.paint(0x8e3a2c, 0.7), seg(10), sx * 1.5, 0.3 + chH / 2, cz));
+    g.add(box(3.4, 0.24, 0.24, M.paint(0x8e3a2c, 0.7), 0, 0.3 + chH + 0.12, cz));
+    for (const sx of [-1, 1]) {
+      g.add(cyl(0.09, 0.11, 0.5, M.paint(0x8e3a2c, 0.7), seg(8), sx * 0.9, 0.3 + chH - 0.25, cz + 0.55));
+      g.add(sph(0.13, M.metal(0xc9a45c, 0.36, 0.8), seg(8), sx * 0.9, 0.3 + chH - 0.54, cz + 0.55));   // 垂莲柱头
+    }
+    for (const sx of [-1, 1]) g.add(box(0.3, 0.7, 0.34, wallMat, sx * 1.5, cy0 + 0.28, cz));           // 山填：柱头咬梁、顶咬瓦背
+    const rC = curvedRoof({ w: 4.6, d: 2.8, h: 0.8, kind: 'juan', brim: 0.3, eaveUp: 0.3, mat: roofMat, seg: 12, y0: cy0 });
+    rC.position.z = cz;
+    g.add(rC);
   }
   if (p.corr !== false && p.wings) {                              // 抄手游廊（连接正房与厢房）
     for (const sx of [1, -1]) {
@@ -1547,16 +1587,29 @@ function buildMoonGate(p) {
   const L = Math.max(2, num(p.length, 10)), H = Math.max(1.6, num(p.height, 3.4)), T = Math.max(0.12, num(p.thick, 0.36));
   const R = Math.min(H * 0.46, L * 0.28);
   const segs = clamp(Math.round(mul(20)), 10, 26);
-  // 砖券（内外两圈，构成券厚）+ 券脸
-  for (const rr of [R, R - 0.16]) {
-    for (let i = 0; i < segs; i++) {
-      const a0 = (i / segs) * Math.PI * 2, am = ((i + 0.5) / segs) * Math.PI * 2;
-      if (Math.sin(am) * rr + R < 0.02) continue;                                       // 地面以下不砌券
-      const b = box(Math.max(0.14, (2 * Math.PI * rr / segs) * 1.08), 0.26, (rr === R ? T + 0.1 : T * 0.7), rr === R ? grey : brick, Math.cos(am) * rr, R + Math.sin(am) * rr, 0);   // 圆心落地：月亮门是一整个圆
-      b.rotation.z = a0 + Math.PI / segs;
-      g.add(b);
-    }
+  // 砖券：环面券脸（双面）+ 券洞筒衬 —— 旧版弦块两圈在内外缘留楔形 notch，看着像点券
+  const ringGeo = new THREE.RingGeometry(R - 0.3, R + 0.16, seg(28));
+  for (const sz of [1, -1]) {
+    const m = new THREE.Mesh(ringGeo, grey);
+    m.position.set(0, R, sz * (T / 2 + 0.05));                                              // 环心=圆心（落地圆：圆心高 R）
+    if (sz < 0) m.rotation.y = Math.PI;
+    m.castShadow = m.receiveShadow = true;
+    g.add(m);
   }
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(R - 0.3, R - 0.3, T + 0.12, seg(28), 1, true), brick);
+  tube.rotation.x = Math.PI / 2;
+  tube.position.y = R;
+  tube.material.side = 2;
+  g.add(tube);
+  const vous = [];                                                                        // 券脸放射分缝（浅浮雕线）
+  for (let i = 0; i < segs; i++) {
+    const am = ((i + 0.5) / segs) * Math.PI * 2;
+    if (Math.sin(am) * R + R < 0.02) continue;
+    vous.push({ p: [Math.cos(am) * (R - 0.07), R + Math.sin(am) * (R - 0.07), T / 2 + 0.06], r: [0, 0, am - Math.PI / 2], s: [0.05, 0.4, 0.03] });
+    vous.push({ p: [Math.cos(am) * (R - 0.07), R + Math.sin(am) * (R - 0.07), -T / 2 - 0.06], r: [0, 0, am - Math.PI / 2], s: [0.05, 0.4, 0.03] });
+  }
+  const vb = batch(new THREE.BoxGeometry(1, 1, 1), brick, vous);
+  if (vb) g.add(vb);
   // 墙身：按「圆洞」切成竖条，每条自己算被圆切掉的空档 → 洞形与砖券严格一致。
   // 旧版只开了个通高矩形口（宽 1.44R），圆券上半截空着、洞顶留一方孔，券石看着像掉在洞底。
   const nS = clamp(Math.round(L / 0.42), 8, 72);
@@ -1580,7 +1633,7 @@ function buildMoonGate(p) {
   g.add(box(L + 0.18, 0.14, T + 0.24, grey, 0, H - 0.07, 0));                                     // 上檐枋（通长）
   g.add(box(L + 0.4, 0.2, T + 0.3, brick, 0, H + 0.08, 0));                                            // 墙帽（披水，下沿咬住上檐枋 2cm）
   const rY = H + 0.06;                                                                                  // 卷棚压在墙帽上，别悬空
-  g.add(curvedRoof({ w: L + 0.5, d: T + 1.1, h: 0.5, kind: 'juan', brim: 0.25, eaveUp: 0.16, mat: roof, seg: 16, y0: rY }));
+  g.add(curvedRoof({ w: L + 0.5, d: T + 1.1, h: 0.5, kind: 'juan', brim: 0.25, eaveUp: 0.0, mat: roof, seg: 16, y0: rY }));   // 墙帽不起翘：旧版翘须脱开墙帽成剪影碎块
   // 墙帽是卷棚、两端不出脊：旧版还排了 roofTrim 的脊件 / 起翘，墙头两头就顶出两块黑色「断件」
   // 门槛 + 门枕石 + 抱鼓
   g.add(box(R * 1.7, 0.12, T + 0.1, grey, 0, 0.06, 0));                                            // 门槛铺满洞口
@@ -1590,6 +1643,41 @@ function buildMoonGate(p) {
     drum.rotation.x = Math.PI / 2;
     g.add(drum);
   }
+  // 漏窗（双侧镂空花窗：暗腔+斜棂+框）
+  for (const sx of [1, -1]) {
+    const lx = sx * Math.min(R + 1.6, L / 2 - 0.9);
+    for (const sz of [1, -1]) {
+      g.add(box(1.05, 1.05, 0.06, M.dark(0x20242b, 0.8), lx, H * 0.56, sz * (T / 2 - 0.05)));
+      const lat = [];
+      for (let i = 0; i < 5; i++) lat.push({ p: [lx + (i / 4 - 0.5) * 0.8, H * 0.56, sz * (T / 2 + 0.02)], r: [0, 0, Math.PI / 4], s: [0.05, 1.25, 0.05] });
+      for (let i = 0; i < 5; i++) lat.push({ p: [lx + (i / 4 - 0.5) * 0.8, H * 0.56, sz * (T / 2 + 0.02)], r: [0, 0, -Math.PI / 4], s: [0.05, 1.25, 0.05] });
+      const lb = batch(new THREE.BoxGeometry(1, 1, 1), grey, lat);
+      if (lb) g.add(lb);
+      g.add(box(1.25, 0.12, 0.12, grey, lx, H * 0.56 + 0.56, sz * (T / 2 + 0.02)));
+      g.add(box(1.25, 0.12, 0.12, grey, lx, H * 0.56 - 0.56, sz * (T / 2 + 0.02)));
+      for (const sy of [-1, 1]) g.add(box(0.12, 1.24, 0.12, grey, lx + sy * 0.56, H * 0.56, sz * (T / 2 + 0.02)));
+    }
+  }
+  const plY = Math.min(R * 2 + 0.5, H - 0.45);
+  g.add(box(1.3, 0.55, 0.1, grey, 0, plY, T / 2 + 0.04));                                    // 门额（嵌墙皮）
+  g.add(box(1.44, 0.1, 0.14, grey, 0, plY + 0.32, T / 2 + 0.04));
+  g.add(box(1.44, 0.1, 0.14, grey, 0, plY - 0.32, T / 2 + 0.04));
+  for (const sx of [1, -1]) {                                                                 // 卵石铺地（台明前两条）
+    const px = sx * (R + 1.1);
+    g.add(box(2.0, 0.06, 0.85, grey, px, 0.03, T / 2 + 0.55));
+    const pb = [];
+    for (let i = 0; i < 26; i++) pb.push({ p: [px + ((i % 9) / 8 - 0.5) * 1.8, 0.07, T / 2 + 0.25 + Math.floor(i / 9) * 0.22], s: [0.11, 0.07, 0.1] });
+    const pbb = batch(new THREE.SphereGeometry(1, seg(6), seg(5)), M.stone(0xa8a29a, 0.9), pb);
+    if (pbb) g.add(pbb);
+    g.add(box(0.55, H, T + 0.12, brick, sx * (L / 2 - 0.27), H / 2, 0));                     // 砖砌端柱
+  }
+  for (let i = 0; i < 5; i++) {                                                               // 门上起伏墙帽（五叠压住通长墙帽）
+    const x = (i - 2) * R * 0.55;
+    const arc = 0.5 * R * Math.max(0, 1 - Math.pow(x / (R * 1.4), 2)) - 0.16;
+    const c2 = box(R * 0.62, 0.4, T + 0.34, brick, x, H + 0.02 + arc, 0);                   // 两端锚进通长墙帽；块高 0.4 保证逐块投影叠接
+    c2.rotation.z = -x * 0.1;
+    g.add(c2);
+  }
   g.userData.moon = { R: +R.toFixed(2), trim: p.trim !== false };
   return cnShade(g);
 }
@@ -1597,28 +1685,56 @@ function buildLanternPole(p) {
   const g = new THREE.Group();
   const pole = M.paint(new THREE.Color(p.pole).getHex(), 0.6);
   const gold = M.metal(0xc9a45c, 0.36, 0.82);
+  const red = M.paint(0xb8342a, 0.62);
   g.add(box(0.72, 0.24, 0.72, M.stone(0x9c978d, 0.9), 0, 0.12, 0, 0.04));
   g.add(box(0.5, 0.14, 0.5, M.stone(0xa8a29a, 0.9), 0, 0.3, 0));
-  g.add(cyl(0.09, 0.13, p.height, pole, seg(10), 0, p.height / 2 + 0.36, 0));
-  g.add(cyl(0.16, 0.16, 0.1, gold, seg(8), 0, p.height * 0.5, 0));                    // 腰铁
-  const glow = M.glow(p.color, num(p.glow, 1.6) * 2.2);
-  for (const s of [-1, 1]) {
-    g.add(box(1.6, 0.12, 0.12, pole, s * 0.78, p.height + 0.3, 0));
-    g.add(box(0.34, 0.22, 0.2, pole, s * 1.36, p.height + 0.14, 0, 0.03));             // 雀替式托木
-    const lamp = cyl(0.34, 0.34, 0.62, glow, seg(6), s * 1.4, p.height - 0.1, 0);      // 六角灯身
-    g.add(lamp);
-    g.add(cyl(0.4, 0.36, 0.1, M.paint(0x2c2f34, 0.7), seg(6), s * 1.4, p.height + 0.34, 0));
-    g.add(cone(0.46, 0.26, M.paint(0x2c2f34, 0.7), seg(6), s * 1.4, p.height + 0.5, 0));
-    g.add(cyl(0.38, 0.34, 0.12, M.paint(0x2c2f34, 0.7), seg(6), s * 1.4, p.height - 0.46, 0));
-    g.add(box(0.16, 0.1, 0.16, gold, s * 1.4, p.height + 0.68, 0));                     // 顶宝
-    for (let i = 0; i < 3; i++) {                                                        // 穗子
-      const t = (i - 1) * 0.2;
-      g.add(cyl(0.012, 0.012, 0.36, M.paint(0xb8443a, 0.7), 4, s * 1.4 + t, p.height - 0.66, t * 0.5));
-      g.add(sph(0.035, M.paint(0xb8443a, 0.7), 6, s * 1.4 + t, p.height - 0.5, t * 0.5));
-    }
-    if (p.tassel !== false) g.add(box(0.5, 0.04, 0.04, gold, s * 1.4, p.height + 0.24, 0));
+  g.add(cyl(0.34, 0.42, 0.2, M.stone(0xa8a29a, 0.9), seg(12), 0, 0.47, 0));            // 莲花座下瓣
+  const pet = [];
+  for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; pet.push({ p: [Math.cos(a) * 0.36, 0.56, Math.sin(a) * 0.36], r: [0, -a, 0.5], s: [0.16, 0.22, 0.1] }); }
+  const pb = batch(new THREE.SphereGeometry(1, seg(6), seg(5)), M.stone(0xb5afa2, 0.9), pet);
+  if (pb) g.add(pb);
+  g.add(cyl(0.26, 0.32, 0.18, M.stone(0xa8a29a, 0.9), seg(12), 0, 0.66, 0));           // 莲花座上瓣
+  g.add(cyl(0.09, 0.13, p.height, pole, seg(10), 0, p.height / 2 + 0.72, 0));
+  g.add(cyl(0.16, 0.16, 0.1, gold, seg(8), 0, p.height * 0.5 + 0.36, 0));              // 腰铁
+  const ay = p.height + 0.72;                                                          // 挑臂根
+  for (let i = 0; i < 6; i++) {                                                        // 云头挑臂：分段随弯
+    const t0 = i / 6, t1 = (i + 1) / 6, tm = (t0 + t1) / 2;
+    const fx = (t) => 0.1 + t * 1.8, fy = (t) => ay + Math.sin(t * Math.PI) * 0.4 - t * t * 0.34;
+    const L = Math.hypot(fx(t1) - fx(t0), fy(t1) - fy(t0)) * 1.25;
+    const ab = box(L, 0.13, 0.16, pole, (fx(t0) + fx(t1)) / 2, (fy(t0) + fy(t1)) / 2, 0);
+    ab.rotation.z = Math.atan2(fy(t1) - fy(t0), fx(t1) - fx(t0));
+    g.add(ab);
   }
-  g.add(sph(0.11, gold, seg(8), 0, p.height + 0.44, 0));                               // 杆顶宝珠
+  const tipX = 1.9, tipY = ay - 0.34 + Math.sin(Math.PI) * 0.4;
+  g.add(sph(0.14, pole, seg(8), tipX, tipY + 0.1, 0));                                 // 云头
+  const sc = cyl(0.1, 0.1, 0.06, pole, seg(10), tipX + 0.16, tipY + 0.2, 0); sc.rotation.x = Math.PI / 2; g.add(sc);
+  g.add(cyl(0.02, 0.02, 0.3, gold, 4, tipX, tipY - 0.12, 0));                          // 吊钩
+  g.add(cyl(0.012, 0.012, 0.34, red, 4, tipX, tipY - 0.42, 0));                        // 丝灯弦
+  g.add(sph(0.3, M.glow(p.color, num(p.glow, 1.6) * 1.6), seg(14), tipX, tipY - 0.76, 0));   // 丝灯（圆）
+  g.add(cyl(0.1, 0.12, 0.08, gold, seg(8), tipX, tipY - 0.5, 0));
+  g.add(cyl(0.1, 0.12, 0.08, gold, seg(8), tipX, tipY - 1.02, 0));
+  if (p.tassel !== false) for (let i = 0; i < 3; i++) {
+    const t = (i - 1) * 0.12;
+    g.add(cyl(0.012, 0.012, 0.3, red, 4, tipX + t, tipY - 1.2, t * 0.5));
+  }
+  g.add(box(0.95, 0.1, 0.1, pole, -0.5, ay - 0.06, 0));                                // 宫灯短臂
+  const glow = M.glow(p.color, num(p.glow, 1.6) * 2.2);
+  g.add(cyl(0.012, 0.012, 0.24, gold, 4, -0.95, ay - 0.22, 0));
+  g.add(cyl(0.34, 0.34, 0.62, glow, seg(6), -0.95, ay - 0.66, 0));                     // 宫灯六角灯身
+  const gp = [];
+  for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; gp.push({ p: [-0.95 + Math.cos(a) * 0.35, ay - 0.66, Math.sin(a) * 0.35], s: [0.05, 0.66, 0.05] }); }
+  const gpb = batch(new THREE.BoxGeometry(1, 1, 1), pole, gp);
+  if (gpb) g.add(gpb);
+  g.add(cyl(0.4, 0.36, 0.1, M.paint(0x2c2f34, 0.7), seg(6), -0.95, ay - 0.3, 0));
+  g.add(cone(0.46, 0.26, M.paint(0x2c2f34, 0.7), seg(6), -0.95, ay - 0.14, 0));
+  g.add(cyl(0.38, 0.34, 0.12, M.paint(0x2c2f34, 0.7), seg(6), -0.95, ay - 1.02, 0));
+  g.add(box(0.16, 0.1, 0.16, gold, -0.95, ay - 0.02, 0));
+  if (p.tassel !== false) {
+    g.add(sph(0.07, red, seg(8), -0.95, ay - 1.14, 0));                                // 中国结
+    g.add(cone(0.09, 0.16, red, seg(8), -0.95, ay - 1.26, 0));
+    for (let i = 0; i < 3; i++) { const t = (i - 1) * 0.1; g.add(cyl(0.012, 0.012, 0.34, red, 4, -0.95 + t, ay - 1.5, t * 0.5)); }
+  }
+  g.add(sph(0.11, gold, seg(8), 0, ay + 0.1, 0));                                      // 杆顶宝珠
   g.userData.glow = [glow];
   return cnShade(g);
 }
@@ -2538,7 +2654,7 @@ export const GROUP_CN = {
     { type: 'corridor', name: '彩画回廊', icon: 'corridor', build: buildCorridor, params: [PR('length', '长度 m', 6, 90, 1, 24), PR('w', '廊宽 m', 1.8, 5, 0.1, 3), PR('h', '柱高 m', 2.2, 6, 0.1, 3.4), PR('spacing', '柱距 m', 2, 6, 0.1, 3.4), PB('railing', '美人靠', true), PB('gehua','挂落',true), PB('caihua','檐枋彩画',true), PB('hang','挂檐板',true), PB('trim','脊兽·檐口椽瓦',true), PB('drip','瓦当滴水',true), PC('column', '柱色', '#8e3a2c'), PC('roof', '瓦色', '#41474f')] },
     { type: 'archbridge', name: '石拱桥', icon: 'bridgecn', build: buildArchBridge, params: [PR('span', '跨径 m', 4, 30, 0.5, 12), PR('rise', '矢高 m', 1, 9, 0.2, 3.6), PR('w', '桥宽 m', 2, 12, 0.2, 4.6), PB('rail','栏板望柱',true), PB('trim','券脸石·螭首',true), PC('color', '石色', '#b0aa9f')] },
     { type: 'drumtower', name: '鼓楼钟楼', icon: 'drum', build: buildDrumTower, params: [PR('w', '面宽 m', 6, 22, 0.5, 12), PR('baseH', '城台高 m', 3, 12, 0.5, 6.5), PI('levels', '层数', 1, 3, 1, 2), PR('floorH', '层高 m', 2.6, 6, 0.1, 3.6), PB('rail','平座·台顶栏杆',true), PB('dougong','斗拱',true), PB('drum','更鼓',true), PB('plaque','匾额',true), PT('text','匾额题字','鐘鼓樓','自右向左读'), PB('trim','脊兽·彩画',true), PC('column', '柱色', '#8e3a2c'), PC('roof', '瓦色', '#41474f')] },
-    { type: 'courtyard', name: '四合院单元', icon: 'yard', build: buildCourtyard, params: [PR('w', '院宽 m', 14, 60, 1, 26), PR('d', '院深 m', 14, 70, 1, 32), PR('wallH', '院墙高 m', 2, 6, 0.2, 3.4), PB('wings', '东西厢房', true), PB('gate', '街门牌楼', true), PB('screen','影壁',true), PB('corr','抄手游廊',true), PB('trim','墙脊瓦当',true), PT('gateText','街门题字','紫氣東來'), PC('wall', '墙色', '#e0d7c6'), PC('roof', '瓦色', '#454b53')] },
+    { type: 'courtyard', name: '四合院单元', icon: 'yard', build: buildCourtyard, params: [PR('w', '院宽 m', 14, 60, 1, 26), PR('d', '院深 m', 14, 70, 1, 32), PR('wallH', '院墙高 m', 2, 6, 0.2, 3.4), PB('wings', '东西厢房', true), PB('gate', '街门牌楼', true), PB('screen','影壁',true), PB('chui','垂花门',true), PB('corr','抄手游廊',true), PB('trim','墙脊瓦当',true), PT('gateText','街门题字','紫氣東來'), PC('wall', '墙色', '#e0d7c6'), PC('roof', '瓦色', '#454b53')] },
     { type: 'moongate', name: '月亮门院墙', icon: 'moongate', build: buildMoonGate, params: [PR('length', '墙长 m', 4, 30, 0.5, 10), PR('height', '墙高 m', 2, 6, 0.1, 3.4), PR('thick', '墙厚 m', 0.2, 1, 0.05, 0.36), PB('trim','墙帽脊饰',true), PC('wall', '墙色', '#eae3d6'), PC('roof', '瓦色', '#3f454d')] },
     { type: 'lanternpole', name: '宫灯杆', icon: 'lampcn', build: buildLanternPole, params: [PR('height', '杆高 m', 2.4, 8, 0.2, 4.2), PB('tassel','灯挂穗',true), PC('color', '灯色', '#ffb45e'), PR('glow', '亮度', 0, 4, 0.1, 1.6), PC('pole', '杆色', '#7c3a2c')] },
     { type: 'earthterrace', name: '夯土台基', icon: 'terrace', build: buildEarthTerrace, params: [PR('w', '顶宽 m', 4, 24, 0.5, 12), PR('d', '顶深 m', 4, 24, 0.5, 10), PR('h', '台高 m', 1.2, 9, 0.2, 4.2), PB('rail','顶面栏杆',true), PB('stairs','登台阶梯',true), PI('cols','柱础数',0,12,1,6), PC('earth', '土色', '#b08d69')] },

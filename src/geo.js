@@ -846,10 +846,11 @@ export function archFace({ w = 3, h = 3, th = 0.5, mat, keyMat, z = 0, y = 0 } =
   const g = new THREE.Group();
   const R = Math.max(0.4, w / 2);
   const n = clamp(Math.round(R * 6), 7, 25);
+  const step = (R + 0.14) * Math.PI / n;
   const items = [];
   for (let i = 0; i <= n; i++) {
     const a = Math.PI * (i / n);
-    items.push({ p: [Math.cos(a) * (R + 0.14), y + h - R + Math.sin(a) * (R + 0.14), 0], r: [0, 0, a - Math.PI / 2], s: [0.34, 0.3, th] });
+    items.push({ p: [Math.cos(a) * (R + 0.14), y + h - R + Math.sin(a) * (R + 0.14), 0], r: [0, 0, a - Math.PI / 2], s: [step * 1.25, 0.3, th] });   // 块长=弧步×1.25：券脸石彼此搭接（旧版留缝成"点券"）
   }
   const b = batch(new THREE.BoxGeometry(1, 1, 1), mat, items);
   if (b) g.add(b);
