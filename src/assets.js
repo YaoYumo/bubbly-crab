@@ -10,6 +10,7 @@ import { GROUPS as GROUPS_BLD } from './bld.js';
 import { GROUPS as GROUPS_ARCH } from './arch.js';
 import { GROUPS as GROUPS_NATURE } from './nature.js';
 import { GROUPS as GROUPS_PROPS } from './props.js';
+import { GROUPS_CITY } from './city.js';   // 城市建筑/环境/人物（纯追加组，不改既有 16 组；见 city.js 头注）
 
 // ---- 材质工厂 ----
 const mk = (kind, o) => { const m = new THREE.MeshStandardMaterial(o); if (kind) m.userData.detail = kind; return m; };
@@ -3192,7 +3193,7 @@ const LIB_AM = [
 ];
 
 // 素材库 = 美式 64 款 + 建筑构件 / 中式古建 / 美式经典 / 室内 / 自然 / 战争 / 星际 / 玄幻特效
-export const LIB = [...LIB_AM, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS];
+export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS];
 
 export const LIB_INDEX = new Map();
 for (const grp of LIB) for (const it of grp.items) LIB_INDEX.set(`${grp.id}:${it.type}:${it.name}`, { ...it, cat: grp.cat, catId: grp.id });

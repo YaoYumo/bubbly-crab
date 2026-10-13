@@ -18,6 +18,8 @@ import { ATMOS } from './lighting.js';
 import { WEATHER } from './weather.js';
 import { Mover } from './mover.js';
 import { openTownDialog } from './townui.js';
+import { autoCamera } from './autocam.js';
+import { pickSceneFile, openApiDialog } from './sceneio.js';
 import { el, clear, clamp, fmt, copy, downloadBlob, snap } from './util.js';
 
 const host = document.getElementById('stage');
@@ -320,6 +322,14 @@ const sceneMenu = makeDropdown('场景', '☰', [
   { text: '导入模型', icon: '', onClick: () => fileIn.click() },
   '---',
   { text: '示例场景', icon: '◫', onClick: () => scenePickerBtn.click() },
+  { text: '自动生成运镜', icon: '🎬', onClick: () => {
+      if (!app.objects.length) { toast('场景是空的：先用 ✦ 一句话生成或模板搭建', 'warn'); return; }
+      const before = app.shots.length;
+      app.batchOp('自动运镜', () => { autoCamera(app, {}); app.select(null); });
+      toast(`已生成 ${app.shots.length - before} 个机位：全景交代 → 环绕主体 → 跟拍/横移 → 推镜收尾（Ctrl+Z 一步撤销）`);
+    } },
+  { text: '导入 Scene 文件…', icon: '⇥', onClick: () => pickSceneFile(app) },
+  { text: 'API 生成场景…', icon: '☁', onClick: () => openApiDialog(app) },
   '---',
   { text: '保存工程', icon: '⬇', onClick: () => { downloadBlob(new Blob([JSON.stringify(app.serialize(), null, 1)], { type: 'application/json' }), `${app.projectName}.json`); toast('已导出工程 JSON'); } },
   { text: '打开工程', icon: '⬆', onClick: () => fileIn.click() },

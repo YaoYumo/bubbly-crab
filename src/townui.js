@@ -6,6 +6,8 @@
 import { el, clear } from './util.js';
 import { parsePromptLocally, describeSchema, randomSeed } from './towngen.js';
 import { generateTown } from './townbuild.js';
+import { TEMPLATES, matchTemplate, templateById } from './templates.js';
+import { autoCamera } from './autocam.js';
 
 // 示例按「布局展示」排序：前三个分别演示方格 / 中轴 / 放射（点第一个即是整齐无环路的路网）
 const EXAMPLES = [
@@ -24,6 +26,7 @@ export function openTownDialog(app) {
 
   let seedOverride = 0;          // 0 = 跟随文本里的种子 / 随机
   let layoutPick = null;         // 手动「道路布局」点选（最高优先；输入文字即清除）
+  let templatePick = null;       // 手动「场景模板」点选（最高优先；输入文字即清除）
   let parsed = parsePromptLocally('');
 
   const ta = el('textarea', {
@@ -49,11 +52,23 @@ export function openTownDialog(app) {
     layoutRow.appendChild(b);
   }
 
+  // ---- 场景模板：点选覆盖 / 关键词自动命中（方案 A 的入口） ----
+  const tplBtns = [];
+  const tplRow = el('div', { class: 'tg-lrow' });
+  for (const t of TEMPLATES) {
+    const b = el('button', { class: 'tg-chip act', type: 'button', title: t.hint, text: t.label });
+    b.onclick = () => { templatePick = templatePick === t.id ? null : t.id; render(); };
+    tplBtns.push({ b, id: t.id });
+    tplRow.appendChild(b);
+  }
+
   function render() {
     const schema = { ...parsed.schema, seed: seedOverride || parsed.schema.seed };
     if (layoutPick) schema.roadTopology = layoutPick;   // 点选覆盖文本解析结果
     const eff = schema.roadTopology;
     for (const { b, v } of layoutBtns) b.classList.toggle('on', v === eff);
+    const effTpl = templatePick || matchTemplate(ta.value)?.id || null;
+    for (const { b, id } of tplBtns) b.classList.toggle('on', id === effTpl);
     clear(matchedBox);
     for (const c of describeSchema(schema)) matchedBox.appendChild(el('span', { class: 'tg-chip', text: c.label }));
     const reroll = el('button', { class: 'tg-chip act', type: 'button', title: '换一个随机种子', text: '⟳ 种子' });
@@ -82,6 +97,7 @@ export function openTownDialog(app) {
   const parseNow = () => {
     seedOverride = 0;
     layoutPick = null;
+    templatePick = null;
     parsed = parsePromptLocally(ta.value);
     render();
   };
@@ -91,7 +107,7 @@ export function openTownDialog(app) {
   const examples = el('div', { class: 'tg-examples' });
   for (const ex of EXAMPLES) {
     const b = el('button', { class: 'tg-chip act', type: 'button', text: ex });
-    b.onclick = () => { ta.value = ex; seedOverride = 0; layoutPick = null; parsed = parsePromptLocally(ex); render(); ta.focus(); };
+    b.onclick = () => { ta.value = ex; seedOverride = 0; layoutPick = null; templatePick = null; parsed = parsePromptLocally(ex); render(); ta.focus(); };
     examples.appendChild(b);
   }
 
@@ -103,6 +119,7 @@ export function openTownDialog(app) {
     ]),
     el('div', { class: 'tg-body' }, [
       ta, examples,
+      el('div', { class: 'tg-plabel', text: '场景模板' }), tplRow,
       el('div', { class: 'tg-plabel', text: '道路布局' }), layoutRow,
       el('div', { class: 'tg-plabel', text: '解析结果' }), matchedBox, noteBox, statusEl,
     ]),
@@ -139,11 +156,23 @@ export function openTownDialog(app) {
     statusEl.textContent = '生成中…';
     // 让「生成中」先绘制出来：生成本身是同步的重活
     setTimeout(() => {
-      let stats;
+      let stats, tpl = null;
       try {
-        stats = generateTown(app, schema, {
-          onProgress: (p, label) => { statusEl.textContent = `生成中… ${Math.round(p * 100)}% ${label}`; },
-        });
+        const tplId = templatePick || matchTemplate(ta.value)?.id || null;
+        tpl = tplId ? templateById(tplId) : null;
+        if (tpl) {
+          // 方案 A：模板槽位搭建（内部已含方案 C 的自动运镜，一步撤销）
+          const r = tpl.build(app, { seed: schema.seed });
+          stats = { tpl: true, label: tpl.label, ...r, schema, ms: 0 };
+        } else {
+          stats = generateTown(app, schema, {
+            onProgress: (p, label) => { statusEl.textContent = `生成中… ${Math.round(p * 100)}% ${label}`; },
+          });
+          // 方案 C：为一句话生成的街区离线自动配机位（独立撤销组）
+          const before = app.shots.length;
+          app.batchOp('自动运镜', () => { autoCamera(app, {}); app.select(null); });
+          stats.autoShots = app.shots.length - before;
+        }
       } catch (e) {
         console.error('[towngen]', e);
         statusEl.textContent = '';
@@ -153,8 +182,10 @@ export function openTownDialog(app) {
       }
       close();
       genBtn.disabled = cancelBtn.disabled = false;   // 成功也复位：disabled 会吞掉后续点击
-      const msg = `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑 / ${stats.trees} 棵树 / ${stats.driveways || 0} 段宅前连接（${stats.ms}ms）`;
-      app.notify(stats.warnings.length ? msg + ' · ' + stats.warnings.join('；') : msg, 'ok');
+      const msg = tpl
+        ? `已用模板「${tpl.label}」搭建：${stats.objects} 物体 · ${stats.shots} 机位（${stats.auto} 自动） · ${stats.motions} 段运动 · Ctrl+Z 可整场退回`
+        : `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑 / ${stats.trees} 棵树 · 自动配 ${stats.autoShots || 0} 个机位（${stats.ms}ms）`;
+      app.notify(stats.warnings?.length ? msg + ' · ' + stats.warnings.join('；') : msg, 'ok');
       window.__townStats = stats;
     }, 30);
   }

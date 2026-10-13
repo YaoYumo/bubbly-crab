@@ -1030,10 +1030,11 @@ function tabExport(app, rerender, ctx) {
 // S2 Scene Builder panels
 // ---------------------------------------------------------------------------
 const SCENE_CATS = [
-  { id: 'buildings', label: 'Buildings', libIds: ['house', 'suburban', 'functional', 'garage'] },
-  { id: 'props', label: 'Props', libIds: ['furniture', 'traffic'] },
+  { id: 'buildings', label: 'Buildings', libIds: ['house', 'suburban', 'functional', 'garage', 'building'] },
+  { id: 'props', label: 'Props', libIds: ['furniture', 'traffic', 'env'] },
   { id: 'roads', label: 'Roads', libIds: ['road'] },
   { id: 'plants', label: 'Plants', libIds: ['vegetation'] },
+  { id: 'people', label: 'People', libIds: ['char'] },
 ];
 
 export function buildSceneAssets(app, host) {
