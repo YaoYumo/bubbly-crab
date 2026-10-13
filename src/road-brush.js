@@ -140,9 +140,7 @@ export class RoadBrush {
   }
 
   stop() {
-    if (this.active && this.points.length >= 2) {
-      this.finish();
-    }
+    // 纯取消：清掉当前笔画，不落路（完成走 finish —— 双击 / Enter / 面板按钮）
     this.active = false;
     this.points = [];
     this.filletH = [];
@@ -294,19 +292,66 @@ export class RoadBrush {
     }
 
     const curve = this._buildPathCurve();
-    const isects = curve ? this._detectIntersections(curve, this.roadWidth) : [];
+    const isects = curve ? this._detectIntersections(curve, this.roadWidth, !!this._editNoJunct) : [];
     const mesh = curve ? this._addRoad(curve, {
       roadType: this.roadType, width: this.roadWidth,
       ctrl: this.points.map(p => [p.x, p.y, p.z]),
       filletH: this.filletH.slice(), filletOn: this.filletOn,
-      isects,
+      isects, noJunct: !!this._editNoJunct,
     }) : null;
 
     this.points = [];
     this.filletH = [];
     this._clearLiveRoad();
     this._updatePreview();
+    if (mesh) {
+      const wasEdit = !!this._editBackup;                 // 编辑接管模式：完成即收笔（不保持连续绘制）
+      this._editBackup = null;
+      this._editNoJunct = false;
+      if (wasEdit) this.stop();
+    }
     return mesh;
+  }
+
+  /**
+   * 编辑一条已生成/已保存的道路：把它的控制点载回画笔（原路先移除，完成时以新物体落回）。
+   * Esc 走 cancelEdit() 会把原路原样恢复。
+   */
+  editRoad(so) {
+    if (!so || so.type !== 'road_brush') return false;
+    const data = so.serialize();
+    if (!data.points || data.points.length < 2) return false;
+    if (this._editBackup) this.cancelEdit();      // 正在编辑另一条：先还原上一条
+    this.stop();                                  // 结束可能进行中的普通绘制（纯取消）
+    const app = this.app;
+    this._editBackup = data;
+    this._editNoJunct = !!data.noJunct;
+    app.batchOp(`编辑 ${so.name || '道路'}`, () => app.removeObject(so));
+    this.start();
+    this.points = data.points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    this.roadWidth = data.width || 4;
+    this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
+    this.filletOn = !!data.fillet;
+    this.filletH = (data.filletH || []).slice();
+    if (this.filletOn) this.syncFillets();
+    this._updatePreview();
+    this._updateLiveRoad();
+    app.select(null);
+    app.bus.emit('objects');
+    return true;
+  }
+
+  /** 放弃编辑：清空画笔并把原路原样恢复（路口重新检测） */
+  cancelEdit() {
+    const b = this._editBackup;
+    this._editBackup = null;
+    this._editNoJunct = false;
+    this.stop();
+    if (b) {
+      this.restore([b]);
+      this.app.bus.emit('objects');
+      this.app.markDirty?.();
+    }
   }
 
   /** 由工程 JSON 恢复手绘道路（路口重新检测生成，不读存档里的 road_intersection） */
@@ -326,12 +371,12 @@ export class RoadBrush {
       this.roadWidth = width;
       const curve = this._buildPathCurve();
       if (!curve) continue;
-      const isects = this._detectIntersections(curve, width);
+      const isects = this._detectIntersections(curve, width, !!o.noJunct);
       const mesh = this._addRoad(curve, {
         roadType, width,
         ctrl: pts.map(p => [p.x, p.y, p.z]),
         filletH: this.filletH.slice(), filletOn: this.filletOn,
-        isects, so: o,
+        isects, so: o, noJunct: !!o.noJunct,
       });
       if (mesh) out.push(mesh);
     }
@@ -342,12 +387,12 @@ export class RoadBrush {
 
   /** 建网格 + 注册成一等场景物体 + 生成路口并断开被交叉的既有道路 */
   _addRoad(curve, opt) {
-    const { roadType, width, ctrl, filletH, filletOn, isects = [], so = null } = opt;
+    const { roadType, width, ctrl, filletH, filletOn, isects = [], so = null, noJunct = false } = opt;
     const gaps = isects.map(is => { const g = this._gapFor(is, true); g.isect = is; return g; });
     const mesh = this._buildRoadMesh(curve, gaps, { width, roadType });
     if (!mesh) return null;
 
-    const roadData = { curve, width, roadType, mesh, gaps, ctrl };
+    const roadData = { curve, width, roadType, mesh, gaps, ctrl, noJunct };
     const roadObj = {
       id: so?.id || `rb${++this._seq}`,
       root: mesh, name: so?.name || `道路_${roadType.label}`, type: 'road_brush',
@@ -362,6 +407,7 @@ export class RoadBrush {
         id: roadObj.id, name: roadObj.name, type: 'road_brush',
         visible: roadObj.visible !== false, locked: !!roadObj.locked,
         roadType: roadType.id, width, fillet: filletOn, filletH, points: ctrl,
+        noJunct: !!roadData.noJunct,
       }),
     };
     mesh.userData.so = roadObj;
@@ -764,11 +810,13 @@ export class RoadBrush {
 
   // ================= 交叉路口检测与生成 =================
 
-  _detectIntersections(newCurve, newWidth) {
+  _detectIntersections(newCurve, newWidth, noJunct = false) {
     const intersections = [];
+    if (noJunct) return intersections;                       // 基座/台面：贴地但不生成路口
     const threshold = (newWidth / 2) + 1.0; // 交叉检测阈值
 
     for (const existing of this._roads) {
+      if (existing.noJunct) continue;                        // 对面是基座：只贴不接
       const exThreshold = (existing.width / 2) + 1.0;
       const combinedThreshold = threshold + exThreshold - 1.0;
 
@@ -800,6 +848,10 @@ export class RoadBrush {
         // 精确定位交叉点
         const refined = this._refineIntersection(newCurve, existing.curve, bestTA, bestTB);
         if (refined) {
+          // 近乎平行的贴线不算路口（否则 _gapFor 的 1/sinT 会把整条路挖没）
+          const tA = newCurve.getTangentAt(Math.max(0, Math.min(1, refined.tA)));
+          const tB = existing.curve.getTangentAt(Math.max(0, Math.min(1, refined.tB)));
+          if (Math.abs(tA.x * tB.z - tA.z * tB.x) < 0.08) continue;
           intersections.push({
             point: refined.point,
             tNew: refined.tA,
@@ -944,6 +996,7 @@ export class RoadBrush {
 
   // 四个进口道外侧：斑马线 + 停止线
   _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB) {
+    if (hA * 2 < 4.5 || hB * 2 < 4.5) return;    // 任一侧过窄（宅前小径/花园路接入）不画斑马线与停止线
     const up = new THREE.Vector3(0, 1, 0);
     // ext：面片沿该进口道方向的延伸（用扩张后的对向半宽），斑马线从其外缘起画
     const approaches = [

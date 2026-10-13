@@ -217,6 +217,25 @@ export function layoutRoads(s) {
     if (roads.length) { roads[0].roadType = 'asphalt'; roads[0].width = 9; roads[0].minor = false; }
     const mid = roads.find((r) => r.pts[0][1] === r.pts[1][1]);
     if (mid) { mid.roadType = 'asphalt'; mid.width = 9; mid.minor = false; }
+  } else if (s.roadTopology === 'axis') {
+    // 中轴对称（长安/北京式里坊格局）：南北中轴大道居中 + 东西大街横穿，
+    // 街巷关于中轴与横轴镜像分布；间距/皇城环随种子变，对称性不受影响。
+    const step = clamp(S / (s.density > 0.65 ? 7 : s.density < 0.35 ? 4 : 5), 34, 110) * (0.94 + rng() * 0.12);
+    roads.push({ name: '中轴大道', pts: [[0, -half + M], [0, half - M]], width: 11, roadType: 'asphalt' });
+    roads.push({ name: '东西大街', pts: [[-half + M, 0], [half - M, 0]], width: 9, roadType: 'asphalt' });
+    const lanes = Math.floor((half - M - 4) / step);
+    for (let k = 1; k <= lanes; k++) {
+      const x = k * step;
+      if (x > half - M - 4) continue;
+      for (const sg of [-1, 1]) {
+        roads.push({ name: '南北向道路', pts: [[sg * x, -half + M], [sg * x, half - M]], width: 7, roadType: minorType, minor: true });
+        roads.push({ name: '东西向道路', pts: [[-half + M, sg * x], [half - M, sg * x]], width: 7, roadType: minorType, minor: true });
+      }
+    }
+    if (rng() < 0.7) {                                   // 皇城环：围合感，随种子有无
+      const rk = 0.86 + rng() * 0.2;
+      roads.push({ name: '皇城环', pts: ring(0, 0, S * 0.34 * rk, S * 0.3 * rk, 20), width: 7, roadType: 'asphalt' });
+    }
   } else if (s.roadTopology === 'radial') {
     const spokes = s.density > 0.65 ? 8 : 6;
     const off = rng() * Math.PI * 2;                             // 整星随种子旋转，辐条之间保持等分
@@ -361,6 +380,8 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
           w: fw, d: depth,
           rotY: Math.atan2(-nx, -nz),   // 正面朝向道路
           kind, nearCenter: distC,
+          // 宅前连接用：所贴道路中心线上的点、道路法向（背离道路）、切向（沿路）
+          front: [p.x, p.z], dir: [nx, nz], tan: [p.tx, p.tz], roadW: w,
         });
       }
     }
@@ -475,7 +496,10 @@ const pick = (rng, arr) => arr[Math.floor(rng() * arr.length) % arr.length];
 
 // ============================== 编排：generateTown ==============================
 
-const BIOME_BY_THEME = { suburb: 'grass', california: 'grass', newengland: 'forest', southwest: 'desert', urban: 'grass' };
+const BIOME_BY_THEME = {
+  suburb: 'grass', california: 'grass', newengland: 'forest', southwest: 'desert', urban: 'grass',
+  chinese: 'grass', modern: 'grass', fusion: 'grass',
+};
 
 /**
  * 一键造镇：清空当前场景 → 地形/路网/建筑/植被/光照一次成型。
@@ -553,6 +577,38 @@ function buildTown(app, s, { onProgress } = {}) {
   );
   onProgress?.(0.6, '道路');
 
+  // ---- 4.5 宅前基座 + 连路小径（基座=混凝土台面（不生成路口），小径/车道 T 形接入最近道路） ----
+  // 路径类型随主题：西式/现代 = 混凝土车道，中式 = 青砖小径；公建只给小径不垫基座
+  const pathType = theme.path || 'concrete';
+  const pathName = pathType === 'garden' ? '青砖小径' : '宅前车道';
+  const driveList = [];
+  for (const p of parcels) {
+    if (!p.front || !p.dir || !p.tan) continue;
+    const [dx, dz] = p.dir, [tx, tz] = p.tan, [fx, fz] = p.front;
+    const hy = (x, z) => tr.heightAt(x, z);
+    if (p.kind !== 'civic') {
+      // 基座：与道路平行的混凝土台面，罩住宅身（宽度沿法向 = 地块进深）
+      const padL = Math.min(p.w * 0.8, 30);
+      const padW = Math.min(p.depth * 0.94, 18);
+      const ax = p.x - (tx * padL) / 2, az = p.z - (tz * padL) / 2;
+      const bx = p.x + (tx * padL) / 2, bz = p.z + (tz * padL) / 2;
+      driveList.push({
+        points: [[ax, hy(ax, az), az], [bx, hy(bx, bz), bz]],
+        roadType: 'concrete', width: padW, fillet: false,
+        name: '混凝土基座', visible: true, locked: false, noJunct: true,
+      });
+    }
+    // 小径：宅前脸 → 道路中心线，端点落在中心线上即与道路 T 形接通（自动生成接缝面片）
+    const doorX = p.x - dx * (p.depth * 0.47), doorZ = p.z - dz * (p.depth * 0.47);
+    driveList.push({
+      points: [[doorX, hy(doorX, doorZ), doorZ], [fx, hy(fx, fz), fz]],
+      roadType: pathType, width: 2.6, fillet: false,
+      name: pathName, visible: true, locked: false,
+    });
+  }
+  if (driveList.length) app.roadBrush.restore(driveList);
+  onProgress?.(0.68, '宅前小径');
+
   // ---- 5. 建筑 ----
   const V = (x, z) => new THREE.Vector3(x, 0, z);
   let houses = 0;
@@ -576,7 +632,9 @@ function buildTown(app, s, { onProgress } = {}) {
   // ---- 6. 植被（泊松圆盘）----
   // 每个「树种 + 高度档」只 build 一次，其余克隆共享 geometry/material。
   // 高度必须量化：存档只存 params，重载时按 params 重建，档位一致才不会变样。
-  const treePts = scatterTrees(s, roads, parcels, (x, z) => tr.heightAt(x, z));
+  // 树要避开主路网 + 宅前小径/基座：把 driveList 折成 [x,z] 折线一起传
+  const excludeRoads = roads.concat(driveList.map((d) => ({ pts: d.points.map((q) => [q[0], q[2]]), width: d.width })));
+  const treePts = scatterTrees(s, excludeRoads, parcels, (x, z) => tr.heightAt(x, z));
   let trees = 0;
   const tpl = new Map();
   const HEIGHTS = [5, 7, 9, 11];
@@ -612,5 +670,5 @@ function buildTown(app, s, { onProgress } = {}) {
 
   const ms = Math.round(performance.now() - t0);
   const { rng, ...schemaOut } = s;
-  return { roads: roads.length, parcels: parcels.length, houses, trees, ms, warnings, schema: schemaOut };
+  return { roads: roads.length, driveways: driveList.length, parcels: parcels.length, houses, trees, ms, warnings, schema: schemaOut };
 }

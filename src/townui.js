@@ -10,6 +10,8 @@ import { generateTown } from './townbuild.js';
 const EXAMPLES = [
   '黄昏的加州林荫小镇，商业30%，丘陵',
   '下雨的新英格兰老城区，晚上，纯住宅',
+  '中轴对称的仿古小镇，棋盘格局',
+  '现代住宅区与中式古建混搭，林荫',
   'a grid suburb at noon, flat, dense, no trees',
   '沙漠小镇，512米，稀疏，正午，种子 4242',
 ];
@@ -117,7 +119,7 @@ export function openTownDialog(app) {
         return;
       }
       close();
-      const msg = `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑 / ${stats.trees} 棵树（${stats.ms}ms）`;
+      const msg = `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑 / ${stats.trees} 棵树 / ${stats.driveways || 0} 段宅前连接（${stats.ms}ms）`;
       app.notify(stats.warnings.length ? msg + ' · ' + stats.warnings.join('；') : msg, 'ok');
       window.__townStats = stats;
     }, 30);

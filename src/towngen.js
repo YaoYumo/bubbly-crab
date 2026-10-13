@@ -61,10 +61,41 @@ export const TOWN_THEMES = {
     trees: ['live_oak', 'sugar_maple'],
     ground: [],
   },
+  // 中式古建：hall/courtyard 当宅，drumtower/paifang 当公共；宅前小径用青砖
+  chinese: {
+    label: '中式古城', en: 'Chinese Heritage',
+    houses: ['courtyard', 'hall', 'hall2'],
+    commerce: ['hall', 'hall2', 'pavilion'],
+    civic: ['drumtower', 'paifang', 'gate', 'pagoda'],
+    trees: ['sugar_maple', 'live_oak', 'quaking_aspen'],
+    ground: ['big_bluestem'],
+    path: 'garden',
+  },
+  // 现代：功能主义低层（美式现代商业带 + 工字铺），宅前走混凝土车道
+  modern: {
+    label: '现代', en: 'Modern',
+    houses: ['brownstone', 'craftsman', 'cape_cod'],
+    commerce: ['adobe_strip_mall', 'googie_diner', 'gas_station', 'drive_in'],
+    civic: ['school', 'post_office', 'fire_station'],
+    trees: ['live_oak', 'sabal_palm'],
+    ground: [],
+    path: 'concrete',
+  },
+  // 古今混搭：中式院落与现代街屋交替出现
+  fusion: {
+    label: '古今混搭', en: 'Old meets New',
+    houses: ['courtyard', 'craftsman', 'hall', 'brownstone', 'hall2', 'cape_cod'],
+    commerce: ['adobe_strip_mall', 'hall', 'googie_diner', 'hall2'],
+    civic: ['drumtower', 'school', 'paifang', 'post_office'],
+    trees: ['sugar_maple', 'live_oak', 'sabal_palm'],
+    ground: [],
+    path: 'concrete',
+  },
 };
 
 const TOPOLOGIES = {
   grid: '方格网',
+  axis: '中轴对称',
   spine_and_loop: '主干道 + 环路',
   radial: '放射状',
 };
@@ -88,21 +119,27 @@ const RULES = [
     field: 'theme', label: '主题',
     re: [/(加州|加利福尼亚|california|西海岸)/gi, /(新英格兰|波士顿|new\s*england|东北小镇)/gi,
       /(沙漠|荒漠|西南|亚利桑那|德州|texas|arizona|southwest|desert)/gi,
+      // 混搭优先：「现代与古建混搭」应落 fusion 而不是被「现代」抢走
+      /(混搭|混合|古今交融|新旧交融|现代与古|现代加古|古建与现代|古风与现代|both\s*old\s*and\s*new|old\s*meets\s*new)/gi,
+      /(中式|中国|古建|古镇|古城|古村|古风|仿古|江南|水乡|长安|西安|平遥|丽江|京城|皇城|明清|唐朝|唐代|唐风|宋代|宋朝|清代|明朝|明代|pagoda|chinese|ancient\s*town|heritage)/gi,
+      /(现代|当代|新城区|都会|摩登|modern)/gi,
       /(老城|城区|市区|市中心|downtown|urban|city)/gi,
       /(小镇|郊区|市郊|住宅区|suburb|small\s*town|neighborhood)/gi],
     apply: (s, m, i) => {
-      s.theme = ['california', 'newengland', 'southwest', 'urban', 'suburb'][i];
+      s.theme = ['california', 'newengland', 'southwest', 'fusion', 'chinese', 'modern', 'urban', 'suburb'][i];
       return TOWN_THEMES[s.theme].label;
     },
   },
   // ---- 路网 ----
   {
     field: 'roadTopology', label: '路网',
-    re: [/(方格|网格|棋盘|grid|曼哈顿|整齐|整洁|横平竖直|规整|方方正正)/gi, /(放射|环形放射|radial|辐条)/gi,
+    re: [/(中轴|中轴线|轴线对称|对称布局|对称|皇宫|紫禁城|imperial|长安大街)/gi,
+      /(方格|网格|棋盘|grid|曼哈顿|整齐|整洁|横平竖直|规整|方方正正)/gi,
+      /(放射|环形放射|radial|辐条)/gi,
       /(环路|环线|回路|loop)/gi, /(主干道|主街|大街|spine|main\s*street|high\s*street)/gi],
     apply: (s, m, i) => {
-      s.roadTopology = i === 0 ? 'grid' : i === 1 ? 'radial' : i === 2 ? 'spine_and_loop' : 'spine_and_loop';
-      if (i === 2 && s.roadTopology === 'spine_and_loop') s._loopBias = true;
+      s.roadTopology = ['axis', 'grid', 'radial', 'spine_and_loop', 'spine_and_loop'][i];
+      if (i === 3 && s.roadTopology === 'spine_and_loop') s._loopBias = true;
       return TOPOLOGIES[s.roadTopology];
     },
   },
@@ -193,7 +230,6 @@ const UNSUPPORTED = [
   { re: /(车流|车辆|汽车|cars?|traffic\s*flow|vehicle)/gi, hint: '行驶车辆' },
   { re: /(摩天|高层|大厦|skyscraper|high-?rise|tower)/gi, hint: '高层建筑' },
   { re: /(赛博|科幻|未来|cyberpunk|sci-?fi|futuristic)/gi, hint: '科幻风格' },
-  { re: /(古风|中国|唐|宋|明|清|江南|中式|chinese|pagoda)/gi, hint: '中式古建' },
 ];
 
 // 语气/填充词：不算「未识别」，否则会污染 coverage 与 ignored 提示

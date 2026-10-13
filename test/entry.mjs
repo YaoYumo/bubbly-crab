@@ -3,6 +3,8 @@
 // 2) 自动化（webdriver=true）：绝不自动弹窗（保护既有套件）
 // 3) 模型库二级入口可点开/收起；切页舞台随行；全程零 pageerror
 import puppeteer from 'puppeteer';
+import fs from 'node:fs';
+fs.mkdirSync('test/out', { recursive: true });
 
 const URL0 = process.env.URL || 'http://localhost:5173/';
 const fails = [];

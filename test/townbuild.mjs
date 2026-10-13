@@ -35,11 +35,11 @@ ok('中心确实有起伏', Math.abs(hf(20, -15)) > 0.05 || Math.abs(hf(-40, 30)
 ok('高度场确定性', hf(11, 22) === makeHeightField(normalizeSchema({ seed: 5, mapSize: 256, terrain: { amplitude: 6, roughness: 0.55 } }))(11, 22));
 
 // ---------- 路网（#80）----------
-for (const topo of ['spine_and_loop', 'grid', 'radial']) {
+for (const topo of ['spine_and_loop', 'grid', 'axis', 'radial']) {
   const s = normalizeSchema({ seed: 77, mapSize: 256, roadTopology: topo });
   const roads = layoutRoads(s);
   const inb = roads.every((r) => r.pts.every(([x, z]) => Math.abs(x) <= 128 && Math.abs(z) <= 128));
-  ok(`${topo}: 路条数 ${roads.length} 合理`, roads.length >= 3 && roads.length <= 16, `${roads.length}`);
+  ok(`${topo}: 路条数 ${roads.length} 合理`, roads.length >= 3 && roads.length <= 24, `${roads.length}`);
   ok(`${topo}: 全部在地图内`, inb);
   ok(`${topo}: 每条至少 2 点`, roads.every((r) => r.pts.length >= 2));
   ok(`${topo}: 主干道宽 9`, roads.some((r) => r.width === 9));
@@ -52,6 +52,18 @@ const rc = layoutRoads(normalizeSchema({ seed: 78, mapSize: 256 }));
 ok('路网可复现', JSON.stringify(ra) === JSON.stringify(rb));
 ok('换种子换路网', JSON.stringify(ra) !== JSON.stringify(rc));
 
+// 中轴对称（长安/北京式）：成对镜像 + 可复现 + 换种子仍变（间距抖动/皇城环）
+const axA = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256, roadTopology: 'axis' }));
+const axB = layoutRoads(normalizeSchema({ seed: 77, mapSize: 256, roadTopology: 'axis' }));
+const axC = layoutRoads(normalizeSchema({ seed: 78, mapSize: 256, roadTopology: 'axis' }));
+ok('axis 可复现', JSON.stringify(axA) === JSON.stringify(axB));
+ok('axis 换种子换路网', JSON.stringify(axA) !== JSON.stringify(axC));
+ok('axis 有中轴大道与东西大街', axA.some((r) => r.name === '中轴大道') && axA.some((r) => r.name === '东西大街'));
+const vLn = axA.filter((r) => r.name === '南北向道路');
+ok('axis 南北街关于中轴镜像', vLn.length >= 2 && vLn.every((r) => vLn.some((q) => Math.abs(q.pts[0][0] + r.pts[0][0]) < 1e-6)), `n=${vLn.length}`);
+const hLn = axA.filter((r) => r.name === '东西向道路');
+ok('axis 东西街关于横轴镜像', hLn.length >= 2 && hLn.every((r) => hLn.some((q) => Math.abs(q.pts[0][1] + r.pts[0][1]) < 1e-6)), `n=${hLn.length}`);
+
 // ---------- 地块（#80）----------
 const S = 256;
 const sA = normalizeSchema({ seed: 4242, mapSize: S, density: 0.5 });
@@ -60,6 +72,10 @@ const hfA = makeHeightField(sA);
 const parcels = layoutParcels(sA, roadsA, hfA);
 ok('地块数量合理', parcels.length >= 15 && parcels.length <= 200, `n=${parcels.length}`);
 ok('地块都在地图内', parcels.every((p) => Math.abs(p.x) <= S / 2 - 13 && Math.abs(p.z) <= S / 2 - 13));
+// 宅前连接信息（基座/小径用）：front 必须落在某条道路中心线上，dir 背离道路、tan 沿路
+ok('地块带宅前连接信息', parcels.every((p) => Array.isArray(p.front) && Array.isArray(p.dir) && Array.isArray(p.tan) && p.roadW > 0));
+ok('front 点落在道路中心线上', parcels.every((p) => Math.min(...roadsA.map((r) => distToPoly(polyInfo(r.pts), p.front[0], p.front[1]))) < 0.01));
+ok('dir/tan 是单位向量且正交', parcels.every((p) => Math.abs(Math.hypot(...p.dir) - 1) < 1e-6 && Math.abs(Math.hypot(...p.tan) - 1) < 1e-6 && Math.abs(p.dir[0] * p.tan[0] + p.dir[1] * p.tan[1]) < 1e-6));
 
 let minPair = Infinity;
 for (let i = 0; i < parcels.length; i++) {

@@ -43,7 +43,7 @@ function survey(topo, seed) {
 }
 let bad = 0;
 console.log('拓扑'.padEnd(18), '路数  正交口  斜交叉  断头');
-for (const topo of ['grid', 'spine_and_loop', 'radial']) {
+for (const topo of ['grid', 'axis', 'spine_and_loop', 'radial']) {
   const acc = { n: 0, ortho: 0, oblique: 0, dangling: 0 };
   for (const seed of [5, 11, 42]) { const r = survey(topo, seed); for (const k in acc) acc[k] += r[k]; }
   console.log(topo.padEnd(18), (acc.n / 3).toFixed(1).padStart(4), String(acc.ortho).padStart(6), String(acc.oblique).padStart(6), String(acc.dangling).padStart(6));
