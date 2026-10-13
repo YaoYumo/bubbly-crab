@@ -53,7 +53,7 @@ export function applySceneDSL(app, doc) {
       const so = idxOf(objs, m.object);
       if (!so || !Array.isArray(m.keys) || m.keys.length < 2) continue;
       app.setMotion(so, {
-        active: true,
+        active: m.active !== false,
         autoFace: m.autoFace !== false,
         easing: m.easing || 'linear',
         loop: m.loop !== false,
