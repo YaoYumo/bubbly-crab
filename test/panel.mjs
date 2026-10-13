@@ -11,7 +11,7 @@ await page.setViewport({ width: 1560, height: 900, deviceScaleFactor: 1 });
 const errors = [];
 page.on('pageerror', (e) => errors.push('PAGEERROR: ' + (e.message || e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
+await page.goto((process.env.URL || 'http://localhost:5174/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
 await page.waitForFunction(() => window.__previzBooted && window.app, { timeout: 60000 });
 
 const R = await page.evaluate(async () => {

@@ -1,6 +1,6 @@
 #!/bin/bash
 # 一次跑完回归：按「先快后慢」排，日志与汇总都落在 test/out/
-# 用法：bash test/runsuite.sh        （需要 vite 已在 5173 上跑：npx vite --host 0.0.0.0 --port 5173）
+# 用法：bash test/runsuite.sh        （需要 vite 已在 5174 上跑：npx vite --host 0.0.0.0 --port 5174）
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p test/out
 : > test/out/SUITE.txt

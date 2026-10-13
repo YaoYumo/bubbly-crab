@@ -4,7 +4,7 @@ const browser = await puppeteer.launch({ headless: 'shell', args: ['--no-sandbox
 const page = await browser.newPage();
 await page.setViewport({ width: 1560, height: 900, deviceScaleFactor: 1 });
 const errs = []; page.on('pageerror', e => errs.push(''+e.message));
-await page.goto('http://localhost:5173/?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
+await page.goto('http://localhost:5174/?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
 await page.waitForFunction(() => window.__previzBooted && window.app && window.__scenes, { timeout: 60000 });
 const r = await page.evaluate(async () => {
   const app = window.app, out = [];

@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer';
 const b = await puppeteer.launch({ headless:'shell', args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
 const p = await b.newPage(); await p.setViewport({width:1500,height:900});
 const errs=[]; p.on('pageerror',e=>errs.push('PAGEERROR: '+e.message)); p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE: '+m.text().slice(0,200))});
-await p.goto('http://localhost:5173/?fresh=1',{waitUntil:'networkidle2'});
+await p.goto('http://localhost:5174/?fresh=1',{waitUntil:'networkidle2'});
 await p.waitForFunction(()=>window.app&&window.app.objects.length>3,{timeout:60000});
 await new Promise(r=>setTimeout(r,900));
 const rad = (d)=>d*Math.PI/180, deg=r=>r*180/Math.PI;

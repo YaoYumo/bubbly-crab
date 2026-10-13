@@ -232,9 +232,9 @@ export function layoutRoads(s) {
         roads.push({ name: '东西向道路', pts: [[-half + M, sg * x], [half - M, sg * x]], width: 7, roadType: minorType, minor: true });
       }
     }
-    if (rng() < 0.7) {                                   // 皇城环：围合感，随种子有无
+    if (rng() < 0.7) {                                   // 皇城环：围合感，随种子有无（尺寸收敛：不再占满半张图）
       const rk = 0.86 + rng() * 0.2;
-      roads.push({ name: '皇城环', pts: ring(0, 0, S * 0.34 * rk, S * 0.3 * rk, 20), width: 7, roadType: 'asphalt' });
+      roads.push({ name: '皇城环', pts: ring(0, 0, S * 0.28 * rk, S * 0.24 * rk, 20), width: 7, roadType: 'asphalt' });
     }
   } else if (s.roadTopology === 'radial') {
     const spokes = s.density > 0.65 ? 8 : 6;
@@ -247,7 +247,7 @@ export function layoutRoads(s) {
         pts: [[0, 0], [Math.cos(a) * (half - M), Math.sin(a) * (half - M)]],
       });
     }
-    for (const f of [0.36, 0.68]) {
+    for (const f of [0.36, 0.6]) {
       const fj = f * (0.93 + rng() * 0.14);
       roads.push({ name: '环路', pts: ring(0, 0, S * fj * 0.5, S * fj * 0.5, 20), width: 7, roadType: 'asphalt' });
     }
@@ -264,7 +264,8 @@ export function layoutRoads(s) {
     }
     roads.push({ name: '主干道', pts: spine, width: 9, roadType: 'asphalt' });
     const rK = 0.92 + rng() * 0.16;
-    const ringRoad = { name: '环路', pts: ring(0, 0, S * 0.3 * rK, S * 0.24 * rK, 22), width: 7, roadType: 'asphalt' };
+    // 环路尺寸收敛（0.25/0.19×S）：原 0.30/0.24×S 在 256m 图上占 60% 宽，观感「巨大环形」
+    const ringRoad = { name: '环路', pts: ring(0, 0, S * 0.25 * rK, S * 0.19 * rK, 22), width: 7, roadType: 'asphalt' };
     roads.push(ringRoad);
     const branches = s.density > 0.65 ? 6 : s.density < 0.35 ? 3 : 4;
     for (let i = 0; i < branches; i++) {

@@ -4,7 +4,7 @@ import puppeteer from 'puppeteer';
 import fs from 'node:fs';
 fs.mkdirSync('test/out', { recursive: true });
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const fails = [];
 const ck = (name, ok, extra = '') => { if (!ok) fails.push(name + (extra ? ` — ${extra}` : '')); console.log(`${ok ? '✔' : '✘'} ${name}${extra ? ' — ' + extra : ''}`); };
 
@@ -100,6 +100,42 @@ const R = await page.evaluate(async () => {
   return out;
 });
 
+/* ---- 对话框直驱回归：同步解析（不等定时器）+ 「道路布局」点选 ---- */
+const D = await page.evaluate(async () => {
+  const app = window.app;
+  const out = {};
+  const roadsOf = () => app.objects.filter((o) => o.type === 'road_brush');
+  const openBtn = () => [...document.querySelectorAll('.tool-row .tb')].find(x => /一句话生成/.test(x.title || x.textContent));
+  const genBtn = () => [...document.querySelectorAll('.tg-btn')].find(x => /生成/.test(x.textContent));
+  const rings = () => roadsOf().filter(o => o.name === '环路' || o.name === '皇城环').length;
+
+  // 1) 输入后【立即】（0ms，不等任何防抖）点生成：必须按框内文本走 grid、无环路
+  openBtn().click();
+  await new Promise(r => setTimeout(r, 120));
+  const ta = document.querySelector('.tg-input');
+  if (!ta) return { opened: false };
+  ta.value = '方格网布局的现代城市';
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+  out.syncChip = [...document.querySelectorAll('.tg-chips .tg-chip')].some(c => c.textContent === '方格网');
+  genBtn().click();
+  await new Promise(r => setTimeout(r, 100));   // run() 内部 30ms 后同步生成，页面阻塞期间此定时器顺延
+  out.afterText = { topo: window.__townStats?.schema?.roadTopology, rings: rings() };
+
+  // 2) 等上一个对话框完全退场（160ms 移除动画），重新打开 → 点「放射状」→ 立即生成
+  await new Promise(r => setTimeout(r, 260));
+  if (document.querySelector('.tg-mask')) return { ...out, staleMask: true };
+  openBtn().click();
+  await new Promise(r => setTimeout(r, 120));
+  const radBtn = [...document.querySelectorAll('.tg-lrow .tg-chip')].find(x => x.textContent === '放射状');
+  out.layoutRowVisible = !!radBtn;
+  radBtn && radBtn.click();
+  out.pickOn = !!document.querySelector('.tg-lrow .tg-chip.on');
+  genBtn().click();
+  await new Promise(r => setTimeout(r, 100));
+  out.afterPick = { topo: window.__townStats?.schema?.roadTopology, rings: rings() };
+  return out;
+});
+
 /* ---- 断言 ---- */
 ck('混搭场同时有中式与西式建筑', R.fusion.hasCn && R.fusion.hasWest, JSON.stringify(R.fusion));
 ck('混搭场生成宅前基座与车道', R.fusion.pads > 0 && R.fusion.lanes > 0 && R.fusion.driveways === R.fusion.pads + R.fusion.lanes);
@@ -111,6 +147,10 @@ ck('道路可再编辑：画笔接管且原路移除', R.edit.okEdit && R.edit.a
 ck('编辑完成：新路落回、改线生效、备份清除', R.edit.finished && R.edit.newExists && R.edit.moved && R.edit.backupCleared && R.edit.notActive, JSON.stringify(R.edit));
 ck('放弃编辑：原路按原 id/控制点恢复', R.cancel.wasRemoved && R.cancel.restored && R.cancel.ptsSame && R.cancel.notActive && R.cancel.noBackup, JSON.stringify(R.cancel));
 ck('基座序列化保留 noJunct', !!R.roundtrip && R.roundtrip.noJunct === true, JSON.stringify(R.roundtrip));
+ck('对话框同步解析：输入即出「方格网」chip', D.syncChip, JSON.stringify(D));
+ck('输入后立即生成 = grid 且 0 环路', D.afterText?.topo === 'grid' && D.afterText?.rings === 0, JSON.stringify(D.afterText));
+ck('「道路布局」按钮行可见且点选高亮', D.layoutRowVisible && D.pickOn, JSON.stringify(D));
+ck('点选放射状立即生成 = radial 双环', D.afterPick?.topo === 'radial' && D.afterPick?.rings === 2, JSON.stringify(D.afterPick));
 ck('全程零 pageerror', errors.length === 0, errors.slice(0, 3).join(' | '));
 
 await page.screenshot({ path: 'test/out/townstyle-chinese.png' }).catch(() => {});
