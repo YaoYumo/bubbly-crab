@@ -225,7 +225,10 @@ function makeDropdown(label, icon, items) {
   wrap.append(btn, menu);
   return wrap;
 }
-document.addEventListener('pointerdown', () => {
+document.addEventListener('pointerdown', (e) => {
+  // 菜单内部（开合按钮 / 菜单项）的按下不关菜单：否则菜单在 click 抬起前消失，
+  // 点击永远落不到条目上（菜单项集体失效 + 开合按钮关不上）
+  if (e.target && e.target.closest && e.target.closest('.tb-dropdown')) return;
   document.querySelectorAll('.tb-dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
