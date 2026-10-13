@@ -174,7 +174,7 @@ for (const [k, v] of Object.entries(LEVELS)) detailSel.appendChild(el('option', 
 const fileIn = el('input', { type: 'file', multiple: true, accept: '.glb,.gltf,.fbx,.obj,.mtl,.json', style: 'display:none', onchange: (e) => onFiles(e.target.files) });
 document.body.appendChild(fileIn);
 
-/** 顶栏「清空」：两段式确认 */
+/** 顶栏撤销/重做 + 「一键清空」：单击立即清空（一步 Ctrl+Z 可撤销） */
 const undoBtn = tbtn('撤销', { icon: '↶', title: '撤销上一步（Ctrl+Z）', onClick: () => { if (!app.undo()) toast('没有可撤销的操作'); } });
 const redoBtn = tbtn('重做', { icon: '↷', title: '重做（Ctrl+Shift+Z）', onClick: () => { if (!app.redo()) toast('没有可重做的操作'); } });
 const syncUndoBtns = () => {
@@ -186,24 +186,13 @@ const syncUndoBtns = () => {
 app.bus.on('undoable', syncUndoBtns);
 syncUndoBtns();
 const clearBtn = el('button', {
-  class: 'tb', type: 'button', title: '一键清空场景 (Ctrl+Shift+Backspace)',
+  class: 'tb', type: 'button', title: '一键清空场景：模型/机位/地形全清（Ctrl+Shift+Backspace · Ctrl+Z 可撤销）',
+  onclick: () => {
+    const objs = app.objects.length, shots = app.shots.length;
+    if (!objs && !shots) { toast('场景已经是空的'); return; }
+    app.clearScene({ blank: true });
+  },
 }, [el('span', { class: 'i', html: '⌫' }), el('span', { class: 't', text: '清空' })]);
-{
-  const lab = clearBtn.querySelector('.t');
-  let timer = 0;
-  clearBtn.addEventListener('click', () => {
-    if (clearBtn.dataset.armed === '1') {
-      clearTimeout(timer); clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空';
-      const objs = app.objects.length, shots = app.shots.length;
-      app.clearScene({ blank: true });
-      toast(`已清空场景（${objs} 个模型 · ${shots} 个机位）· Ctrl+Z 可撤销`);
-      return;
-    }
-    clearBtn.dataset.armed = '1'; clearBtn.classList.add('warn'); lab.textContent = '确认清空?';
-    clearTimeout(timer);
-    timer = setTimeout(() => { clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空'; }, 3200);
-  });
-}
 
 /* ---- 下拉菜单辅助 ---- */
 function makeDropdown(label, icon, items) {
@@ -342,6 +331,7 @@ const sceneMenu = makeDropdown('场景', '☰', [
 toolRow.append(
   viewMenu,
   sceneMenu,
+  clearBtn,               // 一键清空：挂在最顺手的位置，单击即清
 );
 top.appendChild(toolRow);
 toolRow.style.display = currentPage === 'scene' ? '' : 'none';

@@ -82,6 +82,20 @@ const browser = await puppeteer.launch({
   }));
   ck('B4 切回 Scene 一切就位', backScene.on === 'scene' && backScene.stageInScene && backScene.toolRow, JSON.stringify(backScene));
 
+  // 一键清空：Scene 顶栏可见、单击一次即清（不需要二次确认）
+  const pre = await page.evaluate(() => {
+    const k = [...window.__t.LIB_INDEX.keys()][0];
+    window.app.addAsset(k, new window.__t.THREE.Vector3(0, 0, 0));
+    return window.app.objects.length;
+  });
+  const cleared = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.tool-row .tb')].find((x) => /\s*清空\s*$/.test(x.textContent.trim()) || x.textContent.trim() === '⌫清空');
+    if (!b) return { clicked: false, n: window.app.objects.length };
+    b.click();
+    return { clicked: true, n: window.app.objects.length };
+  });
+  ck('B5 一键清空：Scene 工具条单击一次即清', pre > 0 && cleared.clicked && cleared.n === 0, `pre=${pre} post=${cleared.n}`);
+
   ck('A7 全程零 pageerror/console error', errs.length === 0, errs.slice(0, 3).join(' | '));
   await page.screenshot({ path: 'test/out/entry-scene.png' });
 
