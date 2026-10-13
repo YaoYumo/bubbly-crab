@@ -264,7 +264,7 @@ export function buildObjectList(app, host) {
       el('b', { text: `场景物体 ${app.objects.length}` }),
       el('span', { class: 'mini', text: '点选 · 双击重命名' }),
     ]));
-    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '从左侧把建筑 / 人物拖进场景' }));
+    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '点上方「模型库」展开拖入，或用 ✦ 一句话生成造景' }));
     for (const so of app.objects) {
       const sel = app.selObj === so;
       const row = el('div', { class: 'orow' + (sel ? ' on' : '') });
@@ -439,9 +439,17 @@ function tabObject(app, rerender, ctx) {
     const rd = so._roadData;
     const f2 = section(so.type === 'road_brush' ? '道路参数' : '交叉路口', { badge: so.type === 'road_brush' ? (rd?.roadType?.id || 'road') : 'intersection' });
     const html = so.type === 'road_brush'
-      ? `类型：${rd?.roadType?.label || '-'}<br>宽度：${rd?.width ?? '-'} m<br>控制点：${rd?.ctrl?.length ?? 0} 个<br><i>选中后可用 W/E/R 整体移动 / 旋转 / 缩放；删除会同时清理其交叉路口。</i>`
+      ? `类型：${rd?.roadType?.label || '-'}<br>宽度：${rd?.width ?? '-'} m<br>控制点：${rd?.ctrl?.length ?? 0} 个<br><i>选中后可用 W/E/R 整体移动 / 旋转 / 缩放；点「编辑此路」可重新改线（生成后的道路、基座、小径都能再编辑）；删除会同时清理其交叉路口。</i>`
       : `交叉点：${(so._isect?.point?.x ?? 0).toFixed(1)}, ${(so._isect?.point?.z ?? 0).toFixed(1)}<br><i>路口面片由两条道路自动生成；删除后两侧路面恢复连续。</i>`;
     f2.body.appendChild(el('div', { class: 'fnote', html }));
+    if (so.type === 'road_brush') {
+      f2.body.appendChild(el('button', { class: 'fbtn wide', type: 'button', text: '编辑此路（画笔接管）', onclick: () => {
+        if (app.roadBrush.editRoad(so)) {
+          toast('画笔已接管：拖动控制点改线，双击 / Enter 完成，Esc 放弃并恢复原路');
+          rerender();
+        } else toast('这条路暂时无法编辑', 'warn');
+      } }));
+    }
     root.appendChild(f2.wrap);
   } else {
     const f2 = section('导入模型', { badge: 'import' });

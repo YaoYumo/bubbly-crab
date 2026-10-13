@@ -1,0 +1,16 @@
+✔ A1 落地 Scene 页 — {"page":"scene","onId":"page-scene","stageInScene":true,"libVisible":false,"dlgOpen":true,"toolRowVisible":true,"townBtn":true,"capOn":"scene","libState":"展开 ▸"}
+✔ A2 3D 舞台在 Scene 视口
+✔ A3 模型库默认收起
+✔ A4 首访自动弹出一句话生成对话框
+✔ A5 Scene 工具条可见且有一句话生成按钮
+✔ A6 Esc 关闭对话框
+✔ B1 点标题展开模型库 — {"vis":true,"cards":172,"state":"收起 ▾"}
+✔ B2 再点收起
+✔ B3 切 Direct 舞台回共享视口 — {"on":"direct","stageInShared":true}
+✔ B4 切回 Scene 一切就位 — {"on":"scene","stageInScene":true,"toolRow":true}
+✔ A7 全程零 pageerror/console error
+✔ A8 同标签刷新不再弹窗、仍落 Scene — {"dlg":false,"page":"scene"}
+✔ C1 自动化路径不弹窗 — {"dlg":false,"page":"scene"}
+✔ C2 自动化路径也落 Scene 页（DOM 可达）
+
+ALL PASS

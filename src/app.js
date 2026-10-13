@@ -1201,6 +1201,7 @@ export class App {
   }
   /** 一键清空：模型 / 机位 / 地形全清，回到可直接摆景的空白场 */
   clearScene({ blank = true } = {}) {
+    const nObj = this.objects.length, nShot = this.shots.length;
     this.pushUndo(blank ? '空白场景' : '清空场景');
     this.state.playing = false;
     this.state.time = 0;
@@ -1220,9 +1221,9 @@ export class App {
     for (const ev of ['objects', 'shots', 'terrain', 'time', 'select']) this.bus.emit(ev);
     this.updateAspectOverlay && this.updateAspectOverlay();
     this.saveLocal();
-    this.notify(blank
-      ? '已是空白场景：从左侧素材库拖模型进画面，按 C 以当前视角建机位'
-      : '已清空场景（Ctrl+Z 可撤销）');
+    this.notify(nObj || nShot
+      ? `已一键清空：${nObj} 个模型 · ${nShot} 个机位 → 空白场就绪 · Ctrl+Z 可撤销`
+      : '已是空白场景：点顶栏 ✦ 一句话生成造景，或展开「模型库」拖入模型，按 C 建机位');
     return true;
   }
   /** 工程 JSON 无法保存外部模型网格，导入物用半透明占位盒代替，位置/路径/朝向仍然保留 */

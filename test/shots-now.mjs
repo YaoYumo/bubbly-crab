@@ -1,6 +1,6 @@
 // 刷新打包用的两张门面图：素材库（含新分类）+ 示例场景弹层
 import puppeteer from 'puppeteer';
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const b = await puppeteer.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox', '--disable-dev-shm-usage'] });
 const p = await b.newPage();
 await p.setViewport({ width: 1420, height: 900, deviceScaleFactor: 1.3 });

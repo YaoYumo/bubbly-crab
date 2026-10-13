@@ -6,7 +6,7 @@ const browser = await puppeteer.launch({ headless: 'shell', protocolTimeout: 900
 const page = await browser.newPage();
 await page.setViewport({ width: 1180, height: 700, deviceScaleFactor: 1.25 });
 page.on('pageerror', (e) => console.log('PAGEERROR', e.message));
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
+await page.goto((process.env.URL || 'http://localhost:5174/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
 await page.waitForFunction(() => window.__previzBooted && window.app && window.__scenes, { timeout: 180000 });
 await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
 
