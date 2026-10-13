@@ -122,7 +122,7 @@ function buildAll() {
       const root = buildAsset(item, defaultsFor(item));
       const box = new THREE.Box3().setFromObject(root);
       const size = box.getSize(new THREE.Vector3());
-      roots.push({ no, type, name, root, box, size, g: row.g });
+      roots.push({ no, type, name, root, box, size, g: row.g, baseZ: row.z });
       widths.push(Math.max(size.x, size.z));
     }
     // 排成一排：间距按相邻半宽 + 留白
@@ -701,7 +701,7 @@ function enterEdit(e) {
   let root;
   try { root = buildAsset(item, defaultsFor(item)); } finally { globalThis.__noBake = 0; globalThis.__noInst = 0; }
   const box0 = new THREE.Box3().setFromObject(root);
-  root.position.set(e.baseX - box0.getCenter(_v1).x, 0, 0);
+  root.position.set(e.baseX - box0.getCenter(_v1).x, 0, e.baseZ || 0);   // 两排陈列：编辑态未烘焙根也要落回本排 z（旧版写死 0 会把第二排模型拽到世界中心）
   stage.remove(e.root);
   e.bakedRoot = e.root; e.root = root;
   stage.add(root);
