@@ -87,11 +87,11 @@ const street = {
 
       // 车流（东西向双车道 + 公交）
       const carE = A(app, 'env:car:轿车', -70, 3.4, Math.PI / 2, { color: '#dfe4e8', kind: 'sedan', lights: true });
-      M(app, carE, [[0, -72, 0, 3.4], [0.5, 0, 0, 3.4], [1, 72, 0, 3.4]]);
+      M(app, carE, [[0, -72, 0, 3.4], [0.5, 0, 0, 3.4], [1, 72, 0, 3.4]], { faceOffset: -Math.PI / 2 });
       const carW = A(app, 'env:car:轿车', 60, -3.4, -Math.PI / 2, { color: '#2f3a45', kind: 'suv', lights: true });
-      M(app, carW, [[0, 72, 0, -3.4], [1, -72, 0, -3.4]]);
+      M(app, carW, [[0, 72, 0, -3.4], [1, -72, 0, -3.4]], { faceOffset: -Math.PI / 2 });
       const bus = A(app, 'env:bus:公交车', -58, 6.2, Math.PI / 2, { color: '#c9a227' });
-      M(app, bus, [[0, -72, 0, 6.2], [1, 72, 0, 6.2]], { speed: 0.8 });
+      M(app, bus, [[0, -72, 0, 6.2], [1, 72, 0, 6.2]], { speed: 0.8, faceOffset: -Math.PI / 2 });
 
       // 人物
       const man = A(app, 'char:human:男性', -14, 10, 0, { top: '#3d5a75', anim: 'walk' });
@@ -188,11 +188,11 @@ const boulevard = {
 
       // 双向车流 + 公交
       const sedan = A(app, 'env:car:轿车', -110, 4, Math.PI / 2, { color: '#dfe4e8', kind: 'sedan', lights: true });
-      M(app, sedan, [[0, -118, 0, 4], [1, 118, 0, 4]]);
+      M(app, sedan, [[0, -118, 0, 4], [1, 118, 0, 4]], { faceOffset: -Math.PI / 2 });
       const suv = A(app, 'env:car:轿车', 100, -4, -Math.PI / 2, { color: '#2f3a45', kind: 'suv' });
-      M(app, suv, [[0, 118, 0, -4], [1, -118, 0, -4]]);
+      M(app, suv, [[0, 118, 0, -4], [1, -118, 0, -4]], { faceOffset: -Math.PI / 2 });
       const bus = A(app, 'env:bus:公交车', -90, 6.8, Math.PI / 2, { color: '#c9a227' });
-      M(app, bus, [[0, -120, 0, 6.8], [1, 60, 0, 6.8]], { speed: 0.75 });
+      M(app, bus, [[0, -120, 0, 6.8], [1, 60, 0, 6.8]], { speed: 0.75, faceOffset: -Math.PI / 2 });
 
       // 行人沿人行道走 + 路口人群
       const walker = A(app, 'char:human:男性', 11, -40, 0, { anim: 'walk' });

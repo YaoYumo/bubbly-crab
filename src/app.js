@@ -967,7 +967,8 @@ export class App {
           dist = so.root.position.distanceTo(prev);
           if (m.autoFace) {
             const t = m.mover.tangent(u);
-            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z);
+            // faceOffset：模型车头非 +z（如轿车车头沿 +x → 偏移 -PI/2）时对齐行进方向
+            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z) + (m.faceOffset || 0);
           }
         }
       }

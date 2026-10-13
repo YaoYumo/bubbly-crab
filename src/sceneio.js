@@ -55,6 +55,7 @@ export function applySceneDSL(app, doc) {
       app.setMotion(so, {
         active: m.active !== false,
         autoFace: m.autoFace !== false,
+        faceOffset: Number.isFinite(m.faceOffset) ? m.faceOffset : 0,
         easing: m.easing || 'linear',
         loop: m.loop !== false,
         speed: m.speed ?? 1,
@@ -127,7 +128,8 @@ const SCENE_HINT = `你是 3D 场景编排器。把用户的描述编译为场�
  "motions":[{"object":对象下标,"keys":[[t,x,y,z],...],"autoFace":true,"speed":1,"anim":"idle"}],
  "shots":[{"name":"A","pos":[x,y,z],"look":[x,y,z],"focal":35,"duration":7,"target":对象下标,"move":"pedestal","moveParams":{}}]}
 可用模型键（可多用）：building:tower:玻璃幕墙写字楼 | building:residential:住宅板楼 | building:shophouse:沿街商铺 | building:house:独栋住宅 | building:cluster:城市楼群 | building:colonnade:柱廊门厅 | building:stairs:大台阶 | building:billboard:户外广告屏 | building:overpass:高架立交 | env:road:沥青路面 | env:walk:人行道 | env:tree:行道树 | env:lamp:路灯 | env:bench:长椅 | env:fountain:圆形喷泉 | env:sign:路牌 | env:car:轿车 | env:bus:公交车 | env:cone:交通锥 | env:barrier:水马围挡 | env:crate:木箱 | env:trash:垃圾桶 | char:human:男性 | char:human:女性 | char:human:儿童 | char:crowd:人群
-注意：机位 move 可选 static/push/pull/truck/pedestal/pan/tilt/orbit/follow/reveal/topdown。宁可少而准，不要编造不存在的键。`;
+注意：机位 move 可选 static/push/pull/truck/pedestal/pan/tilt/orbit/follow/reveal/topdown。宁可少而准，不要编造不存在的键。
+物体朝向：人物/人群车头默认 +z（autoFace 即可）；轿车/SUV/公交车车头沿 +x，沿路径移动时 motions 里加 "faceOffset": -1.5708，否则会横着漂移。`;
 
 function stripFences(text) {
   const t = String(text).trim();

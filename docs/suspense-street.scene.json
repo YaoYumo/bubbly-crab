@@ -40,8 +40,8 @@
   ],
 
   "motions": [
-    { "object": 23, "name": "嫌疑人沿街走", "keys": [[0, 0, 0, -40], [0.45, 0, 0, -6], [1, 0, 0, 32]], "autoFace": true, "loop": false, "speed": 1 },
-    { "object": 22, "name": "过路车横穿", "keys": [[0, -75, 0, -60], [1, 75, 0, -60]], "autoFace": true, "loop": true },
+    { "object": 23, "name": "嫌疑人沿街走", "keys": [[0, 0, 0, -24], [1, 0, 0, 0]], "autoFace": true, "loop": false, "speed": 1 },
+    { "object": 22, "name": "过路车横穿", "keys": [[0, -75, 0, -60], [1, 75, 0, -60]], "autoFace": true, "faceOffset": -1.5708, "loop": true },
     { "object": 24, "name": "女子驻足", "keys": [[0, 13.2, 0, 15.5], [1, 13.2, 0, 15.5]], "active": false, "anim": "phone" },
     { "object": 28, "name": "围观者静立", "keys": [[0, 16, 0, -66], [1, 16, 0, -66]], "active": false, "anim": "talk" }
   ],
