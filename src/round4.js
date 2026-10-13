@@ -22,6 +22,17 @@ const PLATES = [
   ['08', 'archbridge', '拱桥 · 螭首抱鼓水面'],
 ];
 
+// 第十六轮图板对照升级/新建 · 七单体（第二排陈列）
+const PLATES16 = [
+  ['09', 'drumtower', '鼓楼 · 十字券洞铜钟滴漏'],
+  ['10', 'courtyard', '四合院 · 垂花门影壁游廊'],
+  ['11', 'folkhouse', '民居 · 硬山山花墀头'],
+  ['12', 'moongate', '月亮门 · 环面券脸漏窗波帽'],
+  ['13', 'lanternpole', '宫灯杆 · 莲座云臂丝灯'],
+  ['14', 'streetshop', '街铺 · 招牌檐篷柜台'],
+  ['15', 'earthterrace', '土台 · 夯土台基磴道'],
+];
+
 setDetailLevel('fine');
 
 // ---------- 渲染器 / 场景 / 灯光 ----------
@@ -102,41 +113,44 @@ function buildAll() {
   entries.length = 0;
   cursorX = 0;
   const items = GROUP_CN.items;
-  const widths = [];
-  const roots = [];
-  for (const [no, type, name] of PLATES) {
-    const item = items.find(i => i.type === type);
-    const root = buildAsset(item, defaultsFor(item));
-    const box = new THREE.Box3().setFromObject(root);
-    const size = box.getSize(new THREE.Vector3());
-    roots.push({ no, type, name, root, box, size });
-    widths.push(Math.max(size.x, size.z));
+  const rows = [{ plates: PLATES, z: 0, g: 0 }, { plates: PLATES16, z: 52, g: 1 }];   // 两轮两排：前排第四轮，后排第十六轮
+  for (const row of rows) {
+    const widths = [];
+    const roots = [];
+    for (const [no, type, name] of row.plates) {
+      const item = items.find(i => i.type === type);
+      const root = buildAsset(item, defaultsFor(item));
+      const box = new THREE.Box3().setFromObject(root);
+      const size = box.getSize(new THREE.Vector3());
+      roots.push({ no, type, name, root, box, size, g: row.g });
+      widths.push(Math.max(size.x, size.z));
+    }
+    // 排成一排：间距按相邻半宽 + 留白
+    let x = 0;
+    const posX = [];
+    for (let i = 0; i < roots.length; i++) {
+      if (i === 0) x = widths[0] / 2;
+      else x += widths[i - 1] / 2 + 10 + widths[i] / 2;
+      posX.push(x);
+    }
+    const midX = posX[posX.length - 1] / 2 + widths[0] / 4;
+    roots.forEach((r, i) => {
+      const px = posX[i] - midX;
+      r.baseX = px;
+      r.root.position.set(px - (r.box.getCenter(new THREE.Vector3()).x), 0, row.z);
+      stage.add(r.root);
+      const box2 = new THREE.Box3().setFromObject(r.root);
+      const center = box2.getCenter(new THREE.Vector3());
+      const size2 = box2.getSize(new THREE.Vector3());
+      let tri = 0;
+      r.root.traverse(o => { if (o.isMesh && o.geometry) tri += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
+      const label = makeLabel(`${r.no} ${r.name.split(' · ')[0]}`);
+      label.position.set(center.x, box2.max.y + 3.2, center.z);
+      label.userData.isLabel = true;
+      stage.add(label);
+      entries.push({ ...r, box: box2, center, tri, label });
+    });
   }
-  // 排成一排：间距按相邻半宽 + 留白
-  let x = 0;
-  const posX = [];
-  for (let i = 0; i < roots.length; i++) {
-    if (i === 0) x = widths[0] / 2;
-    else x += widths[i - 1] / 2 + 10 + widths[i] / 2;
-    posX.push(x);
-  }
-  const midX = posX[posX.length - 1] / 2 + widths[0] / 4;
-  roots.forEach((r, i) => {
-    const px = posX[i] - midX;
-    r.baseX = px;
-    r.root.position.set(px - (r.box.getCenter(new THREE.Vector3()).x), 0, 0);
-    stage.add(r.root);
-    const box2 = new THREE.Box3().setFromObject(r.root);
-    const center = box2.getCenter(new THREE.Vector3());
-    const size2 = box2.getSize(new THREE.Vector3());
-    let tri = 0;
-    r.root.traverse(o => { if (o.isMesh && o.geometry) tri += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
-    const label = makeLabel(`${r.no} ${r.name.split(' · ')[0]}`);
-    label.position.set(center.x, box2.max.y + 3.2, center.z);
-    label.userData.isLabel = true;
-    stage.add(label);
-    entries.push({ ...r, box: box2, center, tri, label });
-  });
   fillList();
 }
 
@@ -150,7 +164,16 @@ function fillList() {
   b0.className = 'ov';
   b0.onclick = () => flyTo(null);
   listEl.appendChild(b0);
+  let lastG = -1;
+  const GH = ['第四轮图板重建 · 八单体', '第十六轮图板对照 · 七单体'];
   for (const e of entries) {
+    if (e.g !== lastG) {
+      lastG = e.g;
+      const h = document.createElement('div');
+      h.textContent = GH[e.g];
+      h.style.cssText = 'padding:8px 12px 4px;font-size:12px;color:#f4d9a0;opacity:.85;letter-spacing:.06em;';
+      listEl.appendChild(h);
+    }
     const b = document.createElement('button');
     b.innerHTML = `<span class="no">${e.no}</span> ${e.name}`;
     b.onclick = () => { if (editOn) enterEdit(e); flyTo(e); };
@@ -178,7 +201,7 @@ function flyTo(e) {
     const c = all.getCenter(new THREE.Vector3());
     const sz = all.getSize(new THREE.Vector3());
     target = new THREE.Vector3(c.x, Math.min(14, sz.y * 0.4), c.z);
-    dist = Math.max(sz.x, sz.z) * 0.62;
+    dist = Math.max(sz.x, sz.z) * 0.85;   // 两排 15 件后 union 更宽：0.62 会裁边
   } else {
     target = e.center.clone();
     dist = Math.max(e.box.getSize(new THREE.Vector3()).x, e.box.getSize(new THREE.Vector3()).y, e.box.getSize(new THREE.Vector3()).z) * 1.35 + 6;
@@ -884,4 +907,4 @@ setGiz('translate');
 refreshFoot();
 
 buildAll();
-flyTo(null);
+flyTo(null);   // 初始即拉两排全景
