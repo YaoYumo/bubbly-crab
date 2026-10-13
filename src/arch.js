@@ -3,7 +3,7 @@
 // 目标不是精模，而是「剪影 + 比例 + 材质关系」正确，能当 AI 参考
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { M, shade, box, cyl, sph, planeXZ, cone, row, ring, seg, curvedRoof, ridgeOrnament, dougong, roofSurf, eaveCornice, hipRidge, cnRoofY, stoneRail, caihua, plaque, plaqueTex, batch, mergeSimilar, bakeMerge, gableSlabs } from './geo.js';
+import { M, shade, box, cyl, sph, planeXZ, cone, row, ring, seg, curvedRoof, ridgeOrnament, dougong, roofSurf, eaveCornice, hipRidge, cnRoofY, jinRoofY, stoneRail, caihua, plaque, plaqueTex, batch, mergeSimilar, bakeMerge, gableSlabs } from './geo.js';
 import { clamp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
 
@@ -114,6 +114,7 @@ function buildHall(p) {
   g.add(box(w, cH * 0.98, 0.18, wall, 0, y0 + cH * 0.49, -d / 2 + 0.1));
   g.add(box(0.18, cH * 0.98, d, wall, -w / 2 + 0.1, y0 + cH * 0.49, 0));
   g.add(box(0.18, cH * 0.98, d, wall, w / 2 - 0.1, y0 + cH * 0.49, 0));
+  g.add(box(w, cH * 0.98, 0.18, wall, 0, y0 + cH * 0.49, d / 2 - 0.1));   // 前檐墙（旧版缺失，隔扇/门窗正面浮空）
   const doorW = Math.min(w * 0.9, p.bays * 1.15);
   const doorH = cH * 0.7;
   const nLeaf = clamp(Math.round(doorW / 0.92) * 2, 2, 12);
@@ -160,7 +161,7 @@ function buildHall(p) {
     }
   }
   const roofMat = roofSurf(new THREE.Color(p.roof).getHex(), 0.62);
-  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.48);   // 檐口落在斗拱顶（旧版 0.24 让斗拱穿出檐口）
+  const ry0 = y0 + cH + (p.dougong === false ? 0.24 : 0.56);   // 檐口落在斗拱顶之上（旧版 0.24 让斗拱穿出檐口）
   g.add(curvedRoof({ w, d, h: rh, kind: p.kind, ridge: p.ridge, brim: p.bay * 0.75, eaveUp: p.eaveUp, mat: roofMat, seg: 26, y0: ry0 }));
   roofTrim(g, { w, d, h: rh, brim: p.bay * 0.75, eaveUp: p.eaveUp, y0: ry0, kind: p.kind, ridge: p.ridge, tile: roofMat, woodMat: wood, ridgeMat: M.paint(new THREE.Color(p.ridgeColor).getHex(), 0.6), trim, beasts: Math.round(num(p.beasts, 5)), drip: p.drip !== false });
   g.userData.glow = [];
@@ -234,7 +235,7 @@ function buildPagoda(p) {
     if (hasDg) for (let k = 0; k < sides; k++) {                                 // 檐下斗拱
       const a = (k / sides) * Math.PI * 2;
       const dg = dougong(wood, rr * 0.19, { gold });
-      dg.position.set(Math.cos(a) * rr * 1.04, py + 0.12, Math.sin(a) * rr * 1.04);
+      dg.position.set(Math.cos(a) * rr * 1.04, py + 0.06, Math.sin(a) * rr * 1.04);   // 沉 6cm：斗拱顶不穿塔檐面
       dg.rotation.y = -a + Math.PI / 2;
       g.add(dg);
     }
@@ -249,9 +250,9 @@ function buildPagoda(p) {
       for (let k = 0; Q.level !== 'lite' && k < sides; k++) {                                          // 每角一条垂脊到檐角
         const a = (k / sides) * Math.PI * 2 + Math.PI / sides;
         const cx = Math.cos(a) * eaveR * 0.94, cz = Math.sin(a) * eaveR * 0.94;
-        const rEave = rh2 * (0.24 + 0.73 * 0.34);                          // 檐角端：举 + 起翘
-        const rr3 = hipRidge({ len: Math.hypot(cx, cz) * 0.93, rise: Math.max(0.04, rh2 * 0.76 - rEave), mat: tile, beastMat: gold, beasts: 0, s: 0.7, w: 0.15 });
-        rr3.position.set(cx, y0 + rEave, cz);
+        const sample3 = (t) => jinRoofY(0.93 * t, { h: rh2, eaveUp: 0.34, y0 });   // 沿翼角线与锥面同场
+        const rr3 = hipRidge({ len: Math.hypot(cx, cz) * 0.93, curve: sample3, mat: tile, beastMat: gold, beasts: 0, s: 0.7, w: 0.15 });
+        rr3.position.set(cx, sample3(0), cz);
         rr3.rotation.y = Math.PI - Math.atan2(cz, cx);   // +x 绕 y 转 φ 落到 (cosφ, -sinφ)：朝圆心是 π-φ，不是 φ+π
         g.add(rr3);
       }
@@ -522,7 +523,7 @@ function buildPavilion(p) {
   const y0 = 0.56;
   const nStep = 3;
   // 踏步逐级搭接、顶级嵌入台身；旧版整跑离台基悬空 0.1R
-  for (let i = 0; i < nStep; i++) g.add(box(R * 0.8, 0.18, 0.34, stone, 0, 0.09 + i * 0.18, R * 1.4 + 0.3 * (nStep - i)));
+  for (let i = 0; i < nStep; i++) g.add(box(R * 0.8, 0.18, 0.34, stone, 0, 0.09 + i * 0.18, R * 1.34 + 0.28 * (nStep - i)));   // 顶级咬入台身（旧版与台基投影只搭 1mm）
   if (trim) for (const sx of [-1, 1]) {                                                     // 踏跺两侧短栏，让出正中入口
     const rl = stoneRail({ len: R * 0.7, h: 0.52, y: y0 - 0.02, mat: stone, step: R * 0.42 });
     rl.position.set(sx * R * 0.72, 0, R * 1.28);
@@ -582,14 +583,14 @@ function buildPavilion(p) {
       const a = (i / s) * Math.PI * 2 + Math.PI / s;
       const cx = Math.cos(a) * crnR, cz = Math.sin(a) * crnR;
       const eU = clamp(num(p.eaveUp, 0.42), 0, 0.9);
-      const yy = ry0 + p.roofH * (0.24 + 0.73 * eU);                       // 屋面在角端的实际标高
-      const rr = hipRidge({ len: Math.hypot(cx, cz) * 0.93, rise: Math.max(0.05, p.roofH * (0.76 - 0.24 - 0.73 * eU)), mat: tile, beastMat: M.metal(0xb99a4e, 0.42, 0.8), beasts: Math.round(num(p.beasts, 3)), s: 0.8, w: 0.16 });
-      rr.position.set(cx, yy, cz);
+      const sample = (t) => jinRoofY(0.93 * t, { h: p.roofH, eaveUp: eU, y0: ry0 });   // 沿翼角线与锥面同场（旧版直线跨凹曲锥面成浮空辐条）
+      const rr = hipRidge({ len: Math.hypot(cx, cz) * 0.93, curve: sample, mat: tile, beastMat: M.metal(0xb99a4e, 0.42, 0.8), beasts: Math.round(num(p.beasts, 3)), s: 0.8, w: 0.16 });
+      rr.position.set(cx, sample(0), cz);
       rr.rotation.y = Math.PI - Math.atan2(cz, cx);   // +x 绕 y 转 φ 落到 (cosφ, -sinφ)：朝圆心是 π-φ，不是 φ+π
       g.add(rr);
     }
   }
-  const by = ry0 + p.roofH;                                                    // 宝顶：须弥 + 仰莲 + 相轮 + 宝珠
+  const by = ry0 + p.roofH * 0.76 - 0.1;                                       // 宝顶坐在锥面顶点（0.76h）并沉 10cm（旧版按全高 h 悬空 0.46m）
   g.add(cyl(0.26, 0.3, 0.14, tile, seg(8), 0, by + 0.08, 0));
   g.add(cyl(0.2, 0.24, 0.16, M.metal(0xd8b25a, 0.3, 0.85), seg(8), 0, by + 0.22, 0));
   g.add(cone(0.24, 0.16, M.metal(0xd8b25a, 0.3, 0.85), seg(8), 0, by + 0.38, 0));

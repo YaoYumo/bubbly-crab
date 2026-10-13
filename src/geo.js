@@ -164,15 +164,23 @@ function jinRoofGeo(sn, a, h, eaveUp, y0, seg) {
       const side = Math.floor(j / per), f = (j % per) / per;
       const c0 = corner[side], c1 = corner[(side + 1) % sn];
       const x = (c0[0] + (c1[0] - c0[0]) * f) * k, z = (c0[1] + (c1[1] - c0[1]) * f) * k;
-      const cwr = Math.pow(1 - Math.abs(2 * f - 1), 0.55);                  // 角端 1、边中点 0 → 起翘只抬角
+      const cwr = Math.pow(Math.abs(2 * f - 1), 0.55);                     // 角端 1、边中点 0 → 起翘只抬翼角（旧版反了，抬成边中）」
       // 举折基线：檐口(t=0)落 y0、脊(t=1)到 0.76h —— 檐口不再整体悬空 0.24h
-      pos.setXYZ(r * cols + c, x, h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6)) + eaveUp * h * Math.pow(1 - t, 3.2) * 0.73 * cwr + y0, z);
+      pos.setXYZ(r * cols + c, x, jinRoofY(t, { h, eaveUp, y0: 0 }) - 0 + (eaveUp * h * Math.pow(1 - t, 3.2) * 0.73) * (cwr - 1) + y0, z);   // = jinRoofY(t)*cwr 拆分：边中不翘、角端全翘
       uv.setXY(r * cols + c, c / (sn * per), k);                             // u 沿檐口一圈、v 由心到檐：瓦垄自然放射到宝顶
     }
   }
   geo.computeVertexNormals();
   geo.computeBoundingSphere();
   return geo;
+}
+
+/** 攒尖锥面沿角线（翼角线）的高度场：jinRoofGeo 顶点与垂脊采样共用 */
+export function jinRoofY(tRing, o = {}) {
+  const { h, eaveUp = 0, y0 = 0 } = o;
+  const t = clamp(tRing, 0, 1);
+  return y0 + h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6))
+    + eaveUp * h * Math.pow(1 - t, 3.2) * 0.73;
 }
 
 /** 曲面屋顶（庑殿 / 歇山 / 卷棚 / 攒尖）：把一张 PlaneGeometry 按举折 + 起翘抬高。
@@ -333,7 +341,7 @@ export function eaveCornice(o = {}) {
   const step = 0.46 / clamp(mul(1), 0.55, 1.8);          // 排布密度随精度档
   const nX = clamp(Math.round(W / step), 3, 30), nZ = clamp(Math.round(D / step), 3, 24);
   const raft = [], caps = [], drops = [];
-  const lift = (u) => eaveUp * rh * u * u;               // 越靠角抬得越多（翼角起翘）
+  const lift = (u) => eaveUp * rh * Math.pow(clamp((u - 0.5) / 0.5, 0, 1), 0.55);   // 与屋面 cwx/cwz 同权重（旧版 u² 让檐口中段瓦当凸出檐口 Above）
   // 瓦作小件的段数：是檐口上一圈 8cm 的小件，段数按精度档给死了，不能跟着 seg() 放大
   // （旧版瓦当 15 段 = 180 面、滴水 12 段 = 144 面，一座七层塔 1182 件就是 12.8 万面）；
   // 屋面本体是单张曲面 + 程序化瓦垄贴图，瓦的「一垄垄」靠贴图，不靠堆几何。
@@ -354,8 +362,8 @@ export function eaveCornice(o = {}) {
         const off = sideLen * t;
         const x = ux * Rb + px * off, z = uz * Rb + pz * off;
         // 边中点抬升 0（檐口中线压 y0），角部起翘 —— 旧版整体抬 0.28·eaveUp·h 悬在屋面上
-        const yy = y + eaveUp * rh * 0.72 * Math.pow(Math.min(1, Math.abs(t) * 2), 3);
-        raft.push({ p: [x, yy - 0.03, z], r: [0, -ac, 0], s: [sideLen / nE * 0.95, 0.085, 0.5] });
+        const yy = y + eaveUp * rh * 0.73 * Math.pow(Math.min(1, Math.abs(t) * 2), 0.55);   // 与 jinRoofGeo 角线同权重
+        raft.push({ p: [x, yy - 0.03, z], r: [0, -ac + Math.PI / 2, 0], s: [sideLen / nE * 0.95, 0.085, 0.5] });   // 椽身沿檐边切向（旧版 -ac 指向径向，亭/塔檐口炸成辐条）
         caps.push({ p: [x + ux * 0.02, yy + 0.02, z + uz * 0.02], r: aimCyl(ux, 0, uz) });
         drops.push({ p: [x + ux * 0.06, yy - 0.05, z + uz * 0.06], r: aimCyl(ux, 0, uz), s: [1, 1, 0.6] });
       }
