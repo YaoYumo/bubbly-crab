@@ -186,7 +186,6 @@ function buildHall(p) {
     g.add(box(w * 0.8 + 0.4, 0.34, 0.34, wood, 0, sy0 + rh * 0.16 + upH + 0.1, -d * 0.4));
     g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
     g.add(box(0.34, 0.34, d * 0.8 + 0.4, wood, -w * 0.4, sy0 + rh * 0.16 + upH + 0.1, 0));
-    for (const sz of [1, -1]) g.add(box(w * 0.8 + 0.2, 0.26, 0.1, M.paint(0x2f5b8a, 0.6), 0, sy0 + rh * 0.16 + upH - 0.12, sz * (d * 0.4 + 0.06)));   // 上檐彩画带
     if (p.dougong !== false) {                                                     // 上檐斗拱环：托住上檐檐口（旧版檐圈浮空）
       const uw = w * 0.8, ud = d * 0.8, uy = sy0 + rh * 0.16 + upH + 0.24;
       const mk = () => dougong(wood, 0.8, { gold: M.metal(0xb08a3e, 0.4, 0.7) });
@@ -775,6 +774,8 @@ function buildGate(p) {
     if (sz > 0) g.add(box(W + 0.5, 0.5, 0.22, stone, 0, H + 0.43, sz * (D / 2 + 0.1)));   // 内侧宇墙
     const nn = Math.floor(W / 1.7);
     const merlons = [];
+    if (sz > 0) g.add(box(W, 0.66, 0.22, stone, 0, H + 0.57, sz * (D / 2 + 0.02)));   // 内侧宇墙（连续女墙）
+    else g.add(box(W, 0.28, 0.34, stone, 0, H + 0.38, sz * (D / 2 + 0.22)));          // 垛口底座：坐在城顶海墁上（旧版垛口悬空）
     for (let i = 0; i < nn; i++) {
       const x = -W / 2 + 0.85 + i * 1.7;
       if (sz > 0) continue;                                            // 垛口只列在外沿（临战面），内侧走宇墙
@@ -930,7 +931,7 @@ function buildCityWall(p) {
     g.add(box(2.6, 0.26, 1.6, stone2, L / 2 - 2.4, H + 0.13, T / 2 - 0.6));                 // 步梯顶平台接通城顶
     for (const sx of [1, -1]) g.add(box(0.22, 0.6, 1.6, stone, L / 2 - 2.4 + sx * 1.2, H + 0.42, T / 2 - 0.6));
     for (const sz of [1, -1]) {
-      const wall2 = box(0.26, H * 0.9, nS * 0.42, stone, L / 2 - 2.4 + sz * 1.0, H * 0.45, T / 2 + 0.9);
+      const wall2 = box(0.26, H * 0.9, nS * 0.42 + 0.8, stone, L / 2 - 2.4 + sz * 1.0, H * 0.45, T / 2 + 0.21 + (nS - 1) * 0.21);
       wall2.rotation.y = 0;
       g.add(wall2);
     }
