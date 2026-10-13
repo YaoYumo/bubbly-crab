@@ -353,20 +353,12 @@ function buildPagoda(p) {
       }
     }
     const py = y + fh;
-    g.add(cyl(rr * 1.26, rr * 1.2, 0.16, wood, seg(sides), 0, py + 0.02, 0));   // 平座板（挑台）
-    if (hasPz) {
-      for (let k = 0; k < sides; k++) {
-        const a = (k / sides) * Math.PI * 2 + Math.PI / sides;
-        const rl = stoneRail({ len: 2 * rr * 1.2 * Math.sin(Math.PI / sides) * 0.96, h: 0.44, y: py + 0.1, mat: stone, step: Math.max(0.5, rr * 0.34) });
-        rl.rotation.y = -a + Math.PI / 2;
-        rl.position.set(Math.cos(a) * rr * 1.16, 0, Math.sin(a) * rr * 1.16);
-        g.add(rl);
-      }
-    }
+    // 平座挑台板保留；旧版挑台上一周石栏杆整圈没入上层环檐内、望柱头反穿出檐面 12cm（碎件），删除。
+    if (hasPz) g.add(cyl(rr * 1.26, rr * 1.2, 0.16, wood, seg(sides), 0, py + 0.02, 0));   // 平座板（挑台）
     if (hasDg) for (let k = 0; k < sides; k++) {                                 // 檐下斗拱
       const a = (k / sides) * Math.PI * 2;
       const dg = dougong(wood, rr * 0.19, { gold });
-      dg.position.set(Math.cos(a) * rr * 1.04, py + 0.06, Math.sin(a) * rr * 1.04);   // 沉 6cm：斗拱顶不穿塔檐面
+      dg.position.set(Math.cos(a) * rr * 1.04, hasPz ? py + 0.06 : py, Math.sin(a) * rr * 1.04);   // 沉 6cm：斗拱顶不穿塔檐面
       dg.rotation.y = -a + Math.PI / 2;
       g.add(dg);
     }
@@ -392,7 +384,7 @@ function buildPagoda(p) {
       }
       for (let k = 0; k < sides; k++) {                                          // 檐角铜风铃（图板 04）
         const a = (k / sides) * Math.PI * 2 + Math.PI / sides;
-        g.add(windBell(gold, 0.85, Math.cos(a) * eaveR * 0.97, jinRoofY(0, { h: rh2, eaveUp: 0.34, y0 }) - 0.05, Math.sin(a) * eaveR * 0.97));
+        g.add(windBell(gold, 0.85, Math.cos(a) * eaveR * 0.97, jinRoofY(0, { h: rh2, eaveUp: 0.34, y0 }) + 0.02, Math.sin(a) * eaveR * 0.97));   // 链顶咬入角脊下缘（旧版吊低 5cm 悬空）
       }
     }
     lastE = { R: eaveR, y: y0, rh: rh2 };
@@ -737,7 +729,7 @@ function buildPavilion(p) {
     const jy = (t) => jinRoofY(t, { h: p.roofH, eaveUp: eU2, y0: ry0 });
     for (let i = 0; i < s; i++) {                                             // 檐角风铃（图板 03）
       const a = (i / s) * Math.PI * 2 + Math.PI / s;
-      g.add(windBell(M.metal(0xb99a4e, 0.42, 0.8), 1.15, Math.cos(a) * crnR * 0.98, jy(0) - 0.1, Math.sin(a) * crnR * 0.98));
+      g.add(windBell(M.metal(0xb99a4e, 0.42, 0.8), 1.15, Math.cos(a) * crnR * 0.98, jy(0) + 0.02, Math.sin(a) * crnR * 0.98));   // 链顶咬入翼角脊（旧版吊低 10cm 悬空）
     }
     const nr = s * 4;                                                          // 檐椽：檐边下皮外伸短椽（放射、斜向下），不进入屋面上方
     for (let k = 0; k < nr; k++) {
@@ -855,7 +847,11 @@ function buildGate(p) {
   if (p.ramp !== false) {                                                          // 登城马道
     const n = clamp(Math.round(H / 0.34), 3, 22), stH = H / n;
     // 踏步内端嵌入城台 10cm、内侧夹墙贴进台身 8cm —— 旧版整条马道离城台悬空 0.3m
-    for (let i = 0; i < n; i++) g.add(box(2.5, stH, 0.44, stone, W / 2 + 1.15, stH * (i + 0.5), D / 2 - 0.3 - (n - i) * 0.44));
+    const rampB = [];
+    for (let i = 0; i < n; i++) rampB.push({ p: [W / 2 + 1.15, stH * (i + 0.5), D / 2 - 0.3 - (n - i) * 0.44], s: [2.5, stH, 0.44] });
+    for (let i = 1; i < n; i++) rampB.push({ p: [W / 2 + 1.15, stH * i / 2, D / 2 - 0.3 - (n - i) * 0.44], s: [2.5, stH * i + 0.02, 0.44] });   // 踏步下实心梯体（旧版楼梯下面是空的）
+    const rb = batch(new THREE.BoxGeometry(1, 1, 1), stone, rampB);
+    if (rb) g.add(rb);
     g.add(box(0.35, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 0.12, H * 0.47, D / 2 - n * 0.22 - 0.3));
     g.add(box(0.3, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 2.4, H * 0.47, D / 2 - n * 0.22 - 0.3));
     g.add(box(3.6, 0.26, 2.0, stone, W / 2 + 0.7, H + 0.13, D / 2 - 0.74 - 1.0));          // 马道顶平台：搭接城顶与梯头（旧版梯顶悬断）
@@ -962,6 +958,7 @@ function buildCityWall(p) {
     const nS = clamp(Math.round(H / 0.3), 4, 26), stH = H / nS;
     const steps = [];
     for (let i = 0; i < nS; i++) steps.push({ p: [L / 2 - 2.4, stH * (i + 0.5), T / 2 + 0.21 + (nS - 1 - i) * 0.42], s: [1.8, stH, 0.42] });   // 顶级贴墙面（旧版没入墙身）
+    for (let i = 1; i < nS; i++) steps.push({ p: [L / 2 - 2.4, stH * i / 2, T / 2 + 0.21 + (nS - 1 - i) * 0.42], s: [1.8, stH * i + 0.02, 0.42] });   // 踏步下实心梯体（旧版 zigzag 踏步下面是空的）
     const st = batch(new THREE.BoxGeometry(1, 1, 1), stone2, steps);
     if (st) g.add(st);
     g.add(box(2.6, 0.26, 1.6, stone2, L / 2 - 2.4, H + 0.13, T / 2 - 0.6));                 // 步梯顶平台接通城顶
@@ -971,7 +968,6 @@ function buildCityWall(p) {
       wall2.rotation.y = 0;
       g.add(wall2);
     }
-    g.add(box(2.6, 0.14, nS * 0.42 + 1.2, stone, L / 2 - 2.4, H * 0.92, T / 2 + 0.9));                     // 梯顶平台
   }
   if (p.tower) {                                                      // 敌台（台体 + 券窗 + 一层楼 + 顶）
     const tw = clamp(num(p.towerW, 8), 3, 16), th = H + 3.2;
@@ -986,14 +982,9 @@ function buildCityWall(p) {
     for (let i = 0; i < 2; i++) for (const sx of [-1, 1]) {
       g.add(box(0.9, 1.1, 0.24, M.dark(0x20242b, 0.8), sx * (tw / 2 + 1.02), H * 0.4 + i * H * 0.4, 0));
     }
-    for (const sz of [1, -1]) {                                                                             // 敌台顶宇墙 + 垛口
-      g.add(box(tw + 0.4, 0.4, 0.22, stone, 0, th + 0.2, sz * (tw / 2 + 0.9)));
-      const mm = [];
-      for (let i = 0; i < 4; i++) mm.push({ p: [-tw / 2 + 0.6 + i * (tw - 1.2) / 3, th + 0.6, sz * (tw / 2 + 0.9)], s: [0.56, 0.56, 0.3] });
-      const mb = batch(new THREE.BoxGeometry(1, 1, 1), stone, mm);
-      if (mb) g.add(mb);
-    }
-    const ry = th + 0.4;
+    // 敌台顶旧版有一周宇墙+垛口（z=±(tw/2+0.9)），落在歇山屋面出檐（±(tw/2+1.7)）之内，
+    // 整圈石墙与垛口站在瓦面上（"屋顶还有女儿墙"），删除；屋面檐口下沉咬住台顶（旧版檐口抬 0.4m 靠那圈墙吊接）。
+    const ry = th - 0.5;
     g.add(curvedRoof({ w: tw + 1.6, d: tw + 3.4, h: 1.9, kind: 'xie', eaveUp: 0.36, mat: roofSurf(new THREE.Color(p.roof).getHex(), 0.65), seg: 16, y0: ry }));
     roofTrim(g, { w: tw + 1.6, d: tw + 3.4, h: 1.9, brim: 0.6, eaveUp: 0.36, y0: ry, kind: 'xie', tile: roofSurf(new THREE.Color(p.roof).getHex(), 0.65), woodMat: M.paint(0x7d4a2c, 0.72), ridgeMat: M.paint(0x31363d, 0.6), trim, beasts: 3 });
     g.add(box(tw * 0.5, 0.16, 0.3, M.paint(0x7d4a2c, 0.7), 0, ry - 0.1, tw / 2 + 1.7));
@@ -1237,7 +1228,7 @@ function buildDrumTower(p) {
   }
   if (p.plaque !== false) {
     const pl = plaque({ w: 1.7, h: 0.72, text: p.text || '鐘鼓樓', boardMat: M.paint(0x22364f, 0.5), frameMat: gold });
-    pl.position.set(0, oh + 0.9, W / 2 + 0.16);
+    pl.position.set(0, oh + 0.9, W / 2 + 0.04);   // 匾背嵌入券面 3cm（旧版离墙 9cm 悬空）
     g.add(pl);
   }
   // ── 楼身：每层 檐柱一周 + 墙 + 平座 + 斗拱 + 屋顶 ───────────────

@@ -826,7 +826,7 @@ export function benchRail({ len = 3, h = 0.85, y = 0, mat, axis = 'x' } = {}) {
   const g = new THREE.Group();
   const L = Math.max(0.6, len);
   g.add(box(L, 0.07, 0.34, mat, 0, y + 0.42, 0));                       // 坐面
-  g.add(box(L, 0.06, 0.06, mat, 0, y + 0.06, 0));                        // 底枋
+  g.add(box(L, 0.06, 0.06, mat, 0, y + 0.38, 0));                        // 底枋：贴坐面下皮（旧版 y+0.06 离坐面悬空 0.3m）
   const n = clamp(Math.round(L / 0.16), 4, 60);
   const slats = [];
   for (let i = 0; i < n; i++) {
