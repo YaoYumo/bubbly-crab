@@ -177,7 +177,7 @@ function jinRoofGeo(sn, a, h, eaveUp, y0, seg) {
 
 /** 曲面屋顶（庑殿 / 歇山 / 卷棚 / 攒尖）：把一张 PlaneGeometry 按举折 + 起翘抬高。
  *  `sides >= 3` 的攒尖走 jinRoofGeo（同心多边形环），檐口正多边形、角端对正檐柱。 */
-export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0 }) {
+export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0 } = {}) {
   seg = Math.max(8, Math.round(mul(seg)));   // 举折曲线的密度随精度档走
   const W = Math.max(1, w + brim * 2), D = Math.max(1, d + brim * 2);
   const nx = Math.max(6, Math.round(seg * (W / Math.max(W, D)))), nz = Math.max(6, seg);
@@ -196,27 +196,7 @@ export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, 
   const xr = (Math.max(0.6, w * 0.5 * ridge));
   const maxR = Math.hypot(W / 2, D / 2);
   for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), z = pos.getZ(i);
-    // 角权重：四角 1、檐边中点 0 → 起翘只抬翼角，檐口中线稳稳压在 y0 上
-    const cwx = Math.pow(clamp((Math.abs(x) / (W / 2) - 0.5) / 0.5, 0, 1), 0.55);
-    const cwz = Math.pow(clamp((Math.abs(z) / (D / 2) - 0.5) / 0.5, 0, 1), 0.55);
-    let u;
-    const cwr = cwx * cwz;
-    if (kind === 'jin') {
-      u = clamp(Math.max(Math.abs(x) / (W / 2), Math.abs(z) / (D / 2)), 0, 1);
-    } else if (kind === 'juan') {
-      u = clamp(Math.abs(z) / (D / 2), 0, 1);
-    } else {
-      const dz = Math.abs(z) / (D / 2);
-      const dx = Math.max(0, Math.abs(x) - xr) / Math.max(0.5, W / 2 - xr);
-      // 边界处 u 必须到 1（t=0），檐口才能落在 y0：旧版 0.92/0.86 系数让檐口悬了 ~0.08h
-      u = kind === 'xie' ? clamp(Math.max(dz, dx * 0.92), 0, 1) : clamp(Math.hypot(dz, dx * 0.86), 0, 1);
-    }
-    const t = 1 - u;                                   // 1 = 脊, 0 = 檐
-    let yy = h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6));
-    yy += eaveUp * h * Math.pow(1 - t, 3.2) * (kind === 'juan' ? 0.35 : 1) * (kind === 'juan' ? cwx : cwr);   // 起翘集中在翼角
-    if (kind === 'xie' && dzOf(z, D) > 0.66) yy *= 0.92;
-    pos.setY(i, yy + y0);
+    pos.setY(i, cnRoofY(pos.getX(i), pos.getZ(i), { W, D, h, kind, xr, eaveUp, y0 }));
   }
   geo.computeVertexNormals();
   const m = new THREE.Mesh(geo, mat || M.paint(0x3a4048, 0.85));
@@ -225,6 +205,32 @@ export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, 
   void maxR;
   // 瓦垄感：沿屋面加几条窄盒（廉价但轮廓清晰）
   return m;
+}
+
+/** 中式屋面高度场（举折 + 翼角起翘）：curvedRoof 顶点与垂脊/脊兽共用同一公式，
+ *  保证垂脊贴在屋面上（旧版垂脊是直梁，屋面凹曲 → 脊身与走兽整条悬空成「碎阶」） */
+export function cnRoofY(x, z, o) {
+  const { W, D, h, kind = 'wu', xr = 0.6, eaveUp = 0.16, y0 = 0 } = o;
+  // 角权重：四角 1、檐边中点 0 → 起翘只抬翼角，檐口中线稳稳压在 y0 上
+  const cwx = Math.pow(clamp((Math.abs(x) / (W / 2) - 0.5) / 0.5, 0, 1), 0.55);
+  const cwz = Math.pow(clamp((Math.abs(z) / (D / 2) - 0.5) / 0.5, 0, 1), 0.55);
+  let u;
+  const cwr = cwx * cwz;
+  if (kind === 'jin') {
+    u = clamp(Math.max(Math.abs(x) / (W / 2), Math.abs(z) / (D / 2)), 0, 1);
+  } else if (kind === 'juan') {
+    u = clamp(Math.abs(z) / (D / 2), 0, 1);
+  } else {
+    const dz = Math.abs(z) / (D / 2);
+    const dx = Math.max(0, Math.abs(x) - xr) / Math.max(0.5, W / 2 - xr);
+    // 边界处 u 必须到 1（t=0），檐口才能落在 y0：旧版 0.92/0.86 系数让檐口悬了 ~0.08h
+    u = kind === 'xie' ? clamp(Math.max(dz, dx * 0.92), 0, 1) : clamp(Math.hypot(dz, dx * 0.86), 0, 1);
+  }
+  const t = 1 - u;                                   // 1 = 脊, 0 = 檐
+  let yy = h * (0.24 * (1 - t * t) + 0.76 * Math.pow(t, 1.9) - 0.24 * Math.pow(1 - t, 1.6));
+  yy += eaveUp * h * Math.pow(1 - t, 3.2) * (kind === 'juan' ? 0.35 : 1) * (kind === 'juan' ? cwx : cwr);   // 起翘集中在翼角
+  if (kind === 'xie' && dzOf(z, D) > 0.66) yy *= 0.92;
+  return yy + y0;
 }
 
 function dzOf(z, D) { return Math.abs(z) / (D / 2); }
@@ -389,25 +395,29 @@ export function eaveCornice(o = {}) {
 
 /** 一条垂脊 / 戗脊：脊身逐级降低 + 垂兽 + 仙人骑凤 + 走兽队列。原点在脊上端，沿 +X 延伸到檐角。 */
 export function hipRidge(o = {}) {
-  const len = Math.max(0.5, o.len ?? 2), rise = o.rise ?? 0.3;
+  const len = Math.max(0.5, o.len ?? 2);
   const w = o.w ?? 0.22, s = o.s ?? 1;
   const mat = o.mat || M.paint(0x2f353c, 0.62);
   const bm = o.beastMat || mat;
   const n = clamp(Math.round(o.beasts ?? 3), 0, 9);
   const g = new THREE.Group();
+  // 脊身沿屋面高度场走（o.curve(t) = 世界高度采样）；无 curve 时退化为直线 rise（攒尖塔檐等）
+  const curve = typeof o.curve === 'function' ? o.curve : null;
+  const rise = curve ? curve(1) - curve(0) : (o.rise ?? 0.3);
+  const yAt = (t) => (curve ? curve(t) - curve(0) : rise * t) - 0.05 * s;   // 整体沉 5cm 咬住屋面
   const ns = clamp(Math.round(mul(4)), 3, 6);
   for (let i = 0; i < ns; i++) {
     const t0 = i / ns, t1 = (i + 1) / ns, tm = (t0 + t1) / 2;
     const hh = (0.24 - 0.07 * tm) * s;
-    g.add(box(len / ns * 1.05, hh, w * (1 - tm * 0.18) * s, mat, tm * len, rise * tm + hh / 2, 0));
+    g.add(box(len / ns * 1.05, hh, w * (1 - tm * 0.18) * s, mat, tm * len, yAt(tm) + hh / 2, 0));
   }
-  g.add(box(0.34 * s, 0.3 * s, 0.34 * s, bm, len + 0.12 * s, rise + 0.2 * s, 0, 0.06));       // 垂兽
-  g.add(cone(0.16 * s, 0.32 * s, bm, seg(6), len + 0.34 * s, rise + 0.44 * s, 0));
+  g.add(box(0.34 * s, 0.3 * s, 0.34 * s, bm, len + 0.12 * s, yAt(1) + 0.2 * s, 0, 0.06));       // 垂兽
+  g.add(cone(0.16 * s, 0.32 * s, bm, seg(6), len + 0.34 * s, yAt(1) + 0.44 * s, 0));
   if (n > 0) {
     const bodies = [], heads = [];
     for (let i = 0; i < n; i++) {
       const t = 0.82 - (i / Math.max(1, n)) * 0.6;                    // 从檐角往脊端排
-      const x = len * t, yy = rise * t + 0.12 * s;
+      const x = len * t, yy = yAt(t) + 0.12 * s;
       bodies.push({ p: [x, yy, 0], s: [0.2 * s, 0.16 * s, 0.14 * s] });
       heads.push({ p: [x + 0.13 * s, yy + 0.11 * s, 0], s: [0.09 * s, 0.09 * s, 0.09 * s] });
     }
@@ -416,9 +426,9 @@ export function hipRidge(o = {}) {
     const bs = ballSeg();
     const b2 = batch(new THREE.SphereGeometry(1, bs[0], bs[1]), bm, heads);
     if (b2) g.add(b2);
-    g.add(box(0.26 * s, 0.1 * s, 0.15 * s, bm, len * 0.16 - 0.02 * s, rise * 0.16 + 0.06 * s, 0));   // 仙人骑凤
-    g.add(cone(0.1 * s, 0.2 * s, bm, seg(5), len * 0.16 - 0.18 * s, rise * 0.16 + 0.06 * s, 0));
-    g.add(sph(0.075 * s, bm, seg(6), len * 0.16 + 0.12 * s, rise * 0.16 + 0.18 * s, 0));
+    g.add(box(0.26 * s, 0.1 * s, 0.15 * s, bm, len * 0.16 - 0.02 * s, yAt(0.16) + 0.06 * s, 0));   // 仙人骑凤
+    g.add(cone(0.1 * s, 0.2 * s, bm, seg(5), len * 0.16 - 0.18 * s, yAt(0.16) + 0.06 * s, 0));
+    g.add(sph(0.075 * s, bm, seg(6), len * 0.16 + 0.12 * s, yAt(0.16) + 0.18 * s, 0));
   }
   g.userData.marker = '垂脊走兽';
   return g;

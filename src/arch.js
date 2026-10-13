@@ -3,7 +3,7 @@
 // 目标不是精模，而是「剪影 + 比例 + 材质关系」正确，能当 AI 参考
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { M, shade, box, cyl, sph, planeXZ, cone, row, ring, seg, curvedRoof, ridgeOrnament, dougong, roofSurf, eaveCornice, hipRidge, stoneRail, caihua, plaque, plaqueTex, batch, mergeSimilar, bakeMerge, gableSlabs } from './geo.js';
+import { M, shade, box, cyl, sph, planeXZ, cone, row, ring, seg, curvedRoof, ridgeOrnament, dougong, roofSurf, eaveCornice, hipRidge, cnRoofY, stoneRail, caihua, plaque, plaqueTex, batch, mergeSimilar, bakeMerge, gableSlabs } from './geo.js';
 import { clamp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
 
@@ -291,8 +291,8 @@ function roofTrim(g, o = {}) {
   const ry = y0 + h * 0.76;                      // curvedRoof 的脊高就是 0.76h：正脊落在屋面上，不再悬空
   const rl = kind === 'juan' ? W + 0.3 : kind === 'jin' ? 0.6 : xr * 2 + 0.5;
   if (kind !== 'jin') {
-    g.add(box(rl, 0.2, 0.44, rMat, 0, ry + 0.1, 0));
-    g.add(box(rl * 0.92, 0.14, 0.3, rMat, 0, ry + 0.27, 0));
+    g.add(box(rl, 0.2, 0.44, rMat, 0, ry + 0.07, 0));
+    g.add(box(rl * 0.92, 0.14, 0.3, rMat, 0, ry + 0.24, 0));
     for (const sx of [1, -1]) {
       g.add(box(0.3, 0.66, 0.5, rMat, sx * (rl / 2 - 0.04), ry + 0.34, 0, 0.07));
       const t = box(0.16, 0.44, 0.16, rMat, sx * (rl / 2 - 0.3), ry + 0.64, 0);
@@ -318,11 +318,14 @@ function roofTrim(g, o = {}) {
     return;
   }
   const nb = o.beasts ?? 3, bs = o.beastScale ?? 1;
+  const xrS = Math.max(0.6, w * 0.5 * ridge);              // 与 curvedRoof 内部同一名高度场参数
   for (const sx of [1, -1]) for (const sz of [1, -1]) {
     const cx = sx * W / 2, cz = sz * D / 2;
     const dx = sx * xr - cx, dz = -cz;
-    const r = hipRidge({ len: Math.hypot(dx, dz) * 0.95, rise: Math.max(0.04, ry - eaveY), mat: rMat, beastMat: o.beastMat || rMat, beasts: nb, s: bs, w: 0.2 });
-    r.position.set(cx, eaveY, cz);
+    // 垂脊沿屋面高度场采样（旧版直梁跨凹曲屋面，脊身+走兽整条悬空）
+    const sample = (t) => cnRoofY(cx + (sx * xr - cx) * t, cz * (1 - t), { W, D, h, kind, xr: xrS, eaveUp, y0 });
+    const r = hipRidge({ len: Math.hypot(dx, dz) * 0.95, curve: sample, mat: rMat, beastMat: o.beastMat || rMat, beasts: nb, s: bs, w: 0.2 });
+    r.position.set(cx, sample(0), cz);
     r.rotation.y = Math.atan2(-dz, dx);
     g.add(r);
   }
