@@ -767,3 +767,81 @@ export function gableSlabs({ w = 8, d = 6, y = 3, rise = 2, th = 0.16, ov = 0.4,
   g.userData.top = y + rise + cap * 0.5;
   return g;
 }
+
+// ═══════════════ 图板级构件（第三轮加细）：风铃 / 鸱吻 / 美人靠 / 券脸 / 抱鼓 ═══════════════
+M.brick = (c = 0x9b958b, r = 0.9) => mk('brick', { color: c, roughness: r, metalness: 0 });
+M.plaster = (c = 0xe8e2d4, r = 0.85) => mk('plaster', { color: c, roughness: r, metalness: 0 });
+M.earth = (c = 0xa8865c, r = 0.95) => mk('dirt', { color: c, roughness: r, metalness: 0 });
+
+/** 檐角风铃：挂钩 + 钟体 + 风叶（攒尖亭 / 塔檐角件） */
+export function windBell(mat, s = 1, x = 0, y = 0, z = 0) {
+  const g = new THREE.Group();
+  g.add(cyl(0.012 * s, 0.012 * s, 0.16 * s, mat, 6, 0, -0.08 * s, 0));
+  g.add(cyl(0.05 * s, 0.075 * s, 0.12 * s, mat, 8, 0, -0.2 * s, 0));
+  const leaf = box(0.05 * s, 0.14 * s, 0.012 * s, mat, 0, -0.34 * s, 0);
+  leaf.rotation.x = 0.3; g.add(leaf);
+  g.position.set(x, y, z);
+  return g;
+}
+
+/** 鸱吻（正脊两端）：吻身 + 上卷尾 + 背鳍，比旧版单盒更有轮廓 */
+export function chiwen(mat, s = 1, sx = 1) {
+  const g = new THREE.Group();
+  g.add(box(0.3 * s, 0.62 * s, 0.46 * s, mat, 0, 0.31 * s, 0));
+  const t1 = box(0.26 * s, 0.5 * s, 0.2 * s, mat, -sx * 0.1 * s, 0.78 * s, 0);
+  t1.rotation.z = sx * 0.5; g.add(t1);
+  const t2 = box(0.22 * s, 0.34 * s, 0.16 * s, mat, -sx * 0.3 * s, 1.02 * s, 0);
+  t2.rotation.z = sx * 1.15; g.add(t2);
+  g.add(box(0.1 * s, 0.3 * s, 0.5 * s, mat, sx * 0.12 * s, 0.5 * s, 0, 0.02));   // 背鳍
+  for (let i = 0; i < 3; i++) g.add(box(0.06 * s, 0.1 * s, 0.54 * s, mat, sx * (0.1 - i * 0.02) * s, (0.66 + i * 0.12) * s, 0));
+  return g;
+}
+
+/** 美人靠坐凳栏杆：坐板 + 鹅颈靠背条（实例化）+ 腿 */
+export function benchRail({ len = 3, h = 0.85, y = 0, mat, axis = 'x' } = {}) {
+  const g = new THREE.Group();
+  const L = Math.max(0.6, len);
+  g.add(box(L, 0.07, 0.34, mat, 0, y + 0.42, 0));                       // 坐面
+  g.add(box(L, 0.06, 0.06, mat, 0, y + 0.06, 0));                        // 底枋
+  const n = clamp(Math.round(L / 0.16), 4, 60);
+  const slats = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1) - 0.5) * (L - 0.1);
+    slats.push({ p: [x, y + 0.62, 0.1], r: [0.5, 0, 0], s: [0.05, 0.42, 0.05] });
+  }
+  const b = batch(new THREE.BoxGeometry(1, 1, 1), mat, slats);
+  if (b) g.add(b);
+  g.add(box(L, 0.06, 0.08, mat, 0, y + h, 0.2));                        // 寻杖（靠背顶）
+  for (const sx of [-1, 1]) g.add(box(0.08, 0.44, 0.3, mat, sx * (L / 2 - 0.04), y + 0.22, 0));
+  if (axis === 'z') g.rotation.y = Math.PI / 2;
+  return g;
+}
+
+/** 砖券脸：半圆拱周径向实例化券石 + 拱心石 */
+export function archFace({ w = 3, h = 3, th = 0.5, mat, keyMat, z = 0, y = 0 } = {}) {
+  const g = new THREE.Group();
+  const R = Math.max(0.4, w / 2);
+  const n = clamp(Math.round(R * 6), 7, 25);
+  const items = [];
+  for (let i = 0; i <= n; i++) {
+    const a = Math.PI * (i / n);
+    items.push({ p: [Math.cos(a) * (R + 0.14), y + h - R + Math.sin(a) * (R + 0.14), 0], r: [0, 0, a - Math.PI / 2], s: [0.34, 0.3, th] });
+  }
+  const b = batch(new THREE.BoxGeometry(1, 1, 1), mat, items);
+  if (b) g.add(b);
+  if (keyMat) g.add(box(0.4, 0.44, th + 0.06, keyMat, 0, y + h + 0.12, 0));
+  g.position.z = z;
+  return g;
+}
+
+/** 抱鼓石：鼓 + 云头 + 基座（台阶/踏跺端头） */
+export function baoguShi(mat, s = 1, x = 0, y = 0, z = 0, ry = 0) {
+  const g = new THREE.Group();
+  g.add(box(0.5 * s, 0.3 * s, 0.9 * s, mat, 0, 0.15 * s, 0));
+  const dr = cyl(0.26 * s, 0.26 * s, 0.14 * s, mat, 12, 0, 0.62 * s, 0.18 * s);
+  dr.rotation.x = Math.PI / 2; g.add(dr);
+  g.add(box(0.14 * s, 0.4 * s, 0.7 * s, mat, 0, 0.42 * s, -0.06 * s));
+  const cl = sph(0.12 * s, mat, 10, 0, 0.9 * s, 0.18 * s); g.add(cl);
+  g.position.set(x, y, z); g.rotation.y = ry;
+  return g;
+}
