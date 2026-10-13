@@ -1206,11 +1206,11 @@ function buildDrumTower(p) {
   g.add(box(W + 0.5, 0.2, W + 0.5, stone2, 0, 0.1, 0));
   for (const rot of [0, Math.PI / 2]) {
     for (const sz of [1, -1]) {
-      const vv = new THREE.Mesh(new THREE.CylinderGeometry(ow / 2, ow / 2, 1.3, seg(12), 1, true, 0, Math.PI), M.brick(0x8f8a80, 0.92));   // 砖券衬（半筒伏进洞口）
+      const vv = new THREE.Mesh(new THREE.CylinderGeometry(ow / 2, ow / 2, 1.3, seg(12), 1, true, Math.PI / 2, Math.PI), M.brick(0x8f8a80, 0.92));   // 砖券衬（半筒伏进洞口）；thetaStart=π/2：rx/ry 旋转后伏口朝上成拱
       vv.material.side = 2;
       vv.rotation.x = Math.PI / 2;
-      vv.position.set(0, oh - ow / 2, sz * (W / 2 - 0.3));
-      if (rot) { vv.position.set(sz * (W / 2 - 0.3), oh - ow / 2, 0); vv.rotation.set(Math.PI / 2, Math.PI / 2, 0); }
+      vv.position.set(0, oh - ow / 2, sz * (W / 2 - 0.65));   // 筒长 1.3：筒脚齐台面、不外出
+      if (rot) { vv.position.set(sz * (W / 2 - 0.65), oh - ow / 2, 0); vv.rotation.set(Math.PI / 2, Math.PI / 2, 0, 'YXZ'); }   // YXZ：先翻成拱再转入 X 向洞；旧 XYZ 序把轴留在 Z，横拱砌错向成洞中竖板
       vv.castShadow = vv.receiveShadow = true;
       g.add(vv);
       const af = archFace({ w: ow, h: oh, th: 0.34, mat: stone2 });   // 券脸石
@@ -1251,8 +1251,10 @@ function buildDrumTower(p) {
     g.add(box(bw2 * 1.02, 0.3, 0.3, wood, 0, y0 + fh + 0.15, -bd2 / 2));
     g.add(box(0.3, 0.3, bd2 * 1.02, wood, bw2 / 2, y0 + fh + 0.15, 0));
     g.add(box(0.3, 0.3, bd2 * 1.02, wood, -bw2 / 2, y0 + fh + 0.15, 0));
+    for (const sz of [1, -1]) g.add(box(bw2 + 0.5, 0.2, 0.22, wood, 0, y0 + fh + 0.3, sz * bd2 / 2));       // 檐檩环：梁头→斗拱→檐口的连续硅步（旧版檐口与斗拱仅 1px 叠接，正视剪影断块）
+    for (const sx of [1, -1]) g.add(box(0.22, 0.2, bd2 + 0.5, wood, sx * bw2 / 2, y0 + fh + 0.3, 0));
     if (trim) for (const sz of [1, -1]) g.add(caihua(bw2, caihuaMats, { h: 0.24, y: y0 + fh - 0.2, z: sz * (bd2 / 2 + 0.17) }));
-    g.add(box(bw2 * 0.98, fh * 0.82, bd2 * 0.98, M.paint(0xd0c6b2, 0.78), 0, y0 + fh * 0.41, 0));
+    g.add(box(bw2 * 0.98, fh * 0.98, bd2 * 0.98, M.paint(0xd0c6b2, 0.78), 0, y0 + fh * 0.49, 0));   // 墙身砌至檐檩底（旧 0.82fh 与檐口留白带、屋顶看似脱开）
     const nOpen = clamp(Math.round(bw2 / 2.2), 2, 7);
     for (const sz of [1, -1]) for (let i = 0; i < nOpen; i++) {
       const x = (i / nOpen - 0.5) * bw2 * 0.86 + bw2 * 0.86 / (2 * nOpen);
@@ -1275,7 +1277,7 @@ function buildDrumTower(p) {
       g.add(box(0.24, 0.9, 0.24, M.wood(0x6b452a, 0.7), -W * 0.14, y0 + fh * 0.2, 0));
       g.add(box(0.24, 0.9, 0.24, M.wood(0x6b452a, 0.7), W * 0.14, y0 + fh * 0.2, 0));
     }
-    const ry = y0 + fh + 0.34;
+    const ry = y0 + fh + 0.5;   // 檐口坐斗拱顶（旧 +0.34 插在斗拱腰上，檐下留缝）
     g.add(curvedRoof({ w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, kind: 'xie', eaveUp: 0.34, mat: tile, seg: 18, y0: ry }));
     roofTrim(g, { w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, brim: 0.5, eaveUp: 0.34, y0: ry, kind: 'xie', tile, woodMat: wood, ridgeMat: M.paint(0x31363d, 0.6), trim, beasts: lv === levels - 1 ? 4 : 2 });
   }
