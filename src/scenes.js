@@ -9,6 +9,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import { SCENES2 } from './scenes2.js';
+import { SCENES3 } from './scenes3.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 function lookQuat(from, to) {
@@ -20,6 +21,8 @@ export const SCENES = [];
 
 // 第二组（8 个有故事的调度）追加到同一个列表里，顶栏「示例场景」统一显示
 SCENES.push(...SCENES2);
+// 第三组：《布局图鉴》12 布局示例场景（中式 8 + 现代 4），全部由素材库模型调用搭建
+SCENES.push(...SCENES3);
 
 export const SCENE_BY_ID = Object.fromEntries(SCENES.map((s) => [s.id, s]));
 
