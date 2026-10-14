@@ -2799,7 +2799,7 @@ function buildCulDeSac(p) {                            // 尽端路：R≈11 圆
   for (const s of [-1, 1]) {
     g.add(box(CURB_W, 0.3, zt + d / 2, mCurb(), s * a0x, PT, (-d / 2 + zt) / 2));
     const cx0 = a0x - rf, dz0 = Math.sqrt(Math.max(0.01, (Rc - rf) ** 2 - cx0 ** 2));
-    const C = [s * cx0, zc - dz0];
+    const C = [s * cx0, zc - dz0];                        // 颈-环凹弧过渡圆心(内切)
     const th1 = s * Math.PI / 2, th2 = Math.atan2(C[0], C[1] - zc);
     const fil = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, 0.3, 10, 1, true, Math.min(th1, th2), Math.abs(th2 - th1)), mCurb());
     fil.position.set(C[0], PT, C[1]);
