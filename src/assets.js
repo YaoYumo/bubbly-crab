@@ -2536,6 +2536,14 @@ const rdCurbM = () => M.concrete(0xb8b4aa, 0.9);
 const rdWalkM = () => M.concrete(0xc8c3b7, 0.9);
 function rdCurbZ(len, x, z = 0) { return box(0.3, 0.2, len, rdCurbM(), x, RD_T + 0.06, z); }   // 沿 z 的路缘石
 function rdCurbX(len, z, x = 0) { return box(len, 0.2, 0.3, rdCurbM(), x, RD_T + 0.06, z); }
+const rdSwW = (w) => Math.min(1.5, Math.max(0.9, w * 0.16));       // 人行道宽
+function rdSidewalkZ(sw, d, x) {                                    // 沿 z 的宽带人行道(抬升+横缝)
+  const g = new THREE.Group();
+  g.add(box(sw, 0.24, d, rdWalkM(), x, RD_T + 0.04, 0));
+  const n = Math.max(2, Math.round(d / 2));
+  for (let i = 1; i < n; i++) g.add(box(sw * 0.92, 0.02, 0.05, M.concrete(0x8f8a80, 0.9), x, RD_T + 0.17, -d / 2 + i * (d / n)));
+  return g;
+}
 function rdFlat(pts, mat, y, rotY = 0) {                 // 平面多边形标线（箭头/三角）
   const sh = new THREE.Shape(pts.map((q) => new THREE.Vector2(q[0], q[1])));
   const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat);
@@ -2571,25 +2579,27 @@ function rdPad(pw, pd, x, z, isx, isz) {                 // 路口人行道角�
   return g;
 }
 
-export function buildTwoWayRoad(p) {                     // 图鉴1：沥青+双黄+白边+两侧路缘
+export function buildTwoWayRoad(p) {                     // 图鉴1：沥青+双黄+白边+两侧宽人行道
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
+  const w = p.width, d = p.length, sw = rdSwW(w);
   g.add(rdSlab(w, d, 0x3a3d42));
   for (const s of [-1, 1]) {
-    g.add(rdCurbZ(d, s * (w / 2 - 0.15)));
-    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - 0.52), rdY, 0));
+    g.add(rdSidewalkZ(sw, d, s * (w / 2 - sw / 2)));
+    g.add(rdCurbZ(d, s * (w / 2 - sw - 0.15)));
+    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - sw - 0.5), rdY, 0));
     g.add(box(0.09, 0.02, d, rdYellow(), s * 0.11, rdY, 0));
   }
   shade(g); return g;
 }
 
-export function buildOneWayRoad(p) {                     // 图鉴2：虚线分道+直行箭头+白边+路缘
+export function buildOneWayRoad(p) {                     // 图鉴2：虚线分道+直行箭头+白边+两侧宽人行道
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
+  const w = p.width, d = p.length, sw = rdSwW(w);
   g.add(rdSlab(w, d, 0x3a3d42));
   for (const s of [-1, 1]) {
-    g.add(rdCurbZ(d, s * (w / 2 - 0.15)));
-    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - 0.52), rdY, 0));
+    g.add(rdSidewalkZ(sw, d, s * (w / 2 - sw / 2)));
+    g.add(rdCurbZ(d, s * (w / 2 - sw - 0.15)));
+    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - sw - 0.5), rdY, 0));
   }
   const n = Math.max(3, Math.floor(d / 2.6));
   for (let i = 0; i < n; i++) g.add(box(0.12, 0.02, 1.4, rdWhite(), 0, rdY, -d / 2 + (i + 0.5) * (d / n)));
@@ -2616,11 +2626,11 @@ export function buildGardenPath(p) {                     // 图鉴4：S 形人�
   g.add(rdSlab(w, d, 0xc7ad83));
   const brickMat = M.paint(p.brickColor, 0.85);
   const stoneMat = M.concrete(0x9a958c, 0.9);
-  const pw = Math.min(1.4, w * 0.42), A = w * 0.2, step = 0.16;
-  const n = Math.floor(d / step), m = Math.max(2, Math.floor(pw / 2 / 0.14));
+  const pw = Math.min(1.4, w * 0.42), A = 0, step = 0.16;   // 按甲方要求拉直（原 S 形取消）
+  const n = Math.floor((d - 0.24) / step), m = Math.max(2, Math.floor(pw / 2 / 0.14));   // 端部留 0.12 防出 footprint
   const cx = (z) => A * Math.sin((z / d + 0.5) * Math.PI * 2) * 0.9;
   for (let i = 0; i <= n; i++) {
-    const z = -d / 2 + i * step, x0 = cx(z);
+    const z = -d / 2 + 0.12 + i * step, x0 = cx(z);
     const ang = Math.atan2(A * Math.cos((z / d + 0.5) * Math.PI * 2) * 0.9 * (Math.PI * 2 / d), 1);
     for (let k = -m; k <= m; k++) {
       const off = k * 0.13, bx = x0 + Math.cos(ang) * off, bz = z - Math.sin(ang) * off;
