@@ -520,8 +520,9 @@ function scenePicker() {
     const tr = sc.terrain || {};
     const ground = tr.enabled !== false ? `⛰ 地形 ${tr.size || 160}m` : '▦ 平地';
     const an = (ATMOS && ATMOS[sc.atmos] && (ATMOS[sc.atmos].name || ATMOS[sc.atmos].label)) || sc.atmos || '—';
-    const mv = sc.shots ? sc.shots.filter((x) => x.mv).length : 0;
-    return `${sc.objs.length} 模型 · ${sc.shots.length} 机位（${mv} 个带运镜）· ${ground} · 光影 ${an}`;
+    const shots = sc.shots || [];
+    const mv = shots.filter((x) => x.mv).length;
+    return `${sc.objs.length} 模型 · ${shots.length} 机位（${mv} 个带运镜）· ${ground} · 光影 ${an}`;
   };
   function render() {
     clear(pop);
@@ -575,7 +576,13 @@ function scenePicker() {
     pop.classList.add('on');
     setTimeout(() => document.addEventListener('pointerdown', outside, true), 0);
   });
-  btn.appendChild(pop);
+  // 弹层挂到 body 固定定位：入口在「场景」菜单里，按钮本身不在 DOM，绝对定位会失效
+  document.body.appendChild(pop);
+  pop.style.position = 'fixed';
+  pop.style.top = '88px';
+  pop.style.right = '12px';
+  pop.style.left = 'auto';
+  pop.style.zIndex = '80';
   return btn;
 }
 function buildShotBar() {
