@@ -443,7 +443,8 @@ function buildLog(p) {
     g.add(cap);
   }
   if (p.stump) {
-    const st = cyl(p.r * 1.1, p.r * 1.25, p.r * 3, bark, 12, -p.length * 0.4, p.r * 1.5, p.r * 2.4);
+    // 树桩与倒木同轴（同一棵树锯下），落在倒木延长线上，二者各自落地
+    const st = cyl(p.r * 1.1, p.r * 1.25, p.r * 3, bark, 12, -p.length / 2 - p.r * 1.6, p.r * 1.5, 0);
     g.add(st);
   }
   return shade(g);

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>图板重建 · 3D 工作台（第四轮+第十六轮）</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #dfe6ee; font: 14px/1.5 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #panel { position: fixed; left: 14px; top: 14px; width: 252px; max-height: calc(100% - 96px); overflow: auto;
+           background: rgba(20,24,30,.86); color: #e8ecf2; border-radius: 14px; padding: 12px; backdrop-filter: blur(6px);
+           box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+  #panel h1 { font-size: 15px; margin: 2px 4px 8px; color: #f4d9a0; letter-spacing: .5px; }
+  #list button { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 7px 9px; border: 0; cursor: pointer;
+                 border-radius: 9px; background: rgba(255,255,255,.08); color: #e8ecf2; font: inherit; }
+  #list button:hover { background: rgba(244,217,160,.22); }
+  #list button.ov { background: rgba(120,170,255,.18); color: #cfe1ff; }
+  #list button.ed { background: rgba(255,190,120,.22); color: #ffe2b8; }
+  #list .no { display: inline-block; min-width: 22px; margin-right: 6px; color: #f4d9a0; font-weight: 700; }
+  #opts { display: flex; gap: 10px; align-items: center; margin: 8px 4px 2px; color: #c8d0da; font-size: 13px; flex-wrap: wrap; }
+  #opts select { background: #2a303a; color: #e8ecf2; border: 0; border-radius: 6px; padding: 3px 6px; }
+  #info { position: fixed; left: 14px; bottom: 12px; max-width: 70%; background: rgba(20,24,30,.78); color: #dfe6ee;
+          border-radius: 10px; padding: 7px 12px; backdrop-filter: blur(6px); }
+
+  /* ---- 部件编辑面板 ---- */
+  #epanel { position: fixed; right: 14px; top: 14px; width: 320px; max-height: calc(100% - 28px); display: flex; flex-direction: column;
+            background: rgba(20,24,30,.9); color: #e8ecf2; border-radius: 14px; padding: 12px; backdrop-filter: blur(6px);
+            box-shadow: 0 8px 28px rgba(0,0,0,.32); }
+  #epanel[hidden] { display: none; }
+  #epanel .eh { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #epanel .eh b { flex: 1; color: #f4d9a0; font-size: 14px; letter-spacing: .3px; }
+  #epanel .eh button { border: 0; background: rgba(255,255,255,.1); color: #e8ecf2; border-radius: 7px; padding: 2px 9px; cursor: pointer; }
+  #efilter { width: 100%; box-sizing: border-box; margin-bottom: 6px; background: #2a303a; color: #e8ecf2; border: 0; border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 13px; }
+  #elist { overflow: auto; flex: 1; min-height: 90px; max-height: 34vh; border: 1px solid rgba(255,255,255,.08); border-radius: 9px; padding: 4px; background: rgba(0,0,0,.18); }
+  #elist .prow { display: flex; align-items: center; gap: 4px; }
+  #elist .prow button.pl { flex: 1; text-align: left; border: 0; cursor: pointer; background: transparent; color: #d6dce4; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace;
+                           padding: 3px 6px; border-radius: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #elist .prow button.pl:hover { background: rgba(244,217,160,.16); }
+  #elist .prow.sel button.pl { background: rgba(90,140,255,.3); color: #fff; }
+  #elist .prow.del button.pl { text-decoration: line-through; opacity: .45; }
+  #elist .prow.hid button.pl { font-style: italic; opacity: .55; }
+  #elist .prow button.pv { border: 0; cursor: pointer; background: rgba(255,255,255,.08); color: #c8d0da; border-radius: 6px; padding: 2px 6px; font-size: 12px; }
+  #elist .prow button.pv:hover { background: rgba(244,217,160,.25); }
+  #esel { border-top: 1px solid rgba(255,255,255,.1); margin-top: 8px; padding-top: 8px; }
+  #esel[hidden] { display: none; }
+  #eslabel { font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color: #ffe2b8; margin-bottom: 6px; word-break: break-all; }
+  .egiz { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .egiz button.g { border: 0; cursor: pointer; background: rgba(255,255,255,.1); color: #dfe6ee; border-radius: 7px; padding: 4px 10px; font: inherit; font-size: 12.5px; }
+  .egiz button.g.on { background: rgba(90,140,255,.45); color: #fff; }
+  .egiz label { font-size: 12.5px; color: #c8d0da; display: flex; align-items: center; gap: 4px; }
+  .egiz select { background: #2a303a; color: #e8ecf2; border: 0; border-radius: 6px; padding: 3px 6px; font: inherit; font-size: 12.5px; }
+  #enum { width: 100%; border-collapse: collapse; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; }
+  #enum td { padding: 2px 3px; color: #aab4c0; }
+  #enum td:first-child { width: 34px; color: #f4d9a0; }
+  #enum input { width: 100%; box-sizing: border-box; background: #232936; color: #eef2f7; border: 1px solid rgba(255,255,255,.1);
+                border-radius: 6px; padding: 3px 6px; font: inherit; }
+  #enum input:disabled { opacity: .4; }
+  .eacts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .eacts button, .efoot button { border: 0; cursor: pointer; background: rgba(255,255,255,.12); color: #e8ecf2; border-radius: 8px; padding: 5px 10px; font: inherit; font-size: 12.5px; }
+  .eacts button:hover, .efoot button:hover { background: rgba(244,217,160,.28); }
+  .eacts button.warn:hover { background: rgba(255,120,110,.4); }
+  #epanel button:disabled { opacity: .38; cursor: default; }
+  #epanel button:disabled:hover { background: rgba(255,255,255,.12); }
+  .efoot { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.1); flex-wrap: wrap; }
+  .efoot button.primary { background: rgba(90,200,140,.35); }
+  #ebox { position: fixed; right: 14px; bottom: 14px; width: min(560px, calc(100% - 360px)); background: rgba(16,20,26,.95); color: #e8ecf2;
+          border-radius: 14px; padding: 12px; box-shadow: 0 10px 34px rgba(0,0,0,.45); z-index: 5; }
+  #ebox[hidden] { display: none; }
+  #ebox h2 { font-size: 13.5px; margin: 0 0 6px; color: #f4d9a0; }
+  #etext { width: 100%; box-sizing: border-box; height: 240px; background: #10141b; color: #d8e2ee; border: 1px solid rgba(255,255,255,.12);
+           border-radius: 8px; padding: 8px; font: 12px/1.55 ui-monospace, Menlo, Consolas, monospace; white-space: pre; }
+  #ebox .eacts { margin-top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="panel">
+  <h1>图板重建 · 第四轮+第十六轮单体</h1>
+  <div id="list"></div>
+  <div id="opts">
+    <label><input type="checkbox" id="spin" /> 转台</label>
+    <label>精度
+      <select id="lvl">
+        <option value="lite">lite</option>
+        <option value="std">std</option>
+        <option value="fine" selected>fine</option>
+      </select>
+    </label>
+    <label title="勾选后点击左侧图板进入部件编辑：可点选构件、gizmo/数值调整、删除隐藏、导出修补单"><input type="checkbox" id="edit" /> ✎ 部件编辑</label>
+  </div>
+</div>
+
+<div id="epanel" hidden>
+  <div class="eh"><b id="etitle">部件编辑</b><button id="eclose" title="退出编辑（保留本机改动记录）">✕</button></div>
+  <input id="efilter" placeholder="筛选部件：如 tile / Cylinder / #217" />
+  <div id="elist"></div>
+  <div id="esel" hidden>
+    <div id="eslabel"></div>
+    <div class="egiz" id="egizrow">
+      <button class="g on" data-giz="translate">移动 W</button>
+      <button class="g" data-giz="rotate">旋转 E</button>
+      <button class="g" data-giz="scale">缩放 R</button>
+      <button class="g" id="espace" title="切换 gizmo 坐标空间">世界</button>
+    </div>
+    <div class="egiz">
+      <label>吸附 <select id="esnap"></select></label>
+      <label title="选中部件后相机自动飞到该部件近景（关掉后可用 F 键/聚焦按钮手动飞）"><input type="checkbox" id="eautofocus" checked /> 选中自动聚焦</label>
+    </div>
+    <table id="enum">
+      <tr><td>位置</td><td><input id="ex0" type="number" step="0.01"></td><td><input id="ex1" type="number" step="0.01"></td><td><input id="ex2" type="number" step="0.01"></td></tr>
+      <tr><td>旋转°</td><td><input id="er0" type="number" step="1"></td><td><input id="er1" type="number" step="1"></td><td><input id="er2" type="number" step="1"></td></tr>
+      <tr><td>缩放</td><td><input id="es0" type="number" step="0.05"></td><td><input id="es1" type="number" step="0.05"></td><td><input id="es2" type="number" step="0.05"></td></tr>
+    </table>
+    <div class="eacts">
+      <button id="efocus" title="相机聚焦到选中部件（F）">◎ 聚焦 F</button>
+      <button id="edup" title="复制选中部件到旁边（D），克隆体可继续调整">复制 D</button>
+      <button id="ehide">隐藏 H</button>
+      <button id="edel" class="warn">删除 Del</button>
+      <button id="ereset1">复位该件</button>
+    </div>
+  </div>
+  <div class="efoot">
+    <button id="eundo">撤销</button>
+    <button id="eredo">重做</button>
+    <button id="eresetall" class="warn">图板复原</button>
+    <button id="eexport" class="primary">导出修补单</button>
+    <button id="eclear" title="清除本机保存的该图板改动">清空存档</button>
+  </div>
+</div>
+
+<div id="ebox" hidden>
+  <h2>修补单（发给乙方按此改源码，或直接留档）</h2>
+  <textarea id="etext" readonly spellcheck="false"></textarea>
+  <div class="eacts">
+    <button id="ecopy">复制文本</button>
+    <button id="edl">下载 JSON</button>
+    <button id="eboxclose">关闭</button>
+  </div>
+</div>
+
+<div id="info"></div>
+<script type="module" src="../src/round4.js?v=20261013d"></script>
+</body>
+</html>
