@@ -1036,6 +1036,13 @@ const SCENE_CATS = [
   { id: 'plants', label: 'Plants', libIds: ['vegetation'] },
   { id: 'people', label: 'People', libIds: ['char'] },
 ];
+// 补全分组标签：以上策划类只盖到 92/203 项，bld/cn/cls/in/nat/war/sci/fx 等
+// 分组此前没有任何筛选 chip（「有些分组没标签」）。逐组自动补一个，保证
+// 每个 LIB 分组都有标签；标签数动态计算，与库增删自动同步。
+{
+  const covered = new Set(SCENE_CATS.flatMap((c) => c.libIds));
+  for (const g of LIB) if (!covered.has(g.id)) SCENE_CATS.push({ id: g.id, label: g.cat || g.id, libIds: [g.id] });
+}
 
 export function buildSceneAssets(app, host) {
   const total = LIB.reduce((a, g) => a + g.items.length, 0);
