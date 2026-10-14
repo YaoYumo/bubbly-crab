@@ -65,7 +65,7 @@ export const TOWN_THEMES = {
   chinese: {
     label: '中式古城', en: 'Chinese Heritage',
     houses: ['courtyard', 'hall', 'hall2'],
-    commerce: ['hall', 'hall2', 'pavilion'],
+    commerce: ['streetshop', 'hall', 'hall2', 'pavilion'],
     civic: ['drumtower', 'paifang', 'gate', 'pagoda'],
     trees: ['sugar_maple', 'live_oak', 'quaking_aspen'],
     ground: ['big_bluestem'],
@@ -85,7 +85,7 @@ export const TOWN_THEMES = {
   fusion: {
     label: '古今混搭', en: 'Old meets New',
     houses: ['courtyard', 'craftsman', 'hall', 'brownstone', 'hall2', 'cape_cod'],
-    commerce: ['adobe_strip_mall', 'hall', 'googie_diner', 'hall2'],
+    commerce: ['adobe_strip_mall', 'hall', 'streetshop', 'googie_diner', 'hall2'],
     civic: ['drumtower', 'school', 'paifang', 'post_office'],
     trees: ['sugar_maple', 'live_oak', 'sabal_palm'],
     ground: [],

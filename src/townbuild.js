@@ -320,6 +320,8 @@ function occupancy(S, cell = 6) {
 
 /**
  * 沿路切地块：25–35m 面宽、6–8m 退让，朝向 = 道路法向（房子正面朝路）。
+ * 流程：先有路网 → 用路网划分街坊区域功能（partitionBlocks：街市带/城心核心/居住坊）
+ * → 地块继承所属街坊功能 → 按功能概率填充业态（commercial/residential），公建后置落位。
  * @param {object} s 归一化 schema
  * @param {Array} roads layoutRoads 的输出
  * @param {(x:number,z:number)=>number} heightAt 采样地形高度
@@ -341,6 +343,8 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
     for (const { info, half: hw } of corridors) c = Math.min(c, distToPoly(info, x, z) - hw);
     return c;
   };
+  // ① 路网先划分街坊：每个地块查自己所属街坊的区域功能
+  const { at: funcAt } = partitionBlocks(S, corridors);
 
   for (const road of roads) {
     const info = polyInfo(road.pts);
@@ -375,11 +379,15 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
         occ.take(cx, cz, Math.max(fw, depth) * 0.62);
         const distC = Math.hypot(cx, cz) / (half || 1);
         const cr = s.zoning.commercialRatio;
-        let kind = 'residential';
-        // 中式街市（前店后宅）：贴主街（宽 ≥9m 的大街/中轴大道）成市概率加成，巷内退居为宅
-        const streetBonus = cr > 0 && deepLot && w >= 9 ? 0.25 : 0;
-        const bias = clamp(cr * (1.8 - distC * 1.2) + streetBonus, 0, 0.95);   // 越靠中心越可能商业；临主街加成
-        if (rng() < bias) kind = 'commercial';
+        // ② 按街坊功能填业态：街市带前店后宅（高概率成铺）、城心核心混合、坊内居住
+        const func = funcAt(cx, cz);
+        let chance = 0;
+        if (cr > 0) {
+          chance = func === 'street' ? clamp(cr * 2 + 0.35, 0, 0.9)
+            : func === 'core' ? clamp(cr * (1.8 - distC * 1.2), 0, 0.9)
+              : clamp(cr * 0.25, 0, 0.25);  // 居住坊：巷内偶见小铺；纯住宅配比时恒 0
+        }
+        const kind = rng() < chance ? 'commercial' : 'residential';
         parcels.push({
           x: cx, z: cz, fw, depth, slope,
           w: fw, d: depth,
@@ -398,13 +406,74 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
   const cn = s.theme === 'chinese';
   const civics = Math.min(3, Math.max(1, Math.round(s.mapSize / (cn ? 160 : 220))));
   const axialScore = (p) => p.nearCenter + (s.roadTopology === 'axis' ? (Math.abs(p.x) / half) * 0.6 : 0);
-  const sorted = parcels.filter((p) => p.kind === 'residential').sort((a, b) => axialScore(a) - axialScore(b) || b.w - a.w);
+  // 候选 = 全部地块（街市带的临街商业地块也让位给礼制地标——鼓楼必须能坐十字街心）
+  const sorted = [...parcels].sort((a, b) => axialScore(a) - axialScore(b) || b.w - a.w);
   const CN_CIVIC_SEQ = ['drumtower', 'paifang', 'pagoda'];
   for (let i = 0; i < civics && i < sorted.length; i++) {
     sorted[i].kind = 'civic';
     if (cn) sorted[i].forceType = CN_CIVIC_SEQ[i];
   }
   return parcels;
+}
+
+// ============================== 街坊分区（路网 → 区域功能） ==============================
+
+/**
+ * 用路网把地图切成「街坊」：道路走廊 + 地图裁剪边（|x|,|z| ≤ half−M）作屏障，
+ * 栅格淹没填充得到被道路真实围合的连通块。线段端头不会漏连——所有道路都设计为
+ * 跨满裁剪区（终点落在边界或他路上）。
+ * @returns {{comps:Array<{cx:number,cz:number,cells:number,mainW:number,func:string}>, at:(x:number,z:number)=>string}}
+ */
+export function partitionBlocks(S, corridors, cell = 4) {
+  const M = Math.max(10, S * 0.05);
+  const lo = -S / 2 + M, hi = S / 2 - M;
+  const n = Math.max(2, Math.floor((hi - lo) / cell));
+  const blocked = new Uint8Array(n * n);
+  const nearW = new Uint8Array(n * n);            // 自由格 3m 内最大路宽 → 「临主街」判据
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const x = lo + (i + 0.5) * cell, z = lo + (j + 0.5) * cell;
+    let near = 0, hit = false;
+    for (const { info, half: hw } of corridors) {
+      const d = distToPoly(info, x, z);
+      if (d < hw + 1.0) { hit = true; break; }
+      if (d < hw + 3.0) near = Math.max(near, Math.round(hw * 2));
+    }
+    if (hit) blocked[j * n + i] = 1; else nearW[j * n + i] = near;
+  }
+  const comp = new Int32Array(n * n).fill(-1);
+  const comps = [];
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const k0 = j * n + i;
+    if (blocked[k0] || comp[k0] >= 0) continue;
+    const id = comps.length;
+    comp[k0] = id;
+    const q = [k0];
+    let sx = 0, sz = 0, cnt = 0, mw = 0;
+    while (q.length) {
+      const k = q.pop(), ki = k % n, kj = (k / n) | 0;
+      sx += lo + (ki + 0.5) * cell; sz += lo + (kj + 0.5) * cell; cnt++;
+      mw = Math.max(mw, nearW[k]);
+      for (const [di, dj] of DIRS) {
+        const ni = ki + di, nj = kj + dj;
+        if (ni < 0 || nj < 0 || ni >= n || nj >= n) continue;
+        const nk = nj * n + ni;
+        if (blocked[nk] || comp[nk] >= 0) continue;
+        comp[nk] = id; q.push(nk);
+      }
+    }
+    const c = { cx: sx / cnt, cz: sz / cnt, cells: cnt, mainW: mw, func: 'residential' };
+    // 区域功能：临主街（≥9m 大街/中轴大道）→ 街市带；城心非临街 → 城心核心；其余 → 居住坊
+    c.func = mw >= 9 ? 'street' : (Math.hypot(c.cx, c.cz) / (S / 2) <= 0.33 ? 'core' : 'residential');
+    comps.push(c);
+  }
+  const at = (x, z) => {
+    const i = Math.min(n - 1, Math.max(0, Math.floor((x - lo) / cell)));
+    const j = Math.min(n - 1, Math.max(0, Math.floor((z - lo) / cell)));
+    const id = comp[j * n + i];
+    return id >= 0 ? comps[id].func : 'residential';
+  };
+  return { comps, at };
 }
 
 // ============================== 泊松圆盘（#81） ==============================
