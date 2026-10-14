@@ -330,7 +330,7 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
   const rng = s.rng;
   const occ = occupancy(S, 6);
   const parcels = [];
-  const step = 38 - s.density * 14;              // 25–35m（密集→更密）
+  const step = 30 - s.density * 13;              // 17–30m（密度↑ → 街坊更满）
   const maxSlope = 0.2 + (1 - s.density) * 0.08; // 陡坡不放房子
   // 所有道路的走廊：地块不仅要退让自己那条路，也不能压在横穿的另一条路上
   const corridors = roads.map((r) => ({ info: polyInfo(r.pts), half: (r.width || 7) / 2 }));
@@ -357,16 +357,16 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
           Math.abs(heightAt(cx, cz + 5) - heightAt(cx, cz - 5)) / 10,
         );
         if (slope > maxSlope) continue;
-        const fw = step * (0.62 + rng() * 0.2);      // 面宽
-        // 四个角都不能伸进任何路面（含路口处的横向道路）
+        const fw = step * (0.66 + rng() * 0.22);      // 面宽（填满街坊，减少空地）
+        // 四个角都不能伸进任何路面（含路口处的横向道路）；阈值含模型外扩余量
         const lx = p.tx, lz = p.tz;                  // 沿路方向
         const hw2 = fw / 2, hd2 = depth / 2;
-        let onRoad = clearance(cx, cz) < 4.5;
+        let onRoad = clearance(cx, cz) < 6;
         for (const [su, sv] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
           if (onRoad) break;
           const qx = cx + lx * su * hw2 + nx * sv * hd2;
           const qz = cz + lz * su * hw2 + nz * sv * hd2;
-          if (clearance(qx, qz) < 1.2) onRoad = true;
+          if (clearance(qx, qz) < 2.8) onRoad = true;
         }
         if (onRoad) continue;
         if (!occ.free(cx, cz, Math.max(fw, depth) * 0.62)) continue;
@@ -454,11 +454,16 @@ export function poissonDisc(rng, extent, minDist, maxPts, accept = () => true) {
  */
 export function scatterTrees(s, roads, parcels, heightAt = () => 0) {
   if (s.vegetationDensity <= 0) return [];
+  // 独立随机流：树点只由 seed + 几何决定，与布局消费 rng 的顺序解耦——
+  // 同一 seed 下不同植被密度拿到同一组候选点，抽稀后严格单调（密度↑→树↑）
+  let st = (((s.seed || 1) * 1664525) + 1013904223) >>> 0;
+  const rr = () => { st = (Math.imul(st, 1664525) + 1013904223) >>> 0; return st / 4294967296; };
   const infos = roads.map((r) => ({ info: polyInfo(r.pts), w: r.width || 7 }));
-  const minDist = 20 - s.vegetationDensity * 12;                 // 8–20m
-  const area = s.mapSize * s.mapSize;
-  const maxPts = clamp(Math.round((area / (minDist * minDist * 2.2)) * s.vegetationDensity), 0, 90);
-  return poissonDisc(s.rng, s.mapSize, minDist, maxPts, (x, z) => {
+  // 以茂密档统一采样再按密度抽稀：泊松在不同 minDist 下行为发散，
+  // 直接采样会出现「植被更密反而树更少」；抽稀用同一条 rng 序列，严格单调。
+  const minDist = 9.6;
+  const maxPts = 90;
+  const pts = poissonDisc(rr, s.mapSize, minDist, maxPts, (x, z) => {
     for (const { info, w } of infos) if (distToPoly(info, x, z) < w / 2 + 3.5) return false;
     for (const p of parcels) if (Math.hypot(p.x - x, p.z - z) < Math.max(p.w, p.d) * 0.8 + 3) return false;
     const sl = Math.max(
@@ -467,9 +472,33 @@ export function scatterTrees(s, roads, parcels, heightAt = () => 0) {
     );
     return sl < 0.55;
   });
+  const k = clamp(s.vegetationDensity / 0.85, 0, 1);
+  return k >= 1 ? pts : pts.filter(() => rr() < k);
 }
 
 // ============================== 资产 key ==============================
+
+/**
+ * 折线按 ~12m 加密并逐点采样地形高度：长直线道路不再两端悬空，
+ * 中段与双线性地形网格的偏差收敛到可忽略（修「路面与地形穿插」）。
+ * @param {number[][]} pts [x,z] 折线
+ * @param {(x:number,z:number)=>number} heightAt
+ */
+export function densifyHeight(pts, heightAt, step = 12) {
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i], b = pts[i + 1];
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const n = Math.max(1, Math.ceil(d / step));
+    for (let k = 0; k < n; k++) {
+      const t = k / n, x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t;
+      out.push([x, heightAt(x, z), z]);
+    }
+  }
+  const e = pts[pts.length - 1];
+  out.push([e[0], heightAt(e[0], e[1]), e[1]]);
+  return out;
+}
 
 const KEY_BY_TYPE = new Map();
 for (const g of LIB) for (const it of g.items) KEY_BY_TYPE.set(it.type, `${g.id}:${it.type}:${it.name}`);
@@ -488,7 +517,11 @@ function sizedParams(type, w, d, rng) {
   };
   jitter('width', w); jitter('depth', d);
   if (item?.params?.some((x) => x.k === 'floors')) {
-    p.floors = clamp(Math.round(1 + rng() * 1.6), 1, item.params.find((x) => x.k === 'floors').max);
+    const fd = item.params.find((x) => x.k === 'floors');
+    // 玻璃幕墙塔楼：5–24 层随机（天际线高低错落）；其余在模型层数下限内给 1–3 层变化
+    p.floors = type === 'tower'
+      ? clamp(5 + Math.round(rng() * 19), 5, fd.max)
+      : clamp(Math.round(1 + rng() * 1.6), fd.min ?? 1, fd.max);
   }
   return p;
 }
@@ -571,7 +604,7 @@ function buildTown(app, s, { onProgress } = {}) {
   // ---- 4. 道路（roadBrush.restore 会逐条建 + 自动检测路口） ----
   app.roadBrush.restore(
     roads.map((r) => ({
-      points: r.pts.map(([x, z]) => [x, tr.heightAt(x, z), z]),
+      points: densifyHeight(r.pts, (x, z) => tr.heightAt(x, z), 12),
       roadType: r.roadType, width: r.width, fillet: false,
       name: r.name, visible: true, locked: false,
     })),
@@ -594,7 +627,7 @@ function buildTown(app, s, { onProgress } = {}) {
       const ax = p.x - (tx * padL) / 2, az = p.z - (tz * padL) / 2;
       const bx = p.x + (tx * padL) / 2, bz = p.z + (tz * padL) / 2;
       driveList.push({
-        points: [[ax, hy(ax, az), az], [bx, hy(bx, bz), bz]],
+        points: densifyHeight([[ax, az], [bx, bz]], hy, 8),
         roadType: 'concrete', width: padW, fillet: false,
         name: '混凝土基座', visible: true, locked: false, noJunct: true,
       });
@@ -602,7 +635,7 @@ function buildTown(app, s, { onProgress } = {}) {
     // 小径：宅前脸 → 道路中心线，端点落在中心线上即与道路 T 形接通（自动生成接缝面片）
     const doorX = p.x - dx * (p.depth * 0.47), doorZ = p.z - dz * (p.depth * 0.47);
     driveList.push({
-      points: [[doorX, hy(doorX, doorZ), doorZ], [fx, hy(fx, fz), fz]],
+      points: densifyHeight([[doorX, doorZ], [fx, fz]], hy, 6),
       roadType: pathType, width: 2.6, fillet: false,
       name: pathName, visible: true, locked: false,
     });
@@ -612,11 +645,17 @@ function buildTown(app, s, { onProgress } = {}) {
 
   // ---- 5. 建筑 ----
   const V = (x, z) => new THREE.Vector3(x, 0, z);
-  let houses = 0;
+  // 城市识别：现代/老城 + 高密度 → 中心区商业地块长出玻璃幕墙塔楼（高度 5–24 层随机）
+  const cityLike = (s.theme === 'modern' || s.theme === 'urban') && s.density >= 0.6;
+  let houses = 0, towers = 0;
   for (const p of parcels) {
-    const type = p.kind === 'commercial' ? pick(s.rng, theme.commerce)
+    let type = p.kind === 'commercial' ? pick(s.rng, theme.commerce)
       : p.kind === 'civic' ? pick(s.rng, theme.civic)
         : pick(s.rng, theme.houses);
+    if (cityLike && p.kind === 'commercial' && (p.nearCenter ?? 1) < 0.5 && s.rng() < 0.55) {
+      type = 'tower';
+      towers++;
+    }
     const key = KEY_BY_TYPE.get(type);
     if (!key) continue;
     const want = p.kind === 'residential' ? p.w * 0.72 : p.w * 0.86;
@@ -671,5 +710,5 @@ function buildTown(app, s, { onProgress } = {}) {
 
   const ms = Math.round(performance.now() - t0);
   const { rng, ...schemaOut } = s;
-  return { roads: roads.length, driveways: driveList.length, parcels: parcels.length, houses, trees, ms, warnings, schema: schemaOut };
+  return { roads: roads.length, driveways: driveList.length, parcels: parcels.length, houses, towers, trees, ms, warnings, schema: schemaOut };
 }

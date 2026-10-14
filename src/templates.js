@@ -55,15 +55,21 @@ const street = {
   re: /(路口|十字|街区|街口|街道|沿街|斑马线|闯过|穿行|crossroad)/i,
   build(app, { seed = 1 } = {}) {
     return withScene(app, '模板 · 街区街口', () => {
-      // 路网与人行道
-      A(app, 'env:road:沥青路面', 0, 0, 0, { width: 15, length: 190 });
-      A(app, 'env:road:沥青路面', 0, 0, Math.PI / 2, { width: 13, length: 150 });
-      for (const [x, z, r] of [[-13.4, 0, 0], [13.4, 0, 0]]) A(app, 'env:walk:人行道', x, z, r, { width: 7, length: 190 });
-      for (const [x, z, r] of [[0, -14.4, Math.PI / 2], [0, 14.4, Math.PI / 2]]) A(app, 'env:walk:人行道', x, z, r, { width: 6, length: 150 });
+      const rng = makeRng(seed * 7 + 13);
+      // 路网走画笔道路：自动路口 + 斑马线，生成后可继续编辑
+      app.roadBrush.restore([
+        { points: [[0, 0, -95], [0, 0, 95]], roadType: 'asphalt', width: 15, fillet: false, name: '南北向街道', visible: true, locked: false },
+        { points: [[-75, 0, 0], [75, 0, 0]], roadType: 'asphalt', width: 13, fillet: false, name: '东西向街道', visible: true, locked: false },
+      ]);
+      // 人行道在路口处断开（横路带 z±8、干道带 x±9），不再整条横穿另一条路
+      for (const [x, zc] of [[-13.4, -51.5], [13.4, -51.5], [-13.4, 51.5], [13.4, 51.5]])
+        A(app, 'env:walk:人行道', x, zc, 0, { width: 7, length: 87 });
+      for (const [xc, z] of [[-42, -14.4], [42, -14.4], [-42, 14.4], [42, 14.4]])
+        A(app, 'env:walk:人行道', xc, z, Math.PI / 2, { width: 6, length: 66 });
 
-      // 城市建筑
-      const hero = A(app, 'building:tower:玻璃幕墙写字楼', -34, -34, 0.1, { floors: 21, width: 20, depth: 18, podium: true, seed: 21, lit: 0.42 });
-      A(app, 'building:tower:玻璃幕墙写字楼', 34, -40, -0.2, { floors: 30, width: 17, depth: 17, seed: 8, lit: 0.35, crown: true });
+      // 城市建筑（塔楼层数随种子随机，天际线每次不同）
+      const hero = A(app, 'building:tower:玻璃幕墙写字楼', -34, -34, 0.1, { floors: 14 + Math.floor(rng() * 16), width: 20, depth: 18, podium: true, seed: 21, lit: 0.42 });
+      A(app, 'building:tower:玻璃幕墙写字楼', 34, -40, -0.2, { floors: 20 + Math.floor(rng() * 16), width: 17, depth: 17, seed: 8, lit: 0.35, crown: true });
       A(app, 'building:residential:住宅板楼', 40, 34, -0.42, { floors: 13, length: 40, depth: 13, wall: '#b8ae9e' });
       A(app, 'building:shophouse:沿街商铺', -40, 30, 0.24, { floors: 4, width: 24, depth: 11, signColor: '#ff3b6b' });
       A(app, 'building:shophouse:沿街商铺', -40, 47, 0.24, { floors: 3, width: 22, depth: 11, signColor: '#37d6ff', awning: '#2f6d55' });
@@ -121,6 +127,7 @@ const plaza = {
   re: /(广场|喷泉|集会|中心广场|plaza)/i,
   build(app, { seed = 1 } = {}) {
     return withScene(app, '模板 · 城市广场', () => {
+      const rng = makeRng(seed * 13 + 5);
       const fountain = A(app, 'env:fountain:圆形喷泉', 0, 0, 0, { radius: 3.4 });
       for (const [x, z, r] of [[-7, 5.5, Math.PI / 2], [7, 5.5, Math.PI / 2], [-7, -5.5, Math.PI / 2], [7, -5.5, Math.PI / 2]])
         A(app, 'env:bench:长椅', x, z, r);
@@ -130,8 +137,8 @@ const plaza = {
         A(app, 'env:lamp:路灯', x, z, 0, { height: 6.5, glow: 0.3 });
       A(app, 'building:colonnade:柱廊门厅', 0, -24, 0, { cols: 8, spacing: 3.8, height: 7 });
       A(app, 'building:stairs:大台阶', 0, -15.5, 0, { steps: 8, width: 13, rise: 0.19, run: 0.42, marble: true });
-      A(app, 'building:tower:玻璃幕墙写字楼', -30, -38, 0.14, { floors: 18, podium: true, lit: 0.4, seed: 5 });
-      A(app, 'building:tower:玻璃幕墙写字楼', 30, -40, -0.16, { floors: 26, crown: true, lit: 0.35, seed: 12 });
+      A(app, 'building:tower:玻璃幕墙写字楼', -30, -38, 0.14, { floors: 12 + Math.floor(rng() * 16), podium: true, lit: 0.4, seed: 5 });
+      A(app, 'building:tower:玻璃幕墙写字楼', 30, -40, -0.16, { floors: 18 + Math.floor(rng() * 16), crown: true, lit: 0.35, seed: 12 });
       A(app, 'building:residential:住宅板楼', 36, 30, -0.4, { floors: 12, length: 36, wall: '#c9bfae' });
       A(app, 'building:shophouse:沿街商铺', -36, 26, 0.5, { floors: 3, width: 22, signColor: '#ffb830' });
       A(app, 'building:billboard:户外广告屏', 18, -18, -0.9, { width: 10, height: 5.5, leg: 6, bright: 1.2, seed: (seed % 30) + 1 });
@@ -160,6 +167,7 @@ const boulevard = {
   re: /(林荫|大道|长街|滨河|带状|boulevard|林荫道)/i,
   build(app, { seed = 1 } = {}) {
     return withScene(app, '模板 · 林荫大道', () => {
+      const rng = makeRng(seed * 17 + 3);
       A(app, 'env:road:沥青路面', 0, 0, 0, { width: 16, length: 260 });
       A(app, 'env:walk:人行道', -10.5, 0, 0, { width: 6, length: 260 });
       A(app, 'env:walk:人行道', 10.5, 0, 0, { width: 6, length: 260 });
@@ -181,8 +189,8 @@ const boulevard = {
       for (let i = 0; i < 4; i++) {
         A(app, 'building:house:独栋住宅', -27, -54 + i * 30, Math.PI / 2, { width: 9, depth: 8 });
       }
-      const hero = A(app, 'building:tower:玻璃幕墙写字楼', 34, -105, -0.1, { floors: 22, podium: true, lit: 0.4, seed: 9 });
-      A(app, 'building:tower:玻璃幕墙写字楼', -34, 100, 0.12, { floors: 16, crown: true, lit: 0.3, seed: 15 });
+      const hero = A(app, 'building:tower:玻璃幕墙写字楼', 34, -105, -0.1, { floors: 14 + Math.floor(rng() * 16), podium: true, lit: 0.4, seed: 9 });
+      A(app, 'building:tower:玻璃幕墙写字楼', -34, 100, 0.12, { floors: 10 + Math.floor(rng() * 14), crown: true, lit: 0.3, seed: 15 });
       A(app, 'building:billboard:户外广告屏', 18, 60, -Math.PI / 2, { width: 11, height: 6, leg: 7, bright: 1.3, seed: (seed % 30) + 3 });
       A(app, 'env:sign:路牌', 9.6, 24, Math.PI / 2, { kind: 'plain' });
 

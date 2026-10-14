@@ -39,8 +39,11 @@ export function applySceneDSL(app, doc) {
   withScene(app, `导入 Scene${doc.name ? '：' + doc.name : ''}`, () => {
     if (doc.flat !== false) app.terrain?.setEnabled?.(false);
     const objs = [];
+    const roadSegs = [];
     for (const o of doc.objects || []) {
       if (!o || !o.key) continue;
+      // 道路改走画笔道路：自动路口 + 斑马线 + 生成后可再编辑（修「两条路无交叉口」）
+      if (/^env:road:/.test(o.key)) { roadSegs.push(o); continue; }
       const p = o.pos || [0, 0, 0];
       const so = app.addAsset(o.key, V(+p[0] || 0, +p[1] || 0, +p[2] || 0), { params: o.params || {} });
       if (!so) { missing.push(o.key); continue; }
@@ -48,7 +51,22 @@ export function applySceneDSL(app, doc) {
       if (o.name) so.name = String(o.name);
       objs.push(so);
     }
-    out.objects = objs.length;
+    out.roads = roadSegs.length;
+    out.objects = objs.length + roadSegs.length;
+    if (roadSegs.length) {
+      const hAt = (x, z) => (app.terrain?.enabled ? app.terrain.heightAt(x, z) : 0);
+      app.roadBrush.restore(roadSegs.map((o) => {
+        const pp = o.pos || [0, 0, 0];
+        const cx = +pp[0] || 0, cz = +pp[2] || 0;
+        const th = +o.rot || 0;
+        const L = +o.params?.length || 100;
+        const dx = Math.sin(th), dz = Math.cos(th);        // 长度轴 = 局部 +z 经 rotY 旋转
+        const a = [cx - (dx * L) / 2, 0, cz - (dz * L) / 2];
+        const b = [cx + (dx * L) / 2, 0, cz + (dz * L) / 2];
+        a[1] = hAt(a[0], a[2]); b[1] = hAt(b[0], b[2]);
+        return { points: [a, b], roadType: 'asphalt', width: +o.params?.width || 12, fillet: false, name: o.name || '街道', visible: true, locked: false };
+      }));
+    }
     for (const m of doc.motions || []) {
       const so = idxOf(objs, m.object);
       if (!so || !Array.isArray(m.keys) || m.keys.length < 2) continue;
@@ -94,7 +112,7 @@ export function importSceneFile(app, file) {
       try {
         const doc = JSON.parse(String(fr.result));
         const r = applySceneDSL(app, doc);
-        const msg = `已导入 Scene「${doc.name || file.name}」：${r.objects} 物体 · ${r.shots} 机位 · ${r.motions} 段运动` +
+        const msg = `已导入 Scene「${doc.name || file.name}」：${r.objects} 物体${r.roads ? `（含 ${r.roads} 条街道·路口自动衔接）` : ''} · ${r.shots} 机位 · ${r.motions} 段运动` +
           (r.missing.length ? ` · ${r.missing.length} 个键未识别(${r.missing[0]}…)` : '');
         app.notify(msg, r.missing.length ? 'warn' : 'ok');
         resolve(r);

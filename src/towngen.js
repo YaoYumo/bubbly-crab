@@ -143,11 +143,12 @@ const RULES = [
       return TOPOLOGIES[s.roadTopology];
     },
   },
-  // ---- 密度 ----
+  // ---- 密度 ----（先到先得：显式「密集/稀疏」优先，城市词只做默认档）
   {
     field: 'density', label: '建筑密度',
-    re: [/(密集|稠密|紧凑|high\s*density|dense|拥挤)/gi, /(稀疏|空旷|人烟稀少|low\s*density|sparse|零散)/gi],
-    apply: (s, m, i) => { s.density = i === 0 ? 0.8 : 0.25; return i === 0 ? '密集' : '稀疏'; },
+    re: [/(密集|稠密|紧凑|high\s*density|dense|拥挤)/gi, /(稀疏|空旷|人烟稀少|low\s*density|sparse|零散)/gi,
+      /(城市|都市|市中心|市区|都会|\bcity\b|downtown)/gi],
+    apply: (s, m, i) => { s.density = i === 0 ? 0.8 : i === 1 ? 0.25 : 0.72; return i === 0 ? '密集' : i === 1 ? '稀疏' : '城市密度'; },
   },
   // ---- 商业配比 ----
   {

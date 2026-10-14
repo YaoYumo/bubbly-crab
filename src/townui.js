@@ -184,7 +184,7 @@ export function openTownDialog(app) {
       genBtn.disabled = cancelBtn.disabled = false;   // 成功也复位：disabled 会吞掉后续点击
       const msg = tpl
         ? `已用模板「${tpl.label}」搭建：${stats.objects} 物体 · ${stats.shots} 机位（${stats.auto} 自动） · ${stats.motions} 段运动 · Ctrl+Z 可整场退回`
-        : `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑 / ${stats.trees} 棵树 · 自动配 ${stats.autoShots || 0} 个机位（${stats.ms}ms）`;
+        : `已生成 ${stats.schema.mapSize}m 街区：${stats.roads} 条路 / ${stats.houses} 栋建筑${stats.towers ? `（含 ${stats.towers} 塔楼）` : ''} / ${stats.trees} 棵树 · 自动配 ${stats.autoShots || 0} 个机位（${stats.ms}ms）`;
       app.notify(stats.warnings?.length ? msg + ' · ' + stats.warnings.join('；') : msg, 'ok');
       window.__townStats = stats;
     }, 30);

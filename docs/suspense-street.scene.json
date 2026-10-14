@@ -5,8 +5,10 @@
   "objects": [
     { "key": "env:road:沥青路面", "pos": [0, 0, 0], "rot": 0, "name": "主街", "params": { "width": 14, "length": 240 } },
     { "key": "env:road:沥青路面", "pos": [0, 0, -60], "rot": 1.5708, "name": "横路", "params": { "width": 12, "length": 160 } },
-    { "key": "env:walk:人行道", "pos": [-11, 0, 0], "name": "左人行道", "params": { "width": 5, "length": 240 } },
-    { "key": "env:walk:人行道", "pos": [11, 0, 0], "name": "右人行道", "params": { "width": 5, "length": 240 } },
+    { "key": "env:walk:人行道", "pos": [-11, 0, -93.5], "name": "左人行道北段", "params": { "width": 5, "length": 53 } },
+    { "key": "env:walk:人行道", "pos": [-11, 0, 33.5], "name": "左人行道南段", "params": { "width": 5, "length": 173 } },
+    { "key": "env:walk:人行道", "pos": [11, 0, -93.5], "name": "右人行道北段", "params": { "width": 5, "length": 53 } },
+    { "key": "env:walk:人行道", "pos": [11, 0, 33.5], "name": "右人行道南段", "params": { "width": 5, "length": 173 } },
 
     { "key": "building:shophouse:沿街商铺", "pos": [-27, 0, -85], "rot": 1.5708, "params": { "floors": 3, "width": 26, "depth": 11, "signColor": "#8c1f2e", "awning": "#2a2a30" } },
     { "key": "building:tower:玻璃幕墙写字楼", "pos": [-26, 0, -40], "rot": 1.5708, "params": { "floors": 18, "width": 18, "depth": 16, "lit": 0.18, "seed": 11 } },
@@ -29,7 +31,7 @@
 
     { "key": "env:car:轿车", "pos": [-5, 0, 8], "rot": 0.03, "name": "黑车", "params": { "color": "#16181d", "kind": "sedan" } },
     { "key": "env:car:轿车", "pos": [0, 0, -60], "name": "过路车", "params": { "color": "#3a4550", "kind": "suv", "lights": true } },
-    { "key": "char:human:男性", "pos": [0, 0, -40], "name": "嫌疑人", "params": { "top": "#1f2a33", "anim": "walk" } },
+    { "key": "char:human:男性", "pos": [0, 0, -24], "name": "嫌疑人", "params": { "top": "#1f2a33", "anim": "walk" } },
     { "key": "char:human:女性", "pos": [13.2, 0, 15.5], "rot": -1.2, "name": "灯下女子", "params": { "top": "#6b4a5a", "hairStyle": "long", "anim": "phone" } },
     { "key": "env:barrier:水马围挡", "pos": [7.5, 0, 4], "rot": 0.1, "params": { "length": 5 } },
     { "key": "env:cone:交通锥", "pos": [6.2, 0, 2.5] },
@@ -40,17 +42,17 @@
   ],
 
   "motions": [
-    { "object": 23, "name": "嫌疑人沿街走", "keys": [[0, 0, 0, -24], [1, 0, 0, 0]], "autoFace": true, "loop": false, "speed": 1 },
-    { "object": 22, "name": "过路车横穿", "keys": [[0, -75, 0, -60], [1, 75, 0, -60]], "autoFace": true, "faceOffset": -1.5708, "loop": true },
-    { "object": 24, "name": "女子驻足", "keys": [[0, 13.2, 0, 15.5], [1, 13.2, 0, 15.5]], "active": false, "anim": "phone" },
-    { "object": 28, "name": "围观者静立", "keys": [[0, 16, 0, -66], [1, 16, 0, -66]], "active": false, "anim": "talk" }
+    { "object": "嫌疑人", "name": "嫌疑人沿街走", "keys": [[0, 0, 0, -24], [1, 0, 0, 0]], "autoFace": true, "loop": false, "speed": 1 },
+    { "object": "过路车", "name": "过路车横穿", "keys": [[0, -75, 0, -60], [1, 75, 0, -60]], "autoFace": true, "faceOffset": -1.5708, "loop": true },
+    { "object": "灯下女子", "name": "女子驻足", "keys": [[0, 13.2, 0, 15.5], [1, 13.2, 0, 15.5]], "active": false, "anim": "phone" },
+    { "object": "远处围观者", "name": "围观者静立", "keys": [[0, 16, 0, -66], [1, 16, 0, -66]], "active": false, "anim": "talk" }
   ],
 
   "shots": [
     { "name": "A 序·空街", "pos": [0.8, 1.1, 72], "look": [0, 1.4, -70], "focal": 40, "duration": 8, "move": "push", "moveParams": { "dist": 8 } },
-    { "name": "B 疑·高处俯视", "pos": [20, 15, -8], "look": [0, 1.6, -20], "focal": 50, "duration": 9, "target": 23, "move": "orbit", "moveParams": { "deg": 45 } },
-    { "name": "C 跟·背影", "pos": [0, 1.7, -54], "look": [0, 1.6, -40], "focal": 35, "duration": 10, "target": 23, "move": "follow" },
-    { "name": "D 横·路口车影", "pos": [15, 3.5, -38], "look": [0, 1.2, -60], "focal": 45, "duration": 7, "target": 22, "move": "truck", "moveParams": { "dist": 7, "dir": 1 } },
-    { "name": "E 尾·灯下之人", "pos": [3.5, 1.5, 9], "look": [13.2, 1.7, 15.5], "focal": 50, "duration": 9, "target": 24, "move": "push", "moveParams": { "dist": 5 } }
+    { "name": "B 疑·高处俯视", "pos": [20, 15, -8], "look": [0, 1.6, -14], "focal": 50, "duration": 9, "target": "嫌疑人", "move": "orbit", "moveParams": { "deg": 45 } },
+    { "name": "C 跟·背影", "pos": [0, 1.7, -38], "look": [0, 1.6, -24], "focal": 35, "duration": 10, "target": "嫌疑人", "move": "follow" },
+    { "name": "D 横·路口车影", "pos": [15, 3.5, -38], "look": [0, 1.2, -60], "focal": 45, "duration": 7, "target": "过路车", "move": "truck", "moveParams": { "dist": 7, "dir": 1 } },
+    { "name": "E 尾·灯下之人", "pos": [3.5, 1.5, 9], "look": [13.2, 1.7, 15.5], "focal": 50, "duration": 9, "target": "灯下女子", "move": "push", "moveParams": { "dist": 5 } }
   ]
 }
