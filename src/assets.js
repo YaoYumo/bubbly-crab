@@ -2686,7 +2686,7 @@ export function buildGravelRoad(p) {                   // 碎石路：路拱面+
   shade(g); return g;
 }
 
-function buildFourWayStop(p) {                         // 十字路口：7.4m 进口+R5 回转+大陆斑马线+停止线
+export function buildFourWayStop(p) {                         // 十字路口：7.4m 进口+R5 回转+大陆斑马线+停止线
   const g = new THREE.Group();
   const w = p.width, d = p.length, pa = 7.4;
   g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
@@ -2704,7 +2704,7 @@ function buildFourWayStop(p) {                         // 十字路口：7.4m �
   shade(g); return g;
 }
 
-function buildTJunction(p) {                           // T 形路口：三进口+封边人行带+R5 回转
+export function buildTJunction(p) {                           // T 形路口：三进口+封边人行带+R5 回转
   const g = new THREE.Group();
   const w = p.width, d = p.length, pa = 7.4, c = pa / 2;
   g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
@@ -2724,7 +2724,7 @@ function buildTJunction(p) {                           // T 形路口：三进�
   shade(g); return g;
 }
 
-function buildRoundabout(p) {                          // 单 lane 环岛：4.2m 环道+卡车 apron+导流岛
+export function buildRoundabout(p) {                          // 单 lane 环岛：4.2m 环道+卡车 apron+导流岛
   const g = new THREE.Group();
   const w = p.width, d = p.length;
   const Ro = Math.min(w, d) / 2 - SIDE;
@@ -2775,7 +2775,7 @@ function buildRoundabout(p) {                          // 单 lane 环岛：4.2m
   shade(g); return g;
 }
 
-function buildCulDeSac(p) {                            // 尽端路：R≈11 圆头+8.5m 颈+环形人行道
+export function buildCulDeSac(p) {                            // 尽端路：R≈11 圆头+8.5m 颈+环形人行道
   const g = new THREE.Group();
   const w = p.width, d = p.length;
   const Rb = w / 2 - SIDE, zc = d / 2 - Rb - SIDE, nh = 4.25;
@@ -2810,7 +2810,7 @@ function buildCulDeSac(p) {                            // 尽端路：R≈11 圆
   shade(g); return g;
 }
 
-function buildFreeway(p) {                             // 高速：2×2 车道+4m 中央带+硬路肩+护栏
+export function buildFreeway(p) {                             // 高速：2×2 车道+4m 中央带+硬路肩+护栏
   const g = new THREE.Group();
   const w = p.width, d = p.length;
   const dirW = (w - 4) / 2;
