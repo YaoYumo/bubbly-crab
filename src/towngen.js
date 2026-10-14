@@ -121,19 +121,26 @@ const RULES = [
       /(沙漠|荒漠|西南|亚利桑那|德州|texas|arizona|southwest|desert)/gi,
       // 混搭优先：「现代与古建混搭」应落 fusion 而不是被「现代」抢走
       /(混搭|混合|古今交融|新旧交融|现代与古|现代加古|古建与现代|古风与现代|both\s*old\s*and\s*new|old\s*meets\s*new)/gi,
-      /(中式|中国|古建|古镇|古城|古村|古风|仿古|江南|水乡|长安|西安|平遥|丽江|京城|皇城|明清|唐朝|唐代|唐风|宋代|宋朝|清代|明朝|明代|pagoda|chinese|ancient\s*town|heritage)/gi,
+      // 中式词族（形制/地标/地域/朝代/匠作）：四合院·胡同·里坊 = 院落肌理；
+      // 寺庙·王府·鼓楼·牌坊 = 礼制地标；徽派·马头墙·园林 = 地域风格；青砖·飞檐·斗拱 = 匠作特征
+      /(中式|中国|古建|古镇|古城|古村|古风|仿古|江南|水乡|长安|西安|平遥|丽江|凤凰|阆中|乌镇|西塘|南浔|周庄|京城|皇城|皇宫|紫禁城|明清|唐朝|唐代|唐风|宋代|宋朝|清代|明朝|明代|徽派|徽州|马头墙|晋商|乔家|四合院|合院|院落|胡同|里坊|坊巷|宅院|府邸|王府|园林|寺庙|寺院|佛寺|道观|古刹|庙宇|牌坊|牌楼|鼓楼|钟楼|城楼|城墙|城门|宝塔|古塔|佛塔|青砖|黛瓦|飞檐|斗拱|榫卯|pagoda|chinese|ancient\s*town|heritage)/gi,
       /(现代|当代|新城区|都会|摩登|modern)/gi,
       /(老城|城区|市区|市中心|downtown|urban|city)/gi,
       /(小镇|郊区|市郊|住宅区|suburb|small\s*town|neighborhood)/gi],
     apply: (s, m, i) => {
       s.theme = ['california', 'newengland', 'southwest', 'fusion', 'chinese', 'modern', 'urban', 'suburb'][i];
+      // 中式礼制词隐含中轴格局：寺庙/王府/皇宫/鼓楼/牌坊 单独出现也走 axis
+      //（中轴大道 + 东西大街 + 镜像街巷）；若用户显式写「方格/放射」，
+      // 后面的路网规则会按先到先得覆盖为显式选择。
+      if (i === 4 && /(皇宫|紫禁城|寺庙|寺院|佛寺|道观|古刹|庙宇|王府|宫殿|殿宇|鼓楼|钟楼|午门|牌坊|牌楼)/.test(m[0])) s.roadTopology = 'axis';
       return TOWN_THEMES[s.theme].label;
     },
   },
   // ---- 路网 ----
   {
     field: 'roadTopology', label: '路网',
-    re: [/(中轴|中轴线|轴线对称|对称布局|对称|皇宫|紫禁城|imperial|长安大街)/gi,
+    // 轴线词族：礼制建筑（寺庙/王府/宫殿/午门）与城市地标（鼓楼/钟楼/牌坊）本身沿轴布列
+    re: [/(中轴|中轴线|轴线对称|对称布局|对称|皇宫|紫禁城|宫殿|殿宇|王府|府衙|孔庙|文庙|寺庙|寺院|佛寺|道观|古刹|庙宇|鼓楼|钟楼|午门|牌坊|牌楼|imperial|长安大街)/gi,
       /(方格|网格|棋盘|grid|曼哈顿|整齐|整洁|横平竖直|规整|方方正正)/gi,
       /(放射|环形放射|radial|辐条)/gi,
       /(环路|环线|回路|loop)/gi, /(主干道|主街|大街|spine|main\s*street|high\s*street)/gi],
@@ -147,14 +154,19 @@ const RULES = [
   {
     field: 'density', label: '建筑密度',
     re: [/(密集|稠密|紧凑|high\s*density|dense|拥挤)/gi, /(稀疏|空旷|人烟稀少|low\s*density|sparse|零散)/gi,
-      /(城市|都市|市中心|市区|都会|\bcity\b|downtown)/gi],
-    apply: (s, m, i) => { s.density = i === 0 ? 0.8 : i === 1 ? 0.25 : 0.72; return i === 0 ? '密集' : i === 1 ? '稀疏' : '城市密度'; },
+      /(城市|都市|市中心|市区|都会|\bcity\b|downtown)/gi,
+      // 坊巷肌理：窄巷深巷 = 低层高密度的里坊格局（词已被主题吃掉时走默认档）
+      /(巷弄|窄巷|深巷|密巷|里弄)/gi],
+    apply: (s, m, i) => {
+      s.density = [0.8, 0.25, 0.72, 0.65][i];
+      return ['密集', '稀疏', '城市密度', '坊巷肌理'][i];
+    },
   },
   // ---- 商业配比 ----
   {
     field: 'zoning', label: '功能配比',
     re: [/商业\s*(\d{1,3})\s*%/gi, /(\d{1,3})\s*%\s*(?:的)?商业/gi,
-      /(商业街|商业区|购物|店铺林立|commercial|shopping|retail)/gi,
+      /(商业街|商业区|购物|店铺林立|街市|集市|商埠|闹市|繁华|商铺|commercial|shopping|retail)/gi,
       /(纯住宅|全是住宅|只有住宅|residential\s*only)/gi, /(住宅为主|以住宅为主)/gi],
     apply: (s, m, i) => {
       let c;

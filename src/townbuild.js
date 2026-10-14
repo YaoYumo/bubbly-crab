@@ -332,6 +332,8 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
   const parcels = [];
   const step = 30 - s.density * 13;              // 17–30m（密度↑ → 街坊更满）
   const maxSlope = 0.2 + (1 - s.density) * 0.08; // 陡坡不放房子
+  // 中式院落深巷：合院/府邸要容得下前后院与内天井（14–22m 进深），西式街区维持 8–14m
+  const deepLot = s.theme === 'chinese' || s.theme === 'fusion';
   // 所有道路的走廊：地块不仅要退让自己那条路，也不能压在横穿的另一条路上
   const corridors = roads.map((r) => ({ info: polyInfo(r.pts), half: (r.width || 7) / 2 }));
   const clearance = (x, z) => {
@@ -348,7 +350,7 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
         const p = pointAt(info, d);
         const nx = -p.tz * side, nz = p.tx * side;   // 道路法向
         const setback = 6 + rng() * 2 + w / 2;
-        const depth = 8 + rng() * 6;
+        const depth = deepLot ? 14 + s.rng() * 8 : 8 + rng() * 6;
         const cx = p.x + nx * (setback + depth / 2);
         const cz = p.z + nz * (setback + depth / 2);
         if (Math.abs(cx) > half - 14 || Math.abs(cz) > half - 14) continue;
@@ -374,7 +376,9 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
         const distC = Math.hypot(cx, cz) / (half || 1);
         const cr = s.zoning.commercialRatio;
         let kind = 'residential';
-        const bias = clamp(cr * (1.8 - distC * 1.2), 0, 0.9);   // 越靠中心越可能商业
+        // 中式街市（前店后宅）：贴主街（宽 ≥9m 的大街/中轴大道）成市概率加成，巷内退居为宅
+        const streetBonus = cr > 0 && deepLot && w >= 9 ? 0.25 : 0;
+        const bias = clamp(cr * (1.8 - distC * 1.2) + streetBonus, 0, 0.95);   // 越靠中心越可能商业；临主街加成
         if (rng() < bias) kind = 'commercial';
         parcels.push({
           x: cx, z: cz, fw, depth, slope,
@@ -388,10 +392,18 @@ export function layoutParcels(s, roads, heightAt = () => 0) {
     }
   }
 
-  //  civic（学校 / 教堂 / 消防局）：挑靠中心的大地块，最多 3 个
-  const civics = Math.min(3, Math.max(1, Math.round(s.mapSize / 220)));
-  const sorted = parcels.filter((p) => p.kind === 'residential').sort((a, b) => a.nearCenter - b.nearCenter || b.w - a.w);
-  for (let i = 0; i < civics && i < sorted.length; i++) sorted[i].kind = 'civic';
+  // ---- 中式礼制序列（学习中式古建布局：城市中轴 + 十字街心 + 地标天际线） ----
+  // 公建优先落中轴/街心：鼓楼居十字路口，其次牌坊为序列入口，再次佛塔作独立地标；
+  // 古城公建密度略增（256m 图 2 处），现代镇维持原配比（220m/处）。
+  const cn = s.theme === 'chinese';
+  const civics = Math.min(3, Math.max(1, Math.round(s.mapSize / (cn ? 160 : 220))));
+  const axialScore = (p) => p.nearCenter + (s.roadTopology === 'axis' ? (Math.abs(p.x) / half) * 0.6 : 0);
+  const sorted = parcels.filter((p) => p.kind === 'residential').sort((a, b) => axialScore(a) - axialScore(b) || b.w - a.w);
+  const CN_CIVIC_SEQ = ['drumtower', 'paifang', 'pagoda'];
+  for (let i = 0; i < civics && i < sorted.length; i++) {
+    sorted[i].kind = 'civic';
+    if (cn) sorted[i].forceType = CN_CIVIC_SEQ[i];
+  }
   return parcels;
 }
 
@@ -649,9 +661,9 @@ function buildTown(app, s, { onProgress } = {}) {
   const cityLike = (s.theme === 'modern' || s.theme === 'urban') && s.density >= 0.6;
   let houses = 0, towers = 0;
   for (const p of parcels) {
-    let type = p.kind === 'commercial' ? pick(s.rng, theme.commerce)
+    let type = p.forceType || (p.kind === 'commercial' ? pick(s.rng, theme.commerce)
       : p.kind === 'civic' ? pick(s.rng, theme.civic)
-        : pick(s.rng, theme.houses);
+        : pick(s.rng, theme.houses));
     if (cityLike && p.kind === 'commercial' && (p.nearCenter ?? 1) < 0.5 && s.rng() < 0.55) {
       type = 'tower';
       towers++;
