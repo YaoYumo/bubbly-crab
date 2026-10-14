@@ -12,16 +12,10 @@ import { GROUPS as GROUPS_NATURE } from './nature.js';
 import { GROUPS as GROUPS_PROPS } from './props.js';
 import { GROUPS_CITY } from './city.js';   // 城市建筑/环境/人物（纯追加组，不改既有 16 组；见 city.js 头注）
 
-// ---- 材质工厂 ----
-const mk = (kind, o) => { const m = new THREE.MeshStandardMaterial(o); if (kind) m.userData.detail = kind; return m; };
-export const M = {
-  concrete: (c = 0x9aa0a8, r = 0.92) => mk('concrete', { color: c, roughness: r, metalness: 0.02 }),
-  metal: (c = 0x8d949c, r = 0.35, m = 0.9) => mk('metal', { color: c, roughness: r, metalness: m, envMapIntensity: 1.4 }),
-  dark: (c = 0x2c3138, r = 0.8) => mk('paint', { color: c, roughness: r, metalness: 0.1 }),
-  paint: (c = 0xcccccc, r = 0.6) => mk('paint', { color: c, roughness: r, metalness: 0.05 }),
-  glass: (c = 0x88bbdd) => { const m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.6 }); m.userData.role = 'glass'; return m; },
-  tile: (c = 0xb85c38, r = 0.7) => mk('tile', { color: c, roughness: r, metalness: 0.02 }),
-};
+// 材质工厂与 shade：抽到叶子模块 mat.js（断 assets→city→character→assets 导入环，
+// 否则不同入口顺序会触发 GROUPS_CITY TDZ），此处 re-export 保持既有 API。
+import { mk, M, shade } from './mat.js';
+export { M, shade };
 
 // ---- 几何工具 ----
 export const box = (w, h, d, mat, x = 0, y = 0, z = 0) => {
@@ -40,10 +34,7 @@ export const sph = (r, mat, s = 10, x = 0, y = 0, z = 0) => {
   const m = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.005, r), qseg(s), Math.max(4, qseg(s) - 2)), mat);
   m.position.set(x, y, z); return m;
 };
-export function shade(o, cast = true, recv = true) {
-  o.traverse?.((m) => { if (m.isMesh || m.isInstancedMesh) { m.castShadow = cast; m.receiveShadow = recv; } });
-  applyDetail(o); return o;
-}
+// shade() 已抽至 mat.js（由上方 import 引入并 re-export）
 
 // ---------------------------------------------------------------------------
 // 高细节共用构件（规格：门窗内缩 5~10cm · 门廊柱 12~16 边形 · 屋檐瓦片立体挤出 ·

@@ -36,7 +36,7 @@ const L = await page.evaluate(async () => {
     missing: demoKeys.filter((k) => !LIB_INDEX.has(k)),
   };
 });
-ck('模型库 = 19 组 / 200 项', L.groups === 19 && L.total === 200, `${L.groups}组 ${L.total}项`);
+ck('模型库 = 19 组 / 203 项', L.groups === 19 && L.total === 203, `${L.groups}组 ${L.total}项`);
 ck('demo 全部城市键可解析', L.missing.length === 0, L.missing.join(','));
 const cards = await page.evaluate(async () => {
   const t = document.getElementById('lib-toggle');
