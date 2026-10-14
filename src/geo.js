@@ -185,7 +185,7 @@ export function jinRoofY(tRing, o = {}) {
 
 /** 曲面屋顶（庑殿 / 歇山 / 卷棚 / 攒尖）：把一张 PlaneGeometry 按举折 + 起翘抬高。
  *  `sides >= 3` 的攒尖走 jinRoofGeo（同心多边形环），檐口正多边形、角端对正檐柱。 */
-export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0, hole = 0 } = {}) {
+export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, seg = 26, mat, eaveUp = 0.16, brim = 0.5, y0 = 0, sides = 0, hole = 0, win = 0, din = 0 } = {}) {
   seg = Math.max(8, Math.round(mul(seg)));   // 举折曲线的密度随精度档走
   const W = Math.max(1, w + brim * 2), D = Math.max(1, d + brim * 2);
   const nx = Math.max(6, Math.round(seg * (W / Math.max(W, D)))), nz = Math.max(6, seg);
@@ -198,19 +198,32 @@ export function curvedRoof({ w = 12, d = 9, h = 3.2, kind = 'wu', ridge = 0.42, 
     pm.userData.roofA = a; pm.userData.roofSides = sn;
     return pm;
   }
-  const geo = new THREE.PlaneGeometry(W, D, nx, nz);
-  geo.rotateX(-Math.PI / 2);
-  const pos = geo.attributes.position;
   const xr = (Math.max(0.6, w * 0.5 * ridge));
-  const maxR = Math.hypot(W / 2, D / 2);
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, cnRoofY(pos.getX(i), pos.getZ(i), { W, D, h, kind, xr, eaveUp, y0 }));
+  const hy = (x, z) => cnRoofY(x, z, { W, D, h, kind, xr, eaveUp, y0 });
+  const mkMesh = (geo, cx, cz) => {
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, hy(pos.getX(i) + cx, pos.getZ(i) + cz));
+    geo.computeVertexNormals();
+    const mm = new THREE.Mesh(geo, mat || M.paint(0x3a4048, 0.85));
+    mm.material.side = THREE.DoubleSide;
+    mm.castShadow = true; mm.receiveShadow = true;
+    mm.position.set(cx, 0, cz);
+    return mm;
+  };
+  // 环状屋面：中央按 win×din 开洞（供平座平台截断屋面，洞缘藏进平台出挑内）
+  if (win > 0.5 && din > 0.5 && win < W - 1 && din < D - 1) {
+    const grp = new THREE.Group();
+    const dz = (D - din) / 2, dx = (W - win) / 2;
+    const nzs = Math.max(2, Math.round(nz * dz / D)), nxs = Math.max(2, Math.round(nx * dx / W));
+    grp.add(mkMesh(new THREE.PlaneGeometry(W, dz, nx, nzs), 0, din / 2 + dz / 2));
+    grp.add(mkMesh(new THREE.PlaneGeometry(W, dz, nx, nzs), 0, -(din / 2 + dz / 2)));
+    grp.add(mkMesh(new THREE.PlaneGeometry(dx, din, nxs, nz), -(win / 2 + dx / 2), 0));
+    grp.add(mkMesh(new THREE.PlaneGeometry(dx, din, nxs, nz), win / 2 + dx / 2, 0));
+    return grp;
   }
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, mat || M.paint(0x3a4048, 0.85));
-  m.material.side = THREE.DoubleSide;
-  m.castShadow = true; m.receiveShadow = true;
-  void maxR;
+  const geo = new THREE.PlaneGeometry(W, D, nx, nz);
+  const m = mkMesh(geo, 0, 0);
   // 瓦垄感：沿屋面加几条窄盒（廉价但轮廓清晰）
   return m;
 }
