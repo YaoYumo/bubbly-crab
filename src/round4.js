@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GROUP_CN } from './arch.js';
-import { buildAsset, defaultsFor } from './assets.js';
+import { buildAsset, defaultsFor, LIB } from './assets.js';
 import { setDetailLevel } from './detail.js';
 
 const PLATES = [
@@ -32,6 +32,9 @@ const PLATES16 = [
   ['14', 'streetshop', '街铺 · 招牌檐篷柜台'],
   ['15', 'earthterrace', '土台 · 夯土台基磴道'],
 ];
+
+// 导演台模型库·道路组（cat 道路）拉进工作区陈列
+const PLATES_RD = LIB.find((g) => g.id === 'road').items.map((it, i) => [String(i + 1).padStart(2, '0'), it.type, it.name]);
 
 setDetailLevel('fine');
 
@@ -83,7 +86,17 @@ scene.add(grid);
 // ---------- 陈列 ----------
 const stage = new THREE.Group();
 scene.add(stage);
-const entries = [];          // { no, type, name, root, box, center, tri }
+const entries = [];          // { no, type, name, root, box, center, tri, g }
+const grpVis = [false, false, true];   // 中式建筑线（两组）默认收起隐藏；道路排默认展开
+const secBody = [], secHead = [];
+function setGroupVis(g, v) {
+  grpVis[g] = v;
+  for (const e of entries) if (e.g === g) { e.root.visible = v; if (e.label) e.label.visible = v; }
+  if (editE && editE.g === g) editE.root.visible = v;
+  if (secBody[g]) secBody[g].style.display = v ? '' : 'none';
+  if (secHead[g]) secHead[g].textContent = (v ? '▾ ' : '▸ ') + GH_TITLES[g];
+  showInfo(lastE && lastE.root.visible ? lastE : null);
+}
 let cursorX = 0;
 
 function makeLabel(text) {
@@ -112,13 +125,14 @@ function buildAll() {
   }
   entries.length = 0;
   cursorX = 0;
-  const items = GROUP_CN.items;
-  const rows = [{ plates: PLATES, z: 0, g: 0 }, { plates: PLATES16, z: 52, g: 1 }];   // 两轮两排：前排第四轮，后排第十六轮
+  const ROAD_ITEMS_LIB = LIB.find((g) => g.id === 'road').items;
+  const itemsByG = [GROUP_CN.items, GROUP_CN.items, ROAD_ITEMS_LIB];
+  const rows = [{ plates: PLATES, z: 0, g: 0 }, { plates: PLATES16, z: 52, g: 1 }, { plates: PLATES_RD, z: -46, g: 2 }];   // 三排：第四轮 / 第十六轮 / 道路（前排）
   for (const row of rows) {
     const widths = [];
     const roots = [];
     for (const [no, type, name] of row.plates) {
-      const item = items.find(i => i.type === type);
+      const item = itemsByG[row.g].find(i => i.type === type);
       const root = buildAsset(item, defaultsFor(item));
       const box = new THREE.Box3().setFromObject(root);
       const size = box.getSize(new THREE.Vector3());
@@ -151,39 +165,45 @@ function buildAll() {
       entries.push({ ...r, box: box2, center, tri, label });
     });
   }
+  for (const e of entries) { e.root.visible = grpVis[e.g]; if (e.label) e.label.visible = grpVis[e.g]; }
   fillList();
 }
 
 // ---------- UI ----------
 const listEl = document.getElementById('list');
 const infoEl = document.getElementById('info');
+const GH_TITLES = ['第四轮图板重建 · 八单体（中式线）', '第十六轮图板对照 · 七单体（中式线）', '导演台道路模型 · 十件'];
 function fillList() {
   listEl.innerHTML = '';
+  secBody.length = 0; secHead.length = 0;
   const b0 = document.createElement('button');
   b0.textContent = '◎ 总览';
   b0.className = 'ov';
   b0.onclick = () => flyTo(null);
   listEl.appendChild(b0);
-  let lastG = -1;
-  const GH = ['第四轮图板重建 · 八单体', '第十六轮图板对照 · 七单体'];
-  for (const e of entries) {
-    if (e.g !== lastG) {
-      lastG = e.g;
-      const h = document.createElement('div');
-      h.textContent = GH[e.g];
-      h.style.cssText = 'padding:8px 12px 4px;font-size:12px;color:#f4d9a0;opacity:.85;letter-spacing:.06em;';
-      listEl.appendChild(h);
+  for (let g = 0; g < 3; g++) {
+    const h = document.createElement('button');
+    h.style.cssText = 'width:100%;text-align:left;padding:8px 12px 4px;font-size:12px;color:#f4d9a0;opacity:.9;letter-spacing:.06em;background:none;border:0;cursor:pointer;';
+    h.textContent = (grpVis[g] ? '▾ ' : '▸ ') + GH_TITLES[g];
+    h.onclick = () => setGroupVis(g, !grpVis[g]);          // 标题=折叠开关：中式线收起隐藏/展开
+    secHead[g] = h;
+    listEl.appendChild(h);
+    const body = document.createElement('div');
+    body.style.display = grpVis[g] ? '' : 'none';
+    secBody[g] = body;
+    for (const e of entries) if (e.g === g) {
+      const b = document.createElement('button');
+      b.innerHTML = `<span class="no">${e.no}</span> ${e.name}`;
+      b.onclick = () => { if (editOn) enterEdit(e); flyTo(e); };
+      b.onmouseenter = () => { e.label.material.opacity = 1; };
+      e.btn = b;
+      body.appendChild(b);
     }
-    const b = document.createElement('button');
-    b.innerHTML = `<span class="no">${e.no}</span> ${e.name}`;
-    b.onclick = () => { if (editOn) enterEdit(e); flyTo(e); };
-    b.onmouseenter = () => { e.label.material.opacity = 1; };
-    e.btn = b;
-    listEl.appendChild(b);
+    listEl.appendChild(body);
   }
 }
 function showInfo(e) {
-  if (!e) { infoEl.textContent = `陈列 ${entries.length} 件 · 拖拽旋转 / 滚轮缩放 / 右键平移`; return; }
+  if (!e) { infoEl.textContent = `陈列 ${entries.filter((x) => x.root.visible).length} 件（清单标题可展开/收起分组） · 拖拽旋转 / 滚轮缩放 / 右键平移`; return; }
   const s = e.box.getSize(new THREE.Vector3());
   infoEl.textContent = `${e.no} ${e.name} · 包围盒 ${s.x.toFixed(1)}×${s.y.toFixed(1)}×${s.z.toFixed(1)} m · 三角面 ${(e.tri / 1000).toFixed(1)}k`;
 }
@@ -197,7 +217,8 @@ function flyTo(e) {
   let target, dist;
   if (!e) {
     const all = new THREE.Box3();
-    for (const en of entries) all.union(en.box);
+    for (const en of entries) if (en.root.visible) all.union(en.box);   // 总览只框可见排（中式线收起时框道路）
+    if (all.isEmpty()) for (const en of entries) all.union(en.box);
     const c = all.getCenter(new THREE.Vector3());
     const sz = all.getSize(new THREE.Vector3());
     target = new THREE.Vector3(c.x, Math.min(14, sz.y * 0.4), c.z);
@@ -705,6 +726,7 @@ function enterEdit(e) {
   stage.remove(e.root);
   e.bakedRoot = e.root; e.root = root;
   stage.add(root);
+  if (!grpVis[e.g]) setGroupVis(e.g, true);   // 编辑隐藏组时自动展开（不编辑不可见模型）
   const box = new THREE.Box3().setFromObject(root);
   e.box = box; e.center = box.getCenter(new THREE.Vector3());
   if (e.label) e.label.position.set(e.center.x, box.max.y + 3.2, e.center.z);
@@ -722,7 +744,7 @@ function exitEdit(keep) {
   setSel(-1);
   saveEdits();
   stage.remove(e.root);
-  if (e.bakedRoot) { e.root = e.bakedRoot; delete e.bakedRoot; stage.add(e.root); }
+  if (e.bakedRoot) { e.root = e.bakedRoot; delete e.bakedRoot; stage.add(e.root); e.root.visible = grpVis[e.g]; }
   const box = new THREE.Box3().setFromObject(e.root);
   e.box = box; e.center = box.getCenter(new THREE.Vector3());
   if (e.label) e.label.position.set(e.center.x, box.max.y + 3.2, e.center.z);
