@@ -2587,15 +2587,15 @@ function rdCornerQuad(g, w2, d2, pa, sx, sz) {         // 路口人行道象限�
   const cx = c + R, cz = c + R;
   if (d2 - (c + R) > 0.05) g.add(box(w2 - c, 0.3, d2 - c - R, mWalk(), sx * (c + w2) / 2, PT, sz * (c + R + d2) / 2));
   if (w2 - (c + R) > 0.05) g.add(box(w2 - c - R, 0.3, R, mWalk(), sx * (c + R + w2) / 2, PT, sz * (c + cz) / 2));
-  const arc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.3, 14, 1, true, 0, Math.PI / 2), mCurb());
+  const arc = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.03, R + 0.03, 0.32, 14, 1, true, 0, Math.PI / 2), mCurb());
   arc.rotation.y = Math.atan2(-sx, -sz) - Math.PI / 4;
-  arc.position.set(sx * cx, PT, sz * cz);
+  arc.position.set(sx * cx, PT + 0.01, sz * cz);          // 外移3cm防共面, 顶高出1cm作缘石棱线
   g.add(arc);
-  const csh = new THREE.Shape();                      // 回转封顶：方-1/4圆 挤出角块(顶=人行道顶)
-  csh.moveTo(0, 0);
-  csh.lineTo(sx * R, 0);
+  const csh = new THREE.Shape();                      // 回转封顶：1/4圆盘挤出角块(圆心=回转中心,顶=人行道顶)
+  csh.moveTo(sx * R, 0);
   csh.absarc(sx * R, sz * R, R, -sz * Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sz > 0);
-  csh.lineTo(0, 0);
+  csh.lineTo(sx * R, sz * R);
+  csh.closePath();
   const cgeo = new THREE.ExtrudeGeometry(csh, { depth: 0.3, bevelEnabled: false });
   const cm = new THREE.Mesh(cgeo, mWalk());
   cm.rotation.x = Math.PI / 2;
