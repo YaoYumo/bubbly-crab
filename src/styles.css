@@ -89,7 +89,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .libbar{padding:8px 8px 4px;position:sticky;top:0;background:var(--bg2);z-index:3}
 .search{width:100%;height:32px;background:var(--card);border:1px solid var(--line2);border-radius:var(--r);color:var(--fg);padding:0 10px;font-size:12px}
 .search:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(74,79,176,.12)}
-.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-top:7px;padding-bottom:4px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;padding-bottom:4px}
 .chips::-webkit-scrollbar{height:4px}
 .chip{border:1px solid var(--line2);background:var(--card);color:var(--fg2);border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;transition:.13s;flex:none;white-space:nowrap}
 .chip:hover{color:var(--fg);background:var(--bg2)}
