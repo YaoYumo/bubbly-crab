@@ -21,7 +21,7 @@ export class RoadBrush {
     this.active = false;
     this.points = [];
     this.roadType = ROAD_TYPES[0];
-    this.roadWidth = 4;
+    this.roadWidth = 12;                       // 沥青路默认车行宽：≥5.5 才会生成路口整件与斑马线
     this.filletOn = false;
     this.filletH = [];
     this._dragHandle = -1;
@@ -330,7 +330,7 @@ export class RoadBrush {
     app.batchOp(`编辑 ${so.name || '道路'}`, () => app.removeObject(so));
     this.start();
     this.points = data.points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
-    this.roadWidth = data.width || 4;
+    this.roadWidth = data.width || 12;
     this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
     this.filletOn = !!data.fillet;
     this.filletH = (data.filletH || []).slice();
@@ -367,7 +367,7 @@ export class RoadBrush {
       this.filletH = (o.filletH || []).slice();
       if (this.filletOn) this.syncFillets();
       const roadType = ROAD_TYPES.find(t => t.id === o.roadType) || ROAD_TYPES[0];
-      const width = o.width || 4;
+      const width = o.width || 12;
       this.roadType = roadType;
       this.roadWidth = width;
       const curve = this._buildPathCurve();

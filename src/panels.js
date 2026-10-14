@@ -806,9 +806,9 @@ function tabTerrain(app, rerender, ctx) {
   const rbRow = el('div', { class: 'row' }, [
     el('label', { class: 'lab', text: '宽度 m' }),
     el('div', { class: 'ctl' }, [
-      el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: 0.5, value: rb?.roadWidth || 4,
+      el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: 0.5, value: rb?.roadWidth || 12,
         oninput: (e) => { rb.setWidth(parseFloat(e.target.value)); rbVal.textContent = rb.roadWidth.toFixed(1) + ' m'; } }),
-      el('span', { class: 'stat', text: (rb?.roadWidth || 4).toFixed(1) + ' m' }),
+      el('span', { class: 'stat', text: (rb?.roadWidth || 12).toFixed(1) + ' m' }),
     ]),
   ]);
   rbVal = rbRow.querySelector('.stat');

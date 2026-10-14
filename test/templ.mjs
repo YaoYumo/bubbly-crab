@@ -90,8 +90,11 @@ ck('模板搭建 ≥40 物体', (T1.objects || 0) >= 40, `obj=${T1.objects}`);
 ck('building/env/char 三组都上场', T1.buildings >= 6 && T1.envs >= 15 && T1.chars >= 3, `b${T1.buildings}/e${T1.envs}/c${T1.chars}`);
 ck('车流/人物在运动', (T1.moving || 0) >= 3, `moving=${T1.moving}`);
 ck('模板自带自动机位 ≥4 且都带运镜关键帧', T1.shots >= 4 && T1.shotKeys?.every((n) => n > 2), `${T1.shots}镜 keys=${T1.shotKeys?.join('/')} moves=${T1.moves?.join('/')}`);
-await sleep(400);   // 关闭动画 160ms + 余量
-const dlgGone = await page.evaluate(() => !document.querySelector('.tg-mask'));
+let dlgGone = false;   // 关闭动画 160ms；轮询 ≤3s（固定 400ms 在高负载下会 flake）
+for (let i = 0; i < 30 && !dlgGone; i++) {
+  await sleep(100);
+  dlgGone = await page.evaluate(() => !document.querySelector('.tg-mask'));
+}
 ck('对话框生成后正常关闭', dlgGone === true);
 
 // ---------- ③ 模板 API：plaza / boulevard + 关键词 ----------
