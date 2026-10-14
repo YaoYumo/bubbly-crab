@@ -453,68 +453,66 @@ export class RoadBrush {
     return mesh;
   }
 
+  /**
+   * 模型库拼装（替代旧版程序化带面）：沿路按跨段调用库道路件 build——
+   * 缘石/人行道/标线/锯缝随件生成，不再挤平面 ribbon。
+   * 宽度语义：asphalt/oneway/concrete 库件 width=总宽（车行+两侧各2.25m路侧带），
+   * 而画笔/城镇记的 width=车行宽 → 传入时补回两侧；garden/gravel 库件按全宽设计 → 原样传。
+   * 分跨：密采样折线化，缺口区（路口）跳过，按转角/目标长切跨（库件为直件，弯处以短件拟合）。
+   */
   _buildRoadMesh(curve, gaps = [], rd = null) {
-    const terrain = this.app.terrain;
-    const numSamples = Math.max(50, Math.round(curve.getLength() * 4));
-    const halfW = (rd ? rd.width : this.roadWidth) / 2;
-    const rt = rd ? rd.roadType : this.roadType;
+    const rt = (rd && rd.roadType) || this.roadType;
+    const width = (rd && rd.width) || this.roadWidth;
     const roadGroup = new THREE.Group();
     roadGroup.name = `road_${rt.id}`;
-    const mask = this._gapMask(numSamples, gaps);
-    
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-    
-    for (let i = 0; i <= numSamples; i++) {
-      const t = i / numSamples;
-      const point = curve.getPointAt(t);
-      const tangent = curve.getTangentAt(t).normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
-      
-      const lx = point.x - right.x * halfW;
-      const lz = point.z - right.z * halfW;
-      const rx = point.x + right.x * halfW;
-      const rz = point.z + right.z * halfW;
-      
-      const ly = terrain?.enabled ? terrain.heightAt(lx, lz) + 0.03 : 0.03;
-      const ry = terrain?.enabled ? terrain.heightAt(rx, rz) + 0.03 : 0.03;
-      
-      positions.push(lx, ly, lz, rx, ry, rz);
-      normals.push(0, 1, 0, 0, 1, 0);
-      uvs.push(0, t * 10, 1, t * 10);
-      
-      if (i < numSamples && !(mask && (mask[i] || mask[i + 1]))) {
-        const base = i * 2;
-        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    const L = curve.getLength();
+    if (!(L > 0.01) || !rt || typeof rt.build !== 'function') return roadGroup;
+
+    const SIDED = { asphalt: 1, oneway: 1, concrete: 1 };
+    const pieceW = Math.max(SIDED[rt.id] ? width + 4.5 : width, SIDED[rt.id] ? 6.6 : 0.6);
+    const target = rt.id === 'garden' ? 6 : 22;            // 分段目标长（贴近库件默认模数）
+
+    const n = Math.max(16, Math.ceil(L / 0.75));           // ~0.75m 密采样
+    const pts = curve.getSpacedPoints(n);
+    const inGap = (i) => {
+      const t = i / n;
+      for (const g of gaps || []) if (g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
+      return false;
+    };
+    const spans = [];
+    let a = null, b = null, len = 0;
+    const push = () => { if (a && b && len >= 0.5) spans.push({ a, b, len }); a = null; b = null; len = 0; };
+    for (let i = 0; i <= n; i++) {
+      if (inGap(i)) { push(); continue; }
+      const p = pts[i];
+      if (!a) { a = p; b = p; len = 0; continue; }
+      const dx = p.x - b.x, dz = p.z - b.z;
+      const seg = Math.hypot(dx, dz);
+      if (seg < 1e-9) continue;
+      if (len > 0) {
+        const clen = Math.hypot(b.x - a.x, b.z - a.z);
+        const cos = clen > 1e-9 ? ((b.x - a.x) * dx + (b.z - a.z) * dz) / (clen * seg) : 1;
+        if (cos < 0.995 || len + seg > target) {           // 转角 >~5.7° 或超长 → 拆跨
+          push();
+          a = p;
+        }
       }
+      b = p;
+      len += seg;
     }
-    
-    const roadGeo = new THREE.BufferGeometry();
-    roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    roadGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    roadGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    roadGeo.setIndex(indices);
-    roadGeo.computeVertexNormals();
-    
-    const roadMat = new THREE.MeshStandardMaterial({
-      color: this._getRoadColor(rt.id),
-      roughness: this._getRoadRoughness(rt.id),
-      metalness: 0.02,
-    });
-    
-    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
-    roadMesh.name = `road_surface_${rt.id}`;
-    roadGroup.add(roadMesh);
-    
-    if (rt.id === 'asphalt' || rt.id === 'oneway' || rt.id === 'concrete') {
-      this._addCurbs(roadGroup, curve, numSamples, halfW, terrain, mask);
+    push();
+
+    const prm = { ...(rt.params || {}) };
+    for (const s of spans) {
+      const piece = rt.build({ ...prm, width: pieceW, length: s.len });
+      if (!piece) continue;
+      const dx = s.b.x - s.a.x, dz = s.b.z - s.a.z, dy = s.b.y - s.a.y;
+      piece.rotation.order = 'YXZ';
+      piece.rotation.y = Math.atan2(dx, dz);               // 件 +Z 对齐行进方向
+      piece.rotation.x = -Math.atan2(dy, s.len);           // 俯仰随地形坡度（绕中心）
+      piece.position.set((s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2 + 0.02, (s.a.z + s.b.z) / 2);
+      roadGroup.add(piece);
     }
-    
-    this._addRoadMarkings(roadGroup, curve, numSamples, rt.id, terrain, mask);
-    
     return roadGroup;
   }
 
@@ -939,8 +937,14 @@ export class RoadBrush {
     // 保证平行四边形沿每条路方向的延伸都超过裁剪端头 OVR 米。
     const cosT = Math.abs(tanA.x * tanB.x + tanA.z * tanB.z);
     const OVR = 0.4;
-    const hAe = hA + cosT * hB + OVR * sinT;
-    const hBe = hB + cosT * hA + OVR * sinT;
+    // 拼装件带两侧各 2.25m 人行道的类型（asphalt/oneway/concrete）才需要面片外扩：
+    // 按侧取 SB 盖住该路自身的路侧带与四角裸土；扩出部分从人行道/路面下方穿过
+    // （标高不同、不共面，无闪面）。小径/碎石无路侧带 → 不扩，避免 T 口面片肥大。
+    const sid = (rt) => !!rt && (rt.id === 'asphalt' || rt.id === 'oneway' || rt.id === 'concrete');
+    const SB_A = sid(isect.newRoadType) ? 2.4 : 0;
+    const SB_B = sid(isect.existingRoadType) ? 2.4 : 0;
+    const hAe = hA + SB_A + cosT * (hB + SB_B) + OVR * sinT;
+    const hBe = hB + SB_B + cosT * (hA + SB_A) + OVR * sinT;
 
     // 两条路带的交集 = 平行四边形：四条边线两两求交（用扩张后的半宽）
     const corner = (sA, sB) => {
@@ -951,28 +955,42 @@ export class RoadBrush {
       const t = (dx * tanB.z - dz * tanB.x) / c;
       const px = ex + tanA.x * t;
       const pz = ez + tanA.z * t;
-      const py = terrain?.enabled ? terrain.heightAt(px, pz) + 0.055 : 0.055;
+      const py = terrain?.enabled ? terrain.heightAt(px, pz) + 0.09 : 0.09;
       return new THREE.Vector3(px, py, pz);
     };
-    const patchCorners = [corner(1, 1), corner(1, -1), corner(-1, -1), corner(-1, 1)];
-
+    const C = [corner(1, 1), corner(1, -1), corner(-1, -1), corner(-1, 1)];
+    // 5×5 双线性贴地网格（平行四边形内逐点采样地形）：路口范围的草皮微起伏
+    // 不再穿透面片；法线统一朝上、不按绕序重算，配合 DoubleSide 免绕序问题。
+    const N = 5;
     const positions = [];
     const normals = [];
     const uvs = [];
     const indices = [];
-    for (let i = 0; i < 4; i++) {
-      positions.push(patchCorners[i].x, patchCorners[i].y, patchCorners[i].z);
-      normals.push(0, 1, 0);
-      uvs.push(i < 2 ? 0 : 1, i % 2 === 0 ? 0 : 1);
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      for (let j = 0; j < N; j++) {
+        const v = j / (N - 1);
+        const w00 = (1 - u) * (1 - v), w01 = (1 - u) * v, w11 = u * v, w10 = u * (1 - v);
+        const x = C[0].x * w00 + C[1].x * w01 + C[2].x * w11 + C[3].x * w10;
+        const z = C[0].z * w00 + C[1].z * w01 + C[2].z * w11 + C[3].z * w10;
+        const y = terrain?.enabled ? terrain.heightAt(x, z) + 0.09 : 0.09;   // 高过草皮微起伏，低于件面 0.17
+        positions.push(x, y, z);
+        normals.push(0, 1, 0);
+        uvs.push(u, v);
+      }
     }
-    indices.push(0, 1, 2, 0, 2, 3);
+    for (let i = 0; i < N - 1; i++) {
+      for (let j = 0; j < N - 1; j++) {
+        const a = i * N + j, b = (i + 1) * N + j;
+        indices.push(a, b + 1, b, a, a + 1, b + 1);   // 从上往下看逆时针（正面朝上）
+      }
+    }
 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
-    geo.computeVertexNormals();
 
     const color = this._getRoadColor(isect.newRoadType.id);
     const mat = new THREE.MeshStandardMaterial({
@@ -1023,7 +1041,7 @@ export class RoadBrush {
       return g;
     };
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide });
-    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.06 : 0.06);
+    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.10 : 0.10);   // 贴面片(+0.09)之上
     const bandDepth = 2.0;
 
     for (const ap of approaches) {

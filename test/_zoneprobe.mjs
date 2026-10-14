@@ -29,17 +29,22 @@ await p.evaluate(() => {
 });
 
 const CASES = [
-  ['cn-axis', { theme: 'chinese', roadTopology: 'axis', seed: 11, mapSize: 256, zoning: { commercialRatio: 0.5 } }],
-  ['pure-res', { theme: 'chinese', roadTopology: 'ring', seed: 5, mapSize: 256, zoning: { commercialRatio: 0 } }],
-  ['fusion-grid', { theme: 'fusion', roadTopology: 'grid', seed: 7, mapSize: 256, zoning: { commercialRatio: 0.3 } }],
+  ['cn-axis', { theme: 'chinese', roadTopology: 'axis', seed: 11, mapSize: 256, zoning: { commercialRatio: 0.5 } }, [0, 205, 165, 0, 0, 0, 46]],
+  ['pure-res', { theme: 'chinese', roadTopology: 'ring', seed: 5, mapSize: 256, zoning: { commercialRatio: 0 } }, [0, 205, 165, 0, 0, 0, 46]],
+  ['fusion-grid', { theme: 'fusion', roadTopology: 'grid', seed: 7, mapSize: 256, zoning: { commercialRatio: 0.3 } }, [0, 205, 165, 0, 0, 0, 46]],
+  ['junction-close', { theme: 'chinese', roadTopology: 'axis', seed: 11, mapSize: 256, zoning: { commercialRatio: 0.5 } }, [14, 11, 34, 0, 0.5, 2, 44]],
 ];
 
-for (const [name, schema] of CASES) {
-  const stats = await p.evaluate(async (sch) => {
+const ONLY = process.argv[2] || '';
+for (const [name, schema, cam] of CASES.filter((c) => !ONLY || c[0].includes(ONLY))) {
+  const stats = await p.evaluate(async (sch, c) => {
     const app = window.app;
     const { generateTown } = await import('/src/townbuild.js');
     const f = generateTown(app, sch);
-    window.__shot(0, 205, 165, 0, 0, 0, 46);
+    app.objects.forEach((o) => {                       // 关云便于看清路口（仅本探针）
+      if (/cloud|云/i.test(`${o.key || ''} ${o.name || ''} ${o.type || ''}`)) { o.visible = false; o.root.visible = false; }
+    });
+    window.__shot(...c);
     const keys = app.objects.filter((o) => o.key).map((o) => o.key);
     const count = (pref) => keys.filter((k) => k.startsWith(pref)).length;
     return {
@@ -50,7 +55,7 @@ for (const [name, schema] of CASES) {
       houseW: keys.filter((k) => k.startsWith('house:') || k.startsWith('suburban:')).length,
       total: keys.length,
     };
-  }, schema);
+  }, schema, cam);
   console.log(name, JSON.stringify(stats));
   await new Promise((r) => setTimeout(r, 1500));
   const rect = await p.evaluate(() => {
