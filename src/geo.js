@@ -361,6 +361,7 @@ export function eaveCornice(o = {}) {
   const capSeg = Q.level === 'lite' ? 5 : (Q.level === 'fine' ? 12 : 8);
   const capGeo = new THREE.CylinderGeometry(0.085, 0.085, 0.07, capSeg);
   const dropGeo = new THREE.CylinderGeometry(0.075, 0.05, 0.06, 3, 1, false, Math.PI / 2);   // 3 段 = 三角板，尖端在局部 +X
+  const dr = o.drop || {};                                                                  // 修补单：逐批沉量 {raft, caps, drops, bands}
   const sn = Math.max(0, Math.round(o.sides || 0));
   if (sn >= 3) {
     // 正多边形檐口：沿每条边排布，角部抬得最高（亭 / 塔用；方檐口的 max() 会把菱角卡到两柱之间）
@@ -425,6 +426,10 @@ export function eaveCornice(o = {}) {
     bands.push({ p: [sx * (W / 2 - 0.34), y + lift(Math.abs(tm) * 2) - 0.06, tm * D], r: [0, -Math.PI / 2, Math.atan2(dy, D / nBz)], s: [D / nBz * 1.08, 0.16, 0.2] });
   }
   }
+  if (dr.raft) for (const e of raft) e.p[1] -= dr.raft;
+  if (dr.caps) for (const e of caps) e.p[1] -= dr.caps;
+  if (dr.drops) for (const e of drops) e.p[1] -= dr.drops;
+  if (dr.bands) for (const e of bands) e.p[1] -= dr.bands;
   const g = new THREE.Group();
   const r1 = batch(new THREE.BoxGeometry(1, 1, 1), wood, raft);
   if (r1) g.add(r1);
@@ -458,8 +463,10 @@ export function hipRidge(o = {}) {
     mb.rotation.z = Math.atan2(yAt(t1) - yAt(t0), len / ns);   // 段身顺坡倾斜，拼成连续斜脊
     g.add(mb);
   }
-  g.add(box(0.34 * s, 0.3 * s, 0.34 * s, bm, len + 0.12 * s, yAt(1) + 0.2 * s, 0, 0.06));       // 垂兽
-  g.add(cone(0.16 * s, 0.32 * s, bm, seg(6), len + 0.34 * s, yAt(1) + 0.44 * s, 0));
+  if (o.endCap !== false) {
+    g.add(box(0.34 * s, 0.3 * s, 0.34 * s, bm, len + 0.12 * s, yAt(1) + 0.2 * s, 0, 0.06));     // 垂兽
+    g.add(cone(0.16 * s, 0.32 * s, bm, seg(6), len + 0.34 * s, yAt(1) + 0.44 * s, 0));
+  }
   if (n > 0) {
     const bodies = [], heads = [];
     for (let i = 0; i < n; i++) {

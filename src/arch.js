@@ -438,7 +438,7 @@ function roofTrim(g, o = {}) {
   const win = o.win ?? 0, din = o.din ?? 0;      // 环状开洞屋面：正脊/鸱吻整组取消，垂脊截到洞缘
   const W = w + brim * 2, D = d + brim * 2;
   const xr = Math.max(0.35, w * 0.5 * ridge);
-  if (trim && drip) g.add(eaveCornice({ w, d, brim, eaveUp, h, y: y0 + 0.03, mat: wood, tileMat: tile, band: o.band }));
+  if (trim && drip) g.add(eaveCornice({ w, d, brim, eaveUp, h, y: y0 + 0.03, mat: wood, tileMat: tile, band: o.band, drop: o.corniceDrop }));
   // 正脊：两层脊身 + 两端正吻（鸱吻，尾尖内吞）
   const ry = y0 + h * 0.76;                      // curvedRoof 的脊高就是 0.76h：正脊落在屋面上，不再悬空
   const rl = kind === 'juan' ? W + 0.3 : kind === 'jin' ? 0.6 : xr * 2 + 0.5;
@@ -475,7 +475,7 @@ function roofTrim(g, o = {}) {
     // 垂脊沿屋面高度场采样（旧版直梁跨凹曲屋面，脊身+走兽整条悬空）
     const sample = (t) => cnRoofY(cx + (sx * xr - cx) * t, cz * (1 - t), { W, D, h, kind, xr: xrS, eaveUp, y0 });
     const tH = win > 0.5 ? clamp(Math.max((W / 2 - win / 2) / Math.max(0.01, W / 2 - xr), 1 - din / D), 0.3, 0.92) : 1;   // 垂脊止于洞缘（旧版整条垂脊+走兽穿进平台）
-    const r = hipRidge({ len: Math.hypot(dx, dz) * 0.95 * tH, curve: (t) => sample(t * tH), mat: rMat, beastMat: o.beastMat || rMat, beasts: nb, s: bs, w: 0.2 });
+    const r = hipRidge({ len: Math.hypot(dx, dz) * 0.95 * tH, curve: (t) => sample(t * tH), mat: rMat, beastMat: o.beastMat || rMat, beasts: win > 0.5 ? 0 : nb, s: bs, w: 0.2, endCap: win > 0.5 ? false : true });   // 开洞屋面：垂脊内端垂兽/走兽整组取消（修补单 09：穿平台 stump 删除，对称化）
     r.position.set(cx, sample(0), cz);
     r.rotation.y = Math.atan2(-dz, dx);
     g.add(r);
@@ -1329,7 +1329,7 @@ function buildDrumTower(p) {
     const bN = W * 0.84 * (1 - (lv + 1) * 0.14);
     const winN = lv < levels - 1 ? bN * 1.26 - 0.2 : 0;   // 非顶层：屋面按上层平台截断开洞
     g.add(curvedRoof({ w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, kind: 'xie', eaveUp: 0.34, mat: tile, seg: 18, y0: ry, win: winN, din: winN }));
-    roofTrim(g, { w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, brim: 0.5, eaveUp: 0.34, y0: ry, kind: 'xie', tile, woodMat: wood, ridgeMat: M.paint(0x31363d, 0.6), trim, beasts: lv === levels - 1 ? 4 : 2, win: winN, din: winN });
+    roofTrim(g, { w: bw2 + 1.9, d: bd2 + 1.9, h: 1.15, brim: 0.5, eaveUp: 0.34, y0: ry, kind: 'xie', tile, woodMat: wood, ridgeMat: M.paint(0x31363d, 0.6), trim, beasts: lv === levels - 1 ? 4 : 2, win: winN, din: winN, corniceDrop: lv === 0 ? { raft: 0.16, caps: 0.10, drops: 0.01, bands: 0.20 } : { raft: 0.16, caps: 0.18, drops: 0.10, bands: 0.20 } });   // 修补单 09：檐口椽瓦/檐檩环逐层沉量
   }
   // ── 平座陈设：铜钟+钟架、铜壶滴漏（图板：BELL / WATER CLOCK）─────────
   const bronze = M.metal(0x8a6a3a, 0.45, 0.75);
