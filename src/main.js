@@ -18,6 +18,8 @@ import { ATMOS } from './lighting.js';
 import { WEATHER } from './weather.js';
 import { Mover } from './mover.js';
 import { openTownDialog } from './townui.js';
+import { autoCamera } from './autocam.js';
+import { pickSceneFile, openApiDialog } from './sceneio.js';
 import { el, clear, clamp, fmt, copy, downloadBlob, snap } from './util.js';
 
 const host = document.getElementById('stage');
@@ -174,7 +176,7 @@ for (const [k, v] of Object.entries(LEVELS)) detailSel.appendChild(el('option', 
 const fileIn = el('input', { type: 'file', multiple: true, accept: '.glb,.gltf,.fbx,.obj,.mtl,.json', style: 'display:none', onchange: (e) => onFiles(e.target.files) });
 document.body.appendChild(fileIn);
 
-/** 顶栏「清空」：两段式确认 */
+/** 顶栏撤销/重做 + 「一键清空」：单击立即清空（一步 Ctrl+Z 可撤销） */
 const undoBtn = tbtn('撤销', { icon: '↶', title: '撤销上一步（Ctrl+Z）', onClick: () => { if (!app.undo()) toast('没有可撤销的操作'); } });
 const redoBtn = tbtn('重做', { icon: '↷', title: '重做（Ctrl+Shift+Z）', onClick: () => { if (!app.redo()) toast('没有可重做的操作'); } });
 const syncUndoBtns = () => {
@@ -186,24 +188,13 @@ const syncUndoBtns = () => {
 app.bus.on('undoable', syncUndoBtns);
 syncUndoBtns();
 const clearBtn = el('button', {
-  class: 'tb', type: 'button', title: '一键清空场景 (Ctrl+Shift+Backspace)',
+  class: 'tb', type: 'button', title: '一键清空场景：模型/机位/地形全清（Ctrl+Shift+Backspace · Ctrl+Z 可撤销）',
+  onclick: () => {
+    const objs = app.objects.length, shots = app.shots.length;
+    if (!objs && !shots) { toast('场景已经是空的'); return; }
+    app.clearScene({ blank: true });
+  },
 }, [el('span', { class: 'i', html: '⌫' }), el('span', { class: 't', text: '清空' })]);
-{
-  const lab = clearBtn.querySelector('.t');
-  let timer = 0;
-  clearBtn.addEventListener('click', () => {
-    if (clearBtn.dataset.armed === '1') {
-      clearTimeout(timer); clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空';
-      const objs = app.objects.length, shots = app.shots.length;
-      app.clearScene({ blank: true });
-      toast(`已清空场景（${objs} 个模型 · ${shots} 个机位）· Ctrl+Z 可撤销`);
-      return;
-    }
-    clearBtn.dataset.armed = '1'; clearBtn.classList.add('warn'); lab.textContent = '确认清空?';
-    clearTimeout(timer);
-    timer = setTimeout(() => { clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空'; }, 3200);
-  });
-}
 
 /* ---- 下拉菜单辅助 ---- */
 function makeDropdown(label, icon, items) {
@@ -234,7 +225,10 @@ function makeDropdown(label, icon, items) {
   wrap.append(btn, menu);
   return wrap;
 }
-document.addEventListener('pointerdown', () => {
+document.addEventListener('pointerdown', (e) => {
+  // 菜单内部（开合按钮 / 菜单项）的按下不关菜单：否则菜单在 click 抬起前消失，
+  // 点击永远落不到条目上（菜单项集体失效 + 开合按钮关不上）
+  if (e.target && e.target.closest && e.target.closest('.tb-dropdown')) return;
   document.querySelectorAll('.tb-dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
@@ -331,6 +325,14 @@ const sceneMenu = makeDropdown('场景', '☰', [
   { text: '导入模型', icon: '', onClick: () => fileIn.click() },
   '---',
   { text: '示例场景', icon: '◫', onClick: () => scenePickerBtn.click() },
+  { text: '自动生成运镜', icon: '🎬', onClick: () => {
+      if (!app.objects.length) { toast('场景是空的：先用 ✦ 一句话生成或模板搭建', 'warn'); return; }
+      const before = app.shots.length;
+      app.batchOp('自动运镜', () => { autoCamera(app, {}); app.select(null); });
+      toast(`已生成 ${app.shots.length - before} 个机位：全景交代 → 环绕主体 → 跟拍/横移 → 推镜收尾（Ctrl+Z 一步撤销）`);
+    } },
+  { text: '导入 Scene 文件…', icon: '⇥', onClick: () => pickSceneFile(app) },
+  { text: 'API 生成场景…', icon: '☁', onClick: () => openApiDialog(app) },
   '---',
   { text: '保存工程', icon: '⬇', onClick: () => { downloadBlob(new Blob([JSON.stringify(app.serialize(), null, 1)], { type: 'application/json' }), `${app.projectName}.json`); toast('已导出工程 JSON'); } },
   { text: '打开工程', icon: '⬆', onClick: () => fileIn.click() },
@@ -342,6 +344,7 @@ const sceneMenu = makeDropdown('场景', '☰', [
 toolRow.append(
   viewMenu,
   sceneMenu,
+  clearBtn,               // 一键清空：挂在最顺手的位置，单击即清
 );
 top.appendChild(toolRow);
 toolRow.style.display = currentPage === 'scene' ? '' : 'none';
@@ -408,6 +411,23 @@ app.bus.on('time', () => {
 buildSceneAssets(app, document.getElementById('library-scene'));
 buildObjectList(app, document.getElementById('objlist-scene'));
 buildSceneInspector(app, document.getElementById('inspector-scene'));
+
+/* 模型库收进二级入口：默认收起，点头部展开（主入口是顶栏 ✦ 一句话生成） */
+{
+  const libBtn = document.getElementById('lib-toggle');
+  const libBox = document.getElementById('library-scene');
+  const libState = document.getElementById('lib-toggle-state');
+  if (libBtn && libBox) {
+    const setLib = (open) => {
+      libBox.style.display = open ? '' : 'none';
+      if (libState) libState.textContent = open ? '收起 ▾' : '展开 ▸';
+      libBtn.classList.toggle('on', open);
+      libBtn.title = open ? '收起模型库' : `展开模型库（${libBox.querySelectorAll('.card').length} 个模型）`;
+    };
+    libBtn.addEventListener('click', () => setLib(libBox.style.display === 'none'));
+    setLib(false);
+  }
+}
 
 /* ---- S3 Camera Path 面板 ---- */
 buildKeyframesList(app, document.getElementById('keyframes-list'));
@@ -738,7 +758,11 @@ window.addEventListener('keydown', (e) => {
   }
   else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'backspace' || k === 'delete')) { e.preventDefault(); app.clearScene({ blank: true }); }
   else if (k === 'escape') {
-    if (app.roadBrush?.active) { app.roadBrush.stop(); toast('已取消道路绘制'); return; }
+    if (app.roadBrush?.active) {
+      if (app.roadBrush._editBackup) { app.roadBrush.cancelEdit(); toast('已放弃编辑，原道路已恢复'); }
+      else { app.roadBrush.stop(); toast('已取消道路绘制'); }
+      return;
+    }
     const open = document.querySelectorAll('.menu.on');
     if (open.length) { open.forEach((m) => m.classList.remove('on')); return; }
     if (app.state.dofPickMode) { app.state.dofPickMode = false; app.state.dofPickShot = null; toast('已取消对焦主体选择'); return; }
@@ -864,21 +888,34 @@ window.addEventListener('beforeunload', () => app.saveLocal());
 app.bus.on('gizmo', () => { });
 app.bus.on('toast', (d) => toast(typeof d === 'string' ? d : d?.msg, typeof d === 'object' && d?.kind ? d.kind : 'info'));
 const FRESH = /[?&]fresh/.test(location.search);
-if (!FRESH && !app.maybeRestore()) {
-  // Demo disabled - start with empty scene
-}
+const didRestore = !FRESH && app.maybeRestore();
+/* 恢复提示：自动存档是【几何点位】原样回放——旧版大环路会跟着回魂，必须让用户知道
+   这是上次的场景而不是新生成的（开新场：一键清空 或 ?fresh=1） */
+const restored = didRestore && app.objects.length > 0;
 if (FRESH) {
   const pick = new URLSearchParams(location.search).get('scene');
   if (pick && SCENES.some((s) => s.id === pick)) applyScene(app, pick);
 }
 app.updateAspectOverlay();
 syncHud();
+/* 落地即「一句话生成」：启动直接进 Scene 页（boot 遮罩尚未撤下，无闪跳） */
+switchPage('scene');
+/* 每个标签页首访自动弹出生成对话框；自动化（webdriver）与 ?fresh 调试路径不受影响 */
+try {
+  if (!navigator.webdriver && !FRESH && !sessionStorage.getItem('tg-first')) {
+    sessionStorage.setItem('tg-first', '1');
+    setTimeout(() => openTownDialog(app), 250);
+  }
+} catch (e) { /* 存储不可用时静默跳过 */ }
 window.__previzBooted = true;
 if (window.__bootWatch) clearTimeout(window.__bootWatch);
 document.getElementById('boot')?.remove();
 setInterval(syncHud, 1000);
 loop();
-setTimeout(() => toast('试试：拖动蓝色关键帧节点 → 按 P 预览 → 右侧导出视频'), 900);
+setTimeout(() => {
+  if (restored) toast('已恢复上次自动保存的场景（含旧版路网几何）· 开新场：点顶栏「一键清空」，或地址后加 ?fresh=1', 'info', 7000);
+  else if (!app.objects.length) toast('场景空着？点顶栏 ✦ 一句话生成：「黄昏的加州林荫小镇，商业30%，丘陵」');
+}, 900);
 
 if (import.meta.env.DEV) {
   window.__t = {

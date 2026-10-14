@@ -23,9 +23,9 @@
     document.getElementById('boot-t').innerHTML = '加载未完成'
       + '<div class="hint">'
       + (file
-        ? '浏览器不允许以 <code>file://</code> 方式加载 <b>ES 模块</b>（这就是画面停在这里的原因）。两个办法：<br>① 直接打开同目录的 <b>previz-lab.html</b>（单文件版，无需任何服务器）；<br>② 在本目录执行 <code>npm install</code> 后 <code>npm run dev</code>，访问 <code>http://localhost:5173</code>。'
-        : '如果长时间停在这里，通常是 dev 服务器已停止：在 <code>cameraref/</code> 里重新运行 <code>npm run dev</code>；'
-          + '也可以改用仓库根目录的 <b>previz-lab.html</b> 单文件版（双击即可用）。')
+        ? '浏览器不允许以 <code>file://</code> 方式加载 <b>ES 模块</b>（这就是画面停在这里的原因）。两个办法：<br>① 直接打开同目录的 <b>previz-lab.html</b>（单文件版，无需任何服务器）；<br>② 在本目录执行 <code>npm install</code> 后 <code>npm run dev</code>，访问 <code>http://localhost:5174</code>。'
+        : '多半是这一拍正好撞上 dev 服务器重启/停止：直接 <b>刷新页面</b>，或地址后加 <code>?fresh=1</code> 再打开；'
+          + '若仍停在此，说明服务未运行，重启预览服务（端口 <b>5174</b>）即可。')
       + '</div>';
   }, 3500);
 </script>
@@ -49,7 +49,9 @@
   <!-- S2 Scene Builder Page -->
   <div class="page" id="page-scene">
     <aside id="left-scene">
-      <div class="ph"><b>Assets</b></div>
+      <button class="ph libph" id="lib-toggle" type="button" title="展开 / 收起模型库（次级入口）">
+        <b>模型库</b><span class="mini" id="lib-toggle-state">展开 ▸</span>
+      </button>
       <div id="library-scene"></div>
       <div id="objlist-scene"></div>
     </aside>

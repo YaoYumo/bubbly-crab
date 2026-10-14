@@ -3,7 +3,7 @@
 // 单位：米。朝向：+Z 为前方。
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { M, shade } from './assets.js';
+import { M, shade } from './mat.js';   // 不从 assets.js 导入：assets→city→character 成环会触发 TDZ
 import { clamp, lerp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
 

@@ -245,13 +245,19 @@ export class Mover {
   tangent(u, out = new THREE.Vector3()) {
     const n = this.keys.length;
     if (n < 2) return out.set(0, 0, 1);
+    // 键弦方向：永远可靠（曲线端点有限差分会反向，导致开场朝向翻 180°）
+    const i = clamp(Math.floor(u * (n - 1)), 0, n - 2);
+    const chord = _b.set(this.keys[i + 1].p[0] - this.keys[i].p[0], this.keys[i + 1].p[1] - this.keys[i].p[1], this.keys[i + 1].p[2] - this.keys[i].p[2]);
+    const hasChord = chord.lengthSq() > 1e-9;
     if (this.curve) {
       this.curve.getTangent(clamp(u, 0, 0.9999), out);
-      if (Number.isFinite(out.x) && Number.isFinite(out.y) && Number.isFinite(out.z) && out.lengthSq() > 1e-9) return out.normalize();
+      if (Number.isFinite(out.x) && Number.isFinite(out.y) && Number.isFinite(out.z) && out.lengthSq() > 1e-9) {
+        out.normalize();
+        if (!hasChord || out.dot(chord) > 0) return out;   // 端点反向 → 落到键方向
+      }
     }
-    const i = clamp(Math.floor(u * (n - 1)), 0, n - 2);
-    out.set(this.keys[i + 1].p[0] - this.keys[i].p[0], this.keys[i + 1].p[1] - this.keys[i].p[1], this.keys[i + 1].p[2] - this.keys[i].p[2]);
-    return out.lengthSq() ? out.normalize() : out.set(0, 0, 1);
+    if (hasChord) return out.copy(chord).normalize();
+    return out.set(0, 0, 1);
   }
 
   /** 归一化速度（0..1 相对平均速度的倍数）：给曲线编辑器画速度条 / 体检「有没有停顿」 */

@@ -2,7 +2,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'node:fs';
 
-const URL = process.env.URL || 'http://localhost:5173/';
+const URL = process.env.URL || 'http://localhost:5174/';
 const browser = await puppeteer.launch({
   headless: 'shell',
   args: ['--no-sandbox', '--disable-setuid-sandbox', '--use-gl=angle', '--use-angle=swiftshader',

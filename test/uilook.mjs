@@ -2,7 +2,7 @@
 // 运行：node test/uilook.mjs
 import puppeteer from 'puppeteer';
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const errors = [];
 const fails = [];
 const ck = (name, ok, extra = '') => { if (!ok) fails.push(name + (extra ? ` — ${extra}` : '')); console.log(`${ok ? '✔' : '✘'} ${name}${extra ? ' — ' + extra : ''}`); };

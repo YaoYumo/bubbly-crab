@@ -2,7 +2,7 @@
 // 运行：node test/crowd.mjs   （需要 dev server：npm run dev）
 import puppeteer from 'puppeteer';
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const browser = await puppeteer.launch({
   headless: true,
   args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox', '--disable-dev-shm-usage'],

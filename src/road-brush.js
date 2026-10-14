@@ -2,7 +2,7 @@
 // 道路画笔 — 实时生成道路模型，使用模型库的道路模型
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { buildTwoWayRoad, buildOneWayRoad, buildConcreteRoad, buildGardenPath, buildGravelRoad } from './assets.js';
+import { buildTwoWayRoad, buildOneWayRoad, buildConcreteRoad, buildGardenPath, buildGravelRoad, buildFreeway, buildFourWayStop, buildTJunction, buildRoundabout, buildCulDeSac } from './assets.js';
 
 const ROAD_TYPES = [
   { id: 'asphalt', label: '沥青路', build: buildTwoWayRoad, params: { brickColor: null } },
@@ -10,6 +10,7 @@ const ROAD_TYPES = [
   { id: 'concrete', label: '混凝土路', build: buildConcreteRoad, params: { brickColor: null } },
   { id: 'garden', label: '花园小径', build: buildGardenPath, params: { brickColor: '#c45a3a' } },
   { id: 'gravel', label: '碎石路', build: buildGravelRoad, params: { brickColor: null } },
+  { id: 'freeway', label: '高速公路', build: buildFreeway, params: { brickColor: null } },
 ];
 
 export { ROAD_TYPES };
@@ -20,7 +21,7 @@ export class RoadBrush {
     this.active = false;
     this.points = [];
     this.roadType = ROAD_TYPES[0];
-    this.roadWidth = 4;
+    this.roadWidth = 12;                       // 沥青路默认车行宽：≥5.5 才会生成路口整件与斑马线
     this.filletOn = false;
     this.filletH = [];
     this._dragHandle = -1;
@@ -140,9 +141,7 @@ export class RoadBrush {
   }
 
   stop() {
-    if (this.active && this.points.length >= 2) {
-      this.finish();
-    }
+    // 纯取消：清掉当前笔画，不落路（完成走 finish —— 双击 / Enter / 面板按钮）
     this.active = false;
     this.points = [];
     this.filletH = [];
@@ -294,19 +293,66 @@ export class RoadBrush {
     }
 
     const curve = this._buildPathCurve();
-    const isects = curve ? this._detectIntersections(curve, this.roadWidth) : [];
+    const isects = curve ? this._detectIntersections(curve, this.roadWidth, !!this._editNoJunct) : [];
     const mesh = curve ? this._addRoad(curve, {
       roadType: this.roadType, width: this.roadWidth,
       ctrl: this.points.map(p => [p.x, p.y, p.z]),
       filletH: this.filletH.slice(), filletOn: this.filletOn,
-      isects,
+      isects, noJunct: !!this._editNoJunct,
     }) : null;
 
     this.points = [];
     this.filletH = [];
     this._clearLiveRoad();
     this._updatePreview();
+    if (mesh) {
+      const wasEdit = !!this._editBackup;                 // 编辑接管模式：完成即收笔（不保持连续绘制）
+      this._editBackup = null;
+      this._editNoJunct = false;
+      if (wasEdit) this.stop();
+    }
     return mesh;
+  }
+
+  /**
+   * 编辑一条已生成/已保存的道路：把它的控制点载回画笔（原路先移除，完成时以新物体落回）。
+   * Esc 走 cancelEdit() 会把原路原样恢复。
+   */
+  editRoad(so) {
+    if (!so || so.type !== 'road_brush') return false;
+    const data = so.serialize();
+    if (!data.points || data.points.length < 2) return false;
+    if (this._editBackup) this.cancelEdit();      // 正在编辑另一条：先还原上一条
+    this.stop();                                  // 结束可能进行中的普通绘制（纯取消）
+    const app = this.app;
+    this._editBackup = data;
+    this._editNoJunct = !!data.noJunct;
+    app.batchOp(`编辑 ${so.name || '道路'}`, () => app.removeObject(so));
+    this.start();
+    this.points = data.points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    this.roadWidth = data.width || 12;
+    this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
+    this.filletOn = !!data.fillet;
+    this.filletH = (data.filletH || []).slice();
+    if (this.filletOn) this.syncFillets();
+    this._updatePreview();
+    this._updateLiveRoad();
+    app.select(null);
+    app.bus.emit('objects');
+    return true;
+  }
+
+  /** 放弃编辑：清空画笔并把原路原样恢复（路口重新检测） */
+  cancelEdit() {
+    const b = this._editBackup;
+    this._editBackup = null;
+    this._editNoJunct = false;
+    this.stop();
+    if (b) {
+      this.restore([b]);
+      this.app.bus.emit('objects');
+      this.app.markDirty?.();
+    }
   }
 
   /** 由工程 JSON 恢复手绘道路（路口重新检测生成，不读存档里的 road_intersection） */
@@ -321,17 +367,17 @@ export class RoadBrush {
       this.filletH = (o.filletH || []).slice();
       if (this.filletOn) this.syncFillets();
       const roadType = ROAD_TYPES.find(t => t.id === o.roadType) || ROAD_TYPES[0];
-      const width = o.width || 4;
+      const width = o.width || 12;
       this.roadType = roadType;
       this.roadWidth = width;
       const curve = this._buildPathCurve();
       if (!curve) continue;
-      const isects = this._detectIntersections(curve, width);
+      const isects = this._detectIntersections(curve, width, !!o.noJunct);
       const mesh = this._addRoad(curve, {
         roadType, width,
         ctrl: pts.map(p => [p.x, p.y, p.z]),
         filletH: this.filletH.slice(), filletOn: this.filletOn,
-        isects, so: o,
+        isects, so: o, noJunct: !!o.noJunct,
       });
       if (mesh) out.push(mesh);
     }
@@ -342,15 +388,16 @@ export class RoadBrush {
 
   /** 建网格 + 注册成一等场景物体 + 生成路口并断开被交叉的既有道路 */
   _addRoad(curve, opt) {
-    const { roadType, width, ctrl, filletH, filletOn, isects = [], so = null } = opt;
+    const { roadType, width, ctrl, filletH, filletOn, isects = [], so = null, noJunct = false } = opt;
     const gaps = isects.map(is => { const g = this._gapFor(is, true); g.isect = is; return g; });
     const mesh = this._buildRoadMesh(curve, gaps, { width, roadType });
     if (!mesh) return null;
 
-    const roadData = { curve, width, roadType, mesh, gaps, ctrl };
+    const roadName = so?.name || `道路_${roadType.label}`;
+    const roadData = { curve, width, roadType, mesh, gaps, ctrl, noJunct, name: roadName };
     const roadObj = {
       id: so?.id || `rb${++this._seq}`,
-      root: mesh, name: so?.name || `道路_${roadType.label}`, type: 'road_brush',
+      root: mesh, name: roadName, type: 'road_brush',
       isChar: false, followTerrain: false,
       visible: so?.visible !== false, locked: !!so?.locked, params: {},
       motion: { active: false, keys: [] },
@@ -362,6 +409,7 @@ export class RoadBrush {
         id: roadObj.id, name: roadObj.name, type: 'road_brush',
         visible: roadObj.visible !== false, locked: !!roadObj.locked,
         roadType: roadType.id, width, fillet: filletOn, filletH, points: ctrl,
+        noJunct: !!roadData.noJunct,
       }),
     };
     mesh.userData.so = roadObj;
@@ -401,74 +449,180 @@ export class RoadBrush {
         ex.gaps.push(g);
         this._rebuildRoad(ex);
       }
+      // 车行道路口：模型库整件盖在面片上（小径接入按宽度豁免，保持原面片契约）
+      const jp = this._junctionPiece(isect, roadData.name, ex && ex.name);
+      if (jp && patch) patch.add(jp);
     }
 
     this._roads.push(roadData);
     return mesh;
   }
 
+  /**
+   * 模型拉伸分段自适应：按本段关节转角 τ 把件端面顶点拉伸到与相邻件共有的角分面上
+   * （斜接/miter）——两件端面落在同一平面、沿斜缝精确对接，转角外缘 V 形楔缝从几何上
+   * 消除。只动到达端面（组坐标 |z∓d/2|≤0.05）且沿轴向（|nz|>0.9）的顶点，内部标线、
+   * 横缝、箭头不受影响；直缝（τ≈0）为恒等变换；跨过路口缺口的两端 τ=0 保持原端面。
+   * @param tauStart 上一件→本件的转角（z=−d/2 端），左转为正
+   * @param tauEnd   本件→下一件的转角（z=+d/2 端），左转为正
+   */
+  _miterPieceEnds(grp, d, tauStart, tauEnd) {
+    const endT = Math.abs(tauEnd) > 1e-3 ? Math.tan(tauEnd / 2) : 0;
+    const staT = Math.abs(tauStart) > 1e-3 ? Math.tan(tauStart / 2) : 0;
+    if (!endT && !staT) return;
+    grp.updateMatrixWorld(true);                // 件尚在原点恒等位姿 → matrixWorld 即子件→件的链
+    const eps = 0.05;
+    const eSin = Math.sin(tauEnd / 2), eCos = Math.cos(tauEnd / 2);
+    const sSin = Math.sin(tauStart / 2), sCos = Math.cos(tauStart / 2);
+    grp.traverse((o) => {
+      if (!o.isMesh || !o.geometry?.attributes?.position) return;
+      const pos = o.geometry.attributes.position;
+      const nor = o.geometry.attributes.normal;
+      const m = o.matrixWorld;
+      const mInv = new THREE.Matrix4().copy(m).invert();
+      const nm = new THREE.Matrix3().getNormalMatrix(m);
+      const nmInv = new THREE.Matrix3().copy(nm).invert();
+      const v = new THREE.Vector3(), nv = new THREE.Vector3();
+      let touched = false;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m);
+        const atEnd = Math.abs(v.z - d / 2) <= eps;
+        const atStart = Math.abs(v.z + d / 2) <= eps;
+        if (!atEnd && !atStart) continue;
+        if (atEnd && endT) v.z += v.x * endT;
+        if (atStart && staT) v.z -= v.x * staT;
+        v.applyMatrix4(mInv);
+        pos.setXYZ(i, v.x, v.y, v.z);
+        touched = true;
+        if (!nor) continue;
+        nv.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
+        if (atEnd && endT && nv.z > 0.9) nv.set(-eSin, 0, eCos);
+        else if (atStart && staT && nv.z < -0.9) nv.set(-sSin, 0, -sCos);
+        else continue;                          // 侧面/顶面所在平面不变，法线保持
+        nv.applyMatrix3(nmInv).normalize();
+        nor.setXYZ(i, nv.x, nv.y, nv.z);
+      }
+      if (touched) {
+        pos.needsUpdate = true;
+        if (nor) nor.needsUpdate = true;
+        o.geometry.computeBoundingSphere();
+        o.geometry.computeBoundingBox();
+      }
+    });
+  }
+
+  /**
+   * 模型库拼装（替代旧版程序化带面）：沿路按跨段调用库道路件 build——
+   * 缘石/人行道/标线/锯缝随件生成，不再挤平面 ribbon。
+   * 宽度语义：asphalt/oneway/concrete 库件 width=总宽（车行+两侧各2.25m路侧带），
+   * 而画笔/城镇记的 width=车行宽 → 传入时补回两侧；garden/gravel 库件按全宽设计 → 原样传。
+   * 分跨：密采样折线化，缺口区（路口）跳过，按转角/目标长切跨（库件为直件，弯处以短件拟合）。
+   */
   _buildRoadMesh(curve, gaps = [], rd = null) {
-    const terrain = this.app.terrain;
-    const numSamples = Math.max(50, Math.round(curve.getLength() * 4));
-    const halfW = (rd ? rd.width : this.roadWidth) / 2;
-    const rt = rd ? rd.roadType : this.roadType;
+    const rt = (rd && rd.roadType) || this.roadType;
+    const width = (rd && rd.width) || this.roadWidth;
     const roadGroup = new THREE.Group();
     roadGroup.name = `road_${rt.id}`;
-    const mask = this._gapMask(numSamples, gaps);
-    
-    const positions = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-    
-    for (let i = 0; i <= numSamples; i++) {
-      const t = i / numSamples;
-      const point = curve.getPointAt(t);
-      const tangent = curve.getTangentAt(t).normalize();
-      const up = new THREE.Vector3(0, 1, 0);
-      const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
-      
-      const lx = point.x - right.x * halfW;
-      const lz = point.z - right.z * halfW;
-      const rx = point.x + right.x * halfW;
-      const rz = point.z + right.z * halfW;
-      
-      const ly = terrain?.enabled ? terrain.heightAt(lx, lz) + 0.03 : 0.03;
-      const ry = terrain?.enabled ? terrain.heightAt(rx, rz) + 0.03 : 0.03;
-      
-      positions.push(lx, ly, lz, rx, ry, rz);
-      normals.push(0, 1, 0, 0, 1, 0);
-      uvs.push(0, t * 10, 1, t * 10);
-      
-      if (i < numSamples && !(mask && (mask[i] || mask[i + 1]))) {
-        const base = i * 2;
-        indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    const L = curve.getLength();
+    if (!(L > 0.01) || !rt || typeof rt.build !== 'function') return roadGroup;
+
+    const SIDED = { asphalt: 1, oneway: 1, concrete: 1 };
+    let pieceW;
+    if (rt.id === 'freeway') pieceW = Math.max(width, 20);                    // 高速=全宽结构（中央带+护栏），守库下限
+    else pieceW = Math.max(SIDED[rt.id] ? width + 4.5 : width, SIDED[rt.id] ? 6.6 : 0.6);
+    const target = rt.id === 'garden' ? 6 : 22;            // 分段目标长（贴近库件默认模数）
+
+    const n = Math.max(16, Math.ceil(L / 0.75));           // ~0.75m 密采样
+    const pts = curve.getSpacedPoints(n);
+    const inGap = (i) => {
+      const t = i / n;
+      for (const g of gaps || []) if (g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
+      return false;
+    };
+    const spans = [];
+    let a = null, b = null, len = 0;
+    const push = () => { if (a && b && len >= 0.5) spans.push({ a, b, len }); a = null; b = null; len = 0; };
+    for (let i = 0; i <= n; i++) {
+      if (inGap(i)) { push(); continue; }
+      const p = pts[i];
+      if (!a) { a = p; b = p; len = 0; continue; }
+      const dx = p.x - b.x, dz = p.z - b.z;
+      const seg = Math.hypot(dx, dz);
+      if (seg < 1e-9) continue;
+      if (len > 0) {
+        const clen = Math.hypot(b.x - a.x, b.z - a.z);
+        const cos = clen > 1e-9 ? ((b.x - a.x) * dx + (b.z - a.z) * dz) / (clen * seg) : 1;
+        if (cos < 0.995 || len + seg > target) {           // 转角 >~5.7° 或超长 → 拆跨
+          b = p; len += seg;                               // 把引发断跨的段并入本跨，端点落在关节顶点
+          push();                                          // a/b 清空
+          a = p; b = p; len = 0;                           // 新跨从同一顶点出发 → 相邻跨端点严格重合
+          continue;
+        }
+      }
+      b = p;
+      len += seg;
+    }
+    push();
+
+    // 接缝处理：改用「模型拉伸分段自适应」（见下方 _miterPieceEnds）——
+    // 相邻跨在关节顶点重合后，按本段转角把端面顶点拉到角分面上斜接，V 形缝从几何上消除
+
+    // 尽端自动接圆头（cul_de_sac）：车行主路（≥5.5m、非基座）的自由端——
+    // 不贴图边、非自闭合、他路不邻 → 端头外摆库圆头件（−Z 颈沿路、+Z 朝外）
+    if (!rd?.noJunct && width >= 5.5) {
+      const terrain = this.app.terrain;
+      const halfEdge = (terrain?.size || 320) / 2;
+      const eA = curve.getPointAt(0), eB = curve.getPointAt(1);
+      const tA = curve.getTangentAt(0).normalize(), tB = curve.getTangentAt(1).normalize();
+      const ends = [
+        { p: eA, dir: tA, other: eB },                              // t=0 端：车体方向= +切向
+        { p: eB, dir: tB.clone().negate(), other: eA },             // t=1 端：车体方向= −切向
+      ];
+      for (const en of ends) {
+        if (Math.max(Math.abs(en.p.x), Math.abs(en.p.z)) >= halfEdge - 16) continue;
+        if (en.p.distanceTo(en.other) < width + 6) continue;        // 自闭合（环路首尾）
+        let busy = false;
+        for (const r of this._roads) {
+          if (r.curve === curve) continue;
+          const sp = r.curve.getSpacedPoints(20);
+          for (const q of sp) {
+            if (Math.hypot(q.x - en.p.x, q.z - en.p.z) < (r.width + width) / 2 + 1.5) { busy = true; break; }
+          }
+          if (busy) break;
+        }
+        if (busy) continue;
+        const cd = Math.min(60, Math.max(24, width + 18));
+        const cw = Math.min(34, Math.max(18, width + 8));
+        const cul = buildCulDeSac({ width: cw, length: cd });
+        cul.rotation.y = Math.atan2(-en.dir.x, -en.dir.z);          // 局部 +Z 朝外、−Z 颈接路
+        cul.position.set(en.p.x - en.dir.x * cd / 2, en.p.y, en.p.z - en.dir.z * cd / 2);
+        roadGroup.add(cul);
       }
     }
-    
-    const roadGeo = new THREE.BufferGeometry();
-    roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    roadGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    roadGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    roadGeo.setIndex(indices);
-    roadGeo.computeVertexNormals();
-    
-    const roadMat = new THREE.MeshStandardMaterial({
-      color: this._getRoadColor(rt.id),
-      roughness: this._getRoadRoughness(rt.id),
-      metalness: 0.02,
-    });
-    
-    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
-    roadMesh.name = `road_surface_${rt.id}`;
-    roadGroup.add(roadMesh);
-    
-    if (rt.id === 'asphalt' || rt.id === 'oneway' || rt.id === 'concrete') {
-      this._addCurbs(roadGroup, curve, numSamples, halfW, terrain, mask);
+
+    const prm = { ...(rt.params || {}) };
+    // 关节转角（有符号，左转为正）：相邻跨端点重合才算关节；跨过路口缺口不接 → τ=0
+    const jointTau = (A, B) => {
+      if (!A || !B) return 0;
+      if (Math.abs(A.b.x - B.a.x) > 1e-6 || Math.abs(A.b.z - B.a.z) > 1e-6) return 0;
+      const ax = A.b.x - A.a.x, az = A.b.z - A.a.z;
+      const bx = B.b.x - B.a.x, bz = B.b.z - B.a.z;
+      const la = Math.hypot(ax, az), lb = Math.hypot(bx, bz);
+      if (la < 1e-9 || lb < 1e-9) return 0;
+      return Math.atan2((ax * bz - az * bx) / (la * lb), (ax * bx + az * bz) / (la * lb));
+    };
+    for (let k = 0; k < spans.length; k++) {
+      const s = spans[k];
+      const piece = rt.build({ ...prm, width: pieceW, length: s.len });
+      if (!piece) continue;
+      this._miterPieceEnds(piece, s.len, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
+      const dx = s.b.x - s.a.x, dz = s.b.z - s.a.z, dy = s.b.y - s.a.y;
+      piece.rotation.order = 'YXZ';
+      piece.rotation.y = Math.atan2(dx, dz);               // 件 +Z 对齐行进方向
+      piece.rotation.x = -Math.atan2(dy, s.len);           // 俯仰随地形坡度（绕中心）
+      piece.position.set((s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2 + 0.02, (s.a.z + s.b.z) / 2);
+      roadGroup.add(piece);
     }
-    
-    this._addRoadMarkings(roadGroup, curve, numSamples, rt.id, terrain, mask);
-    
     return roadGroup;
   }
 
@@ -764,11 +918,13 @@ export class RoadBrush {
 
   // ================= 交叉路口检测与生成 =================
 
-  _detectIntersections(newCurve, newWidth) {
+  _detectIntersections(newCurve, newWidth, noJunct = false) {
     const intersections = [];
+    if (noJunct) return intersections;                       // 基座/台面：贴地但不生成路口
     const threshold = (newWidth / 2) + 1.0; // 交叉检测阈值
 
     for (const existing of this._roads) {
+      if (existing.noJunct) continue;                        // 对面是基座：只贴不接
       const exThreshold = (existing.width / 2) + 1.0;
       const combinedThreshold = threshold + exThreshold - 1.0;
 
@@ -800,6 +956,10 @@ export class RoadBrush {
         // 精确定位交叉点
         const refined = this._refineIntersection(newCurve, existing.curve, bestTA, bestTB);
         if (refined) {
+          // 近乎平行的贴线不算路口（否则 _gapFor 的 1/sinT 会把整条路挖没）
+          const tA = newCurve.getTangentAt(Math.max(0, Math.min(1, refined.tA)));
+          const tB = existing.curve.getTangentAt(Math.max(0, Math.min(1, refined.tB)));
+          if (Math.abs(tA.x * tB.z - tA.z * tB.x) < 0.08) continue;
           intersections.push({
             point: refined.point,
             tNew: refined.tA,
@@ -864,6 +1024,51 @@ export class RoadBrush {
     return { point, tA, tB };
   }
 
+  /**
+   * 路口模型库整件（盖在路口面片之上，面片契约不变）：
+   * 双方 ≥5.5m 的车行道口才摆——四进口→four_way_stop、三进口（某条路到头）→t_junction；
+   * 双 ≥9m 且非礼制干道（中轴/大街）的十字升级为 roundabout。
+   * 尺寸守库参数域 S=clamp(max(w)+8, 20, 30)；y=地形（件顶 0.15 < 道路件顶 0.17，
+   * 外溢段藏在路下不闪面；面片 0.09 在其下，斑马线/停止线由件自带）。
+   */
+  _junctionPiece(isect, newName, exName) {
+    const wA = isect.newWidth, wB = isect.existingWidth;
+    if (Math.min(wA, wB) < 5.5) return null;                 // 小径/车道接入保持原面片
+    const tN = isect.tNew, tE = isect.tExisting;
+    const endT = (t) => t < 0.02 || t > 0.98;
+    const n = (endT(tN) ? 1 : 2) + (endT(tE) ? 1 : 2);
+    if (n < 3) return null;
+    // 斜交容差：整件四臂固定 90°，交角偏离直角 >15° 时臂/斑马线会对不齐进口道，
+    // 放弃整件、保留面片（面片与斑马线按两路切向构造，天然适配任意交角）
+    const tanN0 = isect.newCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tN))).normalize();
+    const tanE0 = isect.existingCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tE))).normalize();
+    const sinT = Math.abs(tanN0.x * tanE0.z - tanN0.z * tanE0.x);
+    const cosT = Math.abs(tanN0.x * tanE0.x + tanN0.z * tanE0.z);
+    if (Math.abs(Math.PI / 2 - Math.atan2(sinT, cosT)) > 15 * Math.PI / 180) return null;
+    const ceremonial = (s) => /中轴|大街/.test(s || '');
+    // 普通路口默认四向停站；环岛只给大道级交叉（双方 ≥15m），避免普通 12m 街区路全变环岛
+    const wantRAB = n === 4 && Math.min(wA, wB) >= 15 && !ceremonial(newName) && !ceremonial(exName);
+    const S = Math.min(30, Math.max(20, Math.ceil(Math.max(wA, wB) + 8)));
+    const piece = (wantRAB ? buildRoundabout : n === 4 ? buildFourWayStop : buildTJunction)({ width: S, length: S });
+    const terrain = this.app.terrain;
+    const pt = isect.point;
+    const tanN = tanN0;
+    if (n === 3) {
+      // 终点路（stem）车体从路口向外伸出的方向：t≈1 端 = −切向（切向指进入路口），t≈0 端 = +切向
+      // 件 −Z 开口臂沿 stem 指出、+Z 封边在背侧（buildTJunction：封边+Z、开口臂−Z）
+      const tanE = tanE0;
+      let stem;
+      if (endT(tN)) stem = tN > 0.5 ? tanN.clone().negate() : tanN.clone();
+      else stem = tE > 0.5 ? tanE.clone().negate() : tanE.clone();
+      piece.rotation.y = Math.atan2(-stem.x, -stem.z);
+    } else {
+      piece.rotation.y = Math.atan2(tanN.x, tanN.z);           // 四向/环岛对称，对齐新路即可
+    }
+    piece.position.set(pt.x, terrain?.enabled ? terrain.heightAt(pt.x, pt.z) : 0, pt.z);
+    piece.name = 'junction_lib';
+    return piece;
+  }
+
   _buildIntersectionPatch(isect) {
     const terrain = this.app.terrain;
     const { point, tNew, tExisting, newCurve, existingCurve, newWidth, existingWidth } = isect;
@@ -887,8 +1092,14 @@ export class RoadBrush {
     // 保证平行四边形沿每条路方向的延伸都超过裁剪端头 OVR 米。
     const cosT = Math.abs(tanA.x * tanB.x + tanA.z * tanB.z);
     const OVR = 0.4;
-    const hAe = hA + cosT * hB + OVR * sinT;
-    const hBe = hB + cosT * hA + OVR * sinT;
+    // 拼装件带两侧各 2.25m 人行道的类型（asphalt/oneway/concrete）才需要面片外扩：
+    // 按侧取 SB 盖住该路自身的路侧带与四角裸土；扩出部分从人行道/路面下方穿过
+    // （标高不同、不共面，无闪面）。小径/碎石无路侧带 → 不扩，避免 T 口面片肥大。
+    const sid = (rt) => !!rt && (rt.id === 'asphalt' || rt.id === 'oneway' || rt.id === 'concrete');
+    const SB_A = sid(isect.newRoadType) ? 2.4 : 0;
+    const SB_B = sid(isect.existingRoadType) ? 2.4 : 0;
+    const hAe = hA + SB_A + cosT * (hB + SB_B) + OVR * sinT;
+    const hBe = hB + SB_B + cosT * (hA + SB_A) + OVR * sinT;
 
     // 两条路带的交集 = 平行四边形：四条边线两两求交（用扩张后的半宽）
     const corner = (sA, sB) => {
@@ -899,28 +1110,42 @@ export class RoadBrush {
       const t = (dx * tanB.z - dz * tanB.x) / c;
       const px = ex + tanA.x * t;
       const pz = ez + tanA.z * t;
-      const py = terrain?.enabled ? terrain.heightAt(px, pz) + 0.055 : 0.055;
+      const py = terrain?.enabled ? terrain.heightAt(px, pz) + 0.09 : 0.09;
       return new THREE.Vector3(px, py, pz);
     };
-    const patchCorners = [corner(1, 1), corner(1, -1), corner(-1, -1), corner(-1, 1)];
-
+    const C = [corner(1, 1), corner(1, -1), corner(-1, -1), corner(-1, 1)];
+    // 5×5 双线性贴地网格（平行四边形内逐点采样地形）：路口范围的草皮微起伏
+    // 不再穿透面片；法线统一朝上、不按绕序重算，配合 DoubleSide 免绕序问题。
+    const N = 5;
     const positions = [];
     const normals = [];
     const uvs = [];
     const indices = [];
-    for (let i = 0; i < 4; i++) {
-      positions.push(patchCorners[i].x, patchCorners[i].y, patchCorners[i].z);
-      normals.push(0, 1, 0);
-      uvs.push(i < 2 ? 0 : 1, i % 2 === 0 ? 0 : 1);
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      for (let j = 0; j < N; j++) {
+        const v = j / (N - 1);
+        const w00 = (1 - u) * (1 - v), w01 = (1 - u) * v, w11 = u * v, w10 = u * (1 - v);
+        const x = C[0].x * w00 + C[1].x * w01 + C[2].x * w11 + C[3].x * w10;
+        const z = C[0].z * w00 + C[1].z * w01 + C[2].z * w11 + C[3].z * w10;
+        const y = terrain?.enabled ? terrain.heightAt(x, z) + 0.09 : 0.09;   // 高过草皮微起伏，低于件面 0.17
+        positions.push(x, y, z);
+        normals.push(0, 1, 0);
+        uvs.push(u, v);
+      }
     }
-    indices.push(0, 1, 2, 0, 2, 3);
+    for (let i = 0; i < N - 1; i++) {
+      for (let j = 0; j < N - 1; j++) {
+        const a = i * N + j, b = (i + 1) * N + j;
+        indices.push(a, b + 1, b, a, a + 1, b + 1);   // 从上往下看逆时针（正面朝上）
+      }
+    }
 
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
-    geo.computeVertexNormals();
 
     const color = this._getRoadColor(isect.newRoadType.id);
     const mat = new THREE.MeshStandardMaterial({
@@ -937,13 +1162,23 @@ export class RoadBrush {
     group.name = 'road_intersection';
     group.add(mesh);
 
-    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe);
+    // 幽灵进口：路在路口终止的一侧（越过曲线端点方向）没有路可接，不画斑马线/停止线
+    const endN = tNew < 0.02 || tNew > 0.98;
+    const endE = tExisting < 0.02 || tExisting > 0.98;
+    const phantom = [
+      endN && tNew > 0.5,                     // +tanA 指向新路曲线终点之外
+      endN && tNew <= 0.5,                    // −tanA 指向新路曲线起点之外
+      endE && tExisting > 0.5,                // +tanB 指向既有路曲线终点之外
+      endE && tExisting <= 0.5,               // −tanB 指向既有路曲线起点之外
+    ];
+    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe, phantom);
 
     return group;
   }
 
-  // 四个进口道外侧：斑马线 + 停止线
-  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB) {
+  // 四个进口道外侧：斑马线 + 停止线（phantom[i] 为真的进口 = 路已终止的幽灵侧，跳过）
+  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB, phantom = [false, false, false, false]) {
+    if (hA * 2 < 4.5 || hB * 2 < 4.5) return;    // 任一侧过窄（宅前小径/花园路接入）不画斑马线与停止线
     const up = new THREE.Vector3(0, 1, 0);
     // ext：面片沿该进口道方向的延伸（用扩张后的对向半宽），斑马线从其外缘起画
     const approaches = [
@@ -951,7 +1186,7 @@ export class RoadBrush {
       { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT },
       { dir: tanB, half: hB, ext: hAe / sinT },
       { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT },
-    ];
+    ].filter((_, i) => !phantom[i]);
     const quad = (corners) => {
       const pos = [];
       const norm = [];
@@ -970,7 +1205,7 @@ export class RoadBrush {
       return g;
     };
     const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide });
-    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.06 : 0.06);
+    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.10 : 0.10);   // 贴面片(+0.09)之上
     const bandDepth = 2.0;
 
     for (const ap of approaches) {

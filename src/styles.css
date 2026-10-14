@@ -30,14 +30,15 @@
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);
   font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   -webkit-font-smoothing:antialiased}
-#app{display:grid;grid-template-columns:274px minmax(0,1fr) 342px;grid-template-rows:52px minmax(0,1fr) var(--tl-h,66px);height:100%}
+#app{display:grid;grid-template-columns:274px minmax(0,1fr) 342px;grid-template-rows:auto minmax(0,1fr) var(--tl-h,66px);height:100%}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-thumb{background:#c8c0b4;border-radius:9px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:#b0a89c;background-clip:content-box}
 ::-webkit-scrollbar-track{background:transparent}
 
 /* ---------- 顶栏 ---------- */
-#top{grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:0 16px;background:var(--card);border-bottom:1px solid var(--line);z-index:20}
+/* 顶栏允许换行：窄预览窗里所有按钮都必须能完整露出（行高随之自适应） */
+#top{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:52px;padding:6px 16px;background:var(--card);border-bottom:1px solid var(--line);z-index:20}
 /* 皮肤切换 */
 .skin-wrap{display:flex;align-items:center;gap:8px;margin-right:6px;padding-right:10px;border-right:1px solid var(--line)}
 .skin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line2);cursor:pointer;padding:0;transition:.15s;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}
@@ -52,7 +53,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .tb .i{display:grid;place-items:center;width:14px;height:14px;font-size:12px;opacity:.95}
 .tb.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 .tb.pri:hover{background:var(--acc2);color:#fff}
-.tool-row{display:flex;align-items:center;gap:4px;padding:0 8px;border-left:1px solid var(--line);margin-left:8px}
+.tool-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:0 8px;border-left:1px solid var(--line);margin-left:8px;row-gap:4px}
 .spacer{flex:1}
 .mini{font-size:10.5px;color:var(--fg3)}
 
@@ -88,7 +89,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--
 .libbar{padding:8px 8px 4px;position:sticky;top:0;background:var(--bg2);z-index:3}
 .search{width:100%;height:32px;background:var(--card);border:1px solid var(--line2);border-radius:var(--r);color:var(--fg);padding:0 10px;font-size:12px}
 .search:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 2px rgba(74,79,176,.12)}
-.chips{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-top:7px;padding-bottom:4px}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;padding-bottom:4px}
 .chips::-webkit-scrollbar{height:4px}
 .chip{border:1px solid var(--line2);background:var(--card);color:var(--fg2);border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;transition:.13s;flex:none;white-space:nowrap}
 .chip:hover{color:var(--fg);background:var(--bg2)}
@@ -331,6 +332,15 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 .arrow{color:var(--fg3)}
 @media (max-width:1480px){#app{grid-template-columns:238px minmax(0,1fr) 314px}}
 @media (max-width:1180px){#app{grid-template-columns:200px minmax(0,1fr) 290px}.grid{grid-template-columns:1fr}}
+/* 预览窗很窄时：收起两侧面板与分享按钮，把整页宽度让给视口与顶栏（顶栏换行保证按钮全露出）。
+   选择器用 #app 提高权重：文件后面还有 #left-scene{display:flex} 等单 id 规则，必须压过它们 */
+@media (max-width:1000px){
+  #app{grid-template-columns:0 minmax(0,1fr) 0}
+  #app #left,#app #right,#app #left-scene,#app #right-scene,#app #left-camera,#app #right-camera{display:none}
+  #app .share-btn{display:none}
+  #app #top{padding:6px 8px}
+  #app .capsules{margin:0}
+}
 
 /* 关键帧小胶囊 */
 .kwrap { display: inline-flex; align-items: center; gap: 2px; margin: 2px 4px 2px 0; }
@@ -469,6 +479,10 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 #library-scene{overflow:auto;padding:8px;flex:1 1 55%;min-height:0}
 #objlist-scene{display:flex;flex-direction:column;flex:1 1 45%;min-height:110px;border-top:1px solid var(--line)}
 #objlist-scene .objlist{border-top:0}
+/* 模型库二级入口：默认收起，点标题展开（主入口 = 顶栏 ✦ 一句话生成） */
+#left-scene .libph{width:100%;background:none;border:0;border-bottom:1px solid var(--line);color:inherit;cursor:pointer;text-align:left;font:inherit;letter-spacing:inherit;-webkit-appearance:none;appearance:none}
+#left-scene .libph:hover{background:var(--acc-light)}
+#left-scene .libph.on b{color:var(--acc)}
 #inspector-scene{overflow:auto;padding:10px;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
 
 /* Scene Builder cards (Transform / Atmosphere) */
@@ -682,6 +696,8 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
   padding:3px 9px;font-size:11px;white-space:nowrap}
 .tg-chip.act{cursor:pointer;transition:.13s}
 .tg-chip.act:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-light)}
+.tg-chip.on{border-color:var(--acc);color:var(--acc);background:var(--acc-light);font-weight:600}
+.tg-lrow{display:flex;flex-wrap:wrap;gap:5px}
 .tg-examples .tg-chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .tg-note{display:flex;flex-direction:column;gap:3px;min-height:14px}
 .tg-warnline{font-size:11px;color:#b06a2c;line-height:1.5}

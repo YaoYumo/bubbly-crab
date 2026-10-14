@@ -24,3 +24,6 @@ Thumbs.db
 npm-debug.log*
 yarn-error.log*
 *.log
+
+# 渲染台输出（本地生成，不入版本库）
+shots/

@@ -226,7 +226,8 @@ function buildArch(p) {
   top.position.y = H + 0.24; top.scale.y = 0.8;          // 半圆券：两端正好落在两墩券座上
   top.castShadow = true; top.receiveShadow = true;
   g.add(top);
-  g.add(box(L + T * 2.6, 0.2, T * 1.9, rock, 0, H + 0.24 + L * 0.8 + T * 0.7, 0));            // 顶石/额枋压住券背
+  // 顶石压在券背最高点上（旧版按 L 而不是 L/2 算券高，14m 跨的石门顶石会浮在券上方 12.7m）
+  g.add(box(L + T * 2.6, 0.2, T * 1.9, rock, 0, H + 0.24 + 0.8 * (L / 2 + T * 0.78) + 0.1, 0));   // 顶石/额枋压住券背
   g.add(planeXZ(T * 2.4, T * 2.4, M.stone(0x8a857c, 0.95), L / 2, 0.03, 0));
   g.add(planeXZ(T * 2.4, T * 2.4, M.stone(0x8a857c, 0.95), -L / 2, 0.03, 0));
   return shade(g);
@@ -442,7 +443,8 @@ function buildLog(p) {
     g.add(cap);
   }
   if (p.stump) {
-    const st = cyl(p.r * 1.1, p.r * 1.25, p.r * 3, bark, 12, -p.length * 0.4, p.r * 1.5, p.r * 2.4);
+    // 树桩与倒木同轴（同一棵树锯下），落在倒木延长线上，二者各自落地
+    const st = cyl(p.r * 1.1, p.r * 1.25, p.r * 3, bark, 12, -p.length / 2 - p.r * 1.6, p.r * 1.5, 0);
     g.add(st);
   }
   return shade(g);
