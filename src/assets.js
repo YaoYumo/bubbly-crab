@@ -2591,6 +2591,16 @@ function rdCornerQuad(g, w2, d2, pa, sx, sz) {         // 路口人行道象限�
   arc.rotation.y = Math.atan2(-sx, -sz) - Math.PI / 4;
   arc.position.set(sx * cx, PT, sz * cz);
   g.add(arc);
+  const csh = new THREE.Shape();                      // 回转封顶：方-1/4圆 挤出角块(顶=人行道顶)
+  csh.moveTo(0, 0);
+  csh.lineTo(sx * R, 0);
+  csh.absarc(sx * R, sz * R, R, -sz * Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sz > 0);
+  csh.lineTo(0, 0);
+  const cgeo = new THREE.ExtrudeGeometry(csh, { depth: 0.3, bevelEnabled: false });
+  const cm = new THREE.Mesh(cgeo, mWalk());
+  cm.rotation.x = Math.PI / 2;
+  cm.position.set(sx * c, PT + 0.15, sz * c);
+  g.add(cm);
   for (const [lx, lz, lw, ld] of [[sx * (c + 0.225), sz * (c + R + d2) / 2, CURB_W, d2 - c - R], [sx * (c + R + w2) / 2, sz * (c + 0.225), w2 - c - R, CURB_W]]) {
     if (lw > 0.05 && ld > 0.05) g.add(box(lw, 0.3, ld, mCurb(), lx, PT, lz));
   }
@@ -2747,21 +2757,10 @@ function buildRoundabout(p) {                          // 单 lane 环岛：4.2m
     arc.position.y = PT + 0.02;
     g.add(arc);
   }
-  g.add(cyl(rG, rG, 0.5, mGreen(), 24, 0, PT + 0.1, 0));                   // 中心绿岛
-  const apr = new THREE.Mesh(new THREE.CylinderGeometry(rAp, rAp, 0.21, 24, 1, true), mConc());
-  apr.position.y = PT - 0.04;
-  g.add(apr);
-  const aprTop = new THREE.Mesh(new THREE.RingGeometry(rA, rAp, 24), mConc());
-  aprTop.rotation.x = -Math.PI / 2; aprTop.position.y = PT + 0.06;
-  g.add(aprTop);
-  g.add(cyl(rG + 0.3, rG + 0.34, 0.35, mCurb(), 24, 0, PT + 0.05, 0));     // 岛缘石
-  for (let k = 0; k < 4; k++) {                           // 导流岛(泪滴)
-    const sp = new THREE.Group();
-    sp.add(box(1.5, 0.35, 3.2, mCurb(), 0, PT + 0.05, 6.0));
-    sp.add(cyl(0.75, 0.8, 0.35, mCurb(), 12, 0, PT + 0.05, 4.3));
-    sp.rotation.y = k * Math.PI / 2;
-    g.add(sp);
-  }
+  g.add(cyl(rAp, rAp, 0.33, M.concrete(0xc0bcb2, 0.9), 24, 0, PT + 0.015, 0));   // 中心岛：浅色铺装圆盘(图鉴式)
+  const islCurb = new THREE.Mesh(new THREE.CylinderGeometry(rAp, rAp + 0.06, 0.33, 24, 1, true), mCurb());
+  islCurb.position.y = PT + 0.015;
+  g.add(islCurb);
   const rm = (rAp + Ro) / 2;
   for (let k = 0; k < 4; k++) {                           // 环行箭头
     const a0 = k * Math.PI / 2 + Math.PI / 4 - 0.45, a1 = a0 + 0.9;
