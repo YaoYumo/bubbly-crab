@@ -459,6 +459,59 @@ export class RoadBrush {
   }
 
   /**
+   * 模型拉伸分段自适应：按本段关节转角 τ 把件端面顶点拉伸到与相邻件共有的角分面上
+   * （斜接/miter）——两件端面落在同一平面、沿斜缝精确对接，转角外缘 V 形楔缝从几何上
+   * 消除。只动到达端面（组坐标 |z∓d/2|≤0.05）且沿轴向（|nz|>0.9）的顶点，内部标线、
+   * 横缝、箭头不受影响；直缝（τ≈0）为恒等变换；跨过路口缺口的两端 τ=0 保持原端面。
+   * @param tauStart 上一件→本件的转角（z=−d/2 端），左转为正
+   * @param tauEnd   本件→下一件的转角（z=+d/2 端），左转为正
+   */
+  _miterPieceEnds(grp, d, tauStart, tauEnd) {
+    const endT = Math.abs(tauEnd) > 1e-3 ? Math.tan(tauEnd / 2) : 0;
+    const staT = Math.abs(tauStart) > 1e-3 ? Math.tan(tauStart / 2) : 0;
+    if (!endT && !staT) return;
+    grp.updateMatrixWorld(true);                // 件尚在原点恒等位姿 → matrixWorld 即子件→件的链
+    const eps = 0.05;
+    const eSin = Math.sin(tauEnd / 2), eCos = Math.cos(tauEnd / 2);
+    const sSin = Math.sin(tauStart / 2), sCos = Math.cos(tauStart / 2);
+    grp.traverse((o) => {
+      if (!o.isMesh || !o.geometry?.attributes?.position) return;
+      const pos = o.geometry.attributes.position;
+      const nor = o.geometry.attributes.normal;
+      const m = o.matrixWorld;
+      const mInv = new THREE.Matrix4().copy(m).invert();
+      const nm = new THREE.Matrix3().getNormalMatrix(m);
+      const nmInv = new THREE.Matrix3().copy(nm).invert();
+      const v = new THREE.Vector3(), nv = new THREE.Vector3();
+      let touched = false;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m);
+        const atEnd = Math.abs(v.z - d / 2) <= eps;
+        const atStart = Math.abs(v.z + d / 2) <= eps;
+        if (!atEnd && !atStart) continue;
+        if (atEnd && endT) v.z += v.x * endT;
+        if (atStart && staT) v.z -= v.x * staT;
+        v.applyMatrix4(mInv);
+        pos.setXYZ(i, v.x, v.y, v.z);
+        touched = true;
+        if (!nor) continue;
+        nv.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
+        if (atEnd && endT && nv.z > 0.9) nv.set(-eSin, 0, eCos);
+        else if (atStart && staT && nv.z < -0.9) nv.set(-sSin, 0, -sCos);
+        else continue;                          // 侧面/顶面所在平面不变，法线保持
+        nv.applyMatrix3(nmInv).normalize();
+        nor.setXYZ(i, nv.x, nv.y, nv.z);
+      }
+      if (touched) {
+        pos.needsUpdate = true;
+        if (nor) nor.needsUpdate = true;
+        o.geometry.computeBoundingSphere();
+        o.geometry.computeBoundingBox();
+      }
+    });
+  }
+
+  /**
    * 模型库拼装（替代旧版程序化带面）：沿路按跨段调用库道路件 build——
    * 缘石/人行道/标线/锯缝随件生成，不再挤平面 ribbon。
    * 宽度语义：asphalt/oneway/concrete 库件 width=总宽（车行+两侧各2.25m路侧带），
@@ -511,43 +564,8 @@ export class RoadBrush {
     }
     push();
 
-    // 倒角/折点接缝垫片：直件对接在转弯外缘留 V 形楔缝（平滑倒角后目视「断裂」），
-    // 用同色薄片从 A 端面越到 B 端面、藏在两件顶面之下（0.145 < 件顶 0.17），只从缝隙透出
-    for (let k = 0; k + 1 < spans.length; k++) {
-      const A = spans[k], B = spans[k + 1];
-      if (Math.abs(A.b.x - B.a.x) > 1e-6 || Math.abs(A.b.z - B.a.z) > 1e-6) continue;  // 路口缺口两侧不接
-      const ax = A.b.x - A.a.x, az = A.b.z - A.a.z;
-      const bx = B.b.x - B.a.x, bz = B.b.z - B.a.z;
-      const la = Math.hypot(ax, az), lb = Math.hypot(bx, bz);
-      if (la < 1e-9 || lb < 1e-9) continue;
-      const cosT = Math.max(-1, Math.min(1, (ax * bx + az * bz) / (la * lb)));
-      const th = Math.acos(cosT);
-      if (th < 0.0175) continue;                                    // <1° 直缝无楔
-      const gapLen = pieceW * Math.tan(th / 2);                     // 外缘最大缝长
-      const flen = Math.min(6, Math.max(0.8, gapLen + 0.6));
-      const shift = gapLen / 2;                                     // 缝从 A 面向 B 单侧展开
-      const rotY = Math.atan2(ax, az);
-      // 三色带（SIDED 路型）：车行道同路面色、两侧 2.25m 路侧带同人行道色，
-      // 缝内不出现「沥青盖到步道上」的错色；garden/gravel 无侧带 → 单块原色
-      const bands = SIDED[rt.id]
-        ? [
-            [0, pieceW - 4.5, this._getRoadColor(rt.id), this._getRoadRoughness(rt.id)],
-            [-(pieceW / 2 - 1.125), 2.25, 0xc8c3b7, 0.9],
-            [pieceW / 2 - 1.125, 2.25, 0xc8c3b7, 0.9],
-          ]
-        : [[0, pieceW + 0.15, this._getRoadColor(rt.id), this._getRoadRoughness(rt.id)]];
-      for (const [lat, bw, col, rg] of bands) {
-        if (bw <= 0.05) continue;
-        const fill = new THREE.Mesh(
-          new THREE.BoxGeometry(bw, 0.03, flen),
-          new THREE.MeshStandardMaterial({ color: col, roughness: rg, metalness: 0.02 }),
-        );
-        const cx = A.b.x + (ax / la) * shift, cz = A.b.z + (az / la) * shift;
-        fill.position.set(cx + (az / la) * lat, A.b.y + 0.145, cz - (ax / la) * lat);
-        fill.rotation.y = rotY;
-        roadGroup.add(fill);
-      }
-    }
+    // 接缝处理：改用「模型拉伸分段自适应」（见下方 _miterPieceEnds）——
+    // 相邻跨在关节顶点重合后，按本段转角把端面顶点拉到角分面上斜接，V 形缝从几何上消除
 
     // 尽端自动接圆头（cul_de_sac）：车行主路（≥5.5m、非基座）的自由端——
     // 不贴图边、非自闭合、他路不邻 → 端头外摆库圆头件（−Z 颈沿路、+Z 朝外）
@@ -583,9 +601,21 @@ export class RoadBrush {
     }
 
     const prm = { ...(rt.params || {}) };
-    for (const s of spans) {
+    // 关节转角（有符号，左转为正）：相邻跨端点重合才算关节；跨过路口缺口不接 → τ=0
+    const jointTau = (A, B) => {
+      if (!A || !B) return 0;
+      if (Math.abs(A.b.x - B.a.x) > 1e-6 || Math.abs(A.b.z - B.a.z) > 1e-6) return 0;
+      const ax = A.b.x - A.a.x, az = A.b.z - A.a.z;
+      const bx = B.b.x - B.a.x, bz = B.b.z - B.a.z;
+      const la = Math.hypot(ax, az), lb = Math.hypot(bx, bz);
+      if (la < 1e-9 || lb < 1e-9) return 0;
+      return Math.atan2((ax * bz - az * bx) / (la * lb), (ax * bx + az * bz) / (la * lb));
+    };
+    for (let k = 0; k < spans.length; k++) {
+      const s = spans[k];
       const piece = rt.build({ ...prm, width: pieceW, length: s.len });
       if (!piece) continue;
+      this._miterPieceEnds(piece, s.len, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
       const dx = s.b.x - s.a.x, dz = s.b.z - s.a.z, dy = s.b.y - s.a.y;
       piece.rotation.order = 'YXZ';
       piece.rotation.y = Math.atan2(dx, dz);               // 件 +Z 对齐行进方向
@@ -1008,19 +1038,28 @@ export class RoadBrush {
     const endT = (t) => t < 0.02 || t > 0.98;
     const n = (endT(tN) ? 1 : 2) + (endT(tE) ? 1 : 2);
     if (n < 3) return null;
+    // 斜交容差：整件四臂固定 90°，交角偏离直角 >15° 时臂/斑马线会对不齐进口道，
+    // 放弃整件、保留面片（面片与斑马线按两路切向构造，天然适配任意交角）
+    const tanN0 = isect.newCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tN))).normalize();
+    const tanE0 = isect.existingCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tE))).normalize();
+    const sinT = Math.abs(tanN0.x * tanE0.z - tanN0.z * tanE0.x);
+    const cosT = Math.abs(tanN0.x * tanE0.x + tanN0.z * tanE0.z);
+    if (Math.abs(Math.PI / 2 - Math.atan2(sinT, cosT)) > 15 * Math.PI / 180) return null;
     const ceremonial = (s) => /中轴|大街/.test(s || '');
-    const wantRAB = n === 4 && Math.min(wA, wB) >= 9 && !ceremonial(newName) && !ceremonial(exName);
+    // 普通路口默认四向停站；环岛只给大道级交叉（双方 ≥15m），避免普通 12m 街区路全变环岛
+    const wantRAB = n === 4 && Math.min(wA, wB) >= 15 && !ceremonial(newName) && !ceremonial(exName);
     const S = Math.min(30, Math.max(20, Math.ceil(Math.max(wA, wB) + 8)));
     const piece = (wantRAB ? buildRoundabout : n === 4 ? buildFourWayStop : buildTJunction)({ width: S, length: S });
     const terrain = this.app.terrain;
     const pt = isect.point;
-    const tanN = isect.newCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tN))).normalize();
+    const tanN = tanN0;
     if (n === 3) {
-      // 终点路（stem）车体从路口伸出的方向 → 件 −Z 颈指过去（+Z 封边在背侧）
-      const tanE = isect.existingCurve.getTangentAt(Math.max(0.001, Math.min(0.999, tE))).normalize();
+      // 终点路（stem）车体从路口向外伸出的方向：t≈1 端 = −切向（切向指进入路口），t≈0 端 = +切向
+      // 件 −Z 开口臂沿 stem 指出、+Z 封边在背侧（buildTJunction：封边+Z、开口臂−Z）
+      const tanE = tanE0;
       let stem;
-      if (endT(tN)) stem = tN > 0.5 ? tanN : tanN.clone().negate();
-      else stem = tE > 0.5 ? tanE : tanE.clone().negate();
+      if (endT(tN)) stem = tN > 0.5 ? tanN.clone().negate() : tanN.clone();
+      else stem = tE > 0.5 ? tanE.clone().negate() : tanE.clone();
       piece.rotation.y = Math.atan2(-stem.x, -stem.z);
     } else {
       piece.rotation.y = Math.atan2(tanN.x, tanN.z);           // 四向/环岛对称，对齐新路即可
@@ -1123,13 +1162,22 @@ export class RoadBrush {
     group.name = 'road_intersection';
     group.add(mesh);
 
-    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe);
+    // 幽灵进口：路在路口终止的一侧（越过曲线端点方向）没有路可接，不画斑马线/停止线
+    const endN = tNew < 0.02 || tNew > 0.98;
+    const endE = tExisting < 0.02 || tExisting > 0.98;
+    const phantom = [
+      endN && tNew > 0.5,                     // +tanA 指向新路曲线终点之外
+      endN && tNew <= 0.5,                    // −tanA 指向新路曲线起点之外
+      endE && tExisting > 0.5,                // +tanB 指向既有路曲线终点之外
+      endE && tExisting <= 0.5,               // −tanB 指向既有路曲线起点之外
+    ];
+    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe, phantom);
 
     return group;
   }
 
-  // 四个进口道外侧：斑马线 + 停止线
-  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB) {
+  // 四个进口道外侧：斑马线 + 停止线（phantom[i] 为真的进口 = 路已终止的幽灵侧，跳过）
+  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB, phantom = [false, false, false, false]) {
     if (hA * 2 < 4.5 || hB * 2 < 4.5) return;    // 任一侧过窄（宅前小径/花园路接入）不画斑马线与停止线
     const up = new THREE.Vector3(0, 1, 0);
     // ext：面片沿该进口道方向的延伸（用扩张后的对向半宽），斑马线从其外缘起画
@@ -1138,7 +1186,7 @@ export class RoadBrush {
       { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT },
       { dir: tanB, half: hB, ext: hAe / sinT },
       { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT },
-    ];
+    ].filter((_, i) => !phantom[i]);
     const quad = (corners) => {
       const pos = [];
       const norm = [];
