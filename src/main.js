@@ -223,7 +223,9 @@ function makeDropdown(label, icon, items) {
   wrap.append(btn, menu);
   return wrap;
 }
-document.addEventListener('pointerdown', () => {
+document.addEventListener('pointerdown', (e) => {
+  // 点在下拉自身内部时不关：否则 pointerdown 先藏菜单，真实鼠标的 click 落空，菜单项永远点不中
+  if (e.target.closest && e.target.closest('.tb-dropdown')) return;
   document.querySelectorAll('.tb-dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
