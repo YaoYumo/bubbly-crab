@@ -2572,10 +2572,21 @@ function rdZebra(span, barLen, cx, cz, alongX, mat) {    // 斑马线：span=横
   }
   return g;
 }
-function rdPad(pw, pd, x, z, isx, isz) {                 // 路口人行道角块 + 圆角缘石回转
+function rdPad(pw, pd, x, z, isx, isz) {                 // 路口人行道角块：圆角凸转角 + 弧形缘石回转
   const g = new THREE.Group();
-  g.add(box(pw, 0.24, pd, rdWalkM(), x, RD_T + 0.08, z));
-  g.add(cyl(0.5, 0.55, 0.24, rdWalkM(), 10, x - isx * (pw / 2 - 0.5), RD_T + 0.08, z - isz * (pd / 2 - 0.5)));
+  const y = RD_T + 0.08, r = 0.6;
+  const xi = x - isx * pw / 2, zi = z - isz * pd / 2;
+  g.add(box(pw, 0.24, pd - r, rdWalkM(), x, y, z + isz * r / 2));
+  g.add(box(pw - r, 0.24, r, rdWalkM(), x + isx * r / 2, y, zi + isz * r / 2));
+  const thd = Math.atan2(-isx, -isz);
+  const qc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.24, 12, 1, false, 0, Math.PI / 2), rdWalkM());
+  qc.rotation.y = thd - Math.PI / 4;
+  qc.position.set(xi + isx * r, y, zi + isz * r);
+  g.add(qc);
+  const arc = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.16, r + 0.24, 0.2, 12, 1, true, 0, Math.PI / 2), rdCurbM());
+  arc.rotation.y = thd - Math.PI / 4;
+  arc.position.set(xi + isx * r, RD_T + 0.06, zi + isz * r);
+  g.add(arc);
   return g;
 }
 
@@ -2651,7 +2662,14 @@ export function buildGravelRoad(p) {                     // 图鉴5：碎石面+
   const g = new THREE.Group();
   const w = p.width, d = p.length;
   g.add(rdSlab(w, d, 0x8a8580));
-  for (const s of [-1, 1]) g.add(box(w * 0.14, 0.02, d, M.concrete(0x6e6963, 0.95), s * w * 0.2, rdY, 0));
+  const nR = Math.max(4, Math.round(d / 0.6));
+  for (const s of [-1, 1]) for (let i = 0; i < nR; i++) {          // 波浪车辙：分段微弯
+    const z = -d / 2 + (i + 0.5) * (d / nR);
+    const xw = s * w * 0.2 + Math.sin(z * 0.7) * 0.07;
+    const seg = box(w * 0.14, 0.02, d / nR + 0.08, M.concrete(0x6e6963, 0.95), xw, rdY, z);
+    seg.rotation.y = -Math.cos(z * 0.7) * 0.05;
+    g.add(seg);
+  }
   const rng = makeRng(42);
   for (let i = 0; i < 150; i++) {                          // 两侧毛石带
     const s = i & 1 ? 1 : -1;
@@ -2662,8 +2680,8 @@ export function buildGravelRoad(p) {                     // 图鉴5：碎石面+
     g.add(st);
   }
   for (let i = 0; i < 70; i++) {                           // 表面散石
-    const x = (rng() - 0.5) * w * 0.8, z = (rng() - 0.5) * d * 0.95, sz = 0.04 + rng() * 0.06;
-    g.add(box(sz, 0.04, sz, M.concrete(0x767169, 0.9), x, RD_T + 0.01, z));
+    const x = (rng() - 0.5) * w * 0.8, z = (rng() - 0.5) * d * 0.95, sz = 0.07 + rng() * 0.07;
+    g.add(box(sz, 0.05, sz, M.concrete(0x767169, 0.9), x, RD_T + 0.02, z));
   }
   shade(g); return g;
 }
@@ -2679,6 +2697,10 @@ function buildFourWayStop(p) {                           // 图鉴6：四角人�
     g.add(rdZebra(wr, 1.1, 0, s * (d / 2 - pd - 0.75), false, rdWhite()));   // 南北向过街
     g.add(rdZebra(dr, 1.1, s * (w / 2 - pw - 0.75), 0, true, rdWhite()));    // 东西向过街
     g.add(box(wr * 0.44, 0.02, 0.32, rdWhite(), -s * wr * 0.26, rdY, s * (d / 2 - pd - 1.65)));  // 停止线
+    for (const e of [-1, 1]) {                                                                    // 过街边界线
+      g.add(box(0.08, 0.02, 1.3, rdWhite(), e * (wr / 2 + 0.1), rdY, s * (d / 2 - pd - 0.75)));
+      g.add(box(1.3, 0.02, 0.08, rdWhite(), s * (w / 2 - pw - 0.75), rdY, e * (dr / 2 + 0.1)));
+    }
   }
   shade(g); return g;
 }
@@ -2745,8 +2767,18 @@ function buildCulDeSac(p) {                              // 图鉴9：土色底+
   const ringM = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.32, R + 0.4, 0.22, 28, 1, true), rdCurbM());
   ringM.position.set(0, RD_T + 0.1, zc);
   g.add(ringM);
-  const nl = zc - R * 0.6 + d / 2;
-  for (const s of [-1, 1]) g.add(box(0.28, 0.2, nl, rdCurbM(), s * (nw / 2 + 0.14), RD_T + 0.08, -d / 2 + nl / 2));
+  const nl = zc - R * 0.6 + d / 2, a = nw / 2 + 0.14, Rr = R + 0.36, rf = 0.9;
+  for (const s of [-1, 1]) {
+    g.add(box(0.28, 0.2, nl, rdCurbM(), s * a, RD_T + 0.08, -d / 2 + nl / 2));
+    const cx0 = a - rf, dz0 = Math.sqrt(Math.max(0.01, (Rr - rf) ** 2 - cx0 ** 2));
+    const C = [s * cx0, zc - dz0];                                  // 凹弧圆心(与颈线/环圈内切)
+    const th1 = s * Math.PI / 2;                                    // 切颈缘石线(水平向)
+    const th2 = Math.atan2(C[0], C[1] - zc);                        // 切环圈(沿圆心连线)
+    let a0 = Math.min(th1, th2), len = Math.abs(th2 - th1);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, 0.2, 10, 1, true, a0, len), rdCurbM());
+    fil.position.set(C[0], RD_T + 0.08, C[1]);
+    g.add(fil);
+  }
   shade(g); return g;
 }
 

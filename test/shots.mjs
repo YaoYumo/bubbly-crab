@@ -238,10 +238,14 @@ if (isMain) {
       fs.writeFileSync(path.join(OUT, `${g.id}_${it.type}.png`), png(SHEET, SHEET, sheet));
 
       let blind = 0;
-      for (let i = 0; i < T.nMesh; i++) if (!seen[i]) blind++;
+      const blindInfo = [];
+      for (let i = 0; i < T.nMesh; i++) if (!seen[i]) { blind++;
+        const m = T.meshes[i];
+        if (blindInfo.length < 4) blindInfo.push(`${m.geometry.type}@${m.position.toArray().map(v => +v.toFixed(2)).join(',')}#${m.material.color.getHexString()}`);
+      }
       const sz = box.getSize(new THREE.Vector3());
       rows.push({
-        k: `${g.id}:${it.type}`, nMesh: T.nMesh, blind, painted,
+        k: `${g.id}:${it.type}`, nMesh: T.nMesh, blind, painted, blindInfo,
         size: [sz.x, sz.y, sz.z].map((x) => x.toFixed(1)).join('×'),
         y: box.min.y.toFixed(2),
       });
@@ -253,7 +257,7 @@ if (isMain) {
   const bad = rows.filter((r) => r.blind > 0).sort((a, b) => b.blind - a.blind);
   console.log(`\n四个视图都露不了面的构件（0 像素，多半白做或被整只包住）：`);
   if (!bad.length) console.log('  （无）');
-  for (const r of bad.slice(0, 25)) console.log(`  ${r.k.padEnd(26)} 构件 ${String(r.nMesh).padStart(4)}，其中 ${String(r.blind).padStart(3)} 个看不见`);
+  for (const r of bad.slice(0, 25)) console.log(`  ${r.k.padEnd(26)} 构件 ${String(r.nMesh).padStart(4)}，其中 ${String(r.blind).padStart(3)} 个看不见 ${r.blindInfo ? r.blindInfo.join(' ') : ''}`);
   fs.writeFileSync(path.join(OUT, '_report.json'), JSON.stringify(rows, null, 1));
   writeGallery(rows);
 
