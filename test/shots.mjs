@@ -240,7 +240,7 @@ if (isMain) {
       let blind = 0;
       const blindInfo = [];
       for (let i = 0; i < T.nMesh; i++) if (!seen[i]) { blind++;
-        const m = T.meshes[i];
+        const m = T.objs[i];
         if (blindInfo.length < 4) blindInfo.push(`${m.geometry.type}@${m.position.toArray().map(v => +v.toFixed(2)).join(',')}#${m.material.color.getHexString()}`);
       }
       const sz = box.getSize(new THREE.Vector3());

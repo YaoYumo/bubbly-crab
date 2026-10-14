@@ -2527,275 +2527,314 @@ function buildBookcase(p) {
 // ===========================================================================
 // Ch6 — American Road Types & Intersections (10)
 // ===========================================================================
-const RD_T = 0.12;                       // 路面板厚（顶面标高，图鉴的板块厚度感）
-const rdSlab = (w, d, col) => box(w, RD_T, d, M.concrete(col, 0.95), 0, RD_T / 2, 0);
-const rdY = RD_T + 0.01;                 // 标线顶面
-const rdWhite = () => M.paint(0xf2f2ee, 0.75);
-const rdYellow = () => M.paint(0xe0b230, 0.8);
-const rdCurbM = () => M.concrete(0xb8b4aa, 0.9);
-const rdWalkM = () => M.concrete(0xc8c3b7, 0.9);
-function rdCurbZ(len, x, z = 0) { return box(0.3, 0.2, len, rdCurbM(), x, RD_T + 0.06, z); }   // 沿 z 的路缘石
-function rdCurbX(len, z, x = 0) { return box(len, 0.2, 0.3, rdCurbM(), x, RD_T + 0.06, z); }
-const rdSwW = (w) => Math.min(1.5, Math.max(0.9, w * 0.16));       // 人行道宽
-function rdSidewalkZ(sw, d, x) {                                    // 沿 z 的宽带人行道(抬升+横缝)
-  const g = new THREE.Group();
-  g.add(box(sw, 0.24, d, rdWalkM(), x, RD_T + 0.04, 0));
-  const n = Math.max(2, Math.round(d / 2));
-  for (let i = 1; i < n; i++) g.add(box(sw * 0.92, 0.02, 0.05, M.concrete(0x8f8a80, 0.9), x, RD_T + 0.17, -d / 2 + i * (d / n)));
-  return g;
-}
-function rdFlat(pts, mat, y, rotY = 0) {                 // 平面多边形标线（箭头/三角）
+// ---- 真实工程尺度常量（m，参考 AASHTO/城市道路惯例） ----
+const PT = 0.15;                    // 路面顶标高（面层厚）
+const CURB_H = 0.15, CURB_W = 0.45; // 缘石高 / 缘石带宽
+const SW_W = 1.8;                   // 人行道净宽
+const SIDE = CURB_W + SW_W;         // 路侧带 = 2.25
+const LANE = 3.7;                   // 车道宽
+const MY = PT + 0.012;              // 标线顶面
+const RRET = 5.0;                   // 缘石回转半径
+const mAsph = () => M.concrete(0x3a3d42, 0.95);
+const mConc = () => M.concrete(0x9d9c97, 0.9);
+const mWalk = () => M.concrete(0xc8c3b7, 0.9);
+const mCurb = () => M.concrete(0xb0aca4, 0.9);
+const mWhite = () => M.paint(0xf2f2ee, 0.75);
+const mYellow = () => M.paint(0xe0b230, 0.8);
+const mTan = () => M.concrete(0xc7ad83, 0.95);
+const mGreen = () => M.paint(0x6a8a58, 0.9);
+const mDark = () => M.concrete(0x6f6e6a, 0.9);
+function rdFlat(pts, mat, y, rotY = 0) {
   const sh = new THREE.Shape(pts.map((q) => new THREE.Vector2(q[0], q[1])));
   const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat);
-  m.rotation.x = -Math.PI / 2; m.rotation.z = rotY; m.position.y = y;
+  m.rotation.x = -Math.PI / 2; m.rotation.y = rotY; m.position.y = y;
   return m;
 }
-function rdArrow(L, mat, x, z, rotY = 0) {               // 直行箭头（+y 为前进向）
-  const a = 0.09, b = 0.27, hl = 0.5;
-  const m = rdFlat([[-a, 0], [a, 0], [a, L - hl], [b, L - hl], [0, L], [-b, L - hl], [-a, L - hl]], mat, rdY);
-  m.rotation.z = 0; m.rotation.y = rotY; m.position.set(x, rdY, z);
+function rdArrow(L, mat, x, z, rotY = 0) {
+  const a = 0.1, b = 0.3, hl = 0.6;
+  const m = rdFlat([[-a, 0], [a, 0], [a, L - hl], [b, L - hl], [0, L], [-b, L - hl], [-a, L - hl]], mat, MY);
+  m.position.set(x, MY, z); m.rotation.y = rotY;
   return m;
 }
-function rdTriXZ(p1, p2, p3, mat, y) {                   // XZ 平面三角形（环行箭头头部）
+function rdTriXZ(p1, p2, p3, mat, y) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([p1[0], y, p1[1], p2[0], y, p2[1], p3[0], y, p3[1]], 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
   g.computeVertexNormals();
   return new THREE.Mesh(g, mat);
 }
-function rdZebra(span, barLen, cx, cz, alongX, mat) {    // 斑马线：span=横宽, barLen=条长
+function rdZebra(span, cx, cz, alongX, mat) {          // 大陆式斑马线：条宽0.45 中距1.05 长2.4
   const g = new THREE.Group();
-  const n = Math.max(3, Math.floor(span / 0.8));
+  const n = Math.max(4, Math.round(span / 1.05));
   for (let i = 0; i < n; i++) {
-    const o = -span / 2 + 0.4 + i * ((span - 0.8) / (n - 1));
-    g.add(alongX ? box(barLen, 0.02, 0.4, mat, cx, rdY, cz + o) : box(0.4, 0.02, barLen, mat, cx + o, rdY, cz));
+    const o = -span / 2 + 0.45 + i * ((span - 0.9) / (n - 1));
+    g.add(alongX ? box(2.4, 0.02, 0.45, mat, cx, MY, cz + o) : box(0.45, 0.02, 2.4, mat, cx + o, MY, cz));
   }
   return g;
 }
-function rdPad(pw, pd, x, z, isx, isz) {                 // 路口人行道角块：圆角凸转角 + 弧形缘石回转
-  const g = new THREE.Group();
-  const y = RD_T + 0.08, r = 0.6;
-  const xi = x - isx * pw / 2, zi = z - isz * pd / 2;
-  g.add(box(pw, 0.24, pd - r, rdWalkM(), x, y, z + isz * r / 2));
-  g.add(box(pw - r, 0.24, r, rdWalkM(), x + isx * r / 2, y, zi + isz * r / 2));
-  const thd = Math.atan2(-isx, -isz);
-  const qc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.24, 12, 1, false, 0, Math.PI / 2), rdWalkM());
-  qc.rotation.y = thd - Math.PI / 4;
-  qc.position.set(xi + isx * r, y, zi + isz * r);
-  g.add(qc);
-  const arc = new THREE.Mesh(new THREE.CylinderGeometry(r + 0.16, r + 0.24, 0.2, 12, 1, true, 0, Math.PI / 2), rdCurbM());
-  arc.rotation.y = thd - Math.PI / 4;
-  arc.position.set(xi + isx * r, RD_T + 0.06, zi + isz * r);
+function rdDashX(g, x, d, mat, wdt = 0.1) {            // 沿 z 的虚线（城市 3m 线 / 6m 间隔）
+  const n = Math.max(2, Math.floor(d / 9));
+  for (let i = 0; i < n; i++) g.add(box(wdt, 0.02, 3, mat, x, MY, -d / 2 + (i + 0.5) * (d / n)));
+}
+function rdSideZ(g, d, s, pav) {                       // 直路段路侧带：缘石+人行道+横缝
+  g.add(box(CURB_W, 0.3, d, mCurb(), s * (pav / 2 + CURB_W / 2), PT, 0));
+  g.add(box(SW_W, 0.3, d, mWalk(), s * (pav / 2 + CURB_W + SW_W / 2), PT, 0));
+  const n = Math.max(2, Math.round(d / 1.8));
+  for (let i = 1; i < n; i++) g.add(box(SW_W * 0.94, 0.02, 0.04, mDark(), s * (pav / 2 + CURB_W + SW_W / 2), PT + 0.16, -d / 2 + i * (d / n)));
+}
+function rdCornerQuad(g, w2, d2, pa, sx, sz) {         // 路口人行道象限：方块拼合+R5 弧形缘石回转
+  const c = pa / 2, R = Math.min(RRET, w2 - c - 2.9, d2 - c - 2.9);
+  const cx = c + R, cz = c + R;
+  if (d2 - (c + R) > 0.05) g.add(box(w2 - c, 0.3, d2 - c - R, mWalk(), sx * (c + w2) / 2, PT, sz * (c + R + d2) / 2));
+  if (w2 - (c + R) > 0.05) g.add(box(w2 - c - R, 0.3, R, mWalk(), sx * (c + R + w2) / 2, PT, sz * (c + cz) / 2));
+  const arc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.3, 14, 1, true, 0, Math.PI / 2), mCurb());
+  arc.rotation.y = Math.atan2(-sx, -sz) - Math.PI / 4;
+  arc.position.set(sx * cx, PT, sz * cz);
   g.add(arc);
-  return g;
+  for (const [lx, lz, lw, ld] of [[sx * (c + 0.225), sz * (c + R + d2) / 2, CURB_W, d2 - c - R], [sx * (c + R + w2) / 2, sz * (c + 0.225), w2 - c - R, CURB_W]]) {
+    if (lw > 0.05 && ld > 0.05) g.add(box(lw, 0.3, ld, mCurb(), lx, PT, lz));
+  }
+  return R;
 }
 
-export function buildTwoWayRoad(p) {                     // 图鉴1：沥青+双黄+白边+两侧宽人行道
+export function buildTwoWayRoad(p) {                   // 双向双车道：7.4m 车行+双侧路侧带
   const g = new THREE.Group();
-  const w = p.width, d = p.length, sw = rdSwW(w);
-  g.add(rdSlab(w, d, 0x3a3d42));
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mAsph(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
   for (const s of [-1, 1]) {
-    g.add(rdSidewalkZ(sw, d, s * (w / 2 - sw / 2)));
-    g.add(rdCurbZ(d, s * (w / 2 - sw - 0.15)));
-    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - sw - 0.5), rdY, 0));
-    g.add(box(0.09, 0.02, d, rdYellow(), s * 0.11, rdY, 0));
+    g.add(box(0.15, 0.02, d, mWhite(), s * (pav / 2 - 0.6), MY, 0));
+    g.add(box(0.1, 0.02, d, mYellow(), s * 0.15, MY, 0));
   }
   shade(g); return g;
 }
 
-export function buildOneWayRoad(p) {                     // 图鉴2：虚线分道+直行箭头+白边+两侧宽人行道
+export function buildOneWayRoad(p) {                   // 单向三车道：虚线分道+行车箭头
   const g = new THREE.Group();
-  const w = p.width, d = p.length, sw = rdSwW(w);
-  g.add(rdSlab(w, d, 0x3a3d42));
-  for (const s of [-1, 1]) {
-    g.add(rdSidewalkZ(sw, d, s * (w / 2 - sw / 2)));
-    g.add(rdCurbZ(d, s * (w / 2 - sw - 0.15)));
-    g.add(box(0.12, 0.02, d, rdWhite(), s * (w / 2 - sw - 0.5), rdY, 0));
-  }
-  const n = Math.max(3, Math.floor(d / 2.6));
-  for (let i = 0; i < n; i++) g.add(box(0.12, 0.02, 1.4, rdWhite(), 0, rdY, -d / 2 + (i + 0.5) * (d / n)));
-  g.add(rdArrow(1.7, rdWhite(), w * 0.25, d / 2 - 2.4, Math.PI));
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mAsph(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
+  for (const s of [-1, 1]) g.add(box(0.15, 0.02, d, mWhite(), s * (pav / 2 - 0.6), MY, 0));
+  rdDashX(g, -pav / 6, d, mWhite()); rdDashX(g, pav / 6, d, mWhite());
+  g.add(rdArrow(2.2, mWhite(), pav / 3, d / 2 - 3.2, Math.PI));
   shade(g); return g;
 }
 
-export function buildConcreteRoad(p) {                   // 图鉴3：混凝土板+横纵缩缝+浅色边
+export function buildConcreteRoad(p) {                 // 混凝土路：4.8m 板块+锯缝+ gutter 缝
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x9d9c97));
-  const nJ = Math.max(2, Math.round(d / 3));
-  for (let i = 1; i < nJ; i++) g.add(box(w - 0.6, 0.02, 0.06, M.concrete(0x6f6e6a, 0.9), 0, rdY, -d / 2 + i * (d / nJ)));
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mConc(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
+  const nJ = Math.max(2, Math.round(d / 4.8));
+  for (let i = 1; i < nJ; i++) g.add(box(pav, 0.02, 0.05, mDark(), 0, MY, -d / 2 + i * (d / nJ)));
   for (const s of [-1, 1]) {
-    g.add(box(0.06, 0.02, d, M.concrete(0x6f6e6a, 0.9), s * w / 6, rdY, 0));
-    g.add(rdCurbZ(d, s * (w / 2 - 0.15)));
+    g.add(box(0.05, 0.02, d, mDark(), s * pav / 6, MY, 0));
+    g.add(box(0.05, 0.02, d, mDark(), s * (pav / 2 - 0.45), MY, 0));
   }
   shade(g); return g;
 }
 
-export function buildGardenPath(p) {                     // 图鉴4：S 形人字纹砖径+两侧石收边
+export function buildGardenPath(p) {                   // 庭院小径：砂垫层+人字砖+立砖收边(直)
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0xc7ad83));
+  const w = p.width, d = p.length, pw = Math.min(1.5, w * 0.5);
+  g.add(box(w, 0.1, d, mTan(), 0, 0.05, 0));
+  g.add(box(pw + 0.24, 0.05, d, M.concrete(0xbfa87e, 0.95), 0, 0.11, 0));
   const brickMat = M.paint(p.brickColor, 0.85);
-  const stoneMat = M.concrete(0x9a958c, 0.9);
-  const pw = Math.min(1.4, w * 0.42), A = 0, step = 0.16;   // 按甲方要求拉直（原 S 形取消）
-  const n = Math.floor((d - 0.24) / step), m = Math.max(2, Math.floor(pw / 2 / 0.14));   // 端部留 0.12 防出 footprint
-  const cx = (z) => A * Math.sin((z / d + 0.5) * Math.PI * 2) * 0.9;
+  const m = Math.max(2, Math.floor(pw / 2 / 0.14));
+  const n = Math.floor((d - 0.2) / 0.16);
   for (let i = 0; i <= n; i++) {
-    const z = -d / 2 + 0.12 + i * step, x0 = cx(z);
-    const ang = Math.atan2(A * Math.cos((z / d + 0.5) * Math.PI * 2) * 0.9 * (Math.PI * 2 / d), 1);
+    const z = -d / 2 + 0.1 + i * 0.16;
     for (let k = -m; k <= m; k++) {
-      const off = k * 0.13, bx = x0 + Math.cos(ang) * off, bz = z - Math.sin(ang) * off;
-      const br = box(0.2, 0.05, 0.1, brickMat, bx, RD_T + 0.02, bz);
-      br.rotation.y = -ang + (((i + k) & 1) ? Math.PI / 4 : -Math.PI / 4);
+      const br = box(0.2, 0.06, 0.1, brickMat, k * 0.13, 0.15, z);
+      br.rotation.y = ((i + k) & 1) ? Math.PI / 4 : -Math.PI / 4;
       g.add(br);
     }
-    if ((i & 1) === 0) for (const s of [-1, 1]) {
-      const off = s * (pw / 2 + 0.1), st = box(0.18, 0.08, 0.26, stoneMat, x0 + Math.cos(ang) * off, RD_T + 0.02, z - Math.sin(ang) * off);
-      st.rotation.y = -ang;
-      g.add(st);
-    }
+  }
+  for (const s of [-1, 1]) {                            // 立砖收边
+    const nb = Math.floor(d / 0.21);
+    for (let i = 0; i < nb; i++) g.add(box(0.1, 0.08, 0.2, M.concrete(0x9a958c, 0.9), s * (pw / 2 + 0.07), 0.15, -d / 2 + 0.1 + i * 0.21));
   }
   shade(g); return g;
 }
 
-export function buildGravelRoad(p) {                     // 图鉴5：碎石面+车辙带+两侧毛石边
+export function buildGravelRoad(p) {                   // 碎石路：路拱面+波浪车辙+路肩料垄
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x8a8580));
+  const w = p.width, d = p.length, gr = w - 1.2;
+  g.add(box(w, 0.1, d, mTan(), 0, 0.05, 0));
+  g.add(box(gr, 0.08, d, M.concrete(0x8a8580, 0.95), 0, 0.12, 0));
+  g.add(box(gr * 0.5, 0.04, d, M.concrete(0x938e88, 0.95), 0, 0.17, 0));   // 路拱
   const nR = Math.max(4, Math.round(d / 0.6));
-  for (const s of [-1, 1]) for (let i = 0; i < nR; i++) {          // 波浪车辙：分段微弯
+  for (const s of [-1, 1]) for (let i = 0; i < nR; i++) {
     const z = -d / 2 + (i + 0.5) * (d / nR);
-    const xw = s * w * 0.2 + Math.sin(z * 0.7) * 0.07;
-    const seg = box(w * 0.14, 0.02, d / nR + 0.08, M.concrete(0x6e6963, 0.95), xw, rdY, z);
+    const seg = box(gr * 0.16, 0.02, d / nR + 0.08, M.concrete(0x6e6963, 0.95), s * gr * 0.22 + Math.sin(z * 0.7) * 0.08, 0.19, z);
     seg.rotation.y = -Math.cos(z * 0.7) * 0.05;
     g.add(seg);
   }
-  const rng = makeRng(42);
-  for (let i = 0; i < 150; i++) {                          // 两侧毛石带
+  for (const s of [-1, 1]) g.add(box(0.5, 0.1, d, M.concrete(0x7a7570, 0.95), s * (w / 2 - 0.3), 0.13, 0));
+  const rng = makeRng(42), placed = [];
+  for (let i = 0; i < 160 && placed.length < 90; i++) {
     const s = i & 1 ? 1 : -1;
-    const x = s * (w / 2 - 0.22) + (rng() - 0.5) * 0.34, z = (rng() - 0.5) * d * 0.98;
-    const sz = 0.07 + rng() * 0.11;
-    const st = box(sz, 0.07, sz * (0.8 + rng() * 0.5), M.concrete(0x7a7570, 0.9), x, RD_T + 0.02, z);
+    const x = s * (w / 2 - 0.3) + (rng() - 0.5) * 0.4, z = (rng() - 0.5) * d * 0.98, sz = 0.08 + rng() * 0.12;
+    if (placed.some((q) => (q[0] - x) ** 2 + (q[1] - z) ** 2 < (q[2] + sz) * (q[2] + sz) * 0.8)) continue;   // 防平面重叠遮盲
+    placed.push([x, z, sz]);
+    const st = box(sz, 0.08 + rng() * 0.05, sz * (0.8 + rng() * 0.5), M.concrete(0x767169, 0.9), x, 0.15 + rng() * 0.04, z);
     st.rotation.y = rng() * Math.PI;
     g.add(st);
   }
-  for (let i = 0; i < 70; i++) {                           // 表面散石
-    const x = (rng() - 0.5) * w * 0.8, z = (rng() - 0.5) * d * 0.95, sz = 0.07 + rng() * 0.07;
-    g.add(box(sz, 0.05, sz, M.concrete(0x767169, 0.9), x, RD_T + 0.02, z));
-  }
   shade(g); return g;
 }
 
-function buildFourWayStop(p) {                           // 图鉴6：四角人行道+圆角回转+四向斑马线+停止线
+function buildFourWayStop(p) {                         // 十字路口：7.4m 进口+R5 回转+大陆斑马线+停止线
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x3a3d42));
-  const pw = w * 0.24, pd = d * 0.24;
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(rdPad(pw, pd, sx * (w / 2 - pw / 2), sz * (d / 2 - pd / 2), sx, sz));
-  const wr = w - 2 * pw - 0.4, dr = d - 2 * pd - 0.4;
+  const w = p.width, d = p.length, pa = 7.4;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  const R = rdCornerQuad(g, w / 2, d / 2, pa, 1, 1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, 1);
+  rdCornerQuad(g, w / 2, d / 2, pa, 1, -1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, -1);
+  const zc = pa / 2 + R + 1.5;
   for (const s of [-1, 1]) {
-    g.add(rdZebra(wr, 1.1, 0, s * (d / 2 - pd - 0.75), false, rdWhite()));   // 南北向过街
-    g.add(rdZebra(dr, 1.1, s * (w / 2 - pw - 0.75), 0, true, rdWhite()));    // 东西向过街
-    g.add(box(wr * 0.44, 0.02, 0.32, rdWhite(), -s * wr * 0.26, rdY, s * (d / 2 - pd - 1.65)));  // 停止线
-    for (const e of [-1, 1]) {                                                                    // 过街边界线
-      g.add(box(0.08, 0.02, 1.3, rdWhite(), e * (wr / 2 + 0.1), rdY, s * (d / 2 - pd - 0.75)));
-      g.add(box(1.3, 0.02, 0.08, rdWhite(), s * (w / 2 - pw - 0.75), rdY, e * (dr / 2 + 0.1)));
-    }
+    g.add(rdZebra(pa - 1.2, 0, s * zc, false, mWhite()));
+    g.add(rdZebra(pa - 1.2, s * zc, 0, true, mWhite()));
+    g.add(box(3.4, 0.02, 0.6, mWhite(), s * 1.8, MY, s * (zc - 1.8)));    // 右半停止线
+    g.add(box(0.6, 0.02, 3.4, mWhite(), s * (zc - 1.8), MY, -s * 1.8));
   }
   shade(g); return g;
 }
 
-function buildTJunction(p) {                             // 图鉴7：三向路口=封边人行带+两角块+三过街
+function buildTJunction(p) {                           // T 形路口：三进口+封边人行带+R5 回转
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x3a3d42));
-  const band = d * 0.2;
-  g.add(box(w, 0.24, band, rdWalkM(), 0, RD_T + 0.08, -d / 2 + band / 2));    // 北封边人行带
-  g.add(rdCurbX(w, -d / 2 + band + 0.15));
-  const pw = w * 0.24, pd = d * 0.28;
-  for (const s of [-1, 1]) g.add(rdPad(pw, pd, s * (w / 2 - pw / 2), d / 2 - pd / 2, s, -1));
-  const dr = d - band - 0.6, wr = w - 2 * pw - 0.6;
-  g.add(box(0.32, 0.02, dr * 0.42, rdWhite(), -(w / 2 - 1.5), rdY, -dr * 0.22));   // 西进口停止线(右侧)
-  g.add(box(0.32, 0.02, dr * 0.42, rdWhite(), w / 2 - 1.5, rdY, dr * 0.22));       // 东进口停止线
-  g.add(box(wr * 0.42, 0.02, 0.32, rdWhite(), -wr * 0.22, rdY, d / 2 - 1.5));     // 南进口停止线
-  const n = 3;
-  for (let i = 0; i < n; i++) {                           // 三向中线虚线
-    const z = -d / 2 + band + 1.2 + i * 1.6;
-    if (z < d / 2 - pd - 1.6) g.add(box(0.12, 0.02, 0.9, rdWhite(), 0, rdY, z));
+  const w = p.width, d = p.length, pa = 7.4, c = pa / 2;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  g.add(box(w, 0.3, d / 2 - c, mWalk(), 0, PT, (c + d / 2) / 2));          // 北封边人行带
+  g.add(box(w, 0.3, CURB_W, mCurb(), 0, PT, c + CURB_W / 2));
+  const R = rdCornerQuad(g, w / 2, d / 2, pa, 1, -1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, -1);
+  const e = c + R + 1.5;
+  for (const s of [-1, 1]) g.add(rdZebra(pa - 1.2, s * e, 0, true, mWhite()));
+  g.add(rdZebra(pa - 1.2, 0, -e, false, mWhite()));
+  for (const s of [-1, 1]) {
+    g.add(box(0.6, 0.02, 3.4, mWhite(), s * (e - 1.8), MY, s * 1.8));
+    rdDashX(g, 0, d / 2 - e - 1.0, mWhite());
   }
-  for (const s of [-1, 1]) for (let i = 0; i < 2; i++) g.add(box(0.9, 0.02, 0.12, rdWhite(), s * (w / 2 - pw - 1.2 - i * 1.6), rdY, 0));
+  g.add(box(3.4, 0.02, 0.6, mWhite(), -1.8, MY, -(e - 1.8)));
+  for (const s of [-1, 1]) for (let i = 0; i < 2; i++) g.add(box(3, 0.02, 0.1, mWhite(), s * (w / 2 - e - 2 - i * 4), MY, 0));
   shade(g); return g;
 }
 
-function buildRoundabout(p) {                            // 图鉴8：中心环岛+缘石圈+四环行箭头+角块
+function buildRoundabout(p) {                          // 单 lane 环岛：4.2m 环道+卡车 apron+导流岛
   const g = new THREE.Group();
   const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x3a3d42));
-  const R = Math.min(w, d) * 0.17;
-  const pw = w * 0.2, pd = d * 0.2;
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(rdPad(pw, pd, sx * (w / 2 - pw / 2), sz * (d / 2 - pd / 2), sx, sz));
-  const ringMat = M.concrete(0xc0bcb2, 0.9);
-  const ringSide = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.42, R + 0.5, 0.26, 24, 1, true), ringMat);
-  ringSide.position.set(0, RD_T + 0.09, 0);
-  g.add(ringSide);
-  const ringTop = new THREE.Mesh(new THREE.RingGeometry(R + 0.42, R + 0.5, 24), ringMat);   // 环形顶面(不罩岛心)
-  ringTop.rotation.x = -Math.PI / 2; ringTop.position.y = RD_T + 0.22;
-  g.add(ringTop);
-  g.add(cyl(R, R, 0.12, M.concrete(0x77756e, 0.9), 24, 0, RD_T + 0.03, 0));   // 岛心铺装(深,低于缘石)
-  const rm = R + 1.25;
-  for (let k = 0; k < 4; k++) {                           // 环行白色弧线箭头
-    const a0 = k * Math.PI / 2 + 0.25, a1 = a0 + 1.0;
-    const ring = new THREE.Mesh(new THREE.RingGeometry(rm - 0.16, rm + 0.16, 14, 1, a0, 1.0), rdWhite());
-    ring.rotation.x = -Math.PI / 2; ring.position.y = rdY;
+  const Ro = Math.min(w, d) / 2 - SIDE;
+  const c = 3.7, rG = Ro - 5.5, rA = rG + 0.3, rAp = rG + 1.3;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  const shp = new THREE.Shape();                        // 象限人行道=方-圆环块(挤出)
+  const za = Math.sqrt(Math.max(0.01, Ro * Ro - c * c));
+  shp.moveTo(c, za);
+  shp.absarc(0, 0, Ro, Math.atan2(za, c), Math.atan2(c, za), true);
+  shp.lineTo(w / 2, c); shp.lineTo(w / 2, d / 2); shp.lineTo(c, d / 2);
+  shp.closePath();
+  const geo = new THREE.ExtrudeGeometry(shp, { depth: 0.3, bevelEnabled: false });
+  for (let k = 0; k < 4; k++) {
+    const m = new THREE.Mesh(geo, mWalk());
+    m.rotation.x = Math.PI / 2; m.rotation.z = -k * Math.PI / 2;
+    m.position.y = PT + 0.15;
+    g.add(m);
+  }
+  const beta = Math.asin(Math.min(1, c / Ro));
+  for (let k = 0; k < 4; k++) {
+    const arc = new THREE.Mesh(new THREE.CylinderGeometry(Ro - 0.03, Ro - 0.03, 0.36, 18, 1, true, k * Math.PI / 2 + beta, Math.PI / 2 - 2 * beta), mCurb());
+    arc.position.y = PT + 0.02;
+    g.add(arc);
+  }
+  g.add(cyl(rG, rG, 0.5, mGreen(), 24, 0, PT + 0.1, 0));                   // 中心绿岛
+  const apr = new THREE.Mesh(new THREE.CylinderGeometry(rAp, rAp, 0.21, 24, 1, true), mConc());
+  apr.position.y = PT - 0.04;
+  g.add(apr);
+  const aprTop = new THREE.Mesh(new THREE.RingGeometry(rA, rAp, 24), mConc());
+  aprTop.rotation.x = -Math.PI / 2; aprTop.position.y = PT + 0.06;
+  g.add(aprTop);
+  g.add(cyl(rG + 0.3, rG + 0.34, 0.35, mCurb(), 24, 0, PT + 0.05, 0));     // 岛缘石
+  for (let k = 0; k < 4; k++) {                           // 导流岛(泪滴)
+    const sp = new THREE.Group();
+    sp.add(box(1.5, 0.35, 3.2, mCurb(), 0, PT + 0.05, 6.0));
+    sp.add(cyl(0.75, 0.8, 0.35, mCurb(), 12, 0, PT + 0.05, 4.3));
+    sp.rotation.y = k * Math.PI / 2;
+    g.add(sp);
+  }
+  const rm = (rAp + Ro) / 2;
+  for (let k = 0; k < 4; k++) {                           // 环行箭头
+    const a0 = k * Math.PI / 2 + Math.PI / 4 - 0.45, a1 = a0 + 0.9;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(rm - 0.18, rm + 0.18, 14, 1, a0, 0.9), mWhite());
+    ring.rotation.x = -Math.PI / 2; ring.position.y = MY;
     g.add(ring);
     const px = Math.cos(a1) * rm, pz = -Math.sin(a1) * rm;
-    const tx = -Math.sin(a1), tz = -Math.cos(a1);
-    const nx = Math.cos(a1), nz = -Math.sin(a1);
-    g.add(rdTriXZ([px - nx * 0.3, pz - nz * 0.3], [px + nx * 0.3, pz + nz * 0.3], [px + tx * 0.62, pz + tz * 0.62], rdWhite(), rdY));
+    const tx = -Math.sin(a1), tz = -Math.cos(a1), nx = Math.cos(a1), nz = -Math.sin(a1);
+    g.add(rdTriXZ([px - nx * 0.34, pz - nz * 0.34], [px + nx * 0.34, pz + nz * 0.34], [px + tx * 0.7, pz + tz * 0.7], mWhite(), MY));
+  }
+  for (let k = 0; k < 4; k++) {                           // 进口斑马线(导流岛后)
+    const zb = rdZebra(6.2, 0, 0, false, mWhite());
+    zb.position.set(0, 0, 0);
+    const hh = new THREE.Group();
+    hh.add(zb);
+    hh.rotation.y = k * Math.PI / 2;
+    zb.position.z = Ro + 0.9;
+    g.add(hh);
   }
   shade(g); return g;
 }
 
-function buildCulDeSac(p) {                              // 图鉴9：土色底+沥青颈+圆头+缘石环
+function buildCulDeSac(p) {                            // 尽端路：R≈11 圆头+8.5m 颈+环形人行道
   const g = new THREE.Group();
   const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0xc7ad83));
-  const R = w * 0.36, zc = d / 2 - R - 0.5, nw = Math.min(w * 0.5, R * 1.1);
-  const asph = M.concrete(0x3a3d42, 0.95);
-  g.add(box(nw, 0.1, zc + d / 2, asph, 0, RD_T + 0.03, (zc - d / 2) / 2));    // 颈(覆于土色底板之上)
-  g.add(cyl(R, R, 0.1, asph, 28, 0, RD_T + 0.03, zc));                        // 圆头
-  const ringM = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.32, R + 0.4, 0.22, 28, 1, true), rdCurbM());
-  ringM.position.set(0, RD_T + 0.1, zc);
-  g.add(ringM);
-  const nl = zc - R * 0.6 + d / 2, a = nw / 2 + 0.14, Rr = R + 0.36, rf = 0.9;
+  const Rb = w / 2 - SIDE, zc = d / 2 - Rb - SIDE, nh = 4.25;
+  g.add(box(w, 0.12, d, mTan(), 0, 0.06, 0));
+  g.add(box(nh * 2, PT, zc + d / 2, mAsph(), 0, PT / 2, (zc - d / 2) / 2));
+  g.add(cyl(Rb, Rb, PT, mAsph(), 32, 0, PT / 2, zc));
+  const Rc = Rb + CURB_W / 2, gam = Math.asin(Math.min(1, nh / Rc));
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(Rc, Rc, 0.3, 32, 1, true, -Math.PI / 2 + gam, 2 * Math.PI - 2 * gam), mCurb());
+  ring.position.set(0, PT, zc);
+  g.add(ring);
+  const zt = zc - Math.sqrt(Math.max(0.01, Rc * Rc - (nh + CURB_W / 2) ** 2));
+  const rf = 1.2, a0x = nh + CURB_W / 2;
   for (const s of [-1, 1]) {
-    g.add(box(0.28, 0.2, nl, rdCurbM(), s * a, RD_T + 0.08, -d / 2 + nl / 2));
-    const cx0 = a - rf, dz0 = Math.sqrt(Math.max(0.01, (Rr - rf) ** 2 - cx0 ** 2));
-    const C = [s * cx0, zc - dz0];                                  // 凹弧圆心(与颈线/环圈内切)
-    const th1 = s * Math.PI / 2;                                    // 切颈缘石线(水平向)
-    const th2 = Math.atan2(C[0], C[1] - zc);                        // 切环圈(沿圆心连线)
-    let a0 = Math.min(th1, th2), len = Math.abs(th2 - th1);
-    const fil = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, 0.2, 10, 1, true, a0, len), rdCurbM());
-    fil.position.set(C[0], RD_T + 0.08, C[1]);
+    g.add(box(CURB_W, 0.3, zt + d / 2, mCurb(), s * a0x, PT, (-d / 2 + zt) / 2));
+    const cx0 = a0x - rf, dz0 = Math.sqrt(Math.max(0.01, (Rc - rf) ** 2 - cx0 ** 2));
+    const C = [s * cx0, zc - dz0];
+    const th1 = s * Math.PI / 2, th2 = Math.atan2(C[0], C[1] - zc);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, 0.3, 10, 1, true, Math.min(th1, th2), Math.abs(th2 - th1)), mCurb());
+    fil.position.set(C[0], PT, C[1]);
     g.add(fil);
   }
+  const Rs1 = Rb + CURB_W, Rs2 = Rs1 + SW_W, g2 = Math.asin(Math.min(1, a0x / Rs1));
+  const swSh = new THREE.Shape();
+  swSh.absarc(0, 0, Rs2, -Math.PI / 2 + g2, Math.PI * 1.5 - g2, false);
+  swSh.absarc(0, 0, Rs1, Math.PI * 1.5 - g2, -Math.PI / 2 + g2, true);
+  swSh.closePath();
+  const swGeo = new THREE.ExtrudeGeometry(swSh, { depth: 0.3, bevelEnabled: false });
+  const swM = new THREE.Mesh(swGeo, mWalk());
+  swM.rotation.x = Math.PI / 2; swM.position.set(0, PT + 0.15, zc);
+  g.add(swM);
+  for (const s of [-1, 1]) g.add(box(SW_W, 0.3, zt + d / 2 + 0.4, mWalk(), s * (a0x + SW_W / 2), PT, (-d / 2 + zt + 0.4) / 2 - 0.2));
   shade(g); return g;
 }
 
-function buildFreeway(p) {                               // 图鉴10：中央隔离带+双幅车道+黄内白外标线
+function buildFreeway(p) {                             // 高速：2×2 车道+4m 中央带+硬路肩+护栏
   const g = new THREE.Group();
   const w = p.width, d = p.length;
-  g.add(rdSlab(w, d, 0x35383d));
-  g.add(box(0.9, 0.16, d, M.concrete(0x8f8b82, 0.9), 0, RD_T + 0.06, 0));
-  g.add(box(0.45, 0.34, d, M.concrete(0xb5b1a8, 0.9), 0, RD_T + 0.24, 0));   // 隔离墩
-  for (const s of [-1, 1]) g.add(box(0.35, 0.16, d, rdCurbM(), s * (w / 2 - 0.17), RD_T + 0.06, 0));
-  const ca = (w - 0.9 - 0.7) / 2;
+  const dirW = (w - 4) / 2;
+  for (const s of [-1, 1]) g.add(box(dirW, PT, d, mAsph(), s * (2 + dirW / 2), PT / 2, 0));
+  g.add(box(4, PT, d, M.concrete(0x8f8b82, 0.9), 0, PT / 2, 0));
+  g.add(box(1.0, 0.25, d, mCurb(), 0, PT + 0.1, 0));
+  g.add(box(0.6, 0.85, d, M.concrete(0xb5b1a8, 0.9), 0, PT + 0.55, 0));    // 中央防撞墙
   for (const s of [-1, 1]) {
-    const xc = s * (0.45 + ca / 2);
-    g.add(box(0.13, 0.02, d, rdYellow(), xc - s * (ca / 2 - 0.25), rdY, 0));   // 内缘黄线
-    g.add(box(0.12, 0.02, d, rdWhite(), xc + s * (ca / 2 - 0.25), rdY, 0));   // 外缘白线
-    const n = Math.max(4, Math.floor(d / 4));
-    for (let i = 0; i < n; i++) g.add(box(0.12, 0.02, 1.8, rdWhite(), xc, rdY, -d / 2 + (i + 0.5) * (d / n)));
+    const xc = s * (2 + dirW / 2);
+    g.add(box(0.1, 0.02, d, mYellow(), s * 2.5, MY, 0));
+    g.add(box(0.15, 0.02, d, mWhite(), s * (w / 2 - 2.8), MY, 0));
+    rdDashX(g, s * (2.5 + (w / 2 - 2.8)) / 2, d, mWhite());
+    const nP = Math.floor(d / 2.5);
+    for (let i = 0; i < nP; i++) g.add(box(0.15, 0.7, 0.15, M.metal(0x888888, 0.4, 0.7), s * (w / 2 - 0.5), 0.35, -d / 2 + (i + 0.5) * (d / nP)));
+    g.add(box(0.1, 0.3, d, M.metal(0x999999, 0.35, 0.7), s * (w / 2 - 0.55), 0.6, 0));   // W 梁护栏
   }
   shade(g); return g;
 }
@@ -3305,16 +3344,16 @@ const LIB_AM = [
   },
   {
     cat: '道路', id: 'road', items: [
-      { type: 'two_way_road', name: 'Two-Way Road 双向道路', icon: 'road', build: buildTwoWayRoad, params: [PR('width', '宽 m', 5, 12, 0.5, 7), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'one_way_road', name: 'One-Way Road 单向道路', icon: 'road', build: buildOneWayRoad, params: [PR('width', '宽 m', 4, 10, 0.5, 6), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'concrete_road', name: 'Concrete Road 混凝土路', icon: 'road', build: buildConcreteRoad, params: [PR('width', '宽 m', 4, 10, 0.5, 6), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'garden_path', name: 'Garden Path 庭院小径', icon: 'road', build: buildGardenPath, params: [PR('width', '宽 m', 1.0, 3.0, 0.1, 1.5), PR('length', '长 m', 3, 15, 0.5, 6), PC('brickColor', '砖色', '#c45a3a')] },
-      { type: 'gravel_road', name: 'Gravel Road 碎石路', icon: 'road', build: buildGravelRoad, params: [PR('width', '宽 m', 3, 8, 0.5, 5), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'four_way_stop', name: 'Four-Way Stop 十字路口', icon: 'road', build: buildFourWayStop, params: [PR('width', '宽 m', 8, 16, 0.5, 10), PR('length', '长 m', 8, 16, 0.5, 10)] },
-      { type: 't_junction', name: 'T-Junction T 形路口', icon: 'road', build: buildTJunction, params: [PR('width', '宽 m', 6, 14, 0.5, 8), PR('length', '长 m', 8, 16, 0.5, 10)] },
-      { type: 'roundabout', name: 'Roundabout 环形路口', icon: 'road', build: buildRoundabout, params: [PR('width', '宽 m', 10, 20, 0.5, 14), PR('length', '长 m', 10, 20, 0.5, 14)] },
-      { type: 'cul_de_sac', name: 'Cul-de-Sac 尽端路', icon: 'road', build: buildCulDeSac, params: [PR('width', '宽 m', 6, 12, 0.5, 8), PR('length', '长 m', 10, 25, 1, 15)] },
-      { type: 'freeway', name: 'Freeway 高速公路', icon: 'road', build: buildFreeway, params: [PR('width', '宽 m', 12, 24, 0.5, 16), PR('length', '长 m', 30, 100, 5, 50)] },
+      { type: 'two_way_road', name: 'Two-Way Road 双向道路', icon: 'road', build: buildTwoWayRoad, params: [PR('width', '宽 m', 9, 16, 0.5, 12), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'one_way_road', name: 'One-Way Road 单向道路', icon: 'road', build: buildOneWayRoad, params: [PR('width', '宽 m', 10, 18, 0.5, 14), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'concrete_road', name: 'Concrete Road 混凝土路', icon: 'road', build: buildConcreteRoad, params: [PR('width', '宽 m', 9, 16, 0.5, 12), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'garden_path', name: 'Garden Path 庭院小径', icon: 'road', build: buildGardenPath, params: [PR('width', '宽 m', 1.0, 3.0, 0.1, 1.5), PR('length', '长 m', 3, 20, 0.5, 8), PC('brickColor', '砖色', '#c45a3a')] },
+      { type: 'gravel_road', name: 'Gravel Road 碎石路', icon: 'road', build: buildGravelRoad, params: [PR('width', '宽 m', 4, 9, 0.5, 6.5), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'four_way_stop', name: 'Four-Way Stop 十字路口', icon: 'road', build: buildFourWayStop, params: [PR('width', '宽 m', 20, 30, 0.5, 22), PR('length', '长 m', 20, 30, 0.5, 22)] },
+      { type: 't_junction', name: 'T-Junction T 形路口', icon: 'road', build: buildTJunction, params: [PR('width', '宽 m', 20, 34, 0.5, 24), PR('length', '长 m', 18, 30, 0.5, 22)] },
+      { type: 'roundabout', name: 'Roundabout 环形路口', icon: 'road', build: buildRoundabout, params: [PR('width', '宽 m', 18, 30, 0.5, 22), PR('length', '长 m', 18, 30, 0.5, 22)] },
+      { type: 'cul_de_sac', name: 'Cul-de-Sac 尽端路', icon: 'road', build: buildCulDeSac, params: [PR('width', '宽 m', 18, 34, 0.5, 26), PR('length', '长 m', 24, 60, 1, 36)] },
+      { type: 'freeway', name: 'Freeway 高速公路', icon: 'road', build: buildFreeway, params: [PR('width', '宽 m', 20, 34, 0.5, 26), PR('length', '长 m', 30, 120, 5, 60)] },
     ],
   },
   {
