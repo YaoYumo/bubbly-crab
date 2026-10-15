@@ -598,6 +598,12 @@ function openBakeDialog() {
   const head = el('div', { style: 'display:flex;align-items:center;gap:8px;padding:0 2px 9px;border-bottom:1px solid var(--line)' }, [
     el('b', { style: 'font-size:12.5px', text: '存当前场景到卡片（烘焙内置内容）' }),
     el('span', { style: 'flex:1;font-size:10.5px;color:var(--fg3)', text: `${app.objects.length} 模型 · 卡片与描述不动，仅替换内置内容；存本机浏览器` }),
+    el('button', { class: 'qb', type: 'button', title: '导出 scene-bakes.json：提交进仓库即成为人人自带的内置内容', text: '⬇ 导出全部烘焙', onclick: () => {
+      const m = JSON.parse(localStorage.getItem('atlas-scene-bakes') || '{}');
+      if (!Object.keys(m).length) { toast('还没有任何烘焙内容可导出', 'warn'); return; }
+      downloadBlob(new Blob([JSON.stringify(m, null, 1)], { type: 'application/json' }), 'scene-bakes.json');
+      toast('已导出 scene-bakes.json：交给乙方提交进 src/scene-bakes.json 即固化为内置内容', 'info');
+    } }),
     el('button', { class: 'sp-x', type: 'button', text: '✕', onclick: close }),
   ]);
   panel.appendChild(head);
@@ -613,6 +619,11 @@ function openBakeDialog() {
         close();
         toast(def ? `已烘焙到「${sc.name}」：${def.objs.length} 模型${def.terrain && def.terrain.water ? ' · 含水系' : ''}（载入该卡片即复现）` : '烘焙失败', def ? 'info' : 'warn');
       } }),
+      baked ? el('button', { class: 'qb', type: 'button', title: '导出该卡片的烘焙 JSON（单卡 map 格式，可并入 scene-bakes.json）', text: '导出', onclick: () => {
+        const m = {}; m[sc.id] = JSON.parse(localStorage.getItem('atlas-scene-bakes') || '{}')[sc.id];
+        downloadBlob(new Blob([JSON.stringify(m, null, 1)], { type: 'application/json' }), `scene-bakes.${sc.id}.json`);
+        toast(`已导出「${sc.name}」的烘焙 JSON`, 'info');
+      } }) : null,
       baked ? el('button', { class: 'qb', type: 'button', title: '清除该卡片的烘焙内容，恢复空模板', text: '清除', onclick: () => { clearSceneBake(sc.id); close(); toast(`「${sc.name}」已恢复空模板`, 'info'); } }) : null,
     ]);
     list.appendChild(row);

@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { SCENES2 } from './scenes2.js';
 import { SCENES3 } from './scenes3.js';
+import BAKES_FILE from './scene-bakes.json' with { type: 'json' };
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 function lookQuat(from, to) {
@@ -32,6 +33,11 @@ export const SCENE_BY_ID = Object.fromEntries(SCENES.map((s) => [s.id, s]));
  * 自动合并回卡片；卡片/名称/描述始终不动，只替换内置内容。
  * ---------------------------------------------------------------------- */
 const BAKE_KEY = 'atlas-scene-bakes';
+// 代码级内置烘焙（仓库固化的 src/scene-bakes.json，导出 JSON 提交后即人人自带）
+for (const sc of SCENES) {
+  const d = BAKES_FILE && BAKES_FILE[sc.id];
+  if (d) { sc.objs = d.objs || []; sc.terrain = d.terrain; if (d.view) sc.view = d.view; if (d.atmos) sc.atmos = d.atmos; }
+}
 const BASE_DEF = new Map(SCENES.map((s) => [s.id, { objs: s.objs, terrain: s.terrain, view: s.view, atmos: s.atmos }]));
 const readBakes = () => { try { return JSON.parse(localStorage.getItem(BAKE_KEY) || '{}'); } catch (e) { return {}; } };
 const writeBakes = (m) => { try { localStorage.setItem(BAKE_KEY, JSON.stringify(m)); } catch (e) { /* 配额满时静默 */ } };

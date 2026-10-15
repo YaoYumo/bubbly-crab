@@ -70,6 +70,49 @@ ck('烘焙写入 localStorage', await page.evaluate(() => {
   return !!m['atlas-07-tulou'] && m['atlas-07-tulou'].objs.length === 3 && Array.isArray(m['atlas-07-tulou'].terrain.h);
 }));
 
+// 3b) 导出按钮：单卡 + 全部（捕获 Blob 校验 JSON 内容）
+await page.evaluate(() => { window.__cap = null; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { window.__cap = b; return orig(b); }; });
+const sceneBtn1b = await pick('.tb-dropdown > .tb', '场景');
+await sceneBtn1b.click();
+await new Promise((r) => setTimeout(r, 300));
+const bakeItem1b = await pick('.dd-item', '存当前场景到卡片');
+await bakeItem1b.click();
+await page.waitForFunction(() => document.getElementById('bake-dlg'), { timeout: 15000 });
+ck('头部「导出全部烘焙」在列', await page.evaluate(() => [...document.querySelectorAll('#bake-dlg button')].some((b) => b.textContent.includes('导出全部烘焙'))));
+const row1b = await (async () => {
+  for (const h of await page.$$('#bake-dlg div[style*="border-radius:10px"]')) {
+    const t = await h.evaluate((n) => n.textContent);
+    if (t.includes('07 客家土楼')) return h;
+  }
+  return null;
+})();
+const expBtn = await row1b.$$('button').then((bs) => Promise.all(bs.map((b) => b.evaluate((n) => n.textContent))).then((ts) => bs[ts.findIndex((t) => t.trim() === '导出')]));
+ck('已烘焙行有「导出」钮', !!expBtn);
+await expBtn.click();
+await new Promise((r) => setTimeout(r, 400));
+const singleJson = await page.evaluate(() => window.__cap.text());
+const single = JSON.parse(singleJson);
+ck('单卡导出 JSON 正确', !!single['atlas-07-tulou'] && single['atlas-07-tulou'].objs.length === 3, Object.keys(single).join(','));
+const allBtn = await page.evaluateHandle(() => [...document.querySelectorAll('#bake-dlg button')].find((b) => b.textContent.includes('导出全部烘焙')));
+await allBtn.asElement().click();
+await new Promise((r) => setTimeout(r, 400));
+const allJson = await page.evaluate(() => window.__cap.text());
+const allMap = JSON.parse(allJson);
+ck('全部导出 = scene-bakes.json 格式', !!allMap['atlas-07-tulou'] && Array.isArray(allMap['atlas-07-tulou'].terrain.h));
+await page.evaluate(() => document.querySelector('#bake-dlg .sp-x').click());
+
+// 3c) 固化回路：导出内容写入 src/scene-bakes.json 后，模块加载即内置（node 侧验证）
+const fs = await import('node:fs');
+const ORIG = fs.readFileSync('src/scene-bakes.json', 'utf8');
+try {
+  fs.writeFileSync('src/scene-bakes.json', allJson);
+  const M = await import(`../src/scenes.js?solid=${Date.now()}`);
+  const sc = M.SCENES.find((x) => x.id === 'atlas-07-tulou');
+  ck('scene-bakes.json 固化后模块内置 3 模型', sc.objs.length === 3 && !!(sc.terrain && sc.terrain.water), `objs=${sc.objs.length}`);
+} finally {
+  fs.writeFileSync('src/scene-bakes.json', ORIG);
+}
+
 // 4) 重载：卡片内置内容自动合并；载入复现 3 模型 + 水系
 await boot();
 const merged = await page.evaluate(() => {
