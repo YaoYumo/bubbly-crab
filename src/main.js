@@ -925,7 +925,7 @@ if (import.meta.env.DEV) {
   window.__scenes = { SCENES, applyScene };
   // 外部浏览器 HMR websocket 可能不通：失焦回来时探测关键文件 ETag，版本不一致自动刷新
   window.__bootAt = Date.now();
-  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css'];
+  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css', '/src/road-brush.js'];
   const etagOf = async (u) => {
     const r = await fetch(u, { method: 'HEAD', cache: 'no-store' });
     return r.headers.get('etag') || r.headers.get('last-modified') || '';

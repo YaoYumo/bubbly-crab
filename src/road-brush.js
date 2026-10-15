@@ -1173,7 +1173,96 @@ export class RoadBrush {
     ];
     this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe, phantom);
 
+    // 斜交程序化结构：与整件互斥的「程序化替身」——整件因 >15° 斜交被拒时
+    // （双方 ≥5.5m、≥3 进口，条件与 _junctionPiece 的拒绝侧完全对齐），
+    // 面片上补进口导向虚线 + 角部导流弦线；小径豁免（与面片/斑马线既有契约一致）。
+    const endJ = (t) => t < 0.02 || t > 0.98;
+    const nArms = (endJ(tNew) ? 1 : 2) + (endJ(tExisting) ? 1 : 2);
+    const skew = Math.abs(Math.PI / 2 - Math.atan2(sinT, cosT));
+    if (nArms >= 3 && Math.min(newWidth, existingWidth) >= 5.5 && skew > 15 * Math.PI / 180) {
+      this._addJunctionStructure(group, { point, tanA, tanB, hA, hB, hAe, hBe, sinT, C, phantom, terrain });
+    }
+
     return group;
+  }
+
+  /** 斜交路口程序化结构标线（整件被斜交容差拒绝时启用，任意交角均按两路切向构造）：
+   *  ① 每个有效进口一条车道导向虚线：右行内侧车道中心，自面片边缘引向路口中心；
+   *  ② 每个有效角部一组导流弦线：沿角的两条边取半径、弦线连接两边（锐角区自然收束）。 */
+  _addJunctionStructure(group, g) {
+    const { point, tanA, tanB, hA, hB, hAe, hBe, sinT, C, phantom, terrain } = g;
+    const up = new THREE.Vector3(0, 1, 0);
+    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.11 : 0.11);   // patch0.09/斑马0.10 之上、整件0.15 之下
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide });
+    const quad = (corners) => {
+      const pos = [], norm = [], uv = [];
+      corners.forEach((cc, i) => {
+        pos.push(cc.x, cc.y, cc.z);
+        norm.push(0, 1, 0);
+        uv.push(i < 2 ? 0 : 1, i % 2 === 0 ? 0 : 1);
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.setIndex([0, 1, 2, 0, 2, 3]);
+      return geo;
+    };
+    const addBar = (p1, p2, halfW, name) => {
+      const dir = p2.clone().sub(p1);
+      if (dir.lengthSq() < 1e-6) return;
+      dir.normalize();
+      const perp = new THREE.Vector3(-dir.z, 0, dir.x).normalize().multiplyScalar(halfW);
+      const pts = [p1.clone().add(perp), p1.clone().sub(perp), p2.clone().sub(perp), p2.clone().add(perp)];
+      pts.forEach((p) => { p.y = yAt(p.x, p.z); });
+      const m = new THREE.Mesh(quad(pts), whiteMat);
+      m.name = name;
+      group.add(m);
+    };
+
+    // ① 进口导向虚线（phantom 进口 = 路已终止侧，照旧跳过）
+    const approaches = [
+      { dir: tanA, half: hA, ext: hBe / sinT, ph: phantom[0] },
+      { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT, ph: phantom[1] },
+      { dir: tanB, half: hB, ext: hAe / sinT, ph: phantom[2] },
+      { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT, ph: phantom[3] },
+    ];
+    for (const ap of approaches) {
+      if (ap.ph) continue;
+      const travel = ap.dir.clone().negate();
+      const rt = new THREE.Vector3().crossVectors(travel, up).normalize();
+      const lane = rt.multiplyScalar(Math.max(0.7, ap.half * 0.45));     // 内侧车道中心（右行）
+      const dIn = Math.max(1.8, ap.ext * 0.2);                           // 引到路口中心附近
+      const dOut = ap.ext - 0.7;                                         // 自面片边缘内缩起步
+      if (dOut - dIn < 2.2) continue;
+      const dash = 1.0, gap = 0.75;
+      for (let d = dIn, n = 0; d + dash <= dOut && n < 24; d += dash + gap, n++) {
+        const p0 = point.clone().addScaledVector(ap.dir, d).add(lane);
+        const p1 = point.clone().addScaledVector(ap.dir, d + dash).add(lane);
+        addBar(p0, p1, 0.07, 'junction_guide');
+      }
+    }
+
+    // ② 角部导流弦线：C=[(sA,sB)=(1,1),(1,-1),(-1,-1),(-1,1)]；
+    //    A 线 sA=+1 ↔ 进口 −tanA(idx1)、sA=−1 ↔ tanA(idx0)；B 线同理 +1 ↔ −tanB(idx3)、−1 ↔ tanB(idx2)
+    const cornerAp = [[1, 3], [1, 2], [0, 2], [0, 3]];
+    for (let k = 0; k < 4; k++) {
+      const [ia, ib] = cornerAp[k];
+      if (phantom[ia] || phantom[ib]) continue;                 // 幽灵侧（路已终止）不导流
+      const ck = C[k];
+      const u = C[(k + 1) % 4].clone().sub(ck);
+      const v = C[(k + 3) % 4].clone().sub(ck);
+      const Lu = u.length(), Lv = v.length();
+      if (Lu < 1.2 || Lv < 1.2) continue;
+      u.normalize(); v.normalize();
+      if (u.dot(v) < -0.87) continue;                           // 钝角近平（>150°）不画：弦线会横穿面片
+      const Rmax = Math.min(Lu, Lv) * 0.55;
+      const n = Math.max(2, Math.min(6, Math.round(Rmax / 0.55)));
+      for (let i = 0; i < n; i++) {
+        const r = (Rmax * (i + 1)) / n;
+        addBar(ck.clone().addScaledVector(u, r), ck.clone().addScaledVector(v, r), 0.08, 'junction_chevron');
+      }
+    }
   }
 
   // 四个进口道外侧：斑马线 + 停止线（phantom[i] 为真的进口 = 路已终止的幽灵侧，跳过）
