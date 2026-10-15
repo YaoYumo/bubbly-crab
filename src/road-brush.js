@@ -451,7 +451,13 @@ export class RoadBrush {
       }
       // 车行道路口：模型库整件盖在面片上（小径接入按宽度豁免，保持原面片契约）
       const jp = this._junctionPiece(isect, roadData.name, ex && ex.name);
-      if (jp && patch) patch.add(jp);
+      if (jp && patch) {
+        // 整件自带各进口斑马线+停止线：撤下同位置程序化重复标线（每臂双带=结构混乱感）
+        const dup = [];
+        patch.traverse((c) => { if (c.name === 'crosswalk_stripe' || c.name === 'stop_line') dup.push(c); });
+        dup.forEach((c) => c.parent?.remove(c));
+        patch.add(jp);
+      }
     }
 
     this._roads.push(roadData);
@@ -651,13 +657,19 @@ export class RoadBrush {
     const cosT = Math.abs(tanA.x * tanB.x + tanA.z * tanB.z);
     const hNew = isect.newWidth / 2;
     const hEx = isect.existingWidth / 2;
+    // 裁切必须连人行道侧带一起避让：对面走廊全宽 = h+SIDE(2.25→含0.15踏步外沿2.4)，
+    // 缺侧带项时端墙会插进对面路面（近直角=厘米级穿插闪烁；锐角=裁口比面片边短十几米=断头乱象）。
+    // 与 hAe/hBe 面片公式 [(h+SB)+cosT·(h+SB)+0.4·sinT]/sinT 逐项对齐（面片恰好盖到裁口+0.4）。
+    const sb = (rt) => (rt && (rt.id === 'asphalt' || rt.id === 'oneway' || rt.id === 'concrete') ? 2.4 : 0);
+    const hNewW = hNew + sb(isect.newRoadType);
+    const hExW = hEx + sb(isect.existingRoadType);
     if (isNew) {
-      const half = (hEx + cosT * hNew) / sinT;
+      const half = (hExW + cosT * hNewW) / sinT;
       const t = isect.tNew;
       const dt = half / isect.newCurve.getLength();
       return { t0: Math.max(0, t - dt), t1: Math.min(1, t + dt) };
     }
-    const half = (hNew + cosT * hEx) / sinT;
+    const half = (hNewW + cosT * hExW) / sinT;
     const t = isect.tExisting;
     const dt = half / isect.existingCurve.getLength();
     return { t0: Math.max(0, t - dt), t1: Math.min(1, t + dt) };
@@ -1066,6 +1078,19 @@ export class RoadBrush {
     }
     piece.position.set(pt.x, terrain?.enabled ? terrain.heightAt(pt.x, pt.z) : 0, pt.z);
     piece.name = 'junction_lib';
+    // 路面端会伸进整件下方（裁口 < S/2），件面与路面顶 0.34/0.15 完全共面 → 重叠面闪烁：
+    // 克隆材质后 +1/+1 轻推整件退后一档，共面处一律由路面赢（偏移量远小于路面-水面高差，不引水吞）。
+    piece.traverse((o) => {
+      if (o.isMesh && o.material) {
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        const cloned = mats.map((m) => {
+          const c = m.clone();
+          c.polygonOffset = true; c.polygonOffsetFactor = 1; c.polygonOffsetUnits = 1;
+          return c;
+        });
+        o.material = Array.isArray(o.material) ? cloned : cloned[0];
+      }
+    });
     return piece;
   }
 
