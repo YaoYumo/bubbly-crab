@@ -762,13 +762,13 @@ export class RoadBrush {
   
   _getRoadColor(roadId) {
     const colors = {
-      asphalt: 0x33373c,
-      oneway: 0x33373c,
+      asphalt: 0x3a3d42,
+      oneway: 0x3a3d42,
       concrete: 0x999999,
       garden: 0xb07050,
       gravel: 0x8a8580,
     };
-    return colors[roadId] || 0x33373c;
+    return colors[roadId] || 0x3a3d42;
   }
   
   _getRoadRoughness(roadId) {
@@ -1137,7 +1137,7 @@ export class RoadBrush {
     for (let i = 0; i < N - 1; i++) {
       for (let j = 0; j < N - 1; j++) {
         const a = i * N + j, b = (i + 1) * N + j;
-        indices.push(a, b + 1, b, a, a + 1, b + 1);   // 从上往下看逆时针（正面朝上）
+        indices.push(a, b, b + 1, a, b + 1, a + 1);   // 正面朝上：CW 绕序在 DoubleSide 下会被翻成朝下法线（零直射光→黑面片）
       }
     }
 
@@ -1153,6 +1153,10 @@ export class RoadBrush {
       roughness: this._getRoadRoughness(isect.newRoadType.id),
       metalness: 0.02,
       side: THREE.DoubleSide,
+      // 水面是 1×1 巨型三角，掠射角下插值深度会反超其上的面片（LEQUAL 平局=水后画获胜）——
+      // 负 polygonOffset 把面片在深度上拉向相机破平局；−2/−6 经频带实测获胜，
+      // 且对「路压面片」区无穿透（路面真实高差 0.06 ≫ 此偏移量级）
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6,
     });
 
     const mesh = new THREE.Mesh(geo, mat);
@@ -1171,111 +1175,154 @@ export class RoadBrush {
       endE && tExisting > 0.5,                // +tanB 指向既有路曲线终点之外
       endE && tExisting <= 0.5,               // −tanB 指向既有路曲线起点之外
     ];
-    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe, phantom);
+    // 逐进口「路面缺口半长」：斑马/停止线若越出缺口就落在完整路面上，抬到路面顶之上（否则被路面盖住）
+    const gN = this._gapFor(isect, true), gE = this._gapFor(isect, false);
+    const LN = isect.newCurve.getLength(), LE = isect.existingCurve.getLength();
+    const gHalf = [
+      Math.abs(gN.t1 - tNew) * LN, Math.abs(gN.t0 - tNew) * LN,     // +tanA→t增侧 / −tanA→t减侧
+      Math.abs(gE.t1 - tExisting) * LE, Math.abs(gE.t0 - tExisting) * LE,
+    ];
+    this._addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe, hBe, phantom, gHalf);
 
-    // 斜交程序化结构：与整件互斥的「程序化替身」——整件因 >15° 斜交被拒时
-    // （双方 ≥5.5m、≥3 进口，条件与 _junctionPiece 的拒绝侧完全对齐），
-    // 面片上补进口导向虚线 + 角部导流弦线；小径豁免（与面片/斑马线既有契约一致）。
+    // 斜交完全程序化整件：与模型库整件互斥（整件因 >15° 斜交被拒、双方 ≥5.5m、≥3 进口时启用）——
+    // 参考 four_way_stop 外观按两路切向生成四角人行道转角块（R5 缓弯），恰盖面片外扩楔形；
+    // 内部净沥青面 + 斑马/停止线由 _addCrosswalks 全角度程序化；小径豁免（面片契约不变）。
     const endJ = (t) => t < 0.02 || t > 0.98;
     const nArms = (endJ(tNew) ? 1 : 2) + (endJ(tExisting) ? 1 : 2);
     const skew = Math.abs(Math.PI / 2 - Math.atan2(sinT, cosT));
     if (nArms >= 3 && Math.min(newWidth, existingWidth) >= 5.5 && skew > 15 * Math.PI / 180) {
-      this._addJunctionStructure(group, { point, tanA, tanB, hA, hB, hAe, hBe, sinT, C, phantom, terrain });
+      this._addProceduralJunction(group, {
+        tanA, tanB, rightA, rightB, hAe, hBe, C, phantom, terrain,
+        hAw: hA + (sid(isect.newRoadType) ? 2.25 : 0),
+        hBw: hB + (sid(isect.existingRoadType) ? 2.25 : 0),
+      });
     }
 
     return group;
   }
 
-  /** 斜交路口程序化结构标线（整件被斜交容差拒绝时启用，任意交角均按两路切向构造）：
-   *  ① 每个有效进口一条车道导向虚线：右行内侧车道中心，自面片边缘引向路口中心；
-   *  ② 每个有效角部一组导流弦线：沿角的两条边取半径、弦线连接两边（锐角区自然收束）。 */
-  _addJunctionStructure(group, g) {
-    const { point, tanA, tanB, hA, hB, hAe, hBe, sinT, C, phantom, terrain } = g;
-    const up = new THREE.Vector3(0, 1, 0);
-    const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.11 : 0.11);   // patch0.09/斑马0.10 之上、整件0.15 之下
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide });
-    const quad = (corners) => {
-      const pos = [], norm = [], uv = [];
-      corners.forEach((cc, i) => {
-        pos.push(cc.x, cc.y, cc.z);
-        norm.push(0, 1, 0);
-        uv.push(i < 2 ? 0 : 1, i % 2 === 0 ? 0 : 1);
-      });
+  /** 斜交路口完全程序化整件（参考 four_way_stop 模型外观，按两路切向任意交角生成）：
+   *  ① 四角人行道转角块 junction_pad：贴合两路侧带外缘的多边形（内角 R5 缓弯，顶面 walk 色、
+   *     侧壁 curb 色），恰好盖住面片外扩楔形——消除黑角破面；
+   *  ② 内部与模型一致保持净沥青面（斑马线/停止线由 _addCrosswalks 全角度程序化，已含）；
+   *  ③ 幽灵侧（路已终止）不生成转角块；顶 terrain+0.33（齐路侧带、下 1cm 防共面）、底 +0.05 埋入。 */
+  _addProceduralJunction(group, g) {
+    const { tanA, tanB, rightA, rightB, hAe, hBe, C, phantom, terrain, hAw, hBw } = g;
+    const yTop = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) : 0) + 0.33;
+    const yBot = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) : 0) + 0.05;
+    const walkMat = new THREE.MeshStandardMaterial({ color: 0xc8c3b7, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0xb0aca4, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+    const cornerAp = [[1, 3], [1, 2], [0, 2], [0, 3]];   // C[k] 相邻进口（A 线 sA=+1↔−tanA idx1 …）
+    const SA = [1, 1, -1, -1], SB = [1, -1, -1, 1];
+    const cross2 = (a, b) => a.x * b.z - a.z * b.x;
+    const flat = (v) => new THREE.Vector3(v.x, 0, v.z);
+    const hit = (P1, d1, P2, d2) => {                     // XZ 直线求交：P1+t·d1 = P2+s·d2
+      const den = cross2(d1, d2);
+      if (Math.abs(den) < 1e-6) return null;
+      const t = cross2(flat(P2).sub(flat(P1)), d2) / den;
+      return P1.clone().addScaledVector(d1, t);
+    };
+    const mkTop = (poly) => {                             // 顶面：质心扇形三角化（凸多边形）
+      const pos = [], idx = [];
+      let cx = 0, cz = 0;
+      poly.forEach((q) => { cx += q.x; cz += q.z; });
+      cx /= poly.length; cz /= poly.length;
+      poly.forEach((q) => pos.push(q.x, yTop(q.x, q.z), q.z));
+      pos.push(cx, yTop(cx, cz), cz);
+      const ci = poly.length;
+      for (let i = 0; i < poly.length; i++) idx.push(ci, i, (i + 1) % poly.length);
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
-      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      geo.setIndex([0, 1, 2, 0, 2, 3]);
-      return geo;
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, walkMat);
+      m.name = 'junction_pad';
+      return m;
     };
-    const addBar = (p1, p2, halfW, name) => {
-      const dir = p2.clone().sub(p1);
-      if (dir.lengthSq() < 1e-6) return;
-      dir.normalize();
-      const perp = new THREE.Vector3(-dir.z, 0, dir.x).normalize().multiplyScalar(halfW);
-      const pts = [p1.clone().add(perp), p1.clone().sub(perp), p2.clone().sub(perp), p2.clone().add(perp)];
-      pts.forEach((p) => { p.y = yAt(p.x, p.z); });
-      const m = new THREE.Mesh(quad(pts), whiteMat);
-      m.name = name;
-      group.add(m);
-    };
-
-    // ① 进口导向虚线（phantom 进口 = 路已终止侧，照旧跳过）
-    const approaches = [
-      { dir: tanA, half: hA, ext: hBe / sinT, ph: phantom[0] },
-      { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT, ph: phantom[1] },
-      { dir: tanB, half: hB, ext: hAe / sinT, ph: phantom[2] },
-      { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT, ph: phantom[3] },
-    ];
-    for (const ap of approaches) {
-      if (ap.ph) continue;
-      const travel = ap.dir.clone().negate();
-      const rt = new THREE.Vector3().crossVectors(travel, up).normalize();
-      const lane = rt.multiplyScalar(Math.max(0.7, ap.half * 0.45));     // 内侧车道中心（右行）
-      const dIn = Math.max(1.8, ap.ext * 0.2);                           // 引到路口中心附近
-      const dOut = ap.ext - 0.7;                                         // 自面片边缘内缩起步
-      if (dOut - dIn < 2.2) continue;
-      const dash = 1.0, gap = 0.75;
-      for (let d = dIn, n = 0; d + dash <= dOut && n < 24; d += dash + gap, n++) {
-        const p0 = point.clone().addScaledVector(ap.dir, d).add(lane);
-        const p1 = point.clone().addScaledVector(ap.dir, d + dash).add(lane);
-        addBar(p0, p1, 0.07, 'junction_guide');
+    const mkWalls = (poly) => {                           // 侧壁：顶缘→底缘（底埋进面片，不悬空）
+      const pos = [], idx = [];
+      const n = poly.length;
+      poly.forEach((q) => pos.push(q.x, yTop(q.x, q.z), q.z));
+      poly.forEach((q) => pos.push(q.x, yBot(q.x, q.z), q.z));
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        idx.push(i, j, n + j, i, n + j, n + i);
       }
-    }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx);
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, curbMat);
+      m.name = 'junction_padwall';
+      return m;
+    };
 
-    // ② 角部导流弦线：C=[(sA,sB)=(1,1),(1,-1),(-1,-1),(-1,1)]；
-    //    A 线 sA=+1 ↔ 进口 −tanA(idx1)、sA=−1 ↔ tanA(idx0)；B 线同理 +1 ↔ −tanB(idx3)、−1 ↔ tanB(idx2)
-    const cornerAp = [[1, 3], [1, 2], [0, 2], [0, 3]];
     for (let k = 0; k < 4; k++) {
       const [ia, ib] = cornerAp[k];
-      if (phantom[ia] || phantom[ib]) continue;                 // 幽灵侧（路已终止）不导流
+      if (phantom[ia] || phantom[ib]) continue;           // 幽灵侧不生成转角块
       const ck = C[k];
-      const u = C[(k + 1) % 4].clone().sub(ck);
-      const v = C[(k + 3) % 4].clone().sub(ck);
-      const Lu = u.length(), Lv = v.length();
-      if (Lu < 1.2 || Lv < 1.2) continue;
-      u.normalize(); v.normalize();
-      if (u.dot(v) < -0.87) continue;                           // 钝角近平（>150°）不画：弦线会横穿面片
-      const Rmax = Math.min(Lu, Lv) * 0.55;
-      const n = Math.max(2, Math.min(6, Math.round(Rmax / 0.55)));
-      for (let i = 0; i < n; i++) {
-        const r = (Rmax * (i + 1)) / n;
-        addBar(ck.clone().addScaledVector(u, r), ck.clone().addScaledVector(v, r), 0.08, 'junction_chevron');
+      const prev = C[(k + 3) % 4], next = C[(k + 1) % 4];
+      const u = flat(next).sub(flat(ck)), v = flat(prev).sub(flat(ck));
+      if (u.length() < 0.5 || v.length() < 0.5) continue;
+      // 偶角 u 为 A 线、奇角 v 为 A 线（指向共享同一侧的邻角）
+      const Ad = (k % 2 === 0 ? u : v).clone().normalize();
+      const Bd = (k % 2 === 0 ? v : u).clone().normalize();
+      const sA = SA[k], sB = SB[k];
+      const PtAc = ck.clone().addScaledVector(rightA, sA * (hAw - hAe));   // A 路侧带外缘线（过点∥Ad）
+      const PtBc = ck.clone().addScaledVector(rightB, sB * (hBw - hBe));
+      const A1 = hit(ck, Ad, PtBc, Bd);                   // 扩A边 × 路B侧带外缘
+      const B1 = hit(ck, Bd, PtAc, Ad);                   // 扩B边 × 路A侧带外缘
+      const Pin = hit(PtAc, Ad, PtBc, Bd);                // 两路侧带外缘交点（路口真实外角）
+      if (!A1 || !B1 || !Pin) continue;
+      if (A1.distanceTo(ck) > 90 || B1.distanceTo(ck) > 90 || Pin.distanceTo(ck) > 90) continue;
+      // 内角 R5 缓弯（模型 RRET=5；按段长/夹角收窄，过窄保持尖角）
+      const eA = B1.clone().sub(Pin), eB = A1.clone().sub(Pin);
+      const dA = eA.length(), dB = eB.length();
+      let poly = null;
+      if (dA > 0.4 && dB > 0.4) {
+        eA.normalize(); eB.normalize();
+        const th = Math.acos(Math.max(-1, Math.min(1, eA.dot(eB))));
+        const R = Math.min(5.0, 0.7 * dA * Math.tan(th / 2), 0.7 * dB * Math.tan(th / 2));
+        if (R > 0.8 && th > 0.35 && th < Math.PI - 0.35) {
+          const O = Pin.clone().addScaledVector(eA.clone().add(eB).normalize(), R / Math.sin(th / 2));
+          const tLen = R / Math.tan(th / 2);
+          const TA = Pin.clone().addScaledVector(eA, tLen);
+          const TB = Pin.clone().addScaledVector(eB, tLen);
+          const a0 = Math.atan2(TB.z - O.z, TB.x - O.x);
+          const a1 = Math.atan2(TA.z - O.z, TA.x - O.x);
+          let da = a1 - a0;
+          while (da > Math.PI) da -= 2 * Math.PI;
+          while (da < -Math.PI) da += 2 * Math.PI;
+          const arc = [];
+          for (let i = 1; i < 8; i++) {
+            const a = a0 + da * (i / 8);
+            arc.push(new THREE.Vector3(O.x + Math.cos(a) * R, 0, O.z + Math.sin(a) * R));
+          }
+          poly = [ck, A1, TB, ...arc, TA, B1];
+        }
       }
+      if (!poly) poly = [ck, A1, Pin, B1];
+      group.add(mkTop(poly));
+      group.add(mkWalls(poly));
     }
   }
 
   // 四个进口道外侧：斑马线 + 停止线（phantom[i] 为真的进口 = 路已终止的幽灵侧，跳过）
-  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB, phantom = [false, false, false, false]) {
+  _addCrosswalks(group, point, tanA, tanB, hA, hB, sinT, terrain, hAe = hA, hBe = hB, phantom = [false, false, false, false], gHalf = null) {
     if (hA * 2 < 4.5 || hB * 2 < 4.5) return;    // 任一侧过窄（宅前小径/花园路接入）不画斑马线与停止线
     const up = new THREE.Vector3(0, 1, 0);
     // ext：面片沿该进口道方向的延伸（用扩张后的对向半宽），斑马线从其外缘起画
     const approaches = [
-      { dir: tanA, half: hA, ext: hBe / sinT },
-      { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT },
-      { dir: tanB, half: hB, ext: hAe / sinT },
-      { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT },
+      { dir: tanA, half: hA, ext: hBe / sinT, i: 0 },
+      { dir: tanA.clone().negate(), half: hA, ext: hBe / sinT, i: 1 },
+      { dir: tanB, half: hB, ext: hAe / sinT, i: 2 },
+      { dir: tanB.clone().negate(), half: hB, ext: hAe / sinT, i: 3 },
     ].filter((_, i) => !phantom[i]);
+    // yAtRoad：顶点沿轴距离越出该进口缺口半长 → 落在完整路面上，抬到路面顶+0.18（>路面标线0.172）
+    const yAtRoad = (x, z, dAx, ii) => {
+      const base = terrain?.enabled ? terrain.heightAt(x, z) : 0;
+      return base + (gHalf && dAx > gHalf[ii] ? 0.18 : 0.10);
+    };
     const quad = (corners) => {
       const pos = [];
       const norm = [];
@@ -1293,7 +1340,10 @@ export class RoadBrush {
       g.computeVertexNormals();
       return g;
     };
-    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide });
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: 0xf2f2f2, roughness: 0.65, metalness: 0, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6,   // 同面片：防被水面/路面在掠射角下盖住
+    });
     const yAt = (x, z) => (terrain?.enabled ? terrain.heightAt(x, z) + 0.10 : 0.10);   // 贴面片(+0.09)之上
     const bandDepth = 2.0;
 
@@ -1313,8 +1363,10 @@ export class RoadBrush {
         const p1 = point.clone().addScaledVector(ap.dir, start + bandDepth).addScaledVector(lat, off - w);
         const p2 = point.clone().addScaledVector(ap.dir, start + bandDepth).addScaledVector(lat, off + w);
         const p3 = point.clone().addScaledVector(ap.dir, start).addScaledVector(lat, off + w);
-        const y = yAt(p0.x, p0.z);
-        p0.y = p1.y = p2.y = p3.y = y;
+        p0.y = yAtRoad(p0.x, p0.z, start, ap.i);
+        p1.y = yAtRoad(p1.x, p1.z, start + bandDepth, ap.i);
+        p2.y = yAtRoad(p2.x, p2.z, start + bandDepth, ap.i);
+        p3.y = yAtRoad(p3.x, p3.z, start, ap.i);
         const m = new THREE.Mesh(quad([p0, p1, p2, p3]), whiteMat);
         m.name = 'crosswalk_stripe';
         group.add(m);
@@ -1327,8 +1379,10 @@ export class RoadBrush {
       const q1 = point.clone().addScaledVector(ap.dir, s0 + 0.35).addScaledVector(rt, 0.1);
       const q2 = point.clone().addScaledVector(ap.dir, s0 + 0.35).addScaledVector(rt, ap.half - 0.25);
       const q3 = point.clone().addScaledVector(ap.dir, s0).addScaledVector(rt, ap.half - 0.25);
-      const yq = yAt(q0.x, q0.z);
-      q0.y = q1.y = q2.y = q3.y = yq;
+      q0.y = yAtRoad(q0.x, q0.z, s0, ap.i);
+      q1.y = yAtRoad(q1.x, q1.z, s0 + 0.35, ap.i);
+      q2.y = yAtRoad(q2.x, q2.z, s0 + 0.35, ap.i);
+      q3.y = yAtRoad(q3.x, q3.z, s0, ap.i);
       const sm = new THREE.Mesh(quad([q0, q1, q2, q3]), whiteMat);
       sm.name = 'stop_line';
       group.add(sm);
