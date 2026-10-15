@@ -26,6 +26,67 @@ SCENES.push(...SCENES3);
 
 export const SCENE_BY_ID = Object.fromEntries(SCENES.map((s) => [s.id, s]));
 
+/* ------------------ 卡片内置内容的运行时「烘焙」 -------------------------
+ * 使用者在导演台搭好场景后，可把当前场景（模型+地形+鸟瞰机位+光影预设）
+ * 烘焙进任意示例场景卡片：存 localStorage（atlas-scene-bakes），下次打开
+ * 自动合并回卡片；卡片/名称/描述始终不动，只替换内置内容。
+ * ---------------------------------------------------------------------- */
+const BAKE_KEY = 'atlas-scene-bakes';
+const BASE_DEF = new Map(SCENES.map((s) => [s.id, { objs: s.objs, terrain: s.terrain, view: s.view, atmos: s.atmos }]));
+const readBakes = () => { try { return JSON.parse(localStorage.getItem(BAKE_KEY) || '{}'); } catch (e) { return {}; } };
+const writeBakes = (m) => { try { localStorage.setItem(BAKE_KEY, JSON.stringify(m)); } catch (e) { /* 配额满时静默 */ } };
+const applyDef = (sc, def) => {
+  sc.objs = def.objs || [];
+  sc.terrain = def.terrain;
+  if (def.view) sc.view = def.view;
+  if (def.atmos) sc.atmos = def.atmos;
+};
+for (const sc of SCENES) {
+  const b = readBakes()[sc.id];
+  if (b) applyDef(sc, b);
+}
+export const hasBake = (id) => !!readBakes()[id];
+
+/** 把当前导演台场景烘焙进卡片 id：模型清单 + 地形快照 + 鸟瞰机位 + 光影预设 */
+export function bakeSceneToId(app, id) {
+  const sc = SCENE_BY_ID[id];
+  if (!sc || !app) return null;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const objs = [];
+  for (const so of app.objects) {
+    if (!so || so.merged) continue;
+    const extra = {};
+    if (so.root.scale.x !== 1) extra.s = r2(so.root.scale.x);
+    if (!so.followTerrain) { extra.follow = false; extra.y = r2(so.root.position.y); }
+    objs.push([so.key, r2(so.root.position.x), r2(so.root.position.z), r2(so.root.rotation.y), so.params || {}, extra]);
+  }
+  const tr = app.terrain;
+  let terrain;
+  if (tr) {
+    terrain = {
+      enabled: tr.enabled !== false, size: tr.size, biome: tr.biome,
+      water: !!tr.state.water, waterY: r2(tr.state.waterY ?? 0),
+      h: tr.enabled !== false ? Array.from(tr.h, (v) => r2(v)) : undefined,
+    };
+  }
+  const def = {
+    objs, terrain,
+    view: { pos: app.stage.view.position.toArray().map(r2), target: app.stage.orbit.target.toArray().map(r2) },
+    atmos: app.lighting && app.lighting.preset,
+    at: Date.now(),
+  };
+  const m = readBakes(); m[id] = def; writeBakes(m);
+  applyDef(sc, def);
+  return def;
+}
+
+/** 清除某卡片的烘焙内容，恢复出厂空模板 */
+export function clearSceneBake(id) {
+  const m = readBakes(); delete m[id]; writeBakes(m);
+  const sc = SCENE_BY_ID[id];
+  if (sc) applyDef(sc, BASE_DEF.get(id) || { objs: [] });
+}
+
 /** 载入模板：清空当前场景后按声明式数据重建 */
 function _applyScene(app, id) {
   const sc = SCENE_BY_ID[id] || SCENES[0];
@@ -41,6 +102,7 @@ function _applyScene(app, id) {
     tr.setEnabled(tt.enabled !== false);
     if (tt.enabled === false) { tr.h.fill(0); tr.refresh(); }
     if (tt.size) tr.setSize(tt.size);
+    if (Array.isArray(tt.h) && tt.h.length === tr.h.length) { tr.h.set(tt.h); tr.refresh(); }
     if (tt.biome) tr.setBiome(tt.biome);
     if (tt.enabled !== false && tt.gen) tr.generate(tt.gen, tt.amp ?? 3);
     if (Array.isArray(tt.basin)) for (const b of tt.basin) tr.basin(b[0], b[1], b[2], b[3] ?? 1.6);

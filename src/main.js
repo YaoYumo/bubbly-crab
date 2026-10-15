@@ -9,7 +9,7 @@ import { LEVELS, setDetailLevel, detailLevel, detailMaps, textureStats, pruneTex
 import { buildLibrary, buildObjectList, buildShotList, buildInspector, buildDirectInspector, buildSceneAssets, buildSceneInspector, buildKeyframesList, buildCameraInspector, buildGeneratePage, buildExportPage, toast } from './panels.js';
 import { buildTimeline } from './timeline.js';
 import { buildCurveEditor } from './curveeditor.js';
-import { SCENES, applyScene } from './scenes.js';
+import { SCENES, applyScene, bakeSceneToId, clearSceneBake, hasBake } from './scenes.js';
 import { buildDemo } from './demo.js';
 import { LIB, LIB_INDEX, buildAsset, defaultsFor } from './assets.js';
 import { MOVES, MOVE_BY_ID } from './camera.js';
@@ -322,6 +322,7 @@ const sceneMenu = makeDropdown('场景', '☰', [
   { text: '导入模型', icon: '', onClick: () => fileIn.click() },
   '---',
   { text: '示例场景', icon: '◫', onClick: () => scenePickerBtn.click() },
+  { text: '存当前场景到卡片…', icon: '⎘', onClick: () => openBakeDialog() },
   '---',
   { text: '保存工程', icon: '⬇', onClick: () => { downloadBlob(new Blob([JSON.stringify(app.serialize(), null, 1)], { type: 'application/json' }), `${app.projectName}.json`); toast('已导出工程 JSON'); } },
   { text: '打开工程', icon: '⬆', onClick: () => fileIn.click() },
@@ -587,6 +588,41 @@ function scenePicker() {
   pop.style.zIndex = '80';
   return btn;
 }
+/** 场景菜单→「存当前场景到卡片…」：把当前搭好的场景烘焙进任意示例场景卡片 */
+function openBakeDialog() {
+  document.getElementById('bake-dlg')?.remove();
+  const dlg = el('div', { id: 'bake-dlg', style: 'position:fixed;inset:0;z-index:90;background:rgba(10,14,20,.45);display:flex;align-items:center;justify-content:center' });
+  const panel = el('div', { style: 'width:min(560px,calc(100vw - 24px));max-height:76vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow3);padding:14px 14px 10px' });
+  const close = () => dlg.remove();
+  dlg.addEventListener('pointerdown', (e) => { if (e.target === dlg) close(); });
+  const head = el('div', { style: 'display:flex;align-items:center;gap:8px;padding:0 2px 9px;border-bottom:1px solid var(--line)' }, [
+    el('b', { style: 'font-size:12.5px', text: '存当前场景到卡片（烘焙内置内容）' }),
+    el('span', { style: 'flex:1;font-size:10.5px;color:var(--fg3)', text: `${app.objects.length} 模型 · 卡片与描述不动，仅替换内置内容；存本机浏览器` }),
+    el('button', { class: 'sp-x', type: 'button', text: '✕', onclick: close }),
+  ]);
+  panel.appendChild(head);
+  const list = el('div', { style: 'display:flex;flex-direction:column;gap:6px;padding:10px 2px' });
+  for (const sc of SCENES) {
+    const baked = hasBake(sc.id);
+    const row = el('div', { style: 'display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:7px 9px;background:var(--bg2)' }, [
+      el('span', { class: 'sc-tag', text: sc.cat }),
+      el('b', { style: 'flex:1;font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap', text: sc.name, title: sc.desc }),
+      el('span', { style: 'font-size:10px;color:var(--fg3)', text: baked ? `已烘焙 ${sc.objs.length} 模型` : (sc.objs.length ? `内置 ${sc.objs.length} 模型` : '空模板') }),
+      el('button', { class: 'qb', type: 'button', title: '把当前导演台场景存入这张卡片', text: '存到此卡', onclick: () => {
+        const def = bakeSceneToId(app, sc.id);
+        close();
+        toast(def ? `已烘焙到「${sc.name}」：${def.objs.length} 模型${def.terrain && def.terrain.water ? ' · 含水系' : ''}（载入该卡片即复现）` : '烘焙失败', def ? 'info' : 'warn');
+      } }),
+      baked ? el('button', { class: 'qb', type: 'button', title: '清除该卡片的烘焙内容，恢复空模板', text: '清除', onclick: () => { clearSceneBake(sc.id); close(); toast(`「${sc.name}」已恢复空模板`, 'info'); } }) : null,
+    ]);
+    list.appendChild(row);
+  }
+  panel.appendChild(list);
+  panel.appendChild(el('div', { class: 'mi-hint', text: '烘焙内容含：模型清单与参数/位置/朝向/缩放、地形高度与水系快照、鸟瞰机位、光影预设；不含机位运镜时间轴。存于本机浏览器（localStorage），清除浏览器数据会丢失。' }));
+  dlg.appendChild(panel);
+  document.body.appendChild(dlg);
+}
+
 function buildShotBar() {
   const bar = document.getElementById('quickbar');
   const mk = (txt, title, fn) => {
