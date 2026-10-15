@@ -4,7 +4,7 @@
 cd "$(dirname "$0")/.." || exit 1
 mkdir -p test/out
 : > test/out/SUITE.txt
-for t in parts house detail uilook panel _audit cn scenes editops crowd terrain assets jsoncheck boot entry smoke single motion shots; do
+for t in parts house detail uilook panel _audit cn scenes editops crowd terrain assets jsoncheck boot entry smoke single motion shots junction-regression; do
   timeout 1500 node "test/$t.mjs" > "test/out/log-$t.txt" 2>&1
   echo "$t EXIT=$?" >> test/out/SUITE.txt
 done

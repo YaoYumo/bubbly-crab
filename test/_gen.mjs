@@ -58,16 +58,17 @@ for (const ang of CASES) {
   }, dx, dz, R);
 
   // 顶视
-  await page.evaluate(() => {
+  const frameScale = Math.max(1, Math.max(...data.bbox.map(Math.abs)) / 16);
+  await page.evaluate((scale) => {
     const app = window.app;
-    app.stage.view.position.set(0, 70, 0.01);
+    app.stage.view.position.set(0, 70 * scale, 0.01);
     app.stage.orbit.target.set(0, 0, 0);
     app.stage.view.fov = 50;
     app.stage.view.updateProjectionMatrix();
     app.stage.orbit.update();
     for (let i = 0; i < 8; i++) app.step();
     app.stage.render();
-  });
+  }, frameScale);
   const rect = await page.evaluate(() => { const c = document.querySelector('#stage canvas'); const r = c.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) }; });
   await page.screenshot({ path: `test/out/chk-gen${ang}-top.png`, clip: rect });
 
@@ -88,16 +89,16 @@ for (const ang of CASES) {
   await page.screenshot({ path: `test/out/chk-gen${ang}-top.png`, clip: rect });
 
   // 斜视
-  await page.evaluate(() => {
+  await page.evaluate((scale) => {
     const app = window.app;
-    app.stage.view.position.set(26, 14, 30);
+    app.stage.view.position.set(26 * scale, 14 * scale, 30 * scale);
     app.stage.orbit.target.set(0, 1, 0);
     app.stage.view.fov = 46;
     app.stage.view.updateProjectionMatrix();
     app.stage.orbit.update();
     for (let i = 0; i < 8; i++) app.step();
     app.stage.render();
-  });
+  }, frameScale);
   await page.screenshot({ path: `test/out/chk-gen${ang}-side.png`, clip: rect });
 
   all[ang] = { ...data, px };

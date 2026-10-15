@@ -11,9 +11,9 @@
 //
 // 平面构造（俯视 XZ，C = 交叉点）：
 //   臂 i（指向路外）：车行半宽 pav_i、件全半宽 half_i、
-//   出口断面 c_i = pav_i + 6.5（6.5 = R5 回转 + 1.5m 直段）。
+//   出口断面 c_i 至少 pav_i + 6.5，并按邻臂交角扩展到侧带分离处 + R5 切线余量。
 //   断面四角 T_i± = C + c_i·d_i ± half_i·perp_i；外轮廓 = 全部角点的凸包——
-//   直角时自然张成方角（含断面线交点），锐/钝角以角点连线收口，任何交角都紧凑。
+//   直角时自然张成方角；锐角沿道路轴延长，避免两个尖角被裁掉、侧带互穿。
 //   步道角块 = 轮廓 ∩ 两邻臂车行外半平面，车行边线交点 G 处做 R5 回转圆角。
 //   路件挖洞 = 曲线与路口轮廓的区间求交，判定 = 横断面（±half）在 t±0.8m 沿弧长
 //   前探共 9 点全在轮廓内（0.05 富余）→ 第一个露头采样点的刚性端面整条在轮廓里：无缝、无洞、无共面闪烁。
@@ -116,6 +116,26 @@ const EPS_G = 1e-4;
 export function junctionPlan(center, arms) {
   if (!center || !arms || arms.length < 2) return null;
   const C = v2(center.x, center.z);
+
+  // 相邻臂的侧带必须在出口之前彻底分开，且给 R5 圆角留下切线长度。
+  // 固定出口距离在锐角下会把步道尖角裁掉，让两条路的侧带穿入对方车道。
+  const sorted = arms.map((a, i) => i).sort((i, j) => ang(arms[i].dir) - ang(arms[j].dir));
+  arms.forEach(a => { a.c = a.pav + MOUTH_EXTRA; });
+  for (let k = 0; k < sorted.length; k++) {
+    const ai = arms[sorted[k]], aj = arms[sorted[(k + 1) % sorted.length]];
+    let theta = ang(aj.dir) - ang(ai.dir);
+    if (theta <= 0) theta += Math.PI * 2;
+    if (theta >= Math.PI - 1e-4) continue;
+    const sin = Math.sin(theta), cos = Math.cos(theta);
+    const tangent = RRET / Math.tan(theta / 2);
+    // 两侧车行边线及最外侧带边线的交点，分别投影到各臂轴。
+    const reach = (a, b) => Math.max(
+      (b.pav + a.pav * cos) / sin + tangent,
+      (b.half + a.half * cos) / sin,
+    ) + 1.5;
+    ai.c = Math.max(ai.c, reach(ai, aj));
+    aj.c = Math.max(aj.c, reach(aj, ai));
+  }
 
   // —— 出口断面四角
   const cornerMeta = [];                      // { arm, sign, p }
@@ -361,8 +381,11 @@ export function buildJunction(plan, opts = {}) {
     // 水面巨型三角掠射角反超深度（LEQUAL 平局水后画赢）：负偏移把路口面拉向相机破平局
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6,
   });
-  const matWalk = new THREE.MeshStandardMaterial({ color: 0xc8c3b7, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
-  const matCurb = new THREE.MeshStandardMaterial({ color: 0xb0aca4, roughness: 0.9, metalness: 0, side: THREE.DoubleSide });
+  const matWalk = new THREE.MeshStandardMaterial({ color: 0xc8c3b7, roughness: 0.9, metalness: 0, side: THREE.DoubleSide,
+    // 与底面使用相同的深度偏移，否则远景量化误差会让底面反盖高出的步道。
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6 });
+  const matCurb = new THREE.MeshStandardMaterial({ color: 0xb0aca4, roughness: 0.9, metalness: 0, side: THREE.DoubleSide,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6 });
   const matMark = new THREE.MeshStandardMaterial({
     color: 0xf5f4ef, roughness: 0.55, metalness: 0, side: THREE.DoubleSide,
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -6,
@@ -426,6 +449,7 @@ export function buildJunction(plan, opts = {}) {
     }
     const top = new THREE.Mesh(geomFrom(pos), matWalk);
     top.name = `junction_walk_${wi}`;
+    top.renderOrder = 1; // 远景同深度量化时，步道在底面之后提交
     g.add(top);
 
     // 内缘落差墙（不在轮廓上的边 = 与车行面的交界）
@@ -504,7 +528,7 @@ export function buildJunction(plan, opts = {}) {
 
   // —— 3. 标线：每臂大陆斑马线 + 停止线（只属于路口，路件标线到挖洞边为止，单一属主）
   //    浅角交叠：两臂斑马的条互穿会织成菱形网（两组白条间的黑底菱块，像坏图）——
-  //    相交的两根条只留臂序靠前的一根，重叠区仍被后臂的条占满：视觉连续、零织纹。
+  //    相交的两根条只留臂序靠前的一根，避免两组标线共面交织。
   const barsByArm = plan.arms.map((a) => {
     const c = a.c ?? (a.pav + MOUTH_EXTRA);
     const d = a.dir, Pd = perp(d);
