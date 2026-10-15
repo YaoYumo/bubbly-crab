@@ -34,10 +34,10 @@ function _applyScene(app, id) {
   app.projectName = sc.name;
   const prevFollow = app.state.followTerrain;
 
-  // 地形 / 地面
+  // 地形 / 地面：模板未声明 terrain 时完全不碰地形（高度/水系保持载入前状态）
   const tr = app.terrain;
-  const tt = sc.terrain || {};
-  if (tr) {
+  const tt = sc.terrain;
+  if (tr && tt) {
     tr.setEnabled(tt.enabled !== false);
     if (tt.enabled === false) { tr.h.fill(0); tr.refresh(); }
     if (tt.size) tr.setSize(tt.size);

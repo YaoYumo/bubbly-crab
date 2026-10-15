@@ -20,6 +20,7 @@ for (const sc of SCENES3.filter((x) => x.id.includes(FILTER))) {
   await page.goto(`http://127.0.0.1:5174/?fresh=1&scene=${sc.id}`, { waitUntil: 'domcontentloaded', timeout: 300000 });
   await page.waitForFunction(`window.app && app.sceneReport && app.sceneReport.id === ${JSON.stringify(sc.id)}`, { timeout: 300000 });
   await new Promise((r) => setTimeout(r, 2500)); // 等渲染与相机稳定
+  if (!sc.objs.length) continue; // 空卡片（用户自建模板）无需截图
   // 无头合成器在无交互时不刷新 WebGL 画布：显式写入一次场景机位（等同用户拖拽）后再截
   await page.evaluate((v) => {
     const s = app.stage;

@@ -61,7 +61,7 @@ ck('卡片可点', !!card);
 await card.click();
 await page.waitForFunction('window.app && app.sceneReport && app.sceneReport.id === "atlas-07-tulou"', { timeout: 300000 });
 const rep = await page.evaluate(() => app.sceneReport);
-ck('卡片载入 atlas-07-tulou', rep.models === 66 && rep.missing === 0, `models=${rep.models} missing=${rep.missing}`);
+ck('卡片载入为空模板 atlas-07-tulou', rep.models === 0 && rep.missing === 0, `models=${rep.models} missing=${rep.missing}`);
 ck('载入后弹层自动关闭', await page.evaluate(() => !document.querySelector('.menu.scenes.on')));
 
 // 5) 截图留证（写一次机位以刷新无头画布）
