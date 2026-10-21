@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [arena/3f9ececc-bubbly-crab]
-    paths: [.github/workflows/desktop-windows.yml]
+    paths: [.github/workflows/desktop-windows.yml, src-tauri/Cargo.toml]
 permissions:
   contents: read
 jobs:

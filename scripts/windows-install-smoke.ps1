@@ -48,4 +48,6 @@ try {
   New-Item -ItemType Directory -Path '.shots' -Force | Out-Null
   $report | ConvertTo-Json -Depth 5 | Set-Content '.shots/windows-install-smoke.json' -Encoding utf8
   $report | ConvertTo-Json -Depth 5 | Write-Host
+  $notice = ($report | ConvertTo-Json -Depth 5 -Compress).Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+  Write-Host "::notice title=Windows install smoke::$notice"
 }

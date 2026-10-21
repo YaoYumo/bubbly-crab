@@ -33,6 +33,8 @@ if (
 )
   throw Error("No Windows installer/executable was produced");
 const manifest = {
+  sourceCommit: process.env.GITHUB_SHA || null,
+  cargoLock: existsSync(resolve(root, "src-tauri/Cargo.lock")) ? entry(resolve(root, "src-tauri/Cargo.lock")) : null,
   frontendBytes: frontend.reduce((s, f) => s + f.bytes, 0),
   frontend,
   installers,
