@@ -18,6 +18,10 @@ $app = $null
 try {
   $installer = if ($BaselineInstaller) { Get-Item $BaselineInstaller } else { Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.exe' | Select-Object -First 1 }
   if (!$installer) { throw 'NSIS installer missing' }
+  $port = if ($BaselineInstaller) { 9223 } else { 9222 }
+  $env:PREVIZ_UI_DEBUG_PORT = [string]$port
+  $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:TEMP ('previz-ui-' + [guid]::NewGuid().ToString())
+  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --use-angle=swiftshader --enable-unsafe-swiftshader"
   # NSIS /D must be the final argument, unquoted, even if its value has spaces.
   $install = Start-Process -FilePath $installer.FullName -ArgumentList "/S /D=$target" -PassThru
   if (!$install.WaitForExit(180000)) { $install.Kill(); throw 'Installer did not finish within 180 seconds' }
@@ -26,7 +30,6 @@ try {
   $exe = Join-Path $target 'previz-lab.exe'
   if (!(Test-Path $exe)) { throw "Installed executable missing: $exe" }
   $report.installed = $true
-  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222 --use-angle=swiftshader --enable-unsafe-swiftshader'
   Start-Sleep -Seconds 2
   $app = Start-Process -FilePath $exe -PassThru
   Start-Sleep -Seconds 15

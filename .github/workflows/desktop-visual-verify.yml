@@ -44,6 +44,10 @@ jobs:
         if: always()
         with:
           name: windows-installed-ui-checks
+          include-hidden-files: true
           path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/Cargo.lock
+            .shots/desktop-artifacts.json
             .shots/windows-ui-*.json
             .shots/windows-install-smoke.json

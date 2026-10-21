@@ -19,7 +19,7 @@ let browser, last;
 for (let n = 0; n < 30; n++) {
   try {
     browser = await puppeteer.connect({
-      browserURL: "http://127.0.0.1:9222",
+      browserURL: `http://localhost:${process.env.PREVIZ_UI_DEBUG_PORT || 9222}`,
       protocolTimeout: 90000,
     });
     break;
