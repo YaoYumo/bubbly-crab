@@ -246,8 +246,8 @@ export function buildShotList(app, host) {
         style: `border-left-color:${s.colorHex}`,
         draggable: 'true',
         title: `${s.name}｜${s.move ? MOVE_BY_ID[s.move]?.name : '手工路径'}｜${s.keys.length} 关键帧｜点击设为预览机位（也可用 [ / ] 切换）｜可拖到时间线 Camera 轨道`,
-        onclick: () => { app.setActiveShot(s); if (app.state.preview) s.applyTo(app.stage.view, app.timeline.u, app.state.time, app.exportAspectValue()); app.select({ kind: 'shot', shot: s }); },
-        ondragstart: (e) => { e.dataTransfer.setData('text/shot', String(app.shots.indexOf(s))); e.dataTransfer.effectAllowed = 'copy'; },
+        onclick: () => { app.setActiveShot(s); if (app.state.preview) app.applyCameraSample(); app.select({ kind: 'shot', shot: s }); },
+        ondragstart: (e) => { e.dataTransfer.setData('application/x-previz-shot', s.id); e.dataTransfer.setData('text/shot', String(app.shots.indexOf(s))); e.dataTransfer.effectAllowed = 'copy'; },
       }, [
         el('span', { class: 'dot', style: `background:${s.colorHex};box-shadow:0 0 6px ${s.colorHex}66` }),
         el('span', { class: 'snm', text: `${i + 1}. ${s.name}` }),
@@ -662,7 +662,7 @@ function tabCamera(app, rerender, ctx) {
     { k: 'focal', l: '焦距 mm', t: 'range', min: 8, max: 300, step: 1, set: (v) => { s.focal = v; state.hfov = +deg(s.hFov()).toFixed(1); } },
     { k: 'hfov', l: '水平视角 °', t: 'range', min: 5, max: 130, step: 0.5, set: (v) => { s.focal = clamp(s.focalFromHfov(v), 4, 900); state.hfov = v; } },
     { k: '_l', l: '', t: 'note' },
-    { k: 'duration', l: '镜头时长 s', t: 'range', min: 0.5, max: 40, step: 0.5, set: (v) => { s.duration = v; app.state.duration = v; app.bus.emit('time'); } },
+    { k: 'duration', l: '镜头时长 s', t: 'range', min: 0.5, max: 40, step: 0.5, set: (v) => { s.duration = v; if (!app.cameraEdit.clips.length) app.state.duration = v; app.bus.emit('time'); } },
     { k: 'easing', l: '整体缓动', t: 'sel', opts: EASE_OPTIONS, set: (v) => { s.easing = v; } },
     { k: 'handheld', l: '手持/呼吸', t: 'range', min: 0, max: 0.06, step: 0.002, help: '越大越晃；0.004–0.008 ≈ 肩扛，>0.02 已经失控', set: (v) => { s.handheld = v; } },
     { k: 'spinCapOn', l: '防甩断', t: 'bool', on: '开', help: '限制单帧最大角速度（约 240°/s）：路径或注视点突然翻面时，镜头不会被甩成一帧黑洞', get: () => s.spinCap !== 0, set: (v) => { s.spinCap = v ? null : 0; } },
@@ -1068,7 +1068,7 @@ function tabExport(app, rerender, ctx) {
   const form = buildForm([
     { k: 'res', l: '分辨率', t: 'sel', opts: RES_PRESETS.map((r) => ({ v: r.v, l: r.l })) },
     { k: 'fps', l: '帧率', t: 'sel', opts: [24, 25, 30, 50, 60].map((f) => ({ v: f, l: f + ' fps' })), num: true },
-    { k: 'duration', l: '时长 s', t: 'range', min: 0.5, max: 30, step: 0.5, set: (v) => { app.state.duration = v; app.bus.emit('time'); } },
+    { k: 'duration', l: '导出时长 s（从0秒）', t: 'range', min: 0.5, max: 120, step: 0.5 },
     { k: 'bitrate', l: '码率 Mbps', t: 'range', min: 2, max: 40, step: 1 },
     { k: 'loop', l: '循环播放路径', t: 'bool' },
     { k: 'mode', l: '编码', t: 'stat' },

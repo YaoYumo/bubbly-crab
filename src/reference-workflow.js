@@ -57,6 +57,7 @@ export class ReferenceWorkflow {
   async capture(input = {}, onProgress = () => {}) {
     const a = this.app, ex = a.exporter, s = a.stage, settings = referenceSettings(input);
     if (!a.activeShot) throw Error('请先创建并选择一个机位');
+    if (a.cameraEdit?.enabled && a.cameraEdit.clips.length) throw Error('参考包仍按单机位生成，请先关闭时间轴「剪辑预览」；整段镜头剪辑请使用视频导出');
     if (this.busy || a.behaviors?.busy || ex.running || s.exportOwner || s.exporting || a.aiScene?.busy || a.terrain.workflow.busy || a.terrain.workflow.erosionPreview || a.state.playing) throw Error('请先停止播放、导出或地形任务，并应用 / 放弃侵蚀预览');
     if (!globalThis.VideoEncoder || !globalThis.VideoFrame) throw Error('参考包需要支持 WebCodecs 的 Chrome / Edge 安全上下文；不会回退成不精确的实时录制');
     const controller = this.controller = new AbortController(), signal = controller.signal; this.busy = true; ex.running = true; s.exportOwner = this;

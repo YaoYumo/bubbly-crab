@@ -66,7 +66,7 @@ export function installDesktopTools(app) {
   status.setAttribute("role", "status");
   status.setAttribute("aria-live", "polite");
   status.style.cssText =
-    "display:none;position:fixed;bottom:24px;left:16px;z-index:120;max-width:min(550px,90vw);padding:10px 14px;background:#202536;color:#fff;border-radius:6px;overflow-wrap:anywhere";
+    "display:none;position:fixed;bottom:calc(var(--tl-h,100px) + 12px);left:16px;pointer-events:none;z-index:120;max-width:min(550px,90vw);padding:10px 14px;background:#202536;color:#fff;border-radius:6px;overflow-wrap:anywhere";
   document.body.append(status);
   let statusTimer,
     closeGuard = "未注册（浏览器预检不等于原生验收）";

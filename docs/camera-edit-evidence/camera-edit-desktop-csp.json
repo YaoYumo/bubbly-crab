@@ -1,0 +1,117 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "core": {
+    "seek": true,
+    "boundaries": true,
+    "loop": true,
+    "selectionStable": true,
+    "saveLoad": true,
+    "undoRedo": true,
+    "deleteUndo": true,
+    "reorder": true,
+    "legacy": true,
+    "referenceGuard": true,
+    "cancel": true,
+    "failure": true,
+    "exports": [
+      {
+        "mode": "webcodecs",
+        "frames": 6,
+        "size": 26846,
+        "cuts": [
+          {
+            "name": "Cut A",
+            "t": 0,
+            "source": 0,
+            "u": 0
+          },
+          {
+            "name": "Cut A",
+            "t": 0.1,
+            "source": 0.1,
+            "u": 0.33333333333333337
+          },
+          {
+            "name": "Cut A",
+            "t": 0.2,
+            "source": 0.2,
+            "u": 0.6666666666666667
+          },
+          {
+            "name": "Cut B",
+            "t": 0.3,
+            "source": 0,
+            "u": 0
+          },
+          {
+            "name": "Cut B",
+            "t": 0.4,
+            "source": 0.10000000000000003,
+            "u": 0.3333333333333335
+          },
+          {
+            "name": "Cut B",
+            "t": 0.5,
+            "source": 0.2,
+            "u": 0.6666666666666667
+          }
+        ],
+        "decodedPixelDifference": 2738034
+      },
+      {
+        "mode": "manual",
+        "frames": 6,
+        "size": 9228,
+        "cuts": [
+          {
+            "name": "Cut A",
+            "t": 0,
+            "source": 0,
+            "u": 0
+          },
+          {
+            "name": "Cut A",
+            "t": 0.1,
+            "source": 0.1,
+            "u": 0.33333333333333337
+          },
+          {
+            "name": "Cut A",
+            "t": 0.2,
+            "source": 0.2,
+            "u": 0.6666666666666667
+          },
+          {
+            "name": "Cut B",
+            "t": 0.3,
+            "source": 0,
+            "u": 0
+          },
+          {
+            "name": "Cut B",
+            "t": 0.4,
+            "source": 0.10000000000000003,
+            "u": 0.3333333333333335
+          },
+          {
+            "name": "Cut B",
+            "t": 0.5,
+            "source": 0.2,
+            "u": 0.6666666666666667
+          }
+        ],
+        "decodedPixelDifference": 2758665
+      }
+    ]
+  },
+  "visibleControls": true,
+  "pointerMoveTrim": true,
+  "focusedDelete": true,
+  "cspViolations": [],
+  "layout": {
+    "width": 1440,
+    "scroll": 1440,
+    "height": 94,
+    "scrollHeight": 94
+  }
+}

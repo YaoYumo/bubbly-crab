@@ -402,7 +402,7 @@ const resizeHandle = el('div', { class: 'tl-resize' });
 bottomEl.insertBefore(resizeHandle, bottomEl.firstChild);
 {
   let startY = 0, startH = 0, dragging = false;
-  const MIN_H = 48, MAX_H = 320;
+  const MIN_H = 100, MAX_H = 320;
   resizeHandle.addEventListener('pointerdown', (e) => {
     dragging = true; startY = e.clientY; startH = bottomEl.offsetHeight;
     resizeHandle.setPointerCapture(e.pointerId);
@@ -434,8 +434,7 @@ buildShotBar();
 /* 时间线位置变化时更新相机预览（主控页面） */
 app.bus.on('time', () => {
   if (currentPage === 'direct' && app.activeShot && !app.state.preview) {
-    const fa = app.stage.framingAspect(app.stage.aspect || 0);
-    app.activeShot.applyTo(app.stage.view, app.timeline.u, app.state.time, fa.canvasAspect, fa.eff);
+    app.applyCameraSample();
   }
 });
 
@@ -664,7 +663,7 @@ const hudL = el('div', { class: 'hud-l' });
 const hudR = el('div', { class: 'hud-r' });
 hud.append(hudL, hudR);
 function syncHud() {
-  const s = app.activeShot;
+  const s = app.state.preview ? app.cameraSample()?.shot : app.activeShot;
   const st = app.state;
   const ar = ASPECTS[st.aspect];
   hudL.innerHTML = s
@@ -707,7 +706,8 @@ app.bus.on('select', () => {
 app.bus.on('objects', syncHud);
 app.bus.on('shots', syncHud);
 app.bus.on('shot-change', () => { syncHud(); tl.drawTicks(); });
-app.bus.on('time', () => { tl.redraw(); tl.drawTicks(); });
+app.bus.on('time', () => { tl.redraw(); tl.drawTicks(); syncHud(); });
+app.bus.on('camera-edit', syncHud);
 app.bus.on('tick', () => {
   if (!app.state.playing) return;
   syncHudThrottled();

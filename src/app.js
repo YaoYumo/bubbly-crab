@@ -2,6 +2,7 @@
 // App：状态与行为中枢（物体增删、选择、拖放、导入、路径、时间轴、导出）
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { CameraEdit, readCameraEdit, resetCameraHistory } from './camera-edit.js';
 import { ProjectAssets, packProject, unpackProject, localFileResources, persistLocal, restoreLocal } from './project-assets.js';
 import { MaterialAppearance } from './material-appearance.js';
 import { VegetationBrush, buildVegetationPatch } from './vegetation-brush.js';
@@ -186,6 +187,7 @@ export class App {
       get u() { return clamp(this.app.state.time / Math.max(0.05, this.app.state.duration), 0, 1); },
       app: this,
     };
+    this.cameraEdit = new CameraEdit(this);
     this.storageReady = this.loadEnv();
     this.modelInstancing = new ModelInstancing(this);
     this.renderEffects = new RenderEffects(this);
@@ -805,6 +807,7 @@ export class App {
     s.rig.parent?.remove(s.rig);
     s.dispose?.();
     this.shots = this.shots.filter((x) => x !== s);
+    this.cameraEdit?.dropShot(s.id);
     if (this.activeShot === s) {
       this.activeShot = this.shots[0] || null;
       if (this.state.preview && !this.activeShot) this.setPreview(false);
@@ -846,7 +849,7 @@ export class App {
     const s = this.shots[n];
     this.setActiveShot(s);
     this.select({ kind: 'shot', shot: s });
-    if (this.state.preview) s.applyTo(this.stage.view, this.timeline.u, this.state.time, this.exportAspectValue());
+    if (this.state.preview) this.applyCameraSample();
     return s;
   }
   setActiveShot(s) {
@@ -1087,21 +1090,22 @@ export class App {
         updateChar(so.root, dt, dist, m?.speed ?? 1);
       }
     }
-    // 预览相机
-    if (S.preview && this.activeShot) {
+    // 预览相机：编辑选择与实际播出的镜头分离
+    const cameraSample = this.cameraSample();
+    const previewShot = cameraSample?.shot;
+    if (S.preview && previewShot) {
       const st = this.stage;
       const pc = st.previewControls;
       if (!pc.interacted) {
-        const fa = st.framingAspect(st.aspect || 0);
-        this.activeShot.applyTo(st.view, u, S.time, fa.canvasAspect, fa.eff);
+        this.applyCameraSample(cameraSample);
         const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(st.view.quaternion);
-        pc.focus.copy(st.view.position).addScaledVector(dir, this.activeShot.focusDist || 8);
+        pc.focus.copy(st.view.position).addScaledVector(dir, previewShot.focusDist || 8);
       }
       st.orbit.enabled = false;
       // 景深后处理
-      if (this.activeShot.dofEnabled) {
-        const aperture = this.activeShot.aperture || 2.8;
-        const focusDist = this.activeShot.focusDist || 8;
+      if (previewShot.dofEnabled) {
+        const aperture = previewShot.aperture || 2.8;
+        const focusDist = previewShot.focusDist || 8;
         const apertureSize = 1.0 / aperture;
         st.setDofEnabled(true, {
           focus: focusDist,
@@ -1134,7 +1138,7 @@ export class App {
       this.activeShot.rig.updateMatrixWorld(true);
       this.activeShot.helper.update?.();
     }
-    this.lighting.setIso(S.preview && this.activeShot ? this.activeShot.iso : 400);
+    this.lighting.setIso(S.preview && previewShot ? previewShot.iso : 400);
     this.lighting.physical.anchorSun(S.preview);
     this.localLights.tick();
     this.windowLights.tick();
@@ -1238,6 +1242,22 @@ export class App {
     return so;
   }
 
+  /** Shared by paused seeks, playback, PNGs and both video export paths. */
+  cameraSample(time = this.state.time) {
+    return this.cameraEdit.sample(time) || (this.activeShot ? {
+      shot: this.activeShot, clip: null, time,
+      u: clamp(time / Math.max(.05, this.state.duration), 0, 1),
+    } : null);
+  }
+  applyCameraSample(sample = this.cameraSample()) {
+    if (!sample) return;
+    // A cut/seek must not inherit damping from a different clip or past seek.
+    // In edit mode samples are stateless; path interpolation/handheld still apply.
+    if (sample.clip) resetCameraHistory(sample.shot);
+    const fa = this.stage.framingAspect(this.stage.aspect || 0);
+    sample.shot.applyTo(this.stage.view, sample.u, sample.time, fa.canvasAspect, fa.eff);
+  }
+
   // ---------------------------------------------------------------- 序列化
   serialize({ assets = true } = {}) {
     return {
@@ -1253,11 +1273,13 @@ export class App {
       objects: this.objects.map((o) => o.serialize()),
       shots: this.shots.map((s) => s.toJSON()),
       activeShot: this.activeShot?.id || null,
+      cameraEdit: this.cameraEdit.toJSON(),
     };
   }
   clearAll() {
     this.sceneGeneration = null;
     this.layoutRelations = null;
+    this.cameraEdit.reset();
     this.weather?.set(null);
     this._clearingScene = true;
     this.terrain?._cancelStroke?.();
@@ -1390,6 +1412,8 @@ export class App {
   }
   loadJson(j) {
     if (!j || !Array.isArray(j.objects)) throw new Error('不是有效的工程 JSON');
+    // Validate edits before any destructive scene/resource changes.
+    const cameraEdit = readCameraEdit(j.cameraEdit, j.shots || [], j.state?.duration || 6);
     this.projectAssets.hydrate(j.assets);
     for (const o of j.objects) if (o.params?.assetId && !this.projectAssets.records.has(o.params.assetId)) throw new Error('工程缺少模型资源，请打开完整 .previz 工程包');
     const importedRoots = new Map();
@@ -1439,6 +1463,8 @@ export class App {
     Object.assign(this.state, { aspect: j.state?.aspect || '1.85', duration: j.state?.duration || 6, fps: j.state?.fps || 30, showHelpers:j.state?.showHelpers!==false, perf: !!j.state?.perf });
     Object.assign(this.state, { grid: j.state?.grid === true, roadSnap: j.state?.roadSnap === true,
       roadGridSize: Math.max(1, Math.min(20, Number(j.state?.roadGridSize) || 5)), parcelZones: j.state?.parcelZones || {} });
+    this.state.time = clamp(this.state.time, 0, this.state.duration);
+    this.cameraEdit.load(cameraEdit);
     this.roadPlanning.gridDirty = true;
     this.stage.setGridVisible(this.state.grid);
     this.roadPlanning.changed();

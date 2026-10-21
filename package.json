@@ -1,7 +1,7 @@
 {
   "name": "previz-lab",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
   "scripts": {
@@ -35,7 +35,8 @@
     "desktop:preview": "node scripts/desktop-preview.mjs",
     "desktop:sizes": "node scripts/desktop-artifacts.mjs",
     "test:desktop": "node test/desktop.test.mjs",
-    "test:desktop:browser": "bash test/withchrome.sh node test/desktop-regression.mjs"
+    "test:desktop:browser": "bash test/withchrome.sh node test/desktop-regression.mjs",
+    "test:camera-edit": "node test/camera-edit.test.mjs && bash test/withchrome.sh node test/camera-edit-regression.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.4",

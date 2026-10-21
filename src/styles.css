@@ -30,7 +30,7 @@
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);
   font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   -webkit-font-smoothing:antialiased}
-#app{display:grid;grid-template-columns:274px minmax(0,1fr) 342px;grid-template-rows:auto minmax(0,1fr) var(--tl-h,66px);height:100%}
+#app{display:grid;grid-template-columns:274px minmax(0,1fr) 342px;grid-template-rows:auto minmax(0,1fr) var(--tl-h,100px);height:100%}
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-thumb{background:#c8c0b4;border-radius:9px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:#b0a89c;background-clip:content-box}
@@ -814,3 +814,25 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 .layout-maintenance .btnrow { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
 .layout-maintenance select { width: 100%; max-width: 100%; }
 .layout-maintenance .fnote { overflow-wrap: anywhere; }
+
+/* A real single video edit track; compact toolbar scrolls on narrow windows. */
+.tl{flex-direction:column;align-items:stretch;gap:4px;height:auto;min-height:88px;padding:4px 12px;overflow:auto;flex:1}
+.tl-main{display:flex;justify-content:space-between;gap:12px;min-width:720px}
+.tl .tracks{flex:none;padding:0;min-width:720px}
+.tl .track-label{width:32px}
+.cut-tools{display:flex;align-items:center;gap:6px;min-width:max-content;height:26px;font-size:10px;color:var(--fg3)}
+.pbtn.sm.cut-btn{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:26px;padding:0 7px;white-space:nowrap}
+.cut-selection{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cut-field{width:57px;height:24px}
+.cut-help{font-size:10px;color:var(--fg3)}
+.cut-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:10px;color:var(--fg3)}
+.cut-empty[hidden]{display:none}
+.tl .tfill{opacity:.12;z-index:0}
+.tl .tticks{pointer-events:none;z-index:2}
+.tl .tk{pointer-events:auto;top:3px;width:5px;height:5px}
+.tl .tclips{z-index:1}
+.tl .thead{z-index:4}
+.tclip{box-sizing:border-box;touch-action:none}
+.tclip.selected{outline:2px solid var(--fg);outline-offset:-2px;opacity:1}
+.tclip.is-current{box-shadow:inset 0 -3px 0 #fff}
+.cut-disabled .tclip{opacity:.45}

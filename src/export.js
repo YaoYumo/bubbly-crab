@@ -86,7 +86,7 @@ export class Exporter {
       scissorTest: s.renderer.getScissorTest(), clearColor: s.renderer.getClearColor(new THREE.Color()), clearAlpha: s.renderer.getClearAlpha(),
       focus: s.previewControls.focus.clone(), postSize: s.postSize?.clone(), camera: s.view.clone(), visible,
       lodHistory: a.renderEffects && { levels: a.renderEffects.lod.levels, culled: a.renderEffects.lod.culled },
-      shotRuntime: a.shots.map((shot) => [shot, ['_lastT', '_dt', '_qPrev', '_aimPt', '_followPt', '_followTag', '_clrY', '_aimH', '_aimHAt'].map((key) => [key, Object.hasOwn(shot, key), shot[key]?.clone?.() ?? shot[key]])]),
+      shotRuntime: a.shots.map((shot) => [shot, ['_lastT', '_dt', '_qPrev', '_aimPt', '_followPt', '_followTag', '_clrY', '_aimH', '_aimHAt', 'focusDist'].map((key) => [key, Object.hasOwn(shot, key), shot[key]?.clone?.() ?? shot[key]])]),
       iso: a.lighting.isoMultiplier, exposure: s.renderer.toneMappingExposure,
       frameClass: s.frame.className, frameStyle: s.frame.style.cssText,
       tag: document.getElementById('shotTag'), tagStyle: document.getElementById('shotTag')?.style.cssText,
@@ -144,7 +144,7 @@ export class Exporter {
     s.exporting = true;
     if (a.renderEffects) { a.renderEffects.lod.levels = new WeakMap(); a.renderEffects.lod.culled = new WeakSet(); }
     s.previewControls.interacted = false;
-    if (a.activeShot) for (const key of ['_lastT', '_qPrev', '_aimPt', '_followPt', '_clrY']) a.activeShot[key] = null;
+    for (const shot of a.shots) for (const key of ['_lastT', '_qPrev', '_aimPt', '_followPt', '_clrY']) shot[key] = null;
     s.renderer.setPixelRatio(1);
     s.renderer.setSize(width, height, false);
     const aspect = a.exportAspectValue(), canvasAspect = width / height;
@@ -260,7 +260,7 @@ export class Exporter {
       muxer.finalize();
       setWebMDuration(target.buffer, total / fps * 1000);
       const blob = new Blob([target.buffer], { type: 'video/webm' });
-      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.webm`;
+      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.cameraEdit?.enabled && a.cameraEdit.clips.length ? 'camera-edit' : a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.webm`;
       return { blob, size: blob.size, name, ext: 'webm', mode: 'webcodecs', codec: config.codec, frames, requestedFrames: total,
         seconds: total / fps, requestedSeconds: duration, wallSeconds: (performance.now() - started) / 1000, width, height, fps, maxQueue, mime: 'video/webm' };
     } finally {
@@ -331,7 +331,7 @@ export class Exporter {
       const actualMime = rec.mimeType || mime.m || 'video/webm';
       const ext = actualMime.includes('mp4') ? 'mp4' : 'webm';
       const blob = new Blob(chunks, { type: actualMime });
-      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.${ext}`;
+      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.cameraEdit?.enabled && a.cameraEdit.clips.length ? 'camera-edit' : a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.${ext}`;
       return { blob, size: blob.size, name, ext, mode, frames, requestedFrames: total, seconds: duration,
         wallSeconds: (performance.now() - start) / 1000, width, height, fps, mime: actualMime };
     } finally {

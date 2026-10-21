@@ -23,6 +23,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm run test:desktop
+      - run: node test/camera-edit.test.mjs
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - name: Build unsigned x64 installer (downloads WebView2 on user install only if missing)
         shell: pwsh
