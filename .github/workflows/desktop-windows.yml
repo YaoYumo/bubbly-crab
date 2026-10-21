@@ -25,9 +25,25 @@ jobs:
       - run: npm run test:desktop
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - name: Build unsigned x64 installer (downloads WebView2 on user install only if missing)
-        run: npm run desktop:build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path '.shots' -Force | Out-Null
+          npm run desktop:build 2>&1 | Tee-Object -FilePath .shots/windows-native-build.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $detail = (Get-Content .shots/windows-native-build.log -Tail 110) -join "`n"
+            $detail = $detail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host "::error title=Windows build diagnostic::$detail"
+            exit $code
+          }
       - name: Record actual byte sizes and hashes
-        run: node scripts/desktop-artifacts.mjs --require-windows
+        shell: pwsh
+        run: |
+          node scripts/desktop-artifacts.mjs --require-windows
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $manifest = Get-Content .shots/desktop-artifacts.json -Raw
+          $manifest = $manifest.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+          Write-Host "::notice title=Windows artifact inventory::$manifest"
       - name: Install and launch smoke check (not full UI acceptance)
         shell: pwsh
         run: ./scripts/windows-install-smoke.ps1
@@ -42,4 +58,5 @@ jobs:
             src-tauri/Cargo.lock
             .shots/desktop-artifacts.json
             .shots/windows-install-smoke.json
+            .shots/windows-native-build.log
             docs/desktop-windows.md
