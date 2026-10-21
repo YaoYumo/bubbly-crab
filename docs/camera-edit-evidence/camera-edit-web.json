@@ -6,11 +6,14 @@
     "loop": true,
     "selectionStable": true,
     "saveLoad": true,
+    "previzPackage": true,
+    "localRestore": true,
     "undoRedo": true,
     "deleteUndo": true,
     "reorder": true,
     "legacy": true,
     "referenceGuard": true,
+    "singleShotReferenceWithRetainedCuts": true,
     "cancel": true,
     "failure": true,
     "exports": [
@@ -61,7 +64,7 @@
       {
         "mode": "manual",
         "frames": 6,
-        "size": 9228,
+        "size": 11436,
         "cuts": [
           {
             "name": "Cut A",
@@ -100,13 +103,15 @@
             "u": 0.6666666666666667
           }
         ],
-        "decodedPixelDifference": 2758665
+        "decodedPixelDifference": 365661
       }
     ]
   },
   "visibleControls": true,
+  "appendAssembleDropSplit": true,
   "pointerMoveTrim": true,
   "focusedDelete": true,
+  "cspViolations": [],
   "layout": {
     "width": 1440,
     "scroll": 1440,

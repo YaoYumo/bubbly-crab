@@ -31,9 +31,9 @@
 
 - `src/camera-edit.js`：不可变、版本化的数据校验与独立采样；`App.cameraSample/applyCameraSample`：核心播放、暂停定位与导出统一入口。
 - 工程新增 `cameraEdit: {version:1, enabled, clips:[{id,shotId,start,end,sourceIn}]}`，仍为现有v4工程的可选扩展字段。载入前先验证片段格式、机位引用、时间范围、重叠，失败不先清空场景。
-- `npm run test:camera-edit`：纯数据单测及真实 Chromium 回归；覆盖切点／终点／循环、反向定位一致性、稳定选择、存取、错误载入不毁场景、撤销重做、删除机位及撤销、机位重排、旧工程、参考包保护、导出锁与取消／失败清理、可见控制、鼠标移动／裁剪及聚焦删除。
+- `npm run test:camera-edit`：纯数据单测及真实 Chromium 回归；覆盖切点／终点／循环、反向定位一致性、稳定选择、JSON／.previz工程包／本地恢复存取、错误载入不毁场景、撤销重做、删除机位及撤销、机位重排、旧工程、参考包保护、导出锁与取消／失败清理、可见控制、鼠标移动／裁剪及聚焦删除。
 - 两条视频路径实际编码并解码检查：WebCodecs 固定时间戳与 MediaRecorder 兼容录制各6帧，0.3秒时由Cut A切到Cut B；检查采样调用序列和前后解码像素差异。**MediaRecorder仍不保证固定时间戳／不丢帧**，像素差异仅为小规格测试，不是用户GPU完整验收。
 - 同一剪辑回归在无网络的 `file://` 离线 HTML 上通过。新增剪辑回归也在模拟Tauri CSP的桌面前端上通过（零CSP违规，浏览器预检不执行真实原生保存）。原有桌面前端预检（模拟原生保存IPC）及离线单机位参考包回归通过，主题颜色／相机标签不回退。联网参考包完整回归依赖本地5176网关；本轮未启动网关，web版本在网关发现步骤超时，不能记为完整通过。
 - 可复跑：`TEST_FILE_URL=file:///完整路径/previz-lab.html bash test/withchrome.sh node test/camera-edit-regression.mjs`。浏览器证据见 `camera-edit-evidence/`。这些是Linux Chromium结果，**不是Windows WebView2原生交互验收**。
 
-Windows安装器随1.1.0重新构建，不复用1.0.1显示修复包；当前下载与准确原生检查边界见 [桌面安装说明](desktop-windows.md)。没有合并main、发布Release、签名或运行模型。
+Windows 1.1.0安装器已真实构建并通过安装／窗口启动检查，不复用1.0.1显示修复包；当前下载与准确原生检查边界见 [桌面安装说明](desktop-windows.md)。没有合并main、发布Release、签名或运行模型。

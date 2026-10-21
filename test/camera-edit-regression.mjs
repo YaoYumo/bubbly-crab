@@ -32,6 +32,11 @@ try {
   ck(a.cameraSample().shot===first,'loop did not return to first clip');
   const saved=a.serialize();a.loadJson(saved);
   ck(JSON.stringify(a.cameraEdit.toJSON())===JSON.stringify(saved.cameraEdit),'project lost edit');
+  const packed=await a.saveProject();
+  a.clearAll();const opened=await a.importFiles([new File([packed],'cuts.previz')]);
+  ck(opened.projectLoaded && JSON.stringify(a.cameraEdit.toJSON())===JSON.stringify(saved.cameraEdit),'previz package lost edit');
+  ck(await a.saveLocal(),'local save failed');a.clearAll();await a.loadEnv();
+  ck(a.maybeRestore() && JSON.stringify(a.cameraEdit.toJSON())===JSON.stringify(saved.cameraEdit),'local restore lost edit');
   const bad=structuredClone(saved);bad.cameraEdit.clips[0].shotId='missing';let invalid=false;
   const beforeBad=JSON.stringify(a.serialize());try{a.loadJson(bad);}catch{invalid=true;}
   ck(invalid && beforeBad===JSON.stringify(a.serialize()),'invalid edit load destroyed scene');
@@ -42,6 +47,7 @@ try {
   a.shots.reverse();ck(a.cameraEdit.sample(0).shot.name==='Cut A','reordering changed cut refs');a.shots.reverse();
   let refBlocked=false;try{await a.reference.capture({width:320,height:180,duration:.6,fps:10});}catch(e){refBlocked=/剪辑/.test(e.message);}ck(refBlocked,'single-camera reference silently captured edit');
   a.cameraEdit.setEnabled(false);a.setActiveShot(a.shots.find(s=>s.name==='Cut A'));ck(a.cameraSample(.4).shot===a.activeShot && !a.cameraSample(.4).clip,'single-shot compatibility');
+  const reference=await a.reference.capture({width:320,height:180,duration:.2,fps:5,channels:false});ck(reference.archive.size>0 && !a.cameraEdit.enabled && a.cameraEdit.clips.length===2,'single-camera reference with retained disabled cuts');
   const legacy=structuredClone(a.serialize());delete legacy.cameraEdit;a.loadJson(legacy);ck(!a.cameraEdit.enabled && !a.cameraEdit.clips.length,'old projects changed mode');
   a.loadJson(saved);a.setPreview(true);a.suspended=true;
   a.state.time=.17;a.step(0,true);
@@ -74,9 +80,25 @@ try {
   const apply=a.applyCameraSample;a.applyCameraSample=()=>{throw Error('injected cut failure');};
   const failure=await a.exporter.run({width:320,height:180,duration:.6,fps:10});a.applyCameraSample=apply;
   ck(failure.error && !a.stage.exportOwner && JSON.stringify(a.serialize())===original,'failure leaked edit state');
-  return {seek:true,boundaries:true,loop:true,selectionStable:true,saveLoad:true,undoRedo:true,deleteUndo:true,reorder:true,legacy:true,referenceGuard:true,cancel:true,failure:true,exports:output};
+  return {seek:true,boundaries:true,loop:true,selectionStable:true,saveLoad:true,previzPackage:true,localRestore:true,undoRedo:true,deleteUndo:true,reorder:true,legacy:true,referenceGuard:true,singleShotReferenceWithRetainedCuts:true,cancel:true,failure:true,exports:output};
  });
  // Exercise visible controls and pointer editing, not only the model API.
+ await page.click('[data-cut-action="append"]');
+ assert.equal(await page.evaluate(()=>app.cameraEdit.clips.length),3);
+ await page.evaluate(()=>app.undo());
+ await page.click('[data-cut-action="assemble"]');
+ assert.equal(await page.evaluate(()=>app.cameraEdit.clips.length),2);
+ await page.evaluate(()=>{
+  const shot=document.querySelector('.shot[draggable]'),track=document.querySelector('[data-cut-track]'),r=track.getBoundingClientRect(),dataTransfer=new DataTransfer();
+  shot.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer}));
+  track.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer,clientX:r.right-1,clientY:r.y+10}));
+ });
+ assert.equal(await page.evaluate(()=>app.cameraEdit.clips.length),3);
+ await page.evaluate(()=>app.undo());
+ await page.click('.tclip');await page.evaluate(()=>{app.state.time=.15;app.bus.emit('time');});
+ await page.click('[data-cut-action="split"]');
+ assert.equal(await page.evaluate(()=>app.cameraEdit.clips.length),3);
+ await page.evaluate(()=>app.undo());
  await page.click('[data-cut-action="enable"]');await page.click('[data-cut-action="enable"]');
  const first=await page.$('.tclip');await first.click();
  await page.$eval('[data-cut-field="end"]',n=>{n.value='.2';n.dispatchEvent(new Event('change',{bubbles:true}));});
@@ -97,6 +119,6 @@ try {
  await page.screenshot({path:'.shots/camera-edit.png'});
  assert.deepEqual(errors,[]);
  const csp=await page.evaluate(()=>window.__cutCSP);assert.deepEqual(csp,[]);
- const report={platform:'Linux Chromium, not native Windows',core,visibleControls:true,pointerMoveTrim:true,focusedDelete:true,cspViolations:csp,layout};
+ const report={platform:'Linux Chromium, not native Windows',core,visibleControls:true,appendAssembleDropSplit:true,pointerMoveTrim:true,focusedDelete:true,cspViolations:csp,layout};
  writeFileSync(`.shots/camera-edit-${process.env.TEST_FILE_URL?'file':process.env.TEST_URL?'desktop-csp':'web'}.json`,JSON.stringify(report,null,2));console.log('PASS',JSON.stringify(report));
 }finally{await browser.close();}
