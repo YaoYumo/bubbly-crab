@@ -62,6 +62,21 @@ try {
   const seek=await page.evaluate(()=>{const v=document.querySelector('.cut-viewport').getBoundingClientRect(),r=document.querySelector('[data-cut-ruler]').getBoundingClientRect(),t=document.querySelector('[data-cut-track]').getBoundingClientRect();const x=v.left+150;return {x,y:r.y+10,time:(x-t.left)/t.width*app.state.duration};});
   await page.mouse.click(seek.x,seek.y);assert.ok(Math.abs(await page.evaluate(()=>app.state.time)-seek.time)<.005);
   assert.ok((await metrics()).documentWidth<=1440);
+  // Clicking a partly visible, oversized clip must not jump horizontal scroll.
+  await page.evaluate(()=>document.querySelector('.cut-viewport').scrollLeft=1900);
+  const second=await page.$$('.tclip'),secondBox=await second[1].boundingBox();
+  const scrollBefore=await page.$eval('.cut-viewport',n=>n.scrollLeft);
+  await page.mouse.click(secondBox.x+80,secondBox.y+secondBox.height/2);
+  assert.equal(await page.$eval('.cut-viewport',n=>n.scrollLeft),scrollBefore,'clip focus jumped horizontal scroll');
+  // Trimming after horizontal scroll uses the zoomed track width, not the window width.
+  await page.evaluate(()=>{const v=document.querySelector('.cut-viewport');v.scrollLeft=v.scrollWidth;});
+  const grips=await page.$$('.tclip-trim-r'),grip=await grips[1].boundingBox();
+  const span=await page.$eval('[data-cut-track]',n=>n.getBoundingClientRect().width);
+  const originalEnd=await page.evaluate(()=>app.cameraEdit.clips[1].end);
+  await page.mouse.move(grip.x+grip.width/2,grip.y+grip.height/2);await page.mouse.down();await page.mouse.move(grip.x+grip.width/2-100,grip.y+grip.height/2,{steps:4});await page.mouse.up();
+  const expectedEnd=originalEnd+Math.round(-100/span*6*30)/30;
+  assert.ok(Math.abs(await page.evaluate(()=>app.cameraEdit.clips[1].end)-expectedEnd)<1e-6,'zoomed trim uses wrong coordinates');
+  await page.evaluate(()=>app.undo());
   await page.click('[data-cut-action="zoom-fit"]');
   assert.equal(await page.$eval('.cut-viewport',n=>n.scrollLeft),0);
   assert.ok(Math.abs((await metrics()).track.w-initial.track.w)<2);
@@ -77,7 +92,7 @@ try {
     assert.ok(tools.bottom<=768 && tools.height>=28,'toolbar clipped at '+width);
   }
   await page.setViewport({width:1440,height:1000});
-  const report={platform:'Linux Chromium, not native Windows',initial,taller,hiddenKeysByDefault:true,selectedKeysOnly:true,noKeysOnVideoTrack:true,clickWithoutEdit:true,rulerScrubAndSplit:true,zoomScrollCoordinates:true,resizableTrack:true,narrowWindows:true,csp:await page.evaluate(()=>__usabilityCSP),errors};
+  const report={platform:'Linux Chromium, not native Windows',initial,taller,hiddenKeysByDefault:true,selectedKeysOnly:true,noKeysOnVideoTrack:true,clickWithoutEdit:true,rulerScrubAndSplit:true,zoomScrollCoordinates:true,zoomedTrim:true,noFocusScrollJump:true,resizableTrack:true,narrowWindows:true,csp:await page.evaluate(()=>__usabilityCSP),errors};
   assert.deepEqual(report.csp,[]);assert.deepEqual(errors,[]);
   mkdirSync('.shots',{recursive:true});
   const mode=process.env.TEST_FILE_URL?'file':process.env.TEST_URL?'desktop-csp':'web';

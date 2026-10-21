@@ -78,6 +78,8 @@
   "clickWithoutEdit": true,
   "rulerScrubAndSplit": true,
   "zoomScrollCoordinates": true,
+  "zoomedTrim": true,
+  "noFocusScrollJump": true,
   "resizableTrack": true,
   "narrowWindows": true,
   "csp": [],

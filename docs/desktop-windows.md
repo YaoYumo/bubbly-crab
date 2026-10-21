@@ -2,19 +2,28 @@
 
 ## 下载并安装（给使用者）
 
-[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39569611883/artifacts/12331486397)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
+[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39574424795/artifacts/12333712446)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
 
-1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.1.0_x64-setup.exe`。
+1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.1.1_x64-setup.exe`。
 2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
 3. 首次安装若缺少 WebView2，需要联网获取微软运行环境；安装器不含 AI 模型，软件不自动连接模型。
 4. 此为未签名预检版，可能显示未知发布者／SmartScreen提示；不要为此关闭安全软件。可先用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 校验下方哈希。
 5. 安装后先测试打开／另存工程、PNG和短视频，确认你电脑的GPU、路径权限和编码能力，再用于重要项目；重要工程请另存新文件并备份。
 
-安装器SHA256：`5bd7e25feab9b7b3b2a7517abe8773b7952668b33221330785201ad9388840ef`。
+安装器SHA256：`681c7381dd33bd3ddf376a2b5333f8856e1cb57cf7991398636ac800459ac7ab`。
 
-[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39569611883)。此次没有合并主分支，也没有公开发布 Release。
+[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39574424795)。此次没有合并主分支，也没有公开发布 Release。
 
-## 1.1.0 时间轴镜头剪辑
+## 1.1.1 剪辑轨道操作优化
+
+- 镜头轨不再挤在22px高的条里：底部面板默认232px，测试窗口1440×1000时轨道111px、片段99px；拖上边界可继续提高，片段随面板变高。宽裁剪手柄14px，片段内分两行显示名称／时间。
+- 关键帧默认收起，点击「关键帧」才在独立行展开；仅显示所选物体或单机位模式的当前机位，不再叠加全场景关键帧到镜头轨。
+- 独立秒标尺可直接拖动定位播放头；镜头铺满时也能找切点。「+／−／适配」支持100%–800%横向缩放，轨道独立滚动。轻点／手抖不再误移动，放大滚动后的裁剪／定位坐标经过回归检查。
+- 原有工程格式、切镜头规则、保存／撤销／视频导出不变。网页、离线HTML、模拟Tauri CSP前端可见控件与完整剪辑／导出回归通过，主题颜色／相机图标／保存IPC预检继续通过。
+- 新包已实际构建、安装并观察到原生窗口。**未完成Windows原生剪辑交互、视觉、磁盘保存或用户GPU视频验收**。源码 `f2f0ad9c86423a3fc549b02924de5cc7a4aa03e6`，证据在 `timeline-ui-evidence/`。
+- 升级前另存工程并退出旧版，再运行1.1.1安装器，不需要清缓存。包内改带通用 `docs/windows-install-quickstart.md`，不再附带含固定旧下载链接的桌面说明快照。
+
+## 1.1.0 时间轴镜头剪辑（历史，1.1.1保留）
 
 - 新增单视频轨硬切编排：顺序拼接、追加／拖入机位、移动、两端裁剪、源入点、播放头分割、删除、撤销重做。暂停定位、播放、PNG和两条视频导出路径共用核心镜头采样。
 - 剪辑随工程包／JSON／本地恢复保存，旧工程默认单机位；播放不改变编辑机位。关闭「剪辑预览」可继续旧工作流；源机位时长不再误缩短整段剪辑。
@@ -34,26 +43,26 @@
 
 ## 当前状态与边界
 
-**已生成1.1.0 Windows x64 NSIS 安装包，并在 Windows runner 上通过静默安装与原生窗口启动检查。** 构建源提交 `d2feb66327ccda1b1c88513c89e586077e77f784`；最新版为1.1.0；详细产物、SHA256、任务结果见 `camera-edit-evidence/`；1.0.1显示修复记录保留在 `desktop-visual-fix-evidence/`，1.0.0历史记录在 `windows-installer-evidence/`。当前交互工作区仍是 Linux；用户电脑的显卡、原生保存和视频导出尚未实测。浏览器里的「桌面版前端预检」仍不是桌面程序。
+**已生成1.1.1 Windows x64 NSIS 安装包，并在 Windows runner 上通过静默安装与原生窗口启动检查。** 构建源提交 `f2f0ad9c86423a3fc549b02924de5cc7a4aa03e6`；最新版为1.1.1；详细产物、SHA256、任务结果见 `timeline-ui-evidence/`；1.1.0记录在 `camera-edit-evidence/`，1.0.1显示修复记录保留在 `desktop-visual-fix-evidence/`，1.0.0历史记录在 `windows-installer-evidence/`。当前交互工作区仍是 Linux；用户电脑的显卡、原生保存和视频导出尚未实测。浏览器里的「桌面版前端预检」仍不是桌面程序。
 
 - 原网页版及双击打开的 `previz-lab.html` 保留；桌面构建使用独立的 `desktop` mode 和 `desktop/dist/`，不覆盖网页的 `dist/` 或离线 HTML。
 - Tauri 2 / Windows x64 优先；可调整大小的独立窗口。只有 dialog、fs 两个原生插件，没有 Node、模型进程、shell、自动更新、远程控制或 AI 权重。
 - 安装目标为 **NSIS、当前用户**，不要求管理员安装模式。当前配置**不嵌入完整 WebView2**；若安装器检测到缺失，会联网下载微软 bootstrapper 并安装 Evergreen Runtime。已有 Runtime 时跳过此下载；离线电脑须先自行准备 Runtime。系统已有 Edge 不等于已确认 Runtime 可用。
-- 桌面安装包实测 **1,918,840字节（约1.92MB）**，可执行文件4,238,848字节；此前5–20MB是估算，现在以实测为准。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
+- 桌面安装包实测 **1,920,480字节（约1.92MB）**，可执行文件4,240,384字节；此前5–20MB是估算，现在以实测为准。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
 - 网页浏览器、离线 file 页面、桌面应用使用不同的存储来源；不会自动搬运已有浏览器工程。通过 `.previz` 工程包迁移。
 - 此版没有捆绑 AI／参考生成的 Node 网关；主动检查网关时，在 fetch 前明确拒绝，不扫描 localhost 端口。保留本地配方、蓝图、预演、手动工作包和参考 ZIP；隐藏旧版直连服务／Key 配置入口。没有下载权重或启动推理。
 
-## 1.1.0 实际测量
+## 1.1.1 实际测量
 
 | 文件／资源 | 实际字节数 | 说明 |
 | --- | ---: | --- |
-| 更新后的 `previz-lab.html` | 2,339,120 | 网页离线单文件，约2.34MB |
-| Windows构建的 `desktop/dist/` 前端资源 | 2,318,459 | 约2.32MB；不含Rust壳、安装器和系统WebView2 |
-| Windows NSIS 安装包 | 1,918,840 | 真实 `.exe` 安装器，不含完整 WebView2／模型 |
-| Windows应用可执行文件 | 4,238,848 | 未压缩的应用exe，不是安装器 |
-| GitHub下载 ZIP | 4,090,416 | 含安装器、应用exe、Cargo.lock、构建清单、安装报告与构建时说明 |
+| 更新后的 `previz-lab.html` | 2,344,395 | 网页离线单文件，约2.34MB |
+| Windows构建的 `desktop/dist/` 前端资源 | 2,323,660 | 约2.32MB；不含Rust壳、安装器和系统WebView2 |
+| Windows NSIS 安装包 | 1,920,480 | 真实 `.exe` 安装器，不含完整 WebView2／模型 |
+| Windows应用可执行文件 | 4,240,384 | 未压缩的应用exe，不是安装器 |
+| GitHub下载 ZIP | 4,087,020 | 含安装器、应用exe、Cargo.lock、构建清单、安装报告与通用安装指引 |
 
-原生构建版本与SHA256见 `camera-edit-evidence/windows-artifacts.json`，前端／原生检查边界见该目录的 `manifest.json`。后续修改／重建后应重新记录，不用这张表代替新测量。
+原生构建版本与SHA256见 `timeline-ui-evidence/windows-artifacts.json`，前端／原生检查边界见该目录的 `manifest.json`。后续修改／重建后应重新记录，不用这张表代替新测量。
 
 ## 文件保存与权限
 
@@ -104,7 +113,7 @@ node scripts/desktop-artifacts.mjs --require-windows
 - 实际字节数／SHA256：`.shots/desktop-artifacts.json`
 - 当前构建生成的锁文件：`src-tauri/Cargo.lock`
 
-1.1.0 Rust构建已经成功。**对应的真实 Cargo.lock 在安装包下载 ZIP 的 `src-tauri/Cargo.lock` 中**，108,390字节，SHA256为 `9aab0a833dd1a7fe624ac925bdaccff2d554ba53b300dbcb486768c7cf4eb214`。如需复现，取对应源提交并放入该锁文件；本工作区因 Actions 存储域名限制尚未下载它，不能用其他解析结果冒充这份锁文件。编译器与打包环境变化仍可能改变产物，不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
+1.1.1 Rust构建已经成功。**对应的真实 Cargo.lock 在安装包下载 ZIP 的 `src-tauri/Cargo.lock` 中**，108,390字节，SHA256为 `17cbdede691f9cb8203e0574e6f142275f4d00cfbbcd4fa0bc223692f692165e`。如需复现，取对应源提交并放入该锁文件；本工作区因 Actions 存储域名限制尚未下载它，不能用其他解析结果冒充这份锁文件。编译器与打包环境变化仍可能改变产物，不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
 
 如需本地桌面调试：`npm run desktop:dev`，它会启动独立的5180前端。不要公开暴露开发服务。
 
@@ -112,7 +121,7 @@ node scripts/desktop-artifacts.mjs --require-windows
 
 `.github/workflows/desktop-windows.yml` 支持 `workflow_dispatch`，当前只对工作分支的 `src-tauri/Cargo.toml` 改动触发 push 构建，不影响主分支。它不自动发布、签名或调用模型。它在 Windows runner 安装 npm/Rust 依赖、执行配置／保存逻辑及剪辑核心单测、Rust格式检查、原生构建，并上传安装包、exe、Cargo.lock 和大小报告。
 
-**新 workflow 通常需先进入默认分支才会在 Actions 中可手动选择。** 为避免合并主分支，本次从现有工作分支 push 触发原生构建；本轮成功运行与真实产物已记录在 `camera-edit-evidence/`（首版历史在 `windows-installer-evidence/`）。GitHub Actions 使用量以账户规则为准。构建另外尝试在 Windows runner 静默安装并观察原生窗口存活；这不替代用户机器上的 WebGL／文件保存／视频验收。
+**新 workflow 通常需先进入默认分支才会在 Actions 中可手动选择。** 为避免合并主分支，本次从现有工作分支 push 触发原生构建；本轮成功运行与真实产物已记录在 `timeline-ui-evidence/`（1.1.0在 `camera-edit-evidence/`，首版历史在 `windows-installer-evidence/`）。GitHub Actions 使用量以账户规则为准。构建另外尝试在 Windows runner 静默安装并观察原生窗口存活；这不替代用户机器上的 WebGL／文件保存／视频验收。
 
 构建不等于运行验收。产物当前无 Authenticode 签名，Windows SmartScreen 可能拦截；不要宣称已签名或用让用户关闭安全软件的方式验收。
 
