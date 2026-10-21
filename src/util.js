@@ -46,7 +46,7 @@ export function el(tag, props = {}, kids = []) {
     if (k === 'class') e.className = v;
     else if (k === 'html') e.innerHTML = v;
     else if (k === 'text') e.textContent = v;
-    else if (k === 'style') e.setAttribute('style', v);
+    else if (k === 'style') e.style.cssText = v;
     else if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v);
     else if (k === 'dataset') Object.assign(e.dataset, v);
     else e.setAttribute(k, v === true ? '' : String(v));

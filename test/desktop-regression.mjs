@@ -1,3 +1,4 @@
+import {inspectDesktopVisuals,desktopVisualFailures} from './desktop-visual-checks.mjs';
 // Linux Chromium + mock native IPC. This does NOT validate Windows/WebView2,
 // actual filesystem permissions, OS dialogs, NSIS or installed runtime behavior.
 import assert from "node:assert/strict";
@@ -50,6 +51,8 @@ try {
     await page.$eval("[data-desktop-tools]", (n) => n.textContent),
     "桌面检查",
   );
+  report.visuals = await inspectDesktopVisuals(page);
+  assert.deepEqual(desktopVisualFailures(report.visuals), []);
   await page.click("[data-desktop-tools]");
   report.browserPreflight = await page.$eval(
     "[data-desktop-capabilities]",

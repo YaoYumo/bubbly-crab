@@ -505,7 +505,7 @@ setCamView('persp');
     clear(camList);
     app.shots.forEach((s, i) => {
       const row = el('div', { class: 'orow' + (s === app.activeShot ? ' on' : ''), title: s.name }, [
-        el('span', { class: 'odot', html: '📷' }),
+        el('span', { class: 'odot', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></svg>' }),
         el('span', { class: 'onm', text: s.name || `Camera ${String(i + 1).padStart(2, '0')}` }),
       ]);
       row.onclick = () => { app.setActiveShot(s); app.select({ kind: 'shot', shot: s }); };
@@ -676,7 +676,7 @@ function syncHud() {
     if (s) {
       const mv = s.move ? (MOVE_BY_ID[s.move]?.name || s.move) : '手工关键帧';
       const idx = app.shots.indexOf(s) + 1;
-      shotTag.innerHTML = `<i style="background:${s.colorHex}"></i><b>${idx}/${app.shots.length} · ${s.name}</b><span>${mv} ｜ ${fmt(s.focal, 0)}mm ｜ ${s.keys.length} 关键帧 ｜ ${ar ? ar.l.replace(/\s/g, '') : ''}</span>`;
+      shotTag.replaceChildren(el('i', { style: `background:${s.colorHex}` }), el('b', { text: `${idx}/${app.shots.length} · ${s.name}` }), el('span', { text: `${mv} ｜ ${fmt(s.focal, 0)}mm ｜ ${s.keys.length} 关键帧 ｜ ${ar ? ar.l.replace(/\s/g, '') : ''}` }));
     }
   }
 }

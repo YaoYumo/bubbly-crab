@@ -218,3 +218,7 @@ assert.equal(
 console.log(
   "PASS desktop config schema, minimal local capability allowlist, native isolation, name sanitization, exact chunk/partial writes, cancel, failures/close cleanup, queue budget/order/recovery. NOT native Windows execution.",
 );
+
+assert.ok(cfg.app.security.csp.includes("style-src-attr 'unsafe-inline'"), "Tauri nonces must not suppress runtime style attributes");
+
+assert.ok(cfg.app.security.csp.includes("style-src-elem 'self' 'unsafe-inline'"), 'Runtime CSS elements must remain available with Tauri CSP nonces');

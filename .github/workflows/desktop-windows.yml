@@ -7,6 +7,7 @@ on:
     paths: [.github/workflows/desktop-windows.yml, src-tauri/Cargo.toml]
 permissions:
   contents: read
+  actions: read
 jobs:
   windows:
     runs-on: windows-latest
@@ -44,6 +45,20 @@ jobs:
           $manifest = Get-Content .shots/desktop-artifacts.json -Raw
           $manifest = $manifest.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
           Write-Host "::notice title=Windows artifact inventory::$manifest"
+      - name: Download previous installer for native CSP regression comparison
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: previz-lab-windows-x64-unsigned
+          run-id: 39557715950
+          github-token: ${{ github.token }}
+          path: .shots/previous-installer
+      - name: Observe previous installed WebView2 colors (baseline, non-gating)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $old = Get-ChildItem '.shots/previous-installer' -Recurse -Filter '*setup.exe' | Select-Object -First 1
+          if ($old) { ./scripts/windows-install-smoke.ps1 -BaselineInstaller $old.FullName }
       - name: Install and launch smoke check (not full UI acceptance)
         shell: pwsh
         run: ./scripts/windows-install-smoke.ps1
@@ -59,4 +74,6 @@ jobs:
             .shots/desktop-artifacts.json
             .shots/windows-install-smoke.json
             .shots/windows-native-build.log
+            .shots/windows-ui-fixed.json
+            .shots/windows-ui-baseline.json
             docs/desktop-windows.md

@@ -1,6 +1,6 @@
 [package]
 name = "previz-lab"
-version = "1.0.0"
+version = "1.0.1"
 description = "Local 3D camera and character reference workbench"
 authors = ["PREVIZ LAB contributors"]
 edition = "2021"

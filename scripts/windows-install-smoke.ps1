@@ -1,3 +1,4 @@
+param([string]$BaselineInstaller = '')
 # Real Windows runner: silent current-user install + basic native-window liveness.
 # This is NOT proof that WebGL, dialogs, saves, or video work on the user's GPU.
 $ErrorActionPreference = 'Stop'
@@ -15,7 +16,7 @@ $report = [ordered]@{
 $target = Join-Path $env:LOCALAPPDATA 'PrevizLab-InstallerSmoke'
 $app = $null
 try {
-  $installer = Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.exe' | Select-Object -First 1
+  $installer = if ($BaselineInstaller) { Get-Item $BaselineInstaller } else { Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.exe' | Select-Object -First 1 }
   if (!$installer) { throw 'NSIS installer missing' }
   # NSIS /D must be the final argument, unquoted, even if its value has spaces.
   $install = Start-Process -FilePath $installer.FullName -ArgumentList "/S /D=$target" -PassThru
@@ -25,6 +26,8 @@ try {
   $exe = Join-Path $target 'previz-lab.exe'
   if (!(Test-Path $exe)) { throw "Installed executable missing: $exe" }
   $report.installed = $true
+  $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222 --use-angle=swiftshader --enable-unsafe-swiftshader'
+  Start-Sleep -Seconds 2
   $app = Start-Process -FilePath $exe -PassThru
   Start-Sleep -Seconds 15
   $app.Refresh()
@@ -35,7 +38,10 @@ try {
   if (!$report.nativeWindowCreated -or $app.MainWindowTitle -notlike '*PREVIZ LAB*') {
     throw 'Native PREVIZ LAB window not observed; runner may lack an interactive desktop'
   }
-  $report.status = 'PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY'
+  if ($BaselineInstaller) { node test/windows-desktop-ui.mjs --baseline } else { node test/windows-desktop-ui.mjs }
+  if ($LASTEXITCODE -ne 0) { throw 'Installed WebView2 visual regression failed' }
+  $report.visualChecksValidated = $true
+  $report.status = 'PASS_INSTALL_WINDOW_AND_VISUAL_CHECKS'
 } catch {
   $report.status = 'FAILED_OR_RUNNER_UNSUPPORTED'
   $report.error = $_.Exception.Message
@@ -46,7 +52,7 @@ try {
     if (!$app.WaitForExit(10000)) { $app.Kill() }
   }
   New-Item -ItemType Directory -Path '.shots' -Force | Out-Null
-  $report | ConvertTo-Json -Depth 5 | Set-Content '.shots/windows-install-smoke.json' -Encoding utf8
+  $report | ConvertTo-Json -Depth 5 | Set-Content $(if ($BaselineInstaller) { '.shots/windows-baseline-install-smoke.json' } else { '.shots/windows-install-smoke.json' }) -Encoding utf8
   $report | ConvertTo-Json -Depth 5 | Write-Host
   $notice = ($report | ConvertTo-Json -Depth 5 -Compress).Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
   Write-Host "::notice title=Windows install smoke::$notice"

@@ -12,10 +12,12 @@ const hashes = [...index.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)]
     (m) =>
       "'sha256-" + createHash("sha256").update(m[1]).digest("base64") + "'",
   );
-const csp = cfg.app.security.csp.replace(
-  "script-src 'self'",
-  "script-src 'self' " + hashes.join(" "),
-);
+const csp = cfg.app.security.csp
+  .replace(
+    "style-src 'self'",
+    "style-src 'self' 'nonce-dGVzdC1kZXNrdG9wLW9ubHk='",
+  )
+  .replace("script-src 'self'", "script-src 'self' " + hashes.join(" "));
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".js": "application/javascript",
