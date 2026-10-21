@@ -402,7 +402,7 @@ const resizeHandle = el('div', { class: 'tl-resize' });
 bottomEl.insertBefore(resizeHandle, bottomEl.firstChild);
 {
   let startY = 0, startH = 0, dragging = false;
-  const MIN_H = 100, MAX_H = 320;
+  const MIN_H = 200, MAX_H = 480;
   resizeHandle.addEventListener('pointerdown', (e) => {
     dragging = true; startY = e.clientY; startH = bottomEl.offsetHeight;
     resizeHandle.setPointerCapture(e.pointerId);

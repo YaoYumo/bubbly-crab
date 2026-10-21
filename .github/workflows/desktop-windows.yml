@@ -63,4 +63,4 @@ jobs:
             .shots/windows-native-build.log
             .shots/windows-ui-fixed.json
             .shots/windows-ui-baseline.json
-            docs/desktop-windows.md
+            docs/windows-install-quickstart.md
