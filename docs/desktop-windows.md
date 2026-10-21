@@ -1,13 +1,27 @@
 # Windows 轻量桌面版：Tauri 2 预检工程
 
+## 下载并安装（给使用者）
+
+[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950/artifacts/12327145641)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
+
+1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.0.0_x64-setup.exe`。
+2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
+3. 首次安装若缺少 WebView2，需要联网获取微软运行环境；安装器不含 AI 模型，软件不自动连接模型。
+4. 此为未签名预检版，可能显示未知发布者／SmartScreen提示；不要为此关闭安全软件。可先用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 校验下方哈希。
+5. 安装后先测试打开／另存工程、PNG和短视频，确认你电脑的GPU、路径权限和编码能力，再用于重要项目；重要工程请另存新文件并备份。
+
+安装器SHA256：`91700fcc6dcb6c7b921579aea285c6656906d0b5d1dd90cd33a565a48c472908`。
+
+[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950)。此次没有合并主分支，也没有公开发布 Release。
+
 ## 当前状态与边界
 
-**已接入桌面构建和文件保存逻辑，尚未交付可安装的 Windows 成品。** 当前开发环境是 Linux，未安装 Rust/Cargo，也没有 Windows/WebView2；没有执行 Rust 编译、NSIS 安装、原生磁盘写入或 Windows GPU 验收。浏览器里的「桌面版前端预检」不是桌面程序。
+**已生成首个 Windows x64 NSIS 安装包，并在 Windows runner 上通过静默安装与原生窗口启动检查。** 构建源提交 `d2222bb63aa2c42d110b0fdab885dde6cb0ed2a9`；详细产物、SHA256、任务结果见 `windows-installer-evidence/`。当前交互工作区仍是 Linux；用户电脑的显卡、原生保存和视频导出尚未实测。浏览器里的「桌面版前端预检」仍不是桌面程序。
 
 - 原网页版及双击打开的 `previz-lab.html` 保留；桌面构建使用独立的 `desktop` mode 和 `desktop/dist/`，不覆盖网页的 `dist/` 或离线 HTML。
 - Tauri 2 / Windows x64 优先；可调整大小的独立窗口。只有 dialog、fs 两个原生插件，没有 Node、模型进程、shell、自动更新、远程控制或 AI 权重。
 - 安装目标为 **NSIS、当前用户**，不要求管理员安装模式。当前配置**不嵌入完整 WebView2**；若安装器检测到缺失，会联网下载微软 bootstrapper 并安装 Evergreen Runtime。已有 Runtime 时跳过此下载；离线电脑须先自行准备 Runtime。系统已有 Edge 不等于已确认 Runtime 可用。
-- 桌面安装包与可执行文件的字节数须等 Windows 构建后测量；此前 5–20MB 是估算，不是此次产物实测。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
+- 桌面安装包实测 **1,916,756字节（约1.92MB）**，可执行文件4,236,288字节；此前5–20MB是估算，现在以实测为准。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
 - 网页浏览器、离线 file 页面、桌面应用使用不同的存储来源；不会自动搬运已有浏览器工程。通过 `.previz` 工程包迁移。
 - 此版没有捆绑 AI／参考生成的 Node 网关；主动检查网关时，在 fetch 前明确拒绝，不扫描 localhost 端口。保留本地配方、蓝图、预演、手动工作包和参考 ZIP；隐藏旧版直连服务／Key 配置入口。没有下载权重或启动推理。
 
@@ -17,7 +31,9 @@
 | --- | ---: | --- |
 | 更新后的 `previz-lab.html` | 2,329,578 | 网页离线单文件，约2.33MB |
 | `desktop/dist/` 全部前端资源 | 2,309,504 | 约2.31MB；不含Rust壳、安装器和系统WebView2 |
-| Windows安装包／可执行文件 | 未生成 | 不能据前端大小冒充安装包大小 |
+| Windows NSIS 安装包 | 1,916,756 | 真实 `.exe` 安装器，不含完整 WebView2／模型 |
+| Windows应用可执行文件 | 4,236,288 | 未压缩的应用exe，不是安装器 |
+| GitHub下载 ZIP | 4,084,472 | 同时含安装器、应用exe、锁文件和报告 |
 
 构建版本与SHA256见 `desktop-evidence/manifest.json`。后续修改／重建后应重新记录，不用这张表代替新测量。
 
@@ -42,7 +58,7 @@
 - 桌面 dev 单独用5180，无 API 代理；网页版继续5174。预检静态服务5181模拟 release CSP，并给入口内联启动脚本加入本地计算的 SHA256；这不是对 Tauri 最终注入后 CSP 的 Windows 验收。
 - 不复制 public、local-ai、密钥、模型库缓存、Node 服务到安装包。桌面前端读取环境配置的目录隔离在 `src-tauri/`；不要往源代码或 `VITE_*` 中放秘密。
 - ZIP 库小版本更新并锁定到 `fflate@0.8.3`，修复 npm 报告的畸形 ZIP64 解析卡死问题（GHSA-px8p-9vwx-vf98）。这不保证所有不可信工程／模型都安全，也不修改 Three.js 的第三方内置代码。
-- 当前 npm 完整审计仍有 **11项（10高、1中）开发依赖报告**，未强制跨版本升级；`--omit=dev` 的 npm 依赖报告为0，不代表 Rust 依赖、第三方内嵌代码、OS Runtime 或打包成品已做完整安全审计。当前没有 Cargo.lock／Rust 审计结果。预检阶段不建议作为正式公开发行版本。
+- 当前 npm 完整审计仍有 **11项（10高、1中）开发依赖报告**，未强制跨版本升级；`--omit=dev` 的 npm 依赖报告为0，不代表 Rust 依赖、第三方内嵌代码、OS Runtime 或打包成品已做完整安全审计。真实 Cargo.lock 已由 Windows 构建生成并随下载 ZIP 保留；源码中尚未加入该锁文件，Rust 依赖安全审计仍未执行。预检阶段不建议作为正式公开发行版本。
 
 ## Windows 本机构建（PowerShell，x64）
 
@@ -70,7 +86,7 @@ node scripts/desktop-artifacts.mjs --require-windows
 - 实际字节数／SHA256：`.shots/desktop-artifacts.json`
 - 首次成功解析生成的锁文件：`src-tauri/Cargo.lock`
 
-首次 Rust 构建尚未运行，当前只锁定直接 Rust 版本，**没有伪造 Cargo.lock**。第一次成功后应保留／评审真实锁文件，再纳入代码版本；在此之前流程可照着运行，但不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
+首次 Rust 构建已经成功。**真实 Cargo.lock 在安装包下载 ZIP 的 `src-tauri/Cargo.lock` 中**，108,390字节，SHA256为 `86119ac326bff272583f86a9728f8bf645cfca5807a1e6de37802bc2b5800087`。如需复现，取对应源提交并放入该锁文件；本工作区因 Actions 存储域名限制尚未下载它，不能用其他解析结果冒充这份锁文件。编译器与打包环境变化仍可能改变产物，不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
 
 如需本地桌面调试：`npm run desktop:dev`，它会启动独立的5180前端。不要公开暴露开发服务。
 
@@ -78,7 +94,7 @@ node scripts/desktop-artifacts.mjs --require-windows
 
 `.github/workflows/desktop-windows.yml` 支持 `workflow_dispatch`；本次为首次生成安装包，另外只对当前工作分支的此 workflow 文件改动触发一次 push 构建，不影响主分支。它不自动发布、签名或调用模型。它在 Windows runner 安装 npm/Rust 依赖、执行配置／保存逻辑单测、Rust格式检查、原生构建，并上传安装包、exe、Cargo.lock 和大小报告。
 
-**新 workflow 通常需先进入默认分支才会在 Actions 中可手动选择。** 为避免合并主分支，本次从现有工作分支 push 触发原生构建；成功后再记录产物链接、哈希及真实大小。GitHub Actions 使用量以账户规则为准。构建另外尝试在 Windows runner 静默安装并观察原生窗口存活；这不替代用户机器上的 WebGL／文件保存／视频验收。
+**新 workflow 通常需先进入默认分支才会在 Actions 中可手动选择。** 为避免合并主分支，本次从现有工作分支 push 触发原生构建；成功运行与真实产物已记录在 `windows-installer-evidence/`。GitHub Actions 使用量以账户规则为准。构建另外尝试在 Windows runner 静默安装并观察原生窗口存活；这不替代用户机器上的 WebGL／文件保存／视频验收。
 
 构建不等于运行验收。产物当前无 Authenticode 签名，Windows SmartScreen 可能拦截；不要宣称已签名或用让用户关闭安全软件的方式验收。
 
@@ -96,7 +112,9 @@ node scripts/desktop-artifacts.mjs --require-windows
 
 正式本轮证据见 `docs/desktop-evidence/`；旧行为阶段的哈希与验收仍是旧交付记录，不作为本轮桌面产物证明。
 
-## Windows 实机验收清单（全部待做）
+## Windows 实机验收清单（用户电脑完整验收待做）
+
+- [x] Windows runner 编译、NSIS打包；安装返回码0、应用存活并观察到原生窗口。仅为安装／窗口冒烟检查，不是完整UI／磁盘保存测试。
 
 - [ ] 下载／记录真实安装包 bytes、SHA256；在干净 Windows x64 用户下安装／启动／退出／再次启动／卸载。分别核实已有／缺失 WebView2 的行为，不自动声称 Runtime 已安装。
 - [ ] 硬件GPU WebGL2、模型／贴图可见、gizmo／精确拾取、物理光照／Bloom／地形与已有工程；最小窗口、高DPI、不同显卡，记录 WebView2 和 GPU 版本。
