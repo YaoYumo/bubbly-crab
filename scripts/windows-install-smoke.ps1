@@ -1,4 +1,4 @@
-param([string]$BaselineInstaller = '')
+param([string]$BaselineInstaller = '', [switch]$VisualProbe)
 # Real Windows runner: silent current-user install + basic native-window liveness.
 # This is NOT proof that WebGL, dialogs, saves, or video work on the user's GPU.
 $ErrorActionPreference = 'Stop'
@@ -18,10 +18,12 @@ $app = $null
 try {
   $installer = if ($BaselineInstaller) { Get-Item $BaselineInstaller } else { Get-ChildItem 'src-tauri/target/release/bundle/nsis/*.exe' | Select-Object -First 1 }
   if (!$installer) { throw 'NSIS installer missing' }
+  if ($VisualProbe) {
   $port = if ($BaselineInstaller) { 9223 } else { 9222 }
   $env:PREVIZ_UI_DEBUG_PORT = [string]$port
   $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:TEMP ('previz-ui-' + [guid]::NewGuid().ToString())
   $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = "--remote-debugging-port=$port --use-angle=swiftshader --enable-unsafe-swiftshader"
+  }
   # NSIS /D must be the final argument, unquoted, even if its value has spaces.
   $install = Start-Process -FilePath $installer.FullName -ArgumentList "/S /D=$target" -PassThru
   if (!$install.WaitForExit(180000)) { $install.Kill(); throw 'Installer did not finish within 180 seconds' }
@@ -41,10 +43,14 @@ try {
   if (!$report.nativeWindowCreated -or $app.MainWindowTitle -notlike '*PREVIZ LAB*') {
     throw 'Native PREVIZ LAB window not observed; runner may lack an interactive desktop'
   }
-  if ($BaselineInstaller) { node test/windows-desktop-ui.mjs --baseline } else { node test/windows-desktop-ui.mjs }
-  if ($LASTEXITCODE -ne 0) { throw 'Installed WebView2 visual regression failed' }
-  $report.visualChecksValidated = $true
-  $report.status = 'PASS_INSTALL_WINDOW_AND_VISUAL_CHECKS'
+  $report.visualChecksValidated = $false
+  $report.status = 'PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY'
+  if ($VisualProbe) {
+    if ($BaselineInstaller) { node test/windows-desktop-ui.mjs --baseline } else { node test/windows-desktop-ui.mjs }
+    if ($LASTEXITCODE -ne 0) { throw 'Installed WebView2 visual probe unavailable or failed; no visual pass claimed' }
+    $report.visualChecksValidated = $true
+    $report.status = 'PASS_INSTALL_WINDOW_AND_VISUAL_CHECKS'
+  }
 } catch {
   $report.status = 'FAILED_OR_RUNNER_UNSUPPORTED'
   $report.error = $_.Exception.Message

@@ -1,4 +1,4 @@
-name: Installed WebView2 visual verification
+name: Repaired desktop installer verification
 on:
   workflow_dispatch:
   push:
@@ -25,19 +25,9 @@ jobs:
           run-id: 39562665642
           github-token: ${{ github.token }}
           path: .
-      - uses: actions/download-artifact@v4
-        with:
-          name: previz-lab-windows-x64-unsigned
-          run-id: 39557715950
-          github-token: ${{ github.token }}
-          path: .shots/previous-installer
-      - name: Compare original native UI (non-gating)
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $old = Get-ChildItem '.shots/previous-installer' -Recurse -Filter '*setup.exe' | Select-Object -First 1
-          ./scripts/windows-install-smoke.ps1 -BaselineInstaller $old.FullName
-      - name: Check repaired native UI
+      # Real release WebView2 CDP was unavailable in diagnostic runs; this gate
+      # verifies installation/window only and explicitly reports visual=false.
+      - name: Check repaired installation and native window
         shell: pwsh
         run: ./scripts/windows-install-smoke.ps1
       - uses: actions/upload-artifact@v4
