@@ -2,26 +2,35 @@
 
 ## 下载并安装（给使用者）
 
-[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950/artifacts/12327145641)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
+[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39564517313/artifacts/12328269364)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
 
-1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.0.0_x64-setup.exe`。
+1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.0.1_x64-setup.exe`。
 2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
 3. 首次安装若缺少 WebView2，需要联网获取微软运行环境；安装器不含 AI 模型，软件不自动连接模型。
 4. 此为未签名预检版，可能显示未知发布者／SmartScreen提示；不要为此关闭安全软件。可先用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 校验下方哈希。
 5. 安装后先测试打开／另存工程、PNG和短视频，确认你电脑的GPU、路径权限和编码能力，再用于重要项目；重要工程请另存新文件并备份。
 
-安装器SHA256：`91700fcc6dcb6c7b921579aea285c6656906d0b5d1dd90cd33a565a48c472908`。
+安装器SHA256：`8e451276dda34af57a3d5a0507ee7949a301ff3fd608bf08a982fcb68f00a2a1`。
 
 [成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950)。此次没有合并主分支，也没有公开发布 Release。
 
+## 1.0.1 显示修复
+
+- 修复 Tauri 向 `style-src` 追加hash／nonce时，浏览器忽略父策略 `unsafe-inline` 导致的动态样式丢失。明确分别设置 CSS 的 `style-src-attr` 和 `style-src-elem`；脚本策略和原生最小权限不放宽。
+- 通用DOM工具改用CSSOM `style.cssText`；主题按钮、光影预设渐变、机位颜色标记继续使用原有颜色／布局。
+- 相机列表图标改为内置SVG，不依赖Windows Emoji字体。预览相机名牌使用DOM文本节点，恢复动态颜色并避免名称被误当作HTML解析。
+- 前端预检现在模拟Tauri的样式nonce，补充上述颜色／图标／名牌检查；原有web/file小规格行为与导出回归通过。
+- 修复版Windows原生构建、静默安装、窗口存活通过。**安装后WebView2的CDP端点不可访问，原生UI自动比对未完成，不能标作视觉验收通过**；未因此给正式应用打开调试权限。检查细节见 `desktop-visual-fix-evidence/`。
+- 升级前先另存重要工程并退出旧版，直接运行1.0.1安装器；不要求清除应用缓存或重置工程。相机3D辅助机身／名牌仍遵循「显示辅助」和预览／导出时隐藏的原有规则。
+
 ## 当前状态与边界
 
-**已生成首个 Windows x64 NSIS 安装包，并在 Windows runner 上通过静默安装与原生窗口启动检查。** 构建源提交 `d2222bb63aa2c42d110b0fdab885dde6cb0ed2a9`；详细产物、SHA256、任务结果见 `windows-installer-evidence/`。当前交互工作区仍是 Linux；用户电脑的显卡、原生保存和视频导出尚未实测。浏览器里的「桌面版前端预检」仍不是桌面程序。
+**已生成首个 Windows x64 NSIS 安装包，并在 Windows runner 上通过静默安装与原生窗口启动检查。** 构建源提交 `85ab5e5423d3f074d8b226eef63912ca8f308030`；最新版为1.0.1；详细产物、SHA256、任务结果见 `desktop-visual-fix-evidence/`，1.0.0历史记录保留在 `windows-installer-evidence/`。当前交互工作区仍是 Linux；用户电脑的显卡、原生保存和视频导出尚未实测。浏览器里的「桌面版前端预检」仍不是桌面程序。
 
 - 原网页版及双击打开的 `previz-lab.html` 保留；桌面构建使用独立的 `desktop` mode 和 `desktop/dist/`，不覆盖网页的 `dist/` 或离线 HTML。
 - Tauri 2 / Windows x64 优先；可调整大小的独立窗口。只有 dialog、fs 两个原生插件，没有 Node、模型进程、shell、自动更新、远程控制或 AI 权重。
 - 安装目标为 **NSIS、当前用户**，不要求管理员安装模式。当前配置**不嵌入完整 WebView2**；若安装器检测到缺失，会联网下载微软 bootstrapper 并安装 Evergreen Runtime。已有 Runtime 时跳过此下载；离线电脑须先自行准备 Runtime。系统已有 Edge 不等于已确认 Runtime 可用。
-- 桌面安装包实测 **1,916,756字节（约1.92MB）**，可执行文件4,236,288字节；此前5–20MB是估算，现在以实测为准。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
+- 桌面安装包实测 **1,916,775字节（约1.92MB）**，可执行文件4,236,288字节；此前5–20MB是估算，现在以实测为准。编译工具链、Cargo 缓存与系统共用的 WebView2 占用也不等于安装包大小。
 - 网页浏览器、离线 file 页面、桌面应用使用不同的存储来源；不会自动搬运已有浏览器工程。通过 `.previz` 工程包迁移。
 - 此版没有捆绑 AI／参考生成的 Node 网关；主动检查网关时，在 fetch 前明确拒绝，不扫描 localhost 端口。保留本地配方、蓝图、预演、手动工作包和参考 ZIP；隐藏旧版直连服务／Key 配置入口。没有下载权重或启动推理。
 
@@ -29,11 +38,11 @@
 
 | 文件／资源 | 实际字节数 | 说明 |
 | --- | ---: | --- |
-| 更新后的 `previz-lab.html` | 2,329,578 | 网页离线单文件，约2.33MB |
-| `desktop/dist/` 全部前端资源 | 2,309,504 | 约2.31MB；不含Rust壳、安装器和系统WebView2 |
-| Windows NSIS 安装包 | 1,916,756 | 真实 `.exe` 安装器，不含完整 WebView2／模型 |
+| 更新后的 `previz-lab.html` | 2,329,780 | 网页离线单文件，约2.33MB |
+| `desktop/dist/` 全部前端资源 | 2,309,706 | 约2.31MB；不含Rust壳、安装器和系统WebView2 |
+| Windows NSIS 安装包 | 1,916,775 | 真实 `.exe` 安装器，不含完整 WebView2／模型 |
 | Windows应用可执行文件 | 4,236,288 | 未压缩的应用exe，不是安装器 |
-| GitHub下载 ZIP | 4,084,472 | 同时含安装器、应用exe、锁文件和报告 |
+| GitHub下载 ZIP | 1,924,254 | 本次下载含安装器、锁文件和安装检查报告，不含单独的应用exe |
 
 构建版本与SHA256见 `desktop-evidence/manifest.json`。后续修改／重建后应重新记录，不用这张表代替新测量。
 
@@ -86,7 +95,7 @@ node scripts/desktop-artifacts.mjs --require-windows
 - 实际字节数／SHA256：`.shots/desktop-artifacts.json`
 - 首次成功解析生成的锁文件：`src-tauri/Cargo.lock`
 
-首次 Rust 构建已经成功。**真实 Cargo.lock 在安装包下载 ZIP 的 `src-tauri/Cargo.lock` 中**，108,390字节，SHA256为 `86119ac326bff272583f86a9728f8bf645cfca5807a1e6de37802bc2b5800087`。如需复现，取对应源提交并放入该锁文件；本工作区因 Actions 存储域名限制尚未下载它，不能用其他解析结果冒充这份锁文件。编译器与打包环境变化仍可能改变产物，不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
+首次 Rust 构建已经成功。**真实 Cargo.lock 在安装包下载 ZIP 的 `src-tauri/Cargo.lock` 中**，108,390字节，SHA256为 `0d85aa186bd53451e7d5379e453ea36b29645e740170777a854f72bf7b9f075b`。如需复现，取对应源提交并放入该锁文件；本工作区因 Actions 存储域名限制尚未下载它，不能用其他解析结果冒充这份锁文件。编译器与打包环境变化仍可能改变产物，不承诺逐字节可重复构建。`desktop:sizes` 只是盘上文件清单，不证明里面的旧安装包是刚刚成功构建的；务必先看构建退出码，不要把失败前残留的 exe 当新包。
 
 如需本地桌面调试：`npm run desktop:dev`，它会启动独立的5180前端。不要公开暴露开发服务。
 
