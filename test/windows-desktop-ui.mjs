@@ -1,3 +1,11 @@
+process.on('uncaughtException', e => {
+  console.log('::error title=Installed WebView2 probe error::'+String(e.stack||e).replaceAll('%','%25').replaceAll('\n','%0A').replaceAll('\r','%0D'));
+  process.exit(1);
+});
+process.on('unhandledRejection', e => {
+  console.log('::error title=Installed WebView2 probe rejection::'+String(e.stack||e).replaceAll('%','%25').replaceAll('\n','%0A').replaceAll('\r','%0D'));
+  process.exit(1);
+});
 import {
   inspectDesktopVisuals,
   desktopVisualFailures,

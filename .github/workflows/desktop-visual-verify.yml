@@ -1,0 +1,49 @@
+name: Installed WebView2 visual verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena/3f9ececc-bubbly-crab]
+    paths: [.github/workflows/desktop-visual-verify.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: previz-lab-windows-x64-unsigned
+          run-id: 39562665642
+          github-token: ${{ github.token }}
+          path: .
+      - uses: actions/download-artifact@v4
+        with:
+          name: previz-lab-windows-x64-unsigned
+          run-id: 39557715950
+          github-token: ${{ github.token }}
+          path: .shots/previous-installer
+      - name: Compare original native UI (non-gating)
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $old = Get-ChildItem '.shots/previous-installer' -Recurse -Filter '*setup.exe' | Select-Object -First 1
+          ./scripts/windows-install-smoke.ps1 -BaselineInstaller $old.FullName
+      - name: Check repaired native UI
+        shell: pwsh
+        run: ./scripts/windows-install-smoke.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installed-ui-checks
+          path: |
+            .shots/windows-ui-*.json
+            .shots/windows-install-smoke.json
