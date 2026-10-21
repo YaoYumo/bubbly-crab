@@ -1,0 +1,62 @@
+
+> previz-lab@1.0.0 test:ai-scene
+> node test/ai-scene.test.mjs && bash test/withchrome.sh node test/ai-scene-regression.mjs && bash test/withchrome.sh node test/ai-scene-recipes-regression.mjs && bash test/withchrome.sh node test/ai-scene-safety-regression.mjs && bash test/withchrome.sh node test/ai-scene-api-ui-regression.mjs
+
+PASS AI blueprint bounds/numbers/prototype safety/parameter whitelist; local OpenAI-compatible gateway fixture, parallel idempotency, request-ID recovery, origin refusal, server-key/access-token isolation, required auth, disabled defaults, timeout/invalid/unsupported failures without retries. NOT real model inference.
+PASS AI scene {
+  sourceUnchangedByPreview: true,
+  staleRefused: true,
+  injectedRollback: true,
+  oneUndoRedo: true,
+  lockedRefused: true,
+  cameras: 4,
+  motionSecondsToNormalized: true,
+  referenceProvenance: true,
+  cancelled: true,
+  catalogEntries: 203
+}
+PASS AI recipes {
+  rows: [
+    { recipe: [Object], added: 28, triangles: 172574, warnings: 7 },
+    { recipe: [Object], added: 53, triangles: 228398, warnings: 47 },
+    { recipe: [Object], added: 61, triangles: 114286, warnings: 48 },
+    { recipe: [Object], added: 20, triangles: 746596, warnings: 1 },
+    { recipe: [Object], added: 20, triangles: 54796, warnings: 1 },
+    { recipe: [Object], added: 20, triangles: 49212, warnings: 1 }
+  ],
+  appliedRoads: 8,
+  objects: 36,
+  undoRedo: true,
+  roadPlan: true
+}
+PASS AI safety {
+  selectedRebuildStableIdUndoRedo: true,
+  existingMetadataPreserved: true,
+  metadataPatchRefused: true,
+  selectedOnlyEditApplied: true,
+  unselectedEditRefused: true,
+  parallelRefused: true,
+  referencePNGAndTerrainMutex: true,
+  exactGroundY: 4,
+  sourceResourcesNotDisposed: true,
+  fourPrepareDiscardCycles: true,
+  protectedRoadSegmentRefused: true,
+  concurrentEditPreserved: true,
+  importedRollback: true,
+  personPhaseRestored: true,
+  importedResourceAndTerrainUndoRedo: true
+}
+PASS AI API UI contract {
+  contractOnly: true,
+  realInference: false,
+  accessTokenMemoryOnly: true,
+  posts: 1,
+  gets: 2,
+  doubleClickRefused: true,
+  stopIsLocalOnly: true,
+  resumeWithoutPOST: true,
+  doesNotAutoApply: true,
+  manualPrepareAndConfirm: true,
+  originAudit: true,
+  errors: []
+}

@@ -1,0 +1,631 @@
+{
+ "errors": [],
+ "group": {
+  "cat": "建筑构件",
+  "n": 18,
+  "types": [
+   "wall",
+   "wallcorner",
+   "wallcrenel",
+   "windowslider",
+   "windowarch",
+   "windowlouver",
+   "doorsingle",
+   "doordouble",
+   "doorroll",
+   "roofgable",
+   "roofhip",
+   "roofflat",
+   "ceilingflat",
+   "ceilingbeam",
+   "ceilinggrid",
+   "stairstraight",
+   "stairswitch",
+   "stairspiral"
+  ],
+  "icons": [
+   "wall",
+   "window",
+   "door",
+   "roof",
+   "ceil",
+   "stairs"
+  ]
+ },
+ "libCount": 203,
+ "iconSvg": {
+  "cards": 0,
+  "mine": 0,
+  "withSvg": 0
+ },
+ "builds": [
+  {
+   "t": "wall",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 264,
+   "h": 3,
+   "w": 6
+  },
+  {
+   "t": "wall",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 108,
+   "h": 1.13,
+   "w": 1.12
+  },
+  {
+   "t": "wall",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 1080,
+   "h": 12.13,
+   "w": 40.12
+  },
+  {
+   "t": "wallcorner",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 168,
+   "h": 3,
+   "w": 6.15
+  },
+  {
+   "t": "wallcorner",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 60,
+   "h": 1,
+   "w": 1.06
+  },
+  {
+   "t": "wallcorner",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 60,
+   "h": 12,
+   "w": 30.53
+  },
+  {
+   "t": "wallcrenel",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 84,
+   "h": 1.55,
+   "w": 8
+  },
+  {
+   "t": "wallcrenel",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 36,
+   "h": 0.5,
+   "w": 1
+  },
+  {
+   "t": "wallcrenel",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 384,
+   "h": 7.4,
+   "w": 40
+  },
+  {
+   "t": "windowslider",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 156,
+   "h": 1.36,
+   "w": 1.76
+  },
+  {
+   "t": "windowslider",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 156,
+   "h": 0.46,
+   "w": 0.56
+  },
+  {
+   "t": "windowslider",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 192,
+   "h": 3.06,
+   "w": 4.63
+  },
+  {
+   "t": "windowarch",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 174,
+   "h": 2.07,
+   "w": 1.4
+  },
+  {
+   "t": "windowarch",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 150,
+   "h": 0.67,
+   "w": 0.6
+  },
+  {
+   "t": "windowarch",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 210,
+   "h": 4.07,
+   "w": 4.2
+  },
+  {
+   "t": "windowlouver",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 156,
+   "h": 1.45,
+   "w": 1.4
+  },
+  {
+   "t": "windowlouver",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 0.44,
+   "w": 0.4
+  },
+  {
+   "t": "windowlouver",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 348,
+   "h": 3,
+   "w": 4
+  },
+  {
+   "t": "doorsingle",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 84,
+   "h": 2.19,
+   "w": 1.16
+  },
+  {
+   "t": "doorsingle",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 0.89,
+   "w": 0.66
+  },
+  {
+   "t": "doorsingle",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 4.09,
+   "w": 4.42
+  },
+  {
+   "t": "doordouble",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 168,
+   "h": 2.39,
+   "w": 2.1
+  },
+  {
+   "t": "doordouble",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 168,
+   "h": 0.89,
+   "w": 1.1
+  },
+  {
+   "t": "doordouble",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 168,
+   "h": 4.59,
+   "w": 7.28
+  },
+  {
+   "t": "doorroll",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 264,
+   "h": 3.51,
+   "w": 3.74
+  },
+  {
+   "t": "doorroll",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 276,
+   "h": 1.96,
+   "w": 1.34
+  },
+  {
+   "t": "doorroll",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 144,
+   "h": 8.31,
+   "w": 12.34
+  },
+  {
+   "t": "roofgable",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 76,
+   "h": 1.99,
+   "w": 9.1
+  },
+  {
+   "t": "roofgable",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 76,
+   "h": 0.39,
+   "w": 1.17
+  },
+  {
+   "t": "roofgable",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 76,
+   "h": 6.19,
+   "w": 34.1
+  },
+  {
+   "t": "roofhip",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 80,
+   "h": 2.26,
+   "w": 10.3
+  },
+  {
+   "t": "roofhip",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 80,
+   "h": 0.46,
+   "w": 1.6
+  },
+  {
+   "t": "roofhip",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 80,
+   "h": 6.16,
+   "w": 48.2
+  },
+  {
+   "t": "roofflat",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 180,
+   "h": 1.6,
+   "w": 9.3
+  },
+  {
+   "t": "roofflat",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 120,
+   "h": 1.48,
+   "w": 2.93
+  },
+  {
+   "t": "roofflat",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 180,
+   "h": 2.26,
+   "w": 40.3
+  },
+  {
+   "t": "ceilingflat",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 0.16,
+   "w": 8
+  },
+  {
+   "t": "ceilingflat",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 0.08,
+   "w": 1
+  },
+  {
+   "t": "ceilingflat",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 96,
+   "h": 0.54,
+   "w": 40
+  },
+  {
+   "t": "ceilingbeam",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 72,
+   "h": 0.43,
+   "w": 8
+  },
+  {
+   "t": "ceilingbeam",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 24,
+   "h": 0.09,
+   "w": 1
+  },
+  {
+   "t": "ceilingbeam",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 252,
+   "h": 1.39,
+   "w": 40
+  },
+  {
+   "t": "ceilinggrid",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 276,
+   "h": 0.14,
+   "w": 9
+  },
+  {
+   "t": "ceilinggrid",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 132,
+   "h": 0.1,
+   "w": 1.1
+  },
+  {
+   "t": "ceilinggrid",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 372,
+   "h": 0.46,
+   "w": 40
+  },
+  {
+   "t": "stairstraight",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 1020,
+   "h": 4.51,
+   "w": 1.6
+  },
+  {
+   "t": "stairstraight",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 240,
+   "h": 1.5,
+   "w": 1
+  },
+  {
+   "t": "stairstraight",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 1860,
+   "h": 8.91,
+   "w": 3.4
+  },
+  {
+   "t": "stairswitch",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 828,
+   "h": 3.67,
+   "w": 2.8
+  },
+  {
+   "t": "stairswitch",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 324,
+   "h": 1.99,
+   "w": 1.6
+  },
+  {
+   "t": "stairswitch",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 1836,
+   "h": 10.07,
+   "w": 5.4
+  },
+  {
+   "t": "stairspiral",
+   "tag": "def",
+   "empty": false,
+   "nan": 0,
+   "tri": 720,
+   "h": 4.26,
+   "w": 3.15
+  },
+  {
+   "t": "stairspiral",
+   "tag": "min",
+   "empty": false,
+   "nan": 0,
+   "tri": 288,
+   "h": 1.86,
+   "w": 1.15
+  },
+  {
+   "t": "stairspiral",
+   "tag": "max",
+   "empty": false,
+   "nan": 0,
+   "tri": 1512,
+   "h": 8.85,
+   "w": 8.2
+  }
+ ],
+ "wall": {
+  "meshes": 29,
+  "len": 8,
+  "doorGap": 999,
+  "pier": 2.88
+ },
+ "hole": {
+  "lampsOff": true,
+  "holes": 1,
+  "ceilY": 3.2,
+  "gy": 0,
+  "elevOk": true,
+  "through": 999,
+  "solid": 1.2,
+  "followOff": true,
+  "poly": [
+   [
+    -0.8,
+    -0.34
+   ],
+   [
+    0.8,
+    -0.34
+   ],
+   [
+    0.8,
+    2.06
+   ],
+   [
+    -0.8,
+    2.06
+   ]
+  ]
+ },
+ "holeSize": {
+  "sz0": [
+   2.4,
+   1.6
+  ],
+  "szFull": [
+   8.06,
+   1.6
+  ],
+  "sz12": [
+   1.2,
+   1.6
+  ]
+ },
+ "lifecycle": {
+  "afterMove": 1,
+  "movedCenter": 3.5,
+  "afterDel": 0,
+  "closed": 1.2
+ },
+ "variants": {
+  "offHoles": 0,
+  "onHoles": 1,
+  "spiral": 1,
+  "spiralPts": 8
+ },
+ "undo": {
+  "n3": 3,
+  "n2": 2,
+  "n1": 1,
+  "nR": 2,
+  "gone3": true,
+  "back3": false,
+  "depth": 16,
+  "param": {
+   "before": 3,
+   "after": 3
+  }
+ },
+ "steps": {
+  "dupN0": 1,
+  "dupN1": 2,
+  "dupN2": 1,
+  "dupDelta": 1,
+  "afterUndoDelta": 0,
+  "shotDelta": 1,
+  "shots0": 0,
+  "shotsBack": 0,
+  "tplDelta": 0,
+  "tplLabel": "放置 直墙（带门窗洞）",
+  "o0": 1,
+  "o1": 1,
+  "oAfterTpl": 0,
+  "hasBtn": false,
+  "btnTitle": ""
+ },
+ "sample": {
+  "objects": 8,
+  "holes": 1,
+  "ceilY": 3.2,
+  "roofY": 3.4
+ },
+ "fails": [
+  "库总数从 121 增到 139，卡片渲染数同步 — lib=203 cards=0",
+  "18 张新卡片都有图标（墙/窗/门/屋顶/天花板） — {\"cards\":0,\"mine\":0,\"withSvg\":0}",
+  "复制物体 / 删除机位 / 载入模板：每个入口都只加一步 — {\"dupN0\":1,\"dupN1\":2,\"dupN2\":1,\"dupDelta\":1,\"afterUndoDelta\":0,\"shotDelta\":1,\"shots0\":0,\"shotsBack\":0,\"tplDelta\":0,\"tplLabel\":\"放置 直墙（带门窗洞）\",\"o0\":1,\"o1\":1,\"oAfterTpl\":0,\"hasBtn\":false,\"btnTitle\":\"\"}",
+  "顶栏撤销 / 重做按钮带栈深提示"
+ ]
+}

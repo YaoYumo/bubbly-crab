@@ -1,0 +1,539 @@
+{
+  "manifest": {
+    "schema": "previz-reference/1",
+    "id": "b79325f4-fd55-456d-b086-63e524451e76",
+    "createdAt": "2026-10-19T04:36:56.258Z",
+    "sourceFingerprint": "273065c2d65f0ac2de931c7e575198eafc4f998d9d2b208dc7d42a8d41e709ee",
+    "shot": {
+      "id": "shot2h3gp",
+      "name": "Camera 01",
+      "subjectId": "obj1rehd"
+    },
+    "settings": {
+      "width": 320,
+      "height": 180,
+      "fps": 5,
+      "duration": 0.6,
+      "frames": 3,
+      "seed": 12345,
+      "channels": true,
+      "subjectId": "obj1rehd"
+    },
+    "codec": "vp09.00.10.08",
+    "encodedDuration": 0.6,
+    "lastFrameTime": 0.4,
+    "sampling": "frame starts i/fps; last image is the final encoded frame, NOT mathematical t=duration",
+    "frameFiles": [
+      {
+        "frame": 0,
+        "time": 0,
+        "normal": "frames/00000-normal.png",
+        "gray": "frames/00000-gray.png",
+        "depth": "frames/00000-depth.png",
+        "id": "frames/00000-id.png",
+        "subject": "frames/00000-subject.png"
+      },
+      {
+        "frame": 1,
+        "time": 0.2,
+        "normal": "frames/00001-normal.png",
+        "gray": "frames/00001-gray.png",
+        "depth": "frames/00001-depth.png",
+        "id": "frames/00001-id.png",
+        "subject": "frames/00001-subject.png"
+      },
+      {
+        "frame": 2,
+        "time": 0.4,
+        "normal": "frames/00002-normal.png",
+        "gray": "frames/00002-gray.png",
+        "depth": "frames/00002-depth.png",
+        "id": "frames/00002-id.png",
+        "subject": "frames/00002-subject.png"
+      }
+    ],
+    "channels": {
+      "videos": [
+        "normal",
+        "gray"
+      ],
+      "diagnostics": [
+        "depth16-keyframes",
+        "object-id-keyframes",
+        "subject-mask-keyframes"
+      ],
+      "depth": {
+        "encoding": "PNG grayscale16 big endian; 0=background, 1..65535=near..far",
+        "axis": "positive camera-view Z distance, NOT radial range",
+        "decode": "meters = near + (code-1)/65534*(far-near); per-frame clips in camera/frames.json"
+      },
+      "policy": "Gray/depth/ID omit fx, water, rivers, sky and unsupported ShaderMaterial; alpha-tested cutouts retained, translucency threshold .5; one ID per object/vegetation patch, no per-instance or bone IDs. Diagnostic keyframes only, not full sequences. Gray has fixed neutral lighting, no DOF/Bloom."
+    },
+    "runtime": {
+      "seededCrowd": true,
+      "weather": "frozen particles (no weather stepping)",
+      "lod": false
+    },
+    "files": [
+      {
+        "path": "source/project.previz",
+        "bytes": 2271,
+        "sha256": "0479e9f2791c7b2f7f59da856b09a1286f9738d719ad4e746b2714db565a031b"
+      },
+      {
+        "path": "source/scene.json",
+        "bytes": 29373,
+        "sha256": "5ef8b47afbf4b9e1a8c78c1028c289eb804fbcfd40a16023e8e06d1d57ec2e70"
+      },
+      {
+        "path": "camera/keyframes.json",
+        "bytes": 5662,
+        "sha256": "2e5a7c3094d7096ff772c3371696d1f21fd5ee92ea9ca3c8bb083f2523593113"
+      },
+      {
+        "path": "prompt.txt",
+        "bytes": 1806,
+        "sha256": "c0e1e41a5a6dc75e089e328246ddbb40ea92f4b1bc7c966141cfba173ebf8425"
+      },
+      {
+        "path": "source/character-runtime.json",
+        "bytes": 11972,
+        "sha256": "888899f2c0a5fa7b57124e9bafdd78e8cf0f91eaf19f9d2fa7581148cb0ae3e2"
+      },
+      {
+        "path": "frames/00000-normal.png",
+        "bytes": 47805,
+        "sha256": "c17455cf24c1322f89b85702c89910fd6701c0ff519c68f5c7587aada2bec482"
+      },
+      {
+        "path": "frames/00000-gray.png",
+        "bytes": 8932,
+        "sha256": "bce2310b7f9555591f8c8b4900b1f33cd874a9c0dab4e07b1d1c41dee22af848"
+      },
+      {
+        "path": "frames/00000-depth.png",
+        "bytes": 9213,
+        "sha256": "29c943ddcf3e8260c0971d5d745d38b4d73dc28108d357dd3637927f9ca71b9b"
+      },
+      {
+        "path": "frames/00000-id.png",
+        "bytes": 3044,
+        "sha256": "e9fcf00dd817ee96a75e15e1fe29d6e8386e68975860d3d522e740641bb05115"
+      },
+      {
+        "path": "frames/00000-subject.png",
+        "bytes": 2643,
+        "sha256": "a6e6887f29b96ca5f671467e41ba8d79d38909924ea32d0caab7ba52fd214e43"
+      },
+      {
+        "path": "frames/00001-normal.png",
+        "bytes": 47447,
+        "sha256": "a09815833073a6504df8d4e977fe7d6530ed35e2fb4a363094e47a63a9b499c2"
+      },
+      {
+        "path": "frames/00001-gray.png",
+        "bytes": 4836,
+        "sha256": "0732ae89f0ea36998e6134194e90e7025182ac668007b61000afe54866d841b5"
+      },
+      {
+        "path": "frames/00001-depth.png",
+        "bytes": 6064,
+        "sha256": "3bea9a957a19833104a41ff2c3741dee012be6addd72b4b47a3077d933c17c85"
+      },
+      {
+        "path": "frames/00001-id.png",
+        "bytes": 2717,
+        "sha256": "76f81ae75ca986862a672f1793ba00d959ed76d29183b15bc7284b6f7717f763"
+      },
+      {
+        "path": "frames/00001-subject.png",
+        "bytes": 2633,
+        "sha256": "3126147b2e0c5a8e53872f3b32ff23686881976108c4f54a4b7f3839bcb86c77"
+      },
+      {
+        "path": "frames/00002-normal.png",
+        "bytes": 50298,
+        "sha256": "3d7ec492cfb243ac8f7b5e5655bd4b1fe55a039498eb47648853ee9934119854"
+      },
+      {
+        "path": "frames/00002-gray.png",
+        "bytes": 5249,
+        "sha256": "63ec9cc4c227705399f6b23a1951508dcc44e81b6be4f2483fb6f9284f251ed8"
+      },
+      {
+        "path": "frames/00002-depth.png",
+        "bytes": 6955,
+        "sha256": "63606f90305fdfe4bf63ef00ae75aad5c97dc4db91e63e363b5e4c6d95c4c024"
+      },
+      {
+        "path": "frames/00002-id.png",
+        "bytes": 2823,
+        "sha256": "5435ba821655ad813f7f8b770012684ff7fc8156e8f8c29bea597f18efb06602"
+      },
+      {
+        "path": "frames/00002-subject.png",
+        "bytes": 2656,
+        "sha256": "018928edadf454259f8c750843fb9ccaf85bcdeac67300374c92eb26d9352869"
+      },
+      {
+        "path": "normal.webm",
+        "bytes": 24358,
+        "sha256": "b0e6faac582ced0a852679a098f00461661a3dd323f73b329b6f6b12b2f88603"
+      },
+      {
+        "path": "gray.webm",
+        "bytes": 18548,
+        "sha256": "80bfe81be70cf7cb36134305aebca494947b99cb0055fe2fb551842e4114f0f4"
+      },
+      {
+        "path": "camera/frames.json",
+        "bytes": 4170,
+        "sha256": "6afcb045cd73933d25bf04096e6ea5f9306be5efac6ec7e6e710468f830b18d6"
+      },
+      {
+        "path": "checks.json",
+        "bytes": 169,
+        "sha256": "026cc17e79b351b3fb4b618c2fcf6eabefa6af39d1004c36a8c28f20b328a632"
+      },
+      {
+        "path": "objects.json",
+        "bytes": 571,
+        "sha256": "81b2a0560106ca3335ae94ed559aa1dbed3955ea27d2d0cc8240abc476b719fd"
+      }
+    ]
+  },
+  "checks": {
+    "samples": 3,
+    "issues": [],
+    "method": "Conservative mesh AABB collision and five-point subject ray tests; warnings, not automatic repair or a cinematic score."
+  },
+  "bytes": 311426,
+  "cancel": true,
+  "failure": true,
+  "stale": true,
+  "seededCrowdRepeat": true,
+  "depthMeters": 9.999450666829432,
+  "decoded": {
+    "normal": {
+      "frames": 3,
+      "meanRGB": [
+        108.96358217592592,
+        107.65007523148148,
+        105.42607060185185
+      ]
+    },
+    "gray": {
+      "frames": 3,
+      "meanRGB": [
+        104.50921875,
+        103.06968171296296,
+        101.0803587962963
+      ]
+    }
+  },
+  "review": {
+    "persisted": true,
+    "localVideo": true,
+    "synchronized": true
+  },
+  "frames": [
+    {
+      "index": 0,
+      "time": 0,
+      "timestampUs": 0,
+      "position": [
+        16.053019281664913,
+        11.9537699005324,
+        19.188806007891483
+      ],
+      "quaternion": [
+        -0.17429101990024715,
+        0.33336034700153666,
+        0.06374848908724096,
+        0.9243536388029426
+      ],
+      "projectionMatrix": [
+        2.4999999999999996,
+        0,
+        0,
+        0,
+        0,
+        4.624277456647398,
+        0,
+        0,
+        0,
+        0,
+        -1.000016000128001,
+        -1,
+        0,
+        0,
+        -0.08000064000512004,
+        0
+      ],
+      "worldMatrix": [
+        0.7696140183722179,
+        0.0016488659655654186,
+        -0.638507277927194,
+        0,
+        -0.23405572545835795,
+        0.9311175410424511,
+        -0.27971064002504636,
+        0,
+        0.594064121206734,
+        0.3647155137968317,
+        0.7169870388582933,
+        0,
+        16.053019281664913,
+        11.9537699005324,
+        19.188806007891483,
+        1
+      ],
+      "viewMatrix": [
+        0.769614018372218,
+        -0.23405572545835798,
+        0.594064121206734,
+        0,
+        0.001648865965565433,
+        0.9311175410424511,
+        0.3647155137968317,
+        0,
+        -0.6385072779271942,
+        -0.2797106400250465,
+        0.7169870388582934,
+        0,
+        -0.12214654994623711,
+        -2.0057505524201216,
+        -27.654373322183147,
+        1
+      ],
+      "near": 0.04,
+      "far": 5000,
+      "vfovDegrees": 24.404635865521524,
+      "hfovDegrees": 43.60281897270362,
+      "viewport": {
+        "x": 0,
+        "y": 4,
+        "width": 320,
+        "height": 173
+      },
+      "intrinsics": {
+        "fx": 399.99999999999994,
+        "fy": 399.99999999999994,
+        "cx": 160,
+        "cy": 90,
+        "pixelOrigin": "top-left",
+        "cameraAxes": "OpenGL: +X right, +Y up, forward -Z"
+      },
+      "diagnosticSample": true,
+      "groundClearance": 11.9887699005324,
+      "proximityIds": [],
+      "proximityThreshold": 0.25,
+      "collisionIds": [],
+      "subject": {
+        "id": "obj1rehd",
+        "inFrame": true,
+        "visibleSamples": 5,
+        "testedSamples": 5
+      }
+    },
+    {
+      "index": 1,
+      "time": 0.2,
+      "timestampUs": 200000,
+      "position": [
+        24.621771654971983,
+        12.796423537229177,
+        4.409165943500943
+      ],
+      "quaternion": [
+        -0.153071668168931,
+        0.6276820795158685,
+        0.128687728117893,
+        0.7523454925035911
+      ],
+      "projectionMatrix": [
+        2.4999999999999996,
+        0,
+        0,
+        0,
+        0,
+        4.624277456647398,
+        0,
+        0,
+        0,
+        0,
+        -1.000016000128001,
+        -1,
+        0,
+        0,
+        -0.08000064000512004,
+        0
+      ],
+      "worldMatrix": [
+        0.1789093513729807,
+        0.0014745783975736726,
+        -0.9838644569298397,
+        0,
+        -0.385795950362524,
+        0.9200170660716719,
+        -0.06877559756737775,
+        0,
+        0.9050706760663368,
+        0.3918755207402248,
+        0.1651685429172315,
+        0,
+        24.621771654971983,
+        12.796423537229177,
+        4.409165943500943,
+        1
+      ],
+      "viewMatrix": [
+        0.17890935137298064,
+        -0.385795950362524,
+        0.9050706760663371,
+        0,
+        0.0014745783975737632,
+        0.9200170660716718,
+        0.3918755207402249,
+        0,
+        -0.98386445692984,
+        -0.06877559756737785,
+        0.16516854291723157,
+        0,
+        -0.08591286964277935,
+        -1.970705221155093,
+        -28.02730416934895,
+        0.9999999999999999
+      ],
+      "near": 0.04,
+      "far": 5000,
+      "vfovDegrees": 24.404635865521524,
+      "hfovDegrees": 43.60281897270362,
+      "viewport": {
+        "x": 0,
+        "y": 4,
+        "width": 320,
+        "height": 173
+      },
+      "intrinsics": {
+        "fx": 399.99999999999994,
+        "fy": 399.99999999999994,
+        "cx": 160,
+        "cy": 90,
+        "pixelOrigin": "top-left",
+        "cameraAxes": "OpenGL: +X right, +Y up, forward -Z"
+      },
+      "diagnosticSample": true,
+      "groundClearance": 12.831423537229178,
+      "proximityIds": [],
+      "proximityThreshold": 0.25,
+      "collisionIds": [],
+      "subject": {
+        "id": "obj1rehd",
+        "inFrame": true,
+        "visibleSamples": 5,
+        "testedSamples": 5
+      }
+    },
+    {
+      "index": 2,
+      "time": 0.4,
+      "timestampUs": 400000,
+      "position": [
+        21.715804162637948,
+        13.648879298392542,
+        -12.39883709640421
+      ],
+      "quaternion": [
+        -0.10710703960952891,
+        0.8446904860455822,
+        0.18537551469339206,
+        0.490573117284591
+      ],
+      "projectionMatrix": [
+        2.4999999999999996,
+        0,
+        0,
+        0,
+        0,
+        4.624277456647398,
+        0,
+        0,
+        0,
+        0,
+        -1.000016000128001,
+        -1,
+        0,
+        0,
+        -0.08000064000512004,
+        0
+      ],
+      "worldMatrix": [
+        -0.49573219732752327,
+        0.0009358935293928006,
+        -0.8684749349498389,
+        0,
+        -0.3628250829160984,
+        0.9083280012364856,
+        0.20808219860588095,
+        0,
+        0.789054844570231,
+        0.418257535823364,
+        -0.44994787029967775,
+        0,
+        21.715804162637948,
+        13.648879298392542,
+        -12.39883709640421,
+        1
+      ],
+      "viewMatrix": [
+        -0.49573219732752355,
+        -0.36282508291609855,
+        0.7890548445702313,
+        0,
+        0.0009358935293928843,
+        0.9083280012364857,
+        0.41825753582336406,
+        0,
+        -0.8684749349498391,
+        0.20808219860588092,
+        -0.4499478702996779,
+        0,
+        -0.015629824293434742,
+        -1.9386435231521273,
+        -28.422537446083776,
+        1
+      ],
+      "near": 0.04,
+      "far": 5000,
+      "vfovDegrees": 24.404635865521524,
+      "hfovDegrees": 43.60281897270362,
+      "viewport": {
+        "x": 0,
+        "y": 4,
+        "width": 320,
+        "height": 173
+      },
+      "intrinsics": {
+        "fx": 399.99999999999994,
+        "fy": 399.99999999999994,
+        "cx": 160,
+        "cy": 90,
+        "pixelOrigin": "top-left",
+        "cameraAxes": "OpenGL: +X right, +Y up, forward -Z"
+      },
+      "diagnosticSample": true,
+      "groundClearance": 13.683879298392542,
+      "proximityIds": [],
+      "proximityThreshold": 0.25,
+      "collisionIds": [],
+      "subject": {
+        "id": "obj1rehd",
+        "inFrame": true,
+        "visibleSamples": 5,
+        "testedSamples": 5
+      }
+    }
+  ],
+  "errors": []
+}

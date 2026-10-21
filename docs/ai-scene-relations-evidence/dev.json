@@ -1,0 +1,47 @@
+{
+  "mode": "dev",
+  "noSourceMutation": true,
+  "placeholderLoweredBeforeCollision": true,
+  "finalGeometryChecks": true,
+  "lockedReferenceReadOnly": true,
+  "applyAndUndo": true,
+  "editApplyAndUndo": true,
+  "relationAudit": true,
+  "rejections": [
+    {
+      "label": "locked subject",
+      "error": "无权通过空间关系修改对象：obj11f06"
+    },
+    {
+      "label": "unselected edit subject",
+      "error": "无权通过空间关系修改对象：obj11f06"
+    },
+    {
+      "label": "clearance",
+      "error": "留空约束未满足（平面保守AABB）：relation-child → obj11f06"
+    },
+    {
+      "label": "distance",
+      "error": "距离约束未满足：relation-child → obj11f06"
+    },
+    {
+      "label": "footprint outside bounds",
+      "error": "资产占地超出授权范围：木箱"
+    },
+    {
+      "label": "protected geometry collision",
+      "error": "资产进入保护对象包围盒：obj11f06"
+    },
+    {
+      "label": "missing reference",
+      "error": "关系仅支持存在的库资产，引用缺失或不支持：missing"
+    },
+    {
+      "label": "removed reference",
+      "error": "关系仅支持存在的库资产，引用缺失或不支持：obj2mtcg"
+    }
+  ],
+  "offlineExampleUI": true,
+  "confirmationGate": true,
+  "errors": []
+}

@@ -1,0 +1,189 @@
+PASS LOD + Bloom {
+  "entry": "file:",
+  "offline": true,
+  "ids": 12,
+  "lod": {
+    "original": {
+      "calls": 282,
+      "triangles": 40286
+    },
+    "distant": {
+      "calls": 276,
+      "triangles": 35102,
+      "stats": {
+        "settings": {
+          "enabled": true,
+          "near": 90,
+          "far": 200,
+          "pixels": 1.5
+        },
+        "near": 0,
+        "medium": 0,
+        "far": 12,
+        "culledMeshes": 28,
+        "simplifiedMeshes": 48,
+        "sourceTriangles": 6912,
+        "lodTriangles": 1728,
+        "prepareMs": 1.3999999994412065,
+        "builds": 0,
+        "pending": 0,
+        "idle": {
+          "slices": 13,
+          "steps": 479,
+          "maxSliceMs": 10.900000000372529,
+          "errors": 0
+        },
+        "cachedGeometries": 4,
+        "geometryBytes": 15712
+      }
+    },
+    "pixels": {
+      "mean": 0.03895192307692308,
+      "fraction": 0.002544871794871795,
+      "max": 64
+    },
+    "cold": {
+      "settings": {
+        "enabled": true,
+        "near": 90,
+        "far": 200,
+        "pixels": 1.5
+      },
+      "near": 0,
+      "medium": 0,
+      "far": 12,
+      "culledMeshes": 28,
+      "simplifiedMeshes": 0,
+      "sourceTriangles": 960,
+      "lodTriangles": 0,
+      "prepareMs": 3.2999999998137355,
+      "builds": 0,
+      "pending": 48,
+      "idle": {
+        "slices": 0,
+        "steps": 0,
+        "maxSliceMs": 0,
+        "errors": 0
+      },
+      "cachedGeometries": 0,
+      "geometryBytes": 0
+    },
+    "cpu": {
+      "original": {
+        "samples": 30,
+        "mean": 7.3,
+        "p50": 6.5,
+        "p95": 11.5
+      },
+      "lod": {
+        "samples": 30,
+        "mean": 6.840000000006209,
+        "p50": 6.599999999627471,
+        "p95": 9
+      }
+    }
+  },
+  "bloom": {
+    "original": {
+      "calls": 282,
+      "triangles": 40286
+    },
+    "enabled": {
+      "calls": 296,
+      "triangles": 40300
+    },
+    "pixels": {
+      "mean": 2.296282051282051,
+      "fraction": 0.11071474358974359,
+      "max": 209
+    },
+    "cpu": {
+      "disabled": {
+        "samples": 30,
+        "mean": 7.809999999993791,
+        "p50": 6.7999999998137355,
+        "p95": 10.700000000186265
+      },
+      "enabled": {
+        "samples": 30,
+        "mean": 11.056666666672875,
+        "p50": 10.200000000186265,
+        "p95": 18.799999999813735
+      }
+    },
+    "combined": {
+      "calls": 290,
+      "triangles": 35116,
+      "lod": {
+        "settings": {
+          "enabled": true,
+          "near": 90,
+          "far": 200,
+          "pixels": 1.5
+        },
+        "near": 0,
+        "medium": 0,
+        "far": 12,
+        "culledMeshes": 28,
+        "simplifiedMeshes": 48,
+        "sourceTriangles": 6912,
+        "lodTriangles": 1728,
+        "prepareMs": 0.7999999998137355,
+        "builds": 0,
+        "pending": 0,
+        "idle": {
+          "slices": 29,
+          "steps": 1437,
+          "maxSliceMs": 10.900000000372529,
+          "errors": 0
+        },
+        "cachedGeometries": 4,
+        "geometryBytes": 15712
+      }
+    },
+    "videoBytes": 8786,
+    "pngBytes": 4266,
+    "lowSize": {
+      "enabled": true,
+      "strength": 0.6,
+      "radius": 0.3,
+      "threshold": 0.8,
+      "quality": "low",
+      "active": true,
+      "blockedReason": null,
+      "glowWidth": 50,
+      "glowHeight": 33
+    },
+    "highSize": {
+      "enabled": true,
+      "strength": 0.6,
+      "radius": 0.3,
+      "threshold": 0.8,
+      "quality": "high",
+      "active": true,
+      "blockedReason": null,
+      "glowWidth": 200,
+      "glowHeight": 130
+    },
+    "blackBarsMax": 0
+  },
+  "checks": [
+    "source references/visibility stable",
+    "actual far triangle reduction",
+    "30 render submission samples/path",
+    "selected + near full quality",
+    "failure restoration + instances",
+    "Bloom pixels + no DOF",
+    "quality + DPR + unsupported HDR fallback",
+    "repeated framed output keeps target allocation stable",
+    "zero strength exact bypass",
+    "DOF + anamorphic composition",
+    "Basic pause/restore",
+    "letterboxed output + PNG + one-frame video",
+    "combined active far LOD/Bloom + 30 Bloom submission samples/path",
+    "undo/redo + archive IDs",
+    "rebuild release + original pick/gizmo",
+    "legacy defaults + native UI",
+    "dispose"
+  ]
+}

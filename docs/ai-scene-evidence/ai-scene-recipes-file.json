@@ -1,0 +1,72 @@
+{
+  "rows": [
+    {
+      "recipe": {
+        "kind": "template",
+        "template": "plaza"
+      },
+      "added": 28,
+      "triangles": 172574,
+      "warnings": 7
+    },
+    {
+      "recipe": {
+        "kind": "template",
+        "template": "street"
+      },
+      "added": 53,
+      "triangles": 228398,
+      "warnings": 47
+    },
+    {
+      "recipe": {
+        "kind": "template",
+        "template": "boulevard"
+      },
+      "added": 61,
+      "triangles": 114286,
+      "warnings": 48
+    },
+    {
+      "recipe": {
+        "kind": "town",
+        "theme": "chinese",
+        "topology": "grid",
+        "density": 0.25,
+        "vegetation": 0.2
+      },
+      "added": 20,
+      "triangles": 746596,
+      "warnings": 1
+    },
+    {
+      "recipe": {
+        "kind": "town",
+        "theme": "suburb",
+        "topology": "grid",
+        "density": 0.25,
+        "vegetation": 0.2
+      },
+      "added": 20,
+      "triangles": 54796,
+      "warnings": 1
+    },
+    {
+      "recipe": {
+        "kind": "town",
+        "theme": "modern",
+        "topology": "grid",
+        "density": 0.25,
+        "vegetation": 0.2
+      },
+      "added": 20,
+      "triangles": 49212,
+      "warnings": 1
+    }
+  ],
+  "appliedRoads": 8,
+  "objects": 36,
+  "undoRedo": true,
+  "roadPlan": true,
+  "errors": []
+}

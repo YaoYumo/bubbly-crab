@@ -2,7 +2,7 @@ import puppeteer from 'puppeteer';
 const b = await puppeteer.launch({ headless: true, args: ['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--no-sandbox','--disable-dev-shm-usage'] });
 const p = await b.newPage(); await p.setViewport({ width: 900, height: 560, deviceScaleFactor: 1 });
 p.on('pageerror', e=>console.log('PAGEERR',e.message));
-await p.goto('http://localhost:5173/?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
+await p.goto('http://localhost:5174/?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
 await p.waitForFunction(() => window.__previzBooted && window.__t?.buildAsset, { timeout: 180000 });
 const out = await p.evaluate(async () => {
   const T = window.__t, app = T.app, THREE = T.THREE;

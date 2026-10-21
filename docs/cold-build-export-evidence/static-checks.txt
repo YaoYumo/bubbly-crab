@@ -1,0 +1,10 @@
+PASS 14 node --check; bash -n test/runsuite.sh; git diff --check
+previz-lab.html: OK
+src/export.js: OK
+src/render-lod.js: OK
+src/pick-spatial-index.js: OK
+src/idle-work.js: OK
+src/webm-duration.js: OK
+src/render-effects.js: OK
+src/performance-ui.js: OK
+src/panels.js: OK

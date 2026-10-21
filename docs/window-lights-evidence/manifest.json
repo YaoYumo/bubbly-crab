@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-17",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "scope": "Night window emission first release. Ordered junction/model-instancing/road-diagnostics/window-lighting initial releases implemented. No Bloom, per-window real lights, indoor lighting, or imported-model window inference.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1878632,
+    "sha256": "ada719e6f5f456198fc7555405d9ea18c9273004f8305fc54241c5bc08ade342"
+  },
+  "checks": [
+    {
+      "name": "window-lights.test.mjs",
+      "scope": "Node, config/RNG/scope/ownership/restore",
+      "status": "PASS"
+    },
+    {
+      "name": "window-lights-regression.mjs",
+      "scope": "DEV and real file; file browser offline; pixel/draw/triangle/light counts, seed, gray + 3200K white balance, Basic restore, bounded variants, overrides, archive, undo-redo, PNG, native UI, locked and disposal",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics-regression.mjs",
+      "scope": "DEV and final file",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-regression.mjs",
+      "scope": "DEV",
+      "status": "PASS"
+    },
+    {
+      "name": "model-instancing-regression.mjs",
+      "scope": "DEV",
+      "status": "PASS"
+    },
+    {
+      "name": "performance-regression.mjs",
+      "scope": "DEV isolated four-fixture and lifecycle full assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-properties-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-planning-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-surface.test.mjs",
+      "scope": "Node area/ray",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-regression.mjs",
+      "scope": "final file original 6x3x2x4, no threshold/sample changes",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build",
+      "scope": "production",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build:single",
+      "scope": "production",
+      "status": "PASS"
+    },
+    {
+      "name": "git diff --check",
+      "scope": "workspace",
+      "status": "PASS"
+    }
+  ],
+  "executionNote": "Final compatibility batch exited 0. Initial junction attempt stopped after the 90-degree case only because test/out was absent (ENOENT while writing its PNG); created the scratch output directory and reran the complete unchanged original gate successfully. No pixel threshold or fixture was changed. All earlier evidence directories remain historical release snapshots. Not a full historical suite or hardware FPS acceptance.",
+  "evidence": {
+    "dev.json": {
+      "bytes": 450,
+      "sha256": "2ddb7e69ccbfc00f2625c57953d383a7efeda4ebddfe87027e1a4f5119c79e1f"
+    },
+    "unit.txt": {
+      "bytes": 184,
+      "sha256": "0d0b659ca7b705a6695674d7200ca99334db980d828d3eb364ad61f433c491e4"
+    },
+    "file.json": {
+      "bytes": 450,
+      "sha256": "98b30e32707e1f46f6c753c5c0bf923c6a99578e5e84fcced8fa8b36b6ac0a70"
+    },
+    "instancing-dev.json": {
+      "bytes": 583,
+      "sha256": "8fa69e061b86629e57718a2de2ceae427fb6d6e445ab1d297b50d543b53bdf46"
+    },
+    "performance-dev.json": {
+      "bytes": 41262,
+      "sha256": "7294613d63605298438e786ea79ee283dccda24fa1fde2faca2e7378dfa4610f"
+    },
+    "junction-file.txt": {
+      "bytes": 3996,
+      "sha256": "0997f6c6200ea83406bf7def3450fe5dcd03ed1e2e3f076fdd620fa334253885"
+    },
+    "checks.txt": {
+      "bytes": 1338,
+      "sha256": "41fb47f35589dda2255121ca41eb9cac9e79636758be5c5a45447d4b16e289a7"
+    }
+  },
+  "sourceSha256": {
+    "src/window-lights.js": "59a89be81281c5c0d20c7fe0499f609d9df819a9c0178db2e479f850cbc0f9a4",
+    "src/window-lights-ui.js": "7f8ca4b580c197cbd61d65726d4cd0e578b615e553539318f8c2544c3709582d",
+    "src/material-appearance.js": "1e2b15bbac1d4a35199cb91aec441a9e4dd7593c5c7ad1740bec47edf44b12ee",
+    "src/app.js": "f0b05dbd2b333f6e7ff7be0c4a5654d97f798e9076104dc5a05f29077b5923dc",
+    "src/lighting.js": "e7f87595b652ee704a096ff774707b6677e34aa7a69fe8774404cc2887812f6c",
+    "src/lighting-ui.js": "5cbd5c0ecd0800a4b9c85888cf967795d45e1bd615490471e0dc640190661e96",
+    "src/panels.js": "70880ea5c30877b4c4009371faaebfd73393ec739ed0a317939d6df42af8f845",
+    "test/window-lights.test.mjs": "c70559895fe4507d4178ef534213e2c863a2421c8759925baae32cb632fd1c99",
+    "test/window-lights-regression.mjs": "e3c8a1529393607c5b2fed997fac36a1c7aee631fbdfc7e902fb41ec7135fb17",
+    "test/runsuite.sh": "c4db71f1d682d2b89a6174a042279eb7ef1c6a9d669b10cd455938870f3da349"
+  },
+  "compatibilityDefault": "legacy: leave original model appearance unchanged. Select auto/on or use day/night preset buttons to enable.",
+  "bounds": [
+    "Library house/suburban/functional/building categories and recognized windows only; no library definitions changed.",
+    "Probability not exact room count. GPU masks stable on same device/construction; not cross-GPU bitwise reproducibility.",
+    "Ordinary windows grouped by root-local component; merged windows by available instances; city grid is procedural, not real interior/floor plan.",
+    "No geometry, light or shadow additions. Basic mode omits window emission and restores it when returning to standard mode.",
+    "Copies borrow textures; owned materials released on removal/rebuild/legacy restore.",
+    "Custom shader grids not guaranteed portable to external glTF/OBJ exporters.",
+    "Legacy library lit parameter resumes control only in legacy mode."
+  ],
+  "notRun": [
+    "full historical suite",
+    "hardware GPU/FPS acceptance",
+    "cross-GPU image validation",
+    "long-form media recording stress test"
+  ]
+}

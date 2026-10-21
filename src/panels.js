@@ -1,19 +1,38 @@
+import { DESKTOP_BUILD } from './desktop-runtime.js';
 // ---------------------------------------------------------------------------
 // 面板：素材库 / 场景列表 / 右侧检查器（物体 · 运镜 · 光影 · 导出）
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { vegetationControls } from './vegetation-brush.js';
+import { roadPlanningControls } from './road-planning-ui.js';
+import { roadDiagnosticControls } from './road-diagnostics-ui.js';
+import { renderEffectsControls } from './render-effects-ui.js';
+import { selectiveBloomControls } from './selective-bloom-ui.js';
+import { windowLightingControls } from './window-lights-ui.js';
 import { LIB, LIB_INDEX } from './assets.js';
 import { buildForm, section } from './ui.js';
 import { MOVES, MOVE_BY_ID, LENS_OPTS, CAMERA_MODELS, SENSORS, MOVE_OPTS } from './camera.js';
+import { isLuminaire } from './local-lights.js';
+import { lightingModeControls, physicalLightingControls, localLightingControls, luminaireControls } from './lighting-ui.js';
 import { ATMOS } from './lighting.js';
 import { LEVELS } from './detail.js';
 import { ANIMS, ANIM_LABEL } from './character.js';
 import { RES_PRESETS, bestMime, Exporter } from './export.js';
 import { EASE_OPTIONS, el, clear, fmt, clamp, downloadBlob, copy, deg, rad, uid } from './util.js';
+import { behaviorControls } from './behavior-ui.js';
+import { hasBehavior } from './behavior-workflow.js';
+import { layoutMaintenanceControls } from './layout-maintenance-ui.js';
+import { openAISceneDialog } from './ai-scene-ui.js';
+import { referenceReview } from './reference-review-ui.js';
+import { referenceTools } from './reference-ui.js';
 import { buildPrompt, motionJson } from './prompts.js';
 import { Mover } from './mover.js';
 import { CURVE_PRESETS } from './curve.js';
+import { terrainErosionControls, arrangeTerrainPanel } from './terrain-erosion-ui.js';
+import { terrainWorkflowControls } from './terrain-workflow-ui.js';
+import { terrainSurfaceControls } from './terrain-surface-ui.js';
 import { BIOMES, TOOLS, TERRAIN_GEN } from './terrain.js';
+import { TERRAIN_MATERIALS } from './terrain-materials.js';
 import { WEATHER } from './weather.js';
 import { seedance } from './seedance.js';
 import { RoadBrush, ROAD_TYPES } from './road-brush.js';
@@ -264,7 +283,7 @@ export function buildObjectList(app, host) {
       el('b', { text: `场景物体 ${app.objects.length}` }),
       el('span', { class: 'mini', text: '点选 · 双击重命名' }),
     ]));
-    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '从左侧把建筑 / 人物拖进场景' }));
+    if (!app.objects.length) wrap.appendChild(el('div', { class: 'empty', text: '点上方「模型库」展开拖入，或用 ✦ 一句话生成造景' }));
     for (const so of app.objects) {
       const sel = app.selObj === so;
       const row = el('div', { class: 'orow' + (sel ? ' on' : '') });
@@ -330,6 +349,7 @@ export function buildInspector(app, host) {
   app.bus.on('shot-change', () => { if (ctx.cur === 'cam') render(); });
   app.bus.on('perf-changed', upd);
   app.bus.on('terrain', () => { if (ctx.cur === 'terr') render(); });
+  app.bus.on('terrain-workflow', () => { if (ctx.cur === 'terr') render(); });
   app.bus.on('tick', () => ctx.sync());
   render();
   return { render, get tab() { return ctx.cur; } };
@@ -361,7 +381,7 @@ function fieldsForItem(app, so) {
   if (!item) return [];
   const out = [];
   for (const p of item.params) {
-    if (p.k === 'anim') continue;
+    if (p.k === 'anim' || (p.k === 'glow' && isLuminaire(so))) continue;
     const f = { ...p, t: p.t === 'color' ? 'color' : p.t === 'bool' ? 'bool' : p.t === 'sel' ? 'sel' : p.t === 'int' ? 'int' : p.t === 'text' ? 'text' : 'range' };
     f.get = () => so.params[p.k];
     f.set = (v) => { app.beginOp('改参数 ' + (p.l || p.k), 'param:' + so.id + ':' + p.k); so.params[p.k] = v; scheduleRebuild(app, so); };
@@ -385,8 +405,25 @@ function scheduleRebuild(app, so) {
 }
 
 function tabObject(app, rerender, ctx) {
+  let syncDiagnostic=()=>{},syncWindow=()=>{};
   const root = el('div', { class: 'tabwrap' });
   const so = app.selObj;
+  const appearance = section('材质显示', { badge: app.state.tex === false ? '全局关闭' : '全局开启' });
+  appearance.body.appendChild(el('div', { class: 'btnrow' }, [
+    el('button', { class: 'fbtn', type: 'button', dataset: { materials: 'all-off' }, text: '全部关闭', onclick: () => app.setTex(false) }),
+    el('button', { class: 'fbtn', type: 'button', dataset: { materials: 'all-on' }, text: '全部开启', onclick: () => app.setTex(true) }),
+  ]));
+  if (so) {
+    const mode = el('select', { class: 'sel', disabled: so.locked, dataset: { materials: 'object-mode' },
+      onchange: e => app.appearance.setMode(so, e.target.value),
+    }, [el('option', { value: 'inherit', text: '跟随全局' }), el('option', { value: 'on', text: '此物品单独开启' }), el('option', { value: 'off', text: '此物品单独关闭' })]);
+    mode.value = so.materialMode || 'inherit';
+    appearance.body.appendChild(el('div', { class: 'row' }, [el('label', { class: 'lab', text: '选中物品' }), el('div', { class: 'ctl' }, [mode])]));
+  }
+  appearance.body.appendChild(el('div', { class: 'fnote', text: '关闭为中性灰模，保留透明轮廓和自发光；可单独开启重点物品。设置随工程保存。全部开/关会重置单物品例外。' }));
+  root.appendChild(appearance.wrap);
+  if (so) root.appendChild(selectiveBloomControls(app, so));
+  if(so){const window=windowLightingControls(app,rerender,so);if(window){root.appendChild(window.root);syncWindow=window.sync;}}
   if (!so) {
     root.appendChild(el('div', { class: 'hintbox' }, [
       el('b', { text: '未选择物体' }),
@@ -407,6 +444,7 @@ function tabObject(app, rerender, ctx) {
     rot: [deg(so.root.rotation.x), deg(so.root.rotation.y), deg(so.root.rotation.z)].map((v) => +v.toFixed(1)),
     scl: [+so.root.scale.x.toFixed(3), +so.root.scale.y.toFixed(3), +so.root.scale.z.toFixed(3)],
   };
+  const behaviorLocked = hasBehavior(so);
   const tfFields = [
     { k: 'name', l: '名称', t: 'txt', set: (v) => { so.name = v; app.bus.emit('objects'); } },
     { k: 'pos', l: '位置 m', t: 'vec3', d: 2, set: (v) => { so.root.position.fromArray(v); if (so.motion?.active) syncMotionKeys(app, so); } },
@@ -424,33 +462,91 @@ function tabObject(app, rerender, ctx) {
       btn2: { l: '删除', onClick: () => { app.removeObject(so); rerender(); } },
     },
   ];
+  if (behaviorLocked) { for (let i = tfFields.length - 1; i >= 0; i--) if (['pos', 'rot', 'scl', '_u'].includes(tfFields[i].k)) tfFields.splice(i, 1); }
+  for(const f of tfFields)if(['pos','rot','scl'].includes(f.k)){const set=f.set;f.set=v=>{app.beginOp('变换 '+f.l,'transform:'+so.id+':'+f.k);set(v);};}
   const f1 = section('变换 / Transform');
-  const form1 = buildForm(tfFields, tf, () => { app.bus.emit('objects'); });
+  const form1 = buildForm(tfFields, tf, (key) => { if(['pos','rot','scl'].includes(key))app.layout?.afterHostEdit(so); app.bus.emit('objects'); });
   f1.body.appendChild(form1.root);
   root.appendChild(f1.wrap);
 
+  const lampControls = luminaireControls(app, so);
+  if (lampControls) root.appendChild(lampControls);
   // ---- 模型参数
   if (so.item) {
     const f2 = section(`${so.item.name} 参数`, { badge: so.item.type });
     const form2 = buildForm(fieldsForItem(app, so), so.params, () => { });
+    if (behaviorLocked) { form2.root.querySelectorAll('input,select,button,textarea').forEach(n => n.disabled = true); f2.body.appendChild(el('p', { class: 'fnote', text: '人物参数由行为方案锁定；请先移除方案再编辑。' })); }
     f2.body.appendChild(form2.root);
     root.appendChild(f2.wrap);
   } else if (so.type === 'road_brush' || so.type === 'road_intersection') {
     const rd = so._roadData;
     const f2 = section(so.type === 'road_brush' ? '道路参数' : '交叉路口', { badge: so.type === 'road_brush' ? (rd?.roadType?.id || 'road') : 'intersection' });
     const html = so.type === 'road_brush'
-      ? `类型：${rd?.roadType?.label || '-'}<br>宽度：${rd?.width ?? '-'} m<br>控制点：${rd?.ctrl?.length ?? 0} 个<br><i>选中后可用 W/E/R 整体移动 / 旋转 / 缩放；删除会同时清理其交叉路口。</i>`
+      ? `类型：${rd?.roadType?.label || '-'}<br>宽度：${rd?.width ?? '-'} m<br>控制点：${rd?.ctrl?.length ?? 0} 个<br><i>选中后可用 W/E/R 整体移动 / 旋转 / 缩放；点「编辑此路」可重新改线（生成后的道路、基座、小径都能再编辑）；删除会同时清理其交叉路口。</i>`
       : `交叉点：${(so._isect?.point?.x ?? 0).toFixed(1)}, ${(so._isect?.point?.z ?? 0).toFixed(1)}<br><i>路口面片由两条道路自动生成；删除后两侧路面恢复连续。</i>`;
     f2.body.appendChild(el('div', { class: 'fnote', html }));
+    if (so.type === 'road_brush') {
+      const commit = (props) => {
+        if (!app.roadBrush.updateRoadProperties(so, props)) {
+          toast(so.locked ? '请先解锁道路' : '未能修改：请先完成当前绘制，并检查道路参数', 'warn');
+          rerender();
+        }
+      };
+      const typeSelect = el('select', { class: 'sel', disabled: so.locked, dataset: { roadProperty: 'type' },
+        onchange: e => commit({ roadType: e.target.value }),
+      }, ROAD_TYPES.map(t => el('option', { value: t.id, text: t.label })));
+      typeSelect.value = rd?.roadType?.id || 'asphalt';
+      const widthNum = el('input', { class: 'num', type: 'number', min: 1, max: 20, step: .5,
+        value: rd?.width || 12, disabled: so.locked, dataset: { roadProperty: 'width' },
+        onchange: e => commit({ width: e.target.valueAsNumber }),
+      });
+      const widthRange = el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: .5,
+        value: rd?.width || 12, disabled: so.locked, dataset: { roadProperty: 'width-range' },
+        oninput: e => { widthNum.value = e.target.value; },
+        onchange: e => commit({ width: Number(e.target.value) }),
+      });
+      f2.body.append(
+        el('div', { class: 'row' }, [el('label', { class: 'lab', text: '道路类型' }), el('div', { class: 'ctl' }, [typeSelect])]),
+        el('div', { class: 'row' }, [el('label', { class: 'lab', text: '宽度 m' }), el('div', { class: 'ctl' }, [el('div', { class: 'rg' }, [widthRange, widthNum])])]),
+        el('div', { class: 'fnote', text: so.locked ? '道路已锁定，请先解锁再修改。' : '退出绘制后重新选中也能修改；类型选择后立即生效，宽度拖动结束或输入后离开输入框生效。支持 Ctrl+Z 撤销。' }),
+      );
+      const terrainControls=buildForm([
+        {k:'mode',l:'地形关系',t:'sel',opts:[{v:'follow',l:'随地形（横断面保持平整）'},{v:'fixed',l:'固定标高（高架 / 桥梁）'}],set:v=>app.roadTerrain.setRoad(so,{terrainMode:v})},
+        {k:'level',l:'起点标高 m',t:'range',commit:true,min:-20,max:100,step:.5,set:v=>app.roadTerrain.liftRoad(so,v)},
+        {k:'bridges',l:'自动桥墩',t:'bool',on:'高于地面时生成',set:v=>app.roadTerrain.setRoad(so,{bridges:v})},
+        {k:'spacing',l:'桥墩间距 m',t:'range',commit:true,min:6,max:30,step:1,set:v=>app.roadTerrain.setRoad(so,{pierSpacing:v})},
+        {k:'threshold',l:'架空阈值 m',t:'range',commit:true,min:.8,max:6,step:.2,set:v=>app.roadTerrain.setRoad(so,{bridgeThreshold:v})},
+      ],{mode:rd.terrainMode||'fixed',level:rd.ctrl[0][1],bridges:rd.bridges!==false,spacing:rd.pierSpacing||12,threshold:rd.bridgeThreshold||1.8},()=>{});
+      terrainControls.root.dataset.roadTerrain='1';
+      if(so.locked)terrainControls.root.querySelectorAll('input,select,button').forEach(e=>e.disabled=true);
+      f2.body.appendChild(terrainControls.root);
+      const diagnostic=roadDiagnosticControls(app,so);f2.body.appendChild(diagnostic.root);
+      syncDiagnostic=diagnostic.sync;
+      const bridge=so.root.userData.bridgeStatus;
+      f2.body.appendChild(el('div',{class:'fnote',dataset:{bridgeStatus:'1'},text:`桥墩 ${bridge?.built||0} 处 · 受阻未放置 ${bridge?.blocked||0} 处。柱身及承托体积避让下层道路、建筑；相交植物会删除且可随操作撤销；受阻时尝试沿路移位，仍冲突则留空，不强行穿插。固定标高不会自动挖山；可压低地形或抬高道路。非结构工程校核。`}));
+      f2.body.appendChild(el('button',{class:'fbtn wide',type:'button',disabled:so.locked,text:'抬高路基，填充此路下方空隙',dataset:{roadFill:'1'},onclick:()=>{const count=app.roadTerrain.fillRoad(so);toast(`已填充 ${count||0} 个地形顶点；避开下层道路和建筑，可撤销`);}}));
+      f2.body.appendChild(el('button', { class: 'fbtn wide', type: 'button', disabled: so.locked, text: '编辑此路（画笔接管）', onclick: () => {
+        if (app.roadBrush.editRoad(so)) {
+          toast('画笔已接管：拖动控制点改线，双击 / Enter 完成，Esc 放弃并恢复原路');
+          rerender();
+        } else toast('这条路暂时无法编辑', 'warn');
+      } }));
+    }
+    root.appendChild(f2.wrap);
+  } else if (so.type === 'vegetation_patch') {
+    const f2 = section('植被笔刷区域', { badge: `${so.params.plants?.length || 0} 株` });
+    f2.body.appendChild(el('div', { class: 'fnote', text: '实例化植被按区域保存，可整体选择、移动或锁定；地形页启用植被笔刷后按 Shift 擦除。锁定区域不会被擦除。' }));
     root.appendChild(f2.wrap);
   } else {
     const f2 = section('导入模型', { badge: 'import' });
-    f2.body.appendChild(el('div', { class: 'fnote', html: `文件：${so.params?.file || '外部模型'}<br>包围盒：${(so.params?.size || []).map((v) => fmt(v, 2) + 'm').join(' × ')}<br><i>导入的模型不写入工程 JSON，重开需再次导入。</i>` }));
+    f2.body.appendChild(el('div', { class: 'fnote', html: `文件：${so.params?.file || '外部模型'}<br>包围盒：${(so.params?.size || []).map((v) => fmt(v, 2) + 'm').join(' × ')}<br><i>导入模型与贴图随 .previz 工程包保存；多文件模型请连同 .bin / .mtl / 图片一起导入。</i>` }));
+    const tag=buildForm([{k:'vegetation',l:'作为植被清理',t:'bool',on:'道路 / 桥墩碰撞时可删除',set:v=>{app.beginOp('导入模型植被分类');so.params.isVegetation=v;app.bus.emit('objects');}}],{vegetation:!!so.params.isVegetation},()=>{});
+    f2.body.appendChild(tag.root);
     root.appendChild(f2.wrap);
   }
 
   // ---- 人物动作
-  if (so.isChar) {
+  if (so.isChar && !behaviorLocked) {
     const f3 = section('动作参考 / Action');
     const st = { anim: so.root.userData.humans?.[0]?.anim || 'idle', speed: so.motion.speed ?? 1, amp: 1, phase: 0 };
     const form3 = buildForm([
@@ -465,7 +561,8 @@ function tabObject(app, rerender, ctx) {
 
   // ---- 运动路径（道路 / 路口为整体网格，不参与走位）
   const isRoad = so.type === 'road_brush' || so.type === 'road_intersection';
-  if (!isRoad) {
+  if (so.item?.type === 'human' && so.isChar && !so.root.userData.crowd) root.appendChild(behaviorControls(app, so));
+  if (!isRoad && !behaviorLocked) {
   const f4 = section('运动路径 / 走位', { badge: so.motion?.keys?.length ? `${so.motion.keys.length} 点` : '静态' });
   const mt = {
     active: !!so.motion.active, loop: so.motion.loop !== false, autoFace: so.motion.autoFace !== false,
@@ -513,7 +610,7 @@ function tabObject(app, rerender, ctx) {
     tf.pos = so.root.position.toArray().map((v) => +v.toFixed(2));
     tf.rot = [deg(so.root.rotation.x), deg(so.root.rotation.y), deg(so.root.rotation.z)].map((v) => +v.toFixed(1));
     tf.scl = so.root.scale.toArray().map((v) => +v.toFixed(3));
-    form1.update();
+    form1.update();syncDiagnostic();syncWindow();
   };
   return { root };
 }
@@ -739,20 +836,26 @@ function tabTerrain(app, rerender, ctx) {
   app.panels.terrainHost = root;
   const st = app.state;
 
-  const g0 = section('地形', { badge: tr.enabled ? '开启' : '关闭' });
+  const g0 = section('地形与网格', { badge: tr.enabled ? '开启' : '关闭' });
   const f0 = buildForm([
     { k: 'enabled', l: '启用地形', t: 'bool', on: '开', set: (v) => { tr.setEnabled(v); rerender(); } },
     { k: 'biome', l: '地貌配色', t: 'sel', opts: Object.entries(BIOMES).map(([k, b]) => ({ v: k, l: b.name })), set: (v) => tr.setBiome(v) },
-    { k: 'gen', l: '一键生成', t: 'sel', opts: [{ v: '', l: '— 选择后点右侧按钮 —' }, ...Object.entries(TERRAIN_GEN).map(([k, g]) => ({ v: k, l: g.l }))], num: false },
-    { k: 'amp', l: '起伏幅度 m', t: 'range', min: 0.5, max: 24, step: 0.5 },
-    { k: '_g', l: '生成', t: 'btn', onClick: () => { if (!s.gen) { toast('先选一种地形'); return; } tr.generate(s.gen, s.amp); toast('已生成' + TERRAIN_GEN[s.gen].l); }, btn2: { l: '全部抹平', onClick: () => { tr.h.fill(0); tr.refresh(); app.bus.emit('terrain'); } } },
+    { k: 'gen', l: '一键生成', t: 'sel', opts: [{ v: '', l: '— 选择地形 —' }, ...Object.entries(TERRAIN_GEN).map(([k, g]) => ({ v: k, l: g.name }))], num: false },
+    { k: 'amp', l: '起伏幅度 m', t: 'range', commit: true, min: 0.5, max: 80, step: 0.5 },
+    { k: 'seed', l: '随机种子', t: 'int', commit: true, min: 1, max: 2147483647, step: 1 },
+    { k: '_g', l: '生成地形 + 自动地貌', t: 'btn', noUndo: true, onClick: (s) => { if (!s.gen) { toast('先选一种地形'); return; } tr.generate(s.gen, s.amp, s.seed); toast('已生成' + TERRAIN_GEN[s.gen].name + '，保留手绘材质，可撤销'); }, btn2: { l: '全部抹平', onClick: () => { tr.h.fill(0); tr.refresh(); app.bus.emit('terrain'); app.saveLocal(); } } },
     { k: 'exag', l: '高度夸张', t: 'range', min: 0.2, max: 3, step: 0.05, set: (v) => tr.setExaggerate(v) },
-    { k: 'res', l: '网格密度', t: 'sel', opts: [{ v: 33, l: '33（省）' }, { v: 65, l: '65' }, { v: 97, l: '97（默认）' }, { v: 129, l: '129（细）' }], num: true, set: (v) => tr.setResolution(v) },
+    { k: 'res', l: '网格密度', t: 'sel', opts: [{ v: 33, l: '33（省）' }, { v: 65, l: '65' }, { v: 97, l: '97（默认）' }, { v: 129, l: '129（细）' }, { v: 257, l: '257（精细）' }, { v: 513, l: '513（超细 / 较慢）' }], num: true, set: (v) => tr.setResolution(v) },
     { k: 'size', l: '地形尺寸 m', t: 'range', min: 60, max: 400, step: 10, set: (v) => tr.setSize(v) },
-    { k: 'follow', l: '物体自动贴地', t: 'bool', on: '跟随地形', help: '拖动模型时自动落到地形表面；抬高 1.6m 以上视为刻意悬空', set: (v) => { st.followTerrain = v; if (!v) for (const o of app.objects) o.followTerrain = false; else { for (const o of app.objects) if (o.type !== 'fx') { o.followTerrain = true; o.apply?.(); } } app.bus.emit('objects'); } },
-  ], { enabled: tr.enabled, biome: tr.biome, gen: '', amp: 4, exag: tr.exaggerate, res: tr.n, size: tr.size, follow: st.followTerrain !== false }, () => { app.bus.emit('terrain'); app.markDirty?.(); });
+    { k: 'follow', l: '物体自动贴地', t: 'bool', on: '跟随地形', help: '拖动模型时自动落到地形表面；抬高 1.6m 以上视为刻意悬空', set: (v) => { st.followTerrain = v; if (!v) for (const o of app.objects) o.followTerrain = false; else { for (const o of app.objects) if (!['fx','road_brush','road_intersection','vegetation_patch'].includes(o.type)) { o.followTerrain = true; o.apply?.(); } } app.bus.emit('objects'); } },
+  ].map(f => { if(f.set){const set=f.set;f.set=(v)=>{app.beginOp('地形：'+f.l,'terrain-setting:'+f.k);set(v);};} if(f.onClick&&!f.noUndo){const click=f.onClick;f.onClick=(...args)=>{app.beginOp('地形：'+f.l);click(...args);};} if(f.btn2){const click=f.btn2.onClick;f.btn2.onClick=(...args)=>{app.beginOp(f.btn2.l);click(...args);};} return f; }), { enabled: tr.enabled, biome: tr.biome, gen: tr.generation.kind, amp: tr.generation.amp, seed: tr.generation.seed, exag: tr.exaggerate, res: tr.n, size: tr.size, follow: st.followTerrain !== false }, (k,v) => { if (['gen','amp','seed'].includes(k)) { if(k==='gen'){if(v)tr.generation.kind=v;}else tr.generation[k]=v;app.saveLocal();return; } if(k!=='biome')app.bus.emit('terrain');app.saveLocal(); });
+  g0.body.appendChild(el('div',{class:'fnote',text:'生成会重建全图高度并启用自动底材；手绘覆盖保留在原位置。相同种子与参数可复现，支持一次撤销。海岛自动开启水面；其他类型保留当前水面设置。'}));
+  f0.root.dataset.terrainGeneration='1';
   g0.body.appendChild(f0.root);
   root.appendChild(g0.wrap);
+  root.appendChild(terrainWorkflowControls(app));
+  root.appendChild(terrainErosionControls(app));
+  root.appendChild(terrainSurfaceControls(app));
 
   const g1 = section('笔刷', { badge: st.terrainTool ? (TOOLS.find((t) => t.id === st.terrainTool) || {}).name || '' : '未激活' });
   const grid = el('div', { class: 'brushgrid' });
@@ -760,16 +863,16 @@ function tabTerrain(app, rerender, ctx) {
     grid.appendChild(el('button', {
       class: 'bchip' + (st.terrainTool === t.id ? ' on' : ''), type: 'button', dataset: { brush: t.id }, title: `${t.name}（按住左键拖动绘制，Shift 反向）`,
       html: `<i>${t.icon}</i><span>${t.name}</span>`,
-      onclick: () => { st.terrainTool = st.terrainTool === t.id ? null : t.id; grid.querySelectorAll('.bchip').forEach((b) => b.classList.toggle('on', b.dataset.brush === st.terrainTool)); const bd = g1.wrap.querySelector('.badge'); if (bd) bd.textContent = st.terrainTool ? t.name : '未激活'; tr.refreshUI(); toast(st.terrainTool ? `${t.name}：在场景里按住左键拖动笔刷，Shift 反向（关闭笔刷再旋转视角）` : '已退出地形绘制'); },
+      onclick: () => { tr.activateTool(t.id); grid.querySelectorAll('.bchip').forEach((b) => b.classList.toggle('on', b.dataset.brush === st.terrainTool)); const bd = g1.wrap.querySelector('.badge'); if (bd) bd.textContent = st.terrainTool ? t.name : '未激活'; tr.refreshUI(); toast(st.terrainTool ? `${t.name}：在场景里按住左键拖动笔刷，Shift 反向（关闭笔刷再旋转视角）` : '已退出地形绘制'); },
     }));
   }
   grid.appendChild(el('button', {
     class: 'bchip alt', type: 'button', title: '全图做一次平滑（削掉尖刺，不动大形态）',
-    html: '<i>∫</i><span>整体平滑</span>', onclick: () => { const n = tr.smoothAll(3); app.bus.emit('terrain'); app.markDirty?.(); toast(`已整体平滑 3 轮（${n} 个顶点）`); },
+    html: '<i>∫</i><span>整体平滑</span>', onclick: () => { app.beginOp('整体平滑地形'); const n = tr.smoothAll(3); app.bus.emit('terrain'); app.markDirty?.(); toast(`已整体平滑 3 轮（${n} 个顶点）`); },
   }));
   g1.body.appendChild(grid);
   const bs = el('div', { class: 'rg' });
-  const bsR = el('input', { class: 'rng', type: 'range', min: 2, max: 40, step: 0.5, value: tr.state.brushSize, oninput: (e) => { tr.setBrush({ size: parseFloat(e.target.value) }); bsV.textContent = tr.state.brushSize.toFixed(1) + ' m'; } });
+  const bsR = el('input', { class: 'rng', type: 'range', min: 2, max: 40, step: 0.5, dataset:{terrainRadius:'1'}, value: tr.state.brushSize, oninput: (e) => { tr.setBrush({ size: parseFloat(e.target.value) }); bsV.textContent = tr.state.brushSize.toFixed(1) + ' m'; } });
   const bsV = el('span', { class: 'stat', text: tr.state.brushSize.toFixed(1) + ' m', 'data-tsize': '1' });
   bs.append(bsR, bsV);
   const bw = el('div', { class: 'rg' });
@@ -780,7 +883,21 @@ function tabTerrain(app, rerender, ctx) {
     el('div', { class: 'row' }, [el('label', { class: 'lab', text: '笔刷半径' }), el('div', { class: 'ctl' }, [bs])]),
     el('div', { class: 'row' }, [el('label', { class: 'lab', text: '力度' }), el('div', { class: 'ctl' }, [bw])]),
   );
-  root.appendChild(g1.wrap);
+  const advanced = buildForm([
+    { k:'falloff', l:'边缘柔和', t:'range', min:.05,max:1,step:.05,set:v=>{tr.state.brushFalloff=v;} },
+    { k:'target', l:'抹平高度 m', t:'range',min:-50,max:100,step:.1,set:v=>{tr.state.flattenHeight=v;} },
+    { k:'slope', l:'缓坡目标 °', t:'range',min:5,max:60,step:1,set:v=>{tr.state.maxSlope=v;} },
+    { k:'surface', l:'局部材质',t:'sel',opts:TERRAIN_MATERIALS.map(m=>({v:m.id,l:m.name})),set:v=>{tr.state.material=v;} },
+  ],{falloff:tr.state.brushFalloff,target:tr.state.flattenHeight,slope:tr.state.maxSlope,surface:tr.state.material},()=>{});
+  advanced.root.dataset.terrainBrushSettings='1';g1.body.appendChild(advanced.root);
+  g1.body.appendChild(el('div',{class:'fnote',text:'左键拖动绘制，右键平移、滚轮缩放；Esc 退出后左键旋转；Alt 临时平滑，Alt+滚轮改变半径。Shift 反向抬降／擦除局部材质；Ctrl+点击采样抹平高度。坡度缓和将局部陡坡逐步收敛到目标角度。每笔可 Ctrl+Z 撤销。'}));
+  g1.body.appendChild(el('div',{class:'fnote',text:`当前 ${tr.n} × ${tr.n} 顶点，格距 ${(tr.size/(tr.n-1)).toFixed(2)} m。细化保留高度与材质，超细网格建议局部编辑。路基填充只抬高地面，避开下层道路和建筑。`}));
+  const exit=el('button',{class:'fbtn wide',text:'退出地形笔刷',type:'button',dataset:{terrainExit:'1'},onclick:()=>{tr._cancelStroke?.();st.terrainTool=null;tr.refreshUI();}});g1.body.appendChild(exit);
+  root.insertBefore(g1.wrap, g0.wrap);
+
+  const veg = section('植被笔刷', { badge: '实例化散布' });
+  veg.body.appendChild(vegetationControls(app));
+  root.appendChild(veg.wrap);
 
   // 道路画笔
   const rb = app.roadBrush;
@@ -798,9 +915,9 @@ function tabTerrain(app, rerender, ctx) {
   const rbRow = el('div', { class: 'row' }, [
     el('label', { class: 'lab', text: '宽度 m' }),
     el('div', { class: 'ctl' }, [
-      el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: 0.5, value: rb?.roadWidth || 4,
+      el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: 0.5, value: rb?.roadWidth || 12,
         oninput: (e) => { rb.setWidth(parseFloat(e.target.value)); rbVal.textContent = rb.roadWidth.toFixed(1) + ' m'; } }),
-      el('span', { class: 'stat', text: (rb?.roadWidth || 4).toFixed(1) + ' m' }),
+      el('span', { class: 'stat', text: (rb?.roadWidth || 12).toFixed(1) + ' m' }),
     ]),
   ]);
   rbVal = rbRow.querySelector('.stat');
@@ -842,14 +959,15 @@ function tabTerrain(app, rerender, ctx) {
     })(),
   ]);
   g1b.body.appendChild(rbBtnRow);
+  g1b.body.appendChild(roadPlanningControls(app));
   g1b.body.appendChild(el('div', { class: 'fnote', html: '<b>钢笔工具模式：</b>点击放置控制点→直线段尖角转弯→点「平滑倒角」后每个转角内侧出现橙色圆心点，拖动它调整道路弯曲程度→双击或点「开始绘制」完成。Esc 取消。' }));
   root.appendChild(g1b.wrap);
 
   const g2 = section('水面');
   const f2 = buildForm([
-    { k: 'water', l: '显示水面', t: 'bool', on: '开', set: (v) => tr.setWater(v) },
-    { k: 'waterY', l: '水位 m', t: 'range', min: -6, max: 24, step: 0.05, set: (v) => tr.setWaterLevel(v) },
-  ], { water: tr.state.water, waterY: tr.state.waterY }, () => { app.markDirty?.(); });
+    { k: 'water', l: '显示水面', t: 'bool', on: '开', set: (v) => { app.beginOp('切换水面');tr.setWater(v); } },
+    { k: 'waterY', l: '水位 m', t: 'range', commit: true, min: -6, max: 24, step: 0.05, set: (v) => { app.beginOp('调整水位与岸带');tr.setWaterLevel(v); } },
+  ], { water: tr.state.water, waterY: tr.state.waterY }, () => { app.saveLocal(); });
   g2.body.appendChild(f2.root);
   root.appendChild(g2.wrap);
 
@@ -871,6 +989,7 @@ function tabTerrain(app, rerender, ctx) {
     el('div', { class: 'fnote', html: '当前高度查询：' + (tr._lastH || '未测') }),
   ]));
   root.appendChild(g3.wrap);
+  arrangeTerrainPanel(root, app, ctx);
   tr.refreshUI();
   return root;
 }
@@ -878,6 +997,10 @@ function tabTerrain(app, rerender, ctx) {
 function tabLight(app, rerender, ctx) {
   const root = el('div', { class: 'tabwrap' });
   const L = app.lighting;
+  root.appendChild(lightingModeControls(app, rerender));
+  root.appendChild(renderEffectsControls(app));
+  const window=windowLightingControls(app,rerender);root.appendChild(window.root);
+  if (L.mode === 'physical') { root.appendChild(physicalLightingControls(app, rerender, ctx));const sync=ctx.sync;ctx.sync=()=>{sync();window.sync();}; return { root }; }
   const st = { ...L.params(), preset: L.preset, enabled: L.enabled, grid: app.state.grid, shadows: !!L.p.shadow, soft: L.p.soft, helpers: app.state.showHelpers, detail: app.state.detail, env: app.state.env, tex: app.state.tex };
   const meta = el('div', { class: 'atmeta' });
   const grid = el('div', { class: 'agrid' });
@@ -917,16 +1040,17 @@ function tabLight(app, rerender, ctx) {
     { k: 'shadows', l: '投影', t: 'bool', set: (v) => { st.shadows = v; onChange('shadow', v); } },
     { k: 'soft', l: '阴影柔和度', t: 'range', min: 0.2, max: 5, step: 0.1, set: (v) => { st.soft = v; onChange('soft', v); } },
     { k: 'detail', l: '模型精度', t: 'sel', opts: Object.entries(LEVELS).map(([v, c]) => ({ v, l: `${c.name}（${c.tex ? (v === 'fine' ? '512²贴图' : '256²贴图') : '无贴图'}）` })), help: '段数 / 倒角 / 表面贴图总开关，改完会重建全部模型', set: (v) => { st.detail = v; app.setDetail(v, { silent: true }); form.update(); } },
-    { k: 'tex', l: '表面贴图（抹灰/木纹/金属…）', t: 'bool', help: '关闭 = 纯色外观，省几十 MB 显存；仅在「均衡/高细节」下有效', set: (v) => { st.tex = v; app.setTex(v); } },
+    { k: 'tex', l: '全部物品材质显示', t: 'bool', help: '关闭为灰模；物体页可单独开启指定物品。保留原材质以便无损恢复，不等同于释放全部贴图显存。', set: (v) => { st.tex = v; app.setTex(v); } },
     { k: 'env', l: '环境反射强度', t: 'range', min: 0, max: 1.6, step: 0.05, help: '程序化天穹贴图，给金属/玻璃/水面用；换氛围预设会回到该预设的建议值', set: (v) => { st.env = v; app.lighting._envManual = true; app.setEnv(v); } },
-    { k: 'grid', l: '显示网格', t: 'bool', help: '地形开启时自动隐藏', set: (v) => { st.grid = v; app.state.grid = v; app.stage.setGridVisible(v); } },
+    { k: 'grid', l: '显示网格', t: 'bool', help: '显示贴合地形的地面网格，默认关闭', set: (v) => { st.grid = v; app.state.grid = v; app.stage.setGridVisible(v); } },
     { k: 'helpers', l: '显示机位/路径', t: 'bool', set: (v) => { app.state.showHelpers = v; } },
   ], st, () => { });
   const g1 = section('手动调光 / Manual');
   g1.body.appendChild(form.root);
   root.appendChild(g1.wrap);
+  root.appendChild(localLightingControls(app));
   syncMeta();
-  ctx.sync = () => { form.update(); };
+  ctx.sync = () => { form.update();window.sync(); };
   return { root };
 }
 
@@ -935,7 +1059,7 @@ function tabExport(app, rerender, ctx) {
   const root = el('div', { class: 'tabwrap' });
   const st = {
     res: '1280x720', fps: app.state.fps, duration: app.state.duration, bitrate: 8,
-    loop: true, mode: bestMime()?.l || '不支持', prompt: buildPrompt(app).text,
+    loop: true, mode: typeof VideoEncoder !== 'undefined' ? 'WebM / 固定时间戳' : bestMime()?.l || '不支持', prompt: buildPrompt(app).text,
   };
   const g0 = section('导出参考视频 / Render');
   const bar = el('div', { class: 'prog' }, [el('i'), el('span', { text: '就绪' })]);
@@ -951,12 +1075,12 @@ function tabExport(app, rerender, ctx) {
     { k: '_x', l: '', t: 'note' },
   ], st, () => { });
   form.root.querySelector('.fnote')?.remove();
-  const runBtn = el('button', { class: 'fbtn wide primary', type: 'button', text: '▶ 开始录制（实时）' });
+  const runBtn = el('button', { class: 'fbtn wide primary', type: 'button', text: '▶ 开始导出' });
   app.exporter = app.exporter || new Exporter(app);
   const stillBtn = el('button', { class: 'fbtn wide', type: 'button', text: '导出当前帧 PNG', onclick: () => app.exporter.still({ width: 1920, height: 1080 }) });
   const cancelBtn = el('button', { class: 'fbtn wide alt', type: 'button', text: '停止', disabled: true });
   btns.append(runBtn, el('div', { class: 'btnrow' }, [stillBtn, cancelBtn]));
-  const rline = el('div', { class: 'mini', text: '导出按实时录制（1 秒视频≈1 秒等待），可先切「关闭光影」提速。' });
+  const rline = el('div', { class: 'mini', text: '优先固定时间戳 WebM；耗时取决于场景。不支持时回退实时录制，可能丢帧或延长时长。' });
   g0.body.append(form.root, btns, bar, out, rline);
   root.appendChild(g0.wrap);
 
@@ -967,23 +1091,28 @@ function tabExport(app, rerender, ctx) {
     runBtn.disabled = true; cancelBtn.disabled = false;
     runBtn.textContent = '● 录制中…';
     let last = 0;
-    await app.exporter.run({ width: w, height: h, fps: st.fps, duration: st.duration, bitrate: st.bitrate, loop: st.loop }, (p) => {
+    const result = await app.exporter.run({ width: w, height: h, fps: st.fps, duration: st.duration, bitrate: st.bitrate, loop: st.loop }, (p) => {
       const pct = (p.i / Math.max(1, p.total)) * 100;
       if (pct - last > 0.8 || p.phase !== 'render') { last = pct; fill.style.width = clamp(pct, 0, 100).toFixed(1) + '%'; }
-      lab.textContent = p.phase === 'retry' ? '帧精确模式无输出，改用自动采样模式重试…'
-        : p.phase === 'done' ? `完成 ${(p.size / 1048576).toFixed(2)} MB，已下载`
+      lab.textContent = p.phase === 'retry' ? '手动采样无输出，改用自动采样模式重试…'
+        : p.phase === 'done' ? `完成 ${(p.size / 1048576).toFixed(2)} MB，${p.diskSave === 'saved' ? '已写入磁盘' : p.diskSave === 'cancelled' ? '已取消保存，可重试' : p.diskSave === 'error' ? '磁盘保存失败，可重试' : '已下载'}`
+          : p.phase === 'cancelled' ? '已取消，不生成文件'
+          : p.phase === 'error' ? `导出失败：${p.error}`
+          : p.phase === 'prepare' ? '准备导出缓存…'
           : p.phase === 'empty' ? '未取到画面数据'
             : `第 ${p.i + 1}/${p.total} 帧 · ${pct.toFixed(0)}%`;
     });
     runBtn.disabled = false; cancelBtn.disabled = true;
-    runBtn.textContent = '▶ 开始录制（实时）';
-    const res = app.exporter.last;
+    runBtn.textContent = '▶ 开始导出';
+    const res = result?.size ? result : null;
     clear(out);
     if (res) {
       out.appendChild(el('video', { src: res.url, controls: true, autoplay: true, loop: true, muted: true, playsinline: true }));
-      out.appendChild(el('div', { class: 'mini', text: `${res.name} · ${(res.size / 1048576).toFixed(2)} MB · ${res.frames} 帧 · ${res.mode === 'manual' ? '帧精确' : '自动采样'}` }));
+      const saveAgain = el('button', { class: 'fbtn', type: 'button', text: DESKTOP_BUILD ? '另存视频（重试／新位置）' : '再次下载视频', onclick: async () => { saveAgain.disabled = true; try { const r = await downloadBlob(res.blob, res.name); if (r) lab.textContent = r.status === 'saved' ? '视频已写入磁盘' : r.status === 'cancelled' ? '已取消保存，视频预览仍保留' : '磁盘保存失败，可再次重试'; } catch (e) { toast(e.message, 'warn'); } finally { saveAgain.disabled = false; } } });
+      out.appendChild(saveAgain);
+      out.appendChild(el('div', { class: 'mini', text: `${res.name} · ${(res.size / 1048576).toFixed(2)} MB · ${res.frames} 帧 · ${res.mode === 'webcodecs' ? '固定时间戳' : res.mode === 'manual' ? '手动采样' : '自动采样'}` }));
     } else {
-      lab.textContent = '导出未产生文件';
+      if (!result?.cancelled && !result?.error) lab.textContent = '导出未产生文件';
       out.appendChild(el('div', { class: 'fnote', html: '未能录制到画面。请确认使用 Chrome / Edge（或较新的 Firefox），并关闭浏览器的「减少 GPU 加速」限制；也可以先用 <b>导出当前帧 PNG</b> 逐帧取图。' }));
     }
   });
@@ -1022,11 +1151,19 @@ function tabExport(app, rerender, ctx) {
 // S2 Scene Builder panels
 // ---------------------------------------------------------------------------
 const SCENE_CATS = [
-  { id: 'buildings', label: 'Buildings', libIds: ['house', 'suburban', 'functional', 'garage'] },
-  { id: 'props', label: 'Props', libIds: ['furniture', 'traffic'] },
+  { id: 'buildings', label: 'Buildings', libIds: ['house', 'suburban', 'functional', 'garage', 'building'] },
+  { id: 'props', label: 'Props', libIds: ['furniture', 'traffic', 'env'] },
   { id: 'roads', label: 'Roads', libIds: ['road'] },
   { id: 'plants', label: 'Plants', libIds: ['vegetation'] },
+  { id: 'people', label: 'People', libIds: ['char'] },
 ];
+// 补全分组标签：以上策划类只盖到 92/203 项，bld/cn/cls/in/nat/war/sci/fx 等
+// 分组此前没有任何筛选 chip（「有些分组没标签」）。逐组自动补一个，保证
+// 每个 LIB 分组都有标签；标签数动态计算，与库增删自动同步。
+{
+  const covered = new Set(SCENE_CATS.flatMap((c) => c.libIds));
+  for (const g of LIB) if (!covered.has(g.id)) SCENE_CATS.push({ id: g.id, label: g.cat || g.id, libIds: [g.id] });
+}
 
 export function buildSceneAssets(app, host) {
   const total = LIB.reduce((a, g) => a + g.items.length, 0);
@@ -1120,6 +1257,8 @@ function tabWeather(app) {
 }
 
 export function buildSceneInspector(app, host) {
+  host.append(layoutMaintenanceControls(app));
+  host.append(el('button', { class: 'exp-btn secondary', type: 'button', text: '✦ AI 场景搭建', dataset: { aiSceneOpen: '1' }, onclick: () => openAISceneDialog(app) }));
   const tabsEl = el('div', { class: 'itabs' });
   const body = el('div', { class: 'ibody' });
   host.append(tabsEl, body);
@@ -1145,10 +1284,17 @@ export function buildSceneInspector(app, host) {
     body.appendChild(r.root || r);
   }
   const upd = () => render();
-  app.bus.on('select', upd);
+  app.bus.on('select', () => {
+    if (app.selObj?.type === 'road_brush' && !app.roadBrush?.active) {
+      ctx.cur = 'obj';
+      [...tabsEl.children].forEach((b, i) => b.classList.toggle('on', i === 0));
+    }
+    render();
+  });
   app.bus.on('objects', () => { if (ctx.cur === 'obj') render(); });
   app.bus.on('perf-changed', upd);
   app.bus.on('terrain', () => { if (ctx.cur === 'terr') render(); });
+  app.bus.on('terrain-workflow', () => { if (ctx.cur === 'terr') render(); });
   app.bus.on('weather', () => { if (ctx.cur === 'weather') render(); });
   app.bus.on('tick', () => ctx.sync());
   render();
@@ -1589,7 +1735,10 @@ export function buildGeneratePage(app, host) {
 
   const left = el('div', { class: 'gen-left' });
   const right = el('div', { class: 'gen-right' });
-  host.append(left, right);
+  host.appendChild(referenceReview(app));
+  if (DESKTOP_BUILD) { host.appendChild(el('p', { class: 'fnote', text: '轻量桌面版只提供本地参考与手动交付，不启用旧版直连服务／API Key入口。' })); return {}; }
+  const legacy = el('details', { class: 'reference-legacy' }, [el('summary', { text: '旧版纯文本生成入口（不读取3D参考包）' })]);
+  legacy.appendChild(el('div', { class: 'reference-legacy-grid' }, [left, right])); host.appendChild(legacy);
 
   const RES_KEYS = ['1280x720', '1920x1080', '1080x1920', '1920x804', '1080x1080'];
   const RES_LABELS = ['1280×720 (16:9)', '1920×1080 (16:9)', '1080×1920 (9:16 竖屏)', '1920×804 (21:9 宽幅)', '1080×1080 (1:1 方形)'];
@@ -1852,16 +2001,19 @@ export function buildExportPage(app, host) {
   ];
   const RES_LABELS = ['1280×720 (720p)', '1920×1080 (1080p)', '2560×1440 (2K)', '1080×1920 (竖屏)', '1920×804 (2.39宽幅)', '1080×1080 (方形)'];
   const FORMAT_REAL = [
-    { label: 'MP4', mime: 'mp4' },
+    { label: 'MP4（实时）', mime: bestMime()?.ext === 'mp4' ? 'mp4' : null },
     { label: 'MOV', mime: null },
     { label: 'GIF', mime: null },
-    { label: 'PNG序列', mime: 'png' },
+    { label: 'PNG序列', mime: null },
     { label: 'WebM', mime: 'webm' },
     { label: 'ZIP打包', mime: null },
   ];
 
-  let selFmt = 0, selQual = 1, selRes = 1, selFps = 1;
+  let selFmt = 4, selQual = 1, selRes = 1, selFps = 1;
   let renderQueue = [];
+  let queueRunning = false;
+
+  left.appendChild(referenceTools(app));
 
   /* ---- Left: Format ---- */
   const fmtCard = el('div', { class: 'exp-card' });
@@ -1870,12 +2022,12 @@ export function buildExportPage(app, host) {
   const fmtGrid = el('div', { class: 'exp-format-grid' });
   FORMAT_REAL.forEach((f, i) => {
     const avail = f.mime !== null;
-    const btn = el('div', { class: 'exp-format' + (i === 0 ? ' sel' : '') + (!avail ? ' unavailable' : '') });
+    const btn = el('div', { class: 'exp-format' + (i === selFmt ? ' sel' : '') + (!avail ? ' unavailable' : '') });
     btn.appendChild(el('span', { class: 'fmt-icon', text: f.icon || ['🎬','🎞️','🖼️','📸','🌐','📦'][i] }));
     btn.appendChild(el('span', { text: f.label }));
     if (!avail) btn.title = '即将上线';
     btn.onclick = () => {
-      if (!avail) { toast(`${f.label} 格式即将上线，当前可用 MP4 或 WebM`, 'info'); return; }
+      if (!avail) { toast(`${f.label} 格式即将上线，当前优先使用 WebM；MP4 仅浏览器支持时提供实时兼容录制`, 'info'); return; }
       selFmt = i;
       fmtGrid.querySelectorAll('.exp-format').forEach((b, j) => b.classList.toggle('sel', j === i));
     };
@@ -1968,6 +2120,7 @@ export function buildExportPage(app, host) {
       fps: FPS_MAP[selFps],
       bitrate: BITRATE_MAP[selQual],
       format: FORMAT_REAL[selFmt].label,
+      formatId: FORMAT_REAL[selFmt].mime,
       duration: app.state.duration,
       status: 'waiting',
     };
@@ -1978,19 +2131,23 @@ export function buildExportPage(app, host) {
 
   const startQueueBtn = el('button', { class: 'exp-btn', type: 'button', text: '开始批量渲染' });
   startQueueBtn.onclick = async () => {
+    if (queueRunning || app.exporter.running) return;
     const pending = renderQueue.filter(q => q.status === 'waiting');
     if (!pending.length) { toast('队列为空', 'info'); return; }
-    for (const item of pending) {
-      item.status = 'rendering';
-      renderQueueUI();
-      await runExport(item.w, item.h, item.fps, item.bitrate, item.duration, (p) => {
-        item.progress = p;
+    queueRunning = true; startQueueBtn.disabled = true;
+    let stopped = false;
+    try {
+      for (const item of pending) {
+        item.status = 'rendering'; renderQueueUI();
+        const result = await runExport(item.w, item.h, item.fps, item.bitrate, item.duration, (p) => {
+          item.progress = p; renderQueueUI();
+        }, item.formatId);
+        item.status = result?.cancelled || result?.diskSave === 'cancelled' ? 'cancelled' : result?.diskSave === 'error' ? 'error' : result?.size ? 'done' : 'error';
         renderQueueUI();
-      });
-      item.status = 'done';
-      renderQueueUI();
-    }
-    toast('批量渲染完成', 'success');
+        if (item.status !== 'done') { stopped = true; break; }
+      }
+      toast(stopped ? '队列已停止，其余任务仍在等待' : '批量渲染完成', stopped ? 'info' : 'success');
+    } finally { queueRunning = false; startQueueBtn.disabled = false; }
   };
 
   queueCard.append(addQueueBtn, startQueueBtn);
@@ -2009,7 +2166,7 @@ export function buildExportPage(app, host) {
       const barInner = el('div', { class: 'bar', style: `width:${item.status === 'done' ? 100 : item.status === 'rendering' ? ((item.progress?.i || 0) / Math.max(1, item.progress?.total || 1) * 100).toFixed(1) : 0}%` });
       bar.appendChild(barInner);
       row.appendChild(bar);
-      const statusText = item.status === 'waiting' ? '等待中' : item.status === 'rendering' ? `${((item.progress?.i || 0) / Math.max(1, item.progress?.total || 1) * 100).toFixed(0)}%` : '完成';
+      const statusText = item.status === 'waiting' ? '等待中' : item.status === 'rendering' ? `${((item.progress?.i || 0) / Math.max(1, item.progress?.total || 1) * 100).toFixed(0)}%` : item.status === 'cancelled' ? '已取消' : item.status === 'error' ? '失败' : '完成';
       row.appendChild(el('span', { class: 'status', text: statusText }));
       if (item.status === 'waiting') {
         const rm = el('button', { text: '✕', type: 'button', style: 'border:0;background:none;color:var(--fg3);cursor:pointer;font-size:14px;padding:0 4px' });
@@ -2021,7 +2178,7 @@ export function buildExportPage(app, host) {
   }
 
   /* ---- Render function ---- */
-  async function runExport(w, h, fps, bitrate, duration, onProg) {
+  async function runExport(w, h, fps, bitrate, duration, onProg, format = FORMAT_REAL[selFmt].mime) {
     renderBtn.disabled = true;
     renderBtn.textContent = '● 渲染中…';
     cancelBtn.style.display = '';
@@ -2029,11 +2186,14 @@ export function buildExportPage(app, host) {
     const fill = progBar.querySelector('i');
     const lab = progBar.querySelector('span');
     let last = 0;
-    const result = await app.exporter.run({ width: w, height: h, fps, duration, bitrate, loop: true }, (p) => {
+    const result = await app.exporter.run({ width: w, height: h, fps, duration, bitrate, loop: true, format, encoder: format === 'mp4' ? 'mediarecorder' : undefined }, (p) => {
       const pct = (p.i / Math.max(1, p.total)) * 100;
       if (pct - last > 0.8 || p.phase !== 'render') { last = pct; fill.style.width = clamp(pct, 0, 100).toFixed(1) + '%'; }
       lab.textContent = p.phase === 'retry' ? '重试中…'
-        : p.phase === 'done' ? `完成 ${(p.size / 1048576).toFixed(2)} MB`
+        : p.phase === 'done' ? `完成 ${(p.size / 1048576).toFixed(2)} MB${p.diskSave === 'saved' ? ' · 已写入磁盘' : p.diskSave === 'cancelled' ? ' · 已取消保存，可另存' : p.diskSave === 'error' ? ' · 磁盘保存失败，可另存' : ''}`
+          : p.phase === 'cancelled' ? '已取消，不生成文件'
+          : p.phase === 'error' ? `导出失败：${p.error}`
+          : p.phase === 'prepare' ? '准备导出缓存…'
           : p.phase === 'empty' ? '未取到画面'
             : `第 ${p.i + 1}/${p.total} 帧 · ${pct.toFixed(0)}%`;
       if (onProg) onProg(p);
@@ -2045,13 +2205,17 @@ export function buildExportPage(app, host) {
     if (result && result.size) {
       const vid = el('video', { src: result.url, controls: true, autoplay: true, loop: true, muted: true, playsinline: true, style: 'width:100%;border-radius:8px;margin-top:4px' });
       resultHost.appendChild(vid);
+      const saveAgain = el('button', { class: 'exp-btn secondary', type: 'button', dataset: { exportSaveAgain: '1' }, text: DESKTOP_BUILD ? '另存视频（重试／新位置）' : '再次下载视频', onclick: async () => { saveAgain.disabled = true; try { const r = await downloadBlob(result.blob, result.name); if (r) lab.textContent = r.status === 'saved' ? '视频已写入磁盘' : r.status === 'cancelled' ? '已取消保存，视频预览仍保留' : '磁盘保存失败，可再次重试'; } catch (e) { toast(e.message, 'warn'); } finally { saveAgain.disabled = false; } } });
+      resultHost.appendChild(saveAgain);
       resultHost.appendChild(el('div', { style: 'font-size:11px;color:var(--fg3);margin-top:4px', text: `${result.name} · ${(result.size / 1048576).toFixed(2)} MB · ${result.frames} 帧` }));
     } else {
-      resultHost.appendChild(el('div', { style: 'font-size:12px;color:var(--err);padding:8px', text: '导出未产生文件。请使用 Chrome / Edge 浏览器。' }));
+      resultHost.appendChild(el('div', { style: 'font-size:12px;color:var(--err);padding:8px', text: result?.cancelled ? '已取消，未下载不完整视频。' : result?.error ? `导出失败：${result.error}` : '导出未产生文件。请使用 Chrome / Edge 浏览器。' }));
     }
+    return result;
   }
 
   renderBtn.onclick = () => {
+    if (queueRunning) return;
     const res = RES_MAP[selRes];
     runExport(res.w, res.h, FPS_MAP[selFps], BITRATE_MAP[selQual], app.state.duration);
   };
@@ -2068,7 +2232,7 @@ export function buildExportPage(app, host) {
   delCard.appendChild(el('h3', { text: '交付选项' }));
 
   const delRows = [
-    { label: '导出后自动下载', on: true },
+    { label: DESKTOP_BUILD ? '渲染后选择磁盘保存位置' : '导出后自动下载', on: true },
     { label: '包含运镜数据 JSON', on: false },
     { label: '包含 AI 提示词', on: true },
   ];
@@ -2091,7 +2255,7 @@ export function buildExportPage(app, host) {
   /* ---- Right: Export tips ---- */
   const tipsCard = el('div', { class: 'exp-card' });
   tipsCard.appendChild(el('h3', { text: '导出说明' }));
-  tipsCard.appendChild(el('div', { style: 'font-size:11px;color:var(--fg3);line-height:1.6', html: '• 录制按实时进行，1 秒视频 ≈ 1 秒等待<br>• 关闭光影（Direct 页面）可显著提速<br>• MP4 需 Chrome/Edge，WebM 兼容性更广<br>• 导出当前帧 PNG 可用于高质量截图' }));
+  tipsCard.appendChild(el('div', { style: 'font-size:11px;color:var(--fg3);line-height:1.6', html: '• 优先固定时间戳 WebM，逐帧编码，耗时取决于场景<br>• 不支持时回退实时录制，可能延长时长或丢帧<br>• 关闭光影（Direct 页面）可显著提速<br>• 固定时间戳路径输出 WebM；兼容录制格式由浏览器决定<br>• 导出当前帧 PNG 可用于高质量截图' }));
   right.appendChild(tipsCard);
 
   return {};

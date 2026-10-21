@@ -1,0 +1,212 @@
+{
+  "date": "2026-10-19",
+  "scope": "热力 / 水力 / 沉积 + 静态河道区域联动 + 岩质 / 脊状参数预设 + 地形六组面板",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "package": {
+    "path": "previz-lab.html",
+    "bytes": 2025051,
+    "sha256": "30ca9fb8d50a0160465854ce8d04edbd9b7578682e8af74eb0f853ef6df61fd8"
+  },
+  "files": [
+    {
+      "path": "src/terrain-erosion.js",
+      "bytes": 12074,
+      "sha256": "4330b202513c41870acbc7efd11444f0e871871ae42fd2fbb66ce87889ca0994"
+    },
+    {
+      "path": "src/terrain-erosion-region.js",
+      "bytes": 2269,
+      "sha256": "56320a89132e1d9244ed8645fe5117156c09d823c11e8c9f8f015365e68f93fb"
+    },
+    {
+      "path": "src/terrain-erosion-ui.js",
+      "bytes": 11693,
+      "sha256": "6acd57a2388165e67a78c666db82d72a5824b325e05b615756cf7c5cb0b663d0"
+    },
+    {
+      "path": "src/terrain-workflow.js",
+      "bytes": 28605,
+      "sha256": "02af21b5341adf9ceb34fabec47d7eb901bdde730a1d111290d890486a4b6f68"
+    },
+    {
+      "path": "src/terrain-workflow-ui.js",
+      "bytes": 10485,
+      "sha256": "f669cee9083abd261e4d81eb9a766189ae79eda78b52f0a18408ce6c74772194"
+    },
+    {
+      "path": "src/panels.js",
+      "bytes": 131736,
+      "sha256": "77271a078cf752025cd60fbf3db4efa909b761f651585a10fe14db2a869b0168"
+    },
+    {
+      "path": "src/terrain.js",
+      "bytes": 34613,
+      "sha256": "ddacc1815e755b990be08cdc8b11d05c155e22355d5bae3f981c291e88e49773"
+    },
+    {
+      "path": "src/road-brush.js",
+      "bytes": 47850,
+      "sha256": "fe6d3dd19739021a241d7e22138d62e69a2abc20f7182b8ec4297d29493e9289"
+    },
+    {
+      "path": "src/vegetation-brush.js",
+      "bytes": 16668,
+      "sha256": "9c65e63cdb51a86b9bf674082495b4ef1b0164cd90245be5e0a6585c2f9df13c"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 51504,
+      "sha256": "c79f12baab60e73da413ef125deae42babf9c364a27b4af7f734493dd5e66fe0"
+    },
+    {
+      "path": "src/timeline.js",
+      "bytes": 12838,
+      "sha256": "5a17f6ec08332f0f2fafb86a5053a20d5a0ec0ef18519134d607c330ef91cbf3"
+    },
+    {
+      "path": "src/export.js",
+      "bytes": 20830,
+      "sha256": "1ccca7da21d3c3ddc4388c6ec26d6e172d98e1400c1f4a76a6cca4e1944fe16b"
+    },
+    {
+      "path": "src/selective-bloom.js",
+      "bytes": 12543,
+      "sha256": "6af333dd69b5922424ad0584ca10613fc4049c8cadd13c0fa229a0bdce07bee0"
+    },
+    {
+      "path": "src/styles.css",
+      "bytes": 56990,
+      "sha256": "bb1d16b40bde833d7d6a96b703634424a8f57bd1956872c9350791b996702718"
+    },
+    {
+      "path": "index.html",
+      "bytes": 6127,
+      "sha256": "305f0b185c914c4a7faca441e14940a4400a3312107ae255c0380d8e75413653"
+    },
+    {
+      "path": "test/terrain-erosion.test.mjs",
+      "bytes": 5520,
+      "sha256": "9c92760fc7afeabdf77054dc74115b1a6a8d9ae260365560c24908885195d90e"
+    },
+    {
+      "path": "test/terrain-erosion-regression.mjs",
+      "bytes": 15361,
+      "sha256": "19058d563380e20739e8b044c93b4cc96bf12500147ad462ff4f46ffb48e56ed"
+    },
+    {
+      "path": "test/terrain-erosion-capture.mjs",
+      "bytes": 1912,
+      "sha256": "4d871a67fb41d3cd15244de051f139151b449ba7904c271f3af6c0e5f38d9295"
+    },
+    {
+      "path": "test/terrain-ui-regression.mjs",
+      "bytes": 9349,
+      "sha256": "07fa4722a15bb8c374eede09a3fe56c667eff12650456d3ab8a1d18a87307052"
+    },
+    {
+      "path": "test/terrain-generation-regression.mjs",
+      "bytes": 12057,
+      "sha256": "c3292369192552da9dcb55c7a9aaabff0da6bfcf94e84bb636dc3c0883de03bf"
+    },
+    {
+      "path": "test/terrain-workflow-regression.mjs",
+      "bytes": 15304,
+      "sha256": "069addf650a1010e28a3786d71378924ebb829264d05f014424b3ac9393b72fc"
+    },
+    {
+      "path": "test/runsuite.sh",
+      "bytes": 1781,
+      "sha256": "700d07446b0551646e99b639015053fc5acefccfa1821dbdf3269b1a1e6e1440"
+    },
+    {
+      "path": "previz-lab.html",
+      "bytes": 2025051,
+      "sha256": "30ca9fb8d50a0160465854ce8d04edbd9b7578682e8af74eb0f853ef6df61fd8"
+    },
+    {
+      "path": "docs/terrain-erosion.md",
+      "bytes": 9486,
+      "sha256": "76d6345c669d6b5e56e31351db99d2a809aafdea51654627a892c59c7673f62f"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/terrain-erosion-evidence/compact-panel.png",
+      "bytes": 294285,
+      "sha256": "3a1ff7f6eeba3cc8f59a498ea159c8f5e97cab4c940d7c6a5e93d964a5d573cd"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/dev.json",
+      "bytes": 2932,
+      "sha256": "51953e7751e632512128e779cd35ab345f31e21bc41beb468c3d7bf0f52c43e5"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/file-offline.json",
+      "bytes": 2941,
+      "sha256": "dec2c841328d17f9ee71cc9ed991dbb4a5ddb5a83d88df23abeb3ba16e65b27e"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/legacy-bloom.txt",
+      "bytes": 4299,
+      "sha256": "28d52a0706d5fbcb6866ff1869d4f0faf691c6a4da4b20efe706922e74d5b183"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/legacy-brush.txt",
+      "bytes": 212,
+      "sha256": "7a30fe8066f98c71104d60af52998c2becbe79178e2fd8c7e4216bac8bd95c4b"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/legacy-generation.txt",
+      "bytes": 809,
+      "sha256": "761897a7b1289c1ce8f3259bf49962f696f4c14fe868e8f64dfe58d92ac644fd"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/legacy-import-dev.txt",
+      "bytes": 1909,
+      "sha256": "00dd705b896c7e6c161407c7e7d213980cfbae8065b6de404a22b112fe4bfe08"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/legacy-import-file.txt",
+      "bytes": 2008,
+      "sha256": "09790b75c99783d3c4c9d664ad1943a9dd2d6d3cf4eb956639f61b7c1db08f7e"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/preview-delta.png",
+      "bytes": 328115,
+      "sha256": "bffb1e3b8b5e22492c3d9f187f8ebc92fdaa157a215b775f9cbbd8c50d513d75"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/preview-result.png",
+      "bytes": 352817,
+      "sha256": "911c6ed3a724e2d825cc128a59fca84959c436a95efabc9f01012ee93966c78c"
+    },
+    {
+      "path": "docs/terrain-erosion-evidence/pure.json",
+      "bytes": 1513,
+      "sha256": "8744555d9d29251c2a162afb2723cf88c722d88ecfa15148da0842f38fdcf661"
+    }
+  ],
+  "checks": {
+    "pure": "PASS: determinism, mass budget/rounding/refund, masks/feather, world units, fixed border, cancellation, finite grid513",
+    "erosion_dev": "PASS: UI groups, preview/apply/cancel, render maps/ownership, exact undo/JSON/.previz, concurrency/page change/load cancellation, protected objects, following road undo, PNG+WebM real decode",
+    "erosion_file_offline": "PASS: same checks, browser setOfflineMode(true), same pure algorithm result",
+    "legacy_generation_dev": "PASS",
+    "legacy_brush_dev": "PASS: real 257/513 refinement, painting/erasing/cancel/roads; test updated to choose new sub-tabs",
+    "legacy_import_rivers_dev": "PASS: import/overlay/river/export smoke (no new native decoding in this DEV legacy invocation)",
+    "legacy_import_rivers_file_offline": "PASS: import/overlay/river + two frame native decode",
+    "legacy_selective_bloom_dev": "PASS",
+    "build": "PASS: npm run all (existing chunk-size warning retained)",
+    "full_suite": "NOT RUN; no claim of full repository validation"
+  },
+  "native_video_decoder": "FFmpeg N-47683-g0e8eb07980-static",
+  "limits": [
+    "Cooperative main-thread chunks, not a Worker or a guaranteed 4ms budget",
+    "Approximate heightfield material transport, not catchment/river-network hydrology",
+    "Static river-path mask, unchanged control points and water levels",
+    "Preview uses source material colors; applied automatic materials are recalculated",
+    "Projected model AABBs are conservative and exclude vegetation patches and fx",
+    "Four border rows/columns are fixed; max world-space delta is weighted by mask, plus Float32 rounding",
+    "Applied terrain events can still trigger existing foundation/road adjustments",
+    "PNG480x320 plus 0.4s@5fps two-frame VP9 only, not renewed long video acceptance"
+  ]
+}

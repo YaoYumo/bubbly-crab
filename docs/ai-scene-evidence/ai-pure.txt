@@ -1,0 +1,1 @@
+PASS AI blueprint bounds/numbers/prototype safety/parameter whitelist; local OpenAI-compatible gateway fixture, parallel idempotency, request-ID recovery, origin refusal, server-key/access-token isolation, required auth, disabled defaults, timeout/invalid/unsupported failures without retries. NOT real model inference.

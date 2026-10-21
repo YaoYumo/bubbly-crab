@@ -1,0 +1,174 @@
+BROWSER cold checks done; failure injection
+BROWSER failure/cancel checks done; long video
+BROWSER long video done; repeated exports
+DECODE long {"frames":150,"distinctFrames":150,"firstPts":0,"lastPts":29.8,"duration":30,"dimensions":"#dimensions 0: 1280x720","firstHash":"2b581cbee3fa230dc7d1beb9dd88a048","lastHash":"5e712433cda797bfccb97194dd232d2a","monotonic":true,"errors":"","sha256":"b26a2083a5045c7417cf8f813700f71a46352f52377c79912cfe1abf00552759"}
+DECODE repeat-0 {"frames":15,"distinctFrames":15,"firstPts":0,"lastPts":0.933,"duration":0.9996666666666667,"dimensions":"#dimensions 0: 480x270","firstHash":"f5f83509778a2dc1ad18f595a31fb1c4","lastHash":"f34b11df3a47ad26baee2b71d95bae14","monotonic":true,"errors":"","sha256":"dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"}
+DECODE repeat-1 {"frames":15,"distinctFrames":15,"firstPts":0,"lastPts":0.933,"duration":0.9996666666666667,"dimensions":"#dimensions 0: 480x270","firstHash":"f5f83509778a2dc1ad18f595a31fb1c4","lastHash":"f34b11df3a47ad26baee2b71d95bae14","monotonic":true,"errors":"","sha256":"dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"}
+DECODE repeat-2 {"frames":15,"distinctFrames":15,"firstPts":0,"lastPts":0.933,"duration":0.9996666666666667,"dimensions":"#dimensions 0: 480x270","firstHash":"f5f83509778a2dc1ad18f595a31fb1c4","lastHash":"f34b11df3a47ad26baee2b71d95bae14","monotonic":true,"errors":"","sha256":"dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"}
+DECODE repeat-3 {"frames":15,"distinctFrames":15,"firstPts":0,"lastPts":0.933,"duration":0.9996666666666667,"dimensions":"#dimensions 0: 480x270","firstHash":"f5f83509778a2dc1ad18f595a31fb1c4","lastHash":"f34b11df3a47ad26baee2b71d95bae14","monotonic":true,"errors":"","sha256":"dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"}
+DECODE live-editor {"frames":2,"distinctFrames":2,"firstPts":0,"lastPts":0.1,"duration":0.2,"dimensions":"#dimensions 0: 320x180","firstHash":"891142da7df0a5fe0766dc18c325dbc8","lastHash":"7e6ea4418e38d04abd75fa7d3789fe52","monotonic":true,"errors":"","sha256":"c1eb3d61a828cc403a2a9db5c1a166cffc158f509a85d3c009ec9f746936edc7"}
+PIXELS 0 1.3852567997685186 1 281229187
+PIXELS 75 1.2482801649305555 1 283418838
+PIXELS 149 1.2537087673611111 1 263829786
+PASS cold construction + long export {
+  "entry": "dev",
+  "target": {
+    "seconds": 30,
+    "width": 1280,
+    "height": 720,
+    "fps": 5
+  },
+  "cold": {
+    "pick": {
+      "pending": 1,
+      "idle": {
+        "slices": 1,
+        "steps": 1,
+        "maxSliceMs": 0,
+        "errors": 0
+      },
+      "indexed": true,
+      "roots": 29,
+      "indexedRoots": 0,
+      "fallbackRoots": 14,
+      "ignoredRoots": 15,
+      "candidates": 14,
+      "boundsTested": 0,
+      "cold": false,
+      "refit": false,
+      "syncMs": 0.09999999962747097,
+      "broadMs": 0,
+      "exactMs": 0,
+      "totalMs": 0.09999999962747097
+    },
+    "warm": {
+      "pending": 0,
+      "idle": {
+        "slices": 32,
+        "steps": 1934,
+        "maxSliceMs": 2.2000000001862645,
+        "errors": 0
+      },
+      "indexed": true,
+      "roots": 29,
+      "indexedRoots": 12,
+      "fallbackRoots": 2,
+      "ignoredRoots": 15,
+      "candidates": 2,
+      "boundsTested": 1,
+      "cold": false,
+      "refit": false,
+      "syncMs": 0,
+      "broadMs": 0,
+      "exactMs": 0,
+      "totalMs": 0
+    },
+    "lodRenderMs": 392.70000000018626,
+    "lodIdle": {
+      "slices": 25,
+      "steps": 1252,
+      "maxSliceMs": 28.399999999441206,
+      "errors": 0
+    },
+    "cachedGeometries": 4,
+    "bytes": 15712
+  },
+  "failures": [
+    {
+      "kind": "capture",
+      "error": "injected capture"
+    },
+    {
+      "kind": "construct",
+      "error": "injected construct"
+    },
+    {
+      "kind": "start",
+      "error": "injected start"
+    },
+    {
+      "kind": "render",
+      "error": "injected render"
+    },
+    {
+      "kind": "progress",
+      "error": "injected progress"
+    },
+    {
+      "kind": "recorder-error",
+      "error": "injected recorder-error"
+    },
+    {
+      "kind": "stop-timeout",
+      "error": "录制器停止超时"
+    },
+    {
+      "kind": "codec-construct",
+      "error": "injected codec construct"
+    },
+    {
+      "kind": "codec-configure",
+      "error": "injected codec configure"
+    },
+    {
+      "kind": "codec-encode",
+      "error": "injected codec encode"
+    },
+    {
+      "kind": "codec-flush",
+      "error": "injected codec flush"
+    },
+    {
+      "kind": "codec-async-error",
+      "error": "injected codec async-error"
+    }
+  ],
+  "resources": [
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    }
+  ],
+  "checks": [
+    "cold fallback/warm precise hit equality",
+    "transform reuse/deep invalidation/stale-job cancellation",
+    "no LOD geometry build in render",
+    "idle warm/cache retention",
+    "7 recorder + 5 WebCodecs injected failure paths",
+    "PNG failure restoration",
+    "cancel/no retry/no partial download",
+    "same/cross-Exporter + PNG rejection",
+    "prepare cancel",
+    "initially-live restoration",
+    "native batch cancel/failure stops",
+    "full state and original source restoration",
+    "long moving shot",
+    "four consecutive exports/resource plateau",
+    "last-good preservation",
+    "PNG parity/real decode"
+  ]
+}

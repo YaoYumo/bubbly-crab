@@ -1,0 +1,20 @@
+{
+  "mode": "dev",
+  "readOnlyInspection": true,
+  "staleOnEdit": true,
+  "defaultFollowOff": true,
+  "manualSyncUndoRedo": true,
+  "gizmoAutoOneUndo": true,
+  "loadDoesNotAutoRepair": true,
+  "lockedChildRefused": true,
+  "partialFailureRollback": true,
+  "duplicateUnlinked": true,
+  "AIConstraintPersistence": true,
+  "AINotAutoRig": true,
+  "orphanDiagnostic": true,
+  "trustedKitCaptured": true,
+  "parameterRebuildLink": true,
+  "actualPanelAutoLink": true,
+  "UIBindDetachFollow": true,
+  "errors": []
+}

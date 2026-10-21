@@ -1,0 +1,1447 @@
+{
+  "version": 1,
+  "recordedDate": "2026-10-16",
+  "scope": "Sandbox SwiftShader reference only; no hardware FPS guarantee",
+  "discoveryBeforeChanges": {
+    "measurement": "One cold CPU invocation total, includes terrain.refresh + vegetation.refit; not FPS or GPU time",
+    "result": {
+      "count": 400,
+      "iterations": 12,
+      "totalMs": 121.6000000005588,
+      "replaced": 12,
+      "instancedDisposeEvents": 0,
+      "draws": 3
+    }
+  },
+  "isolatedRefit": {
+    "measurement": "Same-process reproduction of old full-rebuild algorithm vs in-place refit; both share current disposal code. Each sample is 12 calls over 400 plants, five rounds; excludes terrain.refresh and rendering. Not an end-to-end acceleration claim.",
+    "raw": {
+      "legacyUnchanged": [
+        44,
+        93.5,
+        29.5,
+        14.900000000372529,
+        17.299999999813735
+      ],
+      "inPlaceUnchanged": [
+        1.3999999994412065,
+        1.900000000372529,
+        0.39999999944120646,
+        0.39999999944120646,
+        0.2999999998137355
+      ],
+      "legacyChanged": [
+        30.700000000186265,
+        14.899999999441206,
+        19.100000000558794,
+        14.200000000186265,
+        15.100000000558794
+      ],
+      "inPlaceChanged": [
+        12.299999999813735,
+        14.100000000558794,
+        6.2999999998137355,
+        15.700000000186265,
+        8.199999999254942
+      ],
+      "plants": 400,
+      "iterations": 12
+    },
+    "medianMs": {
+      "legacyUnchanged": 29.5,
+      "inPlaceUnchanged": 0.39999999944120646,
+      "legacyChanged": 15.100000000558794,
+      "inPlaceChanged": 12.299999999813735
+    }
+  },
+  "lifecycle": {
+    "measurement": "Five create/delete/undo/redo/detail/lighting-quality cycles; retained helpers and shader caches are not expected to return to zero. std and lite have different texture counts.",
+    "rendererCounts": [
+      {
+        "geometries": 31,
+        "textures": 7,
+        "programs": 22
+      },
+      {
+        "geometries": 31,
+        "textures": 4,
+        "programs": 22
+      },
+      {
+        "geometries": 31,
+        "textures": 7,
+        "programs": 22
+      },
+      {
+        "geometries": 31,
+        "textures": 4,
+        "programs": 22
+      },
+      {
+        "geometries": 31,
+        "textures": 7,
+        "programs": 22
+      }
+    ]
+  },
+  "formalOfflineDefaultRun": {
+    "version": 1,
+    "date": "2026-10-16T09:25:04.507Z",
+    "seed": 731,
+    "hardware": {
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.0 Safari/537.36",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "vendor": "Google Inc. (Google)",
+      "visibility": "visible"
+    },
+    "settings": {
+      "detail": "std",
+      "postprocessing": "off",
+      "weather": null,
+      "width": 960,
+      "height": 540,
+      "pixelRatio": 1,
+      "warmup": 8,
+      "samples": 30,
+      "lightQuality": "medium"
+    },
+    "fixtures": [
+      {
+        "fixture": {
+          "id": "town",
+          "name": "普通小镇",
+          "buildings": 12,
+          "trees": 24,
+          "lamps": 4,
+          "roads": 2,
+          "terrain": 65
+        },
+        "assets": {
+          "building": "house:adobe:Adobe 土坯平顶房",
+          "lamp": "traffic:street_lamp:Street Lamp 路灯",
+          "palace": "cn:lanternpole:宫灯杆",
+          "tree": "env:tree:行道树"
+        },
+        "buildOperations": [
+          {
+            "label": "自动地貌分类",
+            "count": 11,
+            "totalMs": 65.3999999994412,
+            "maxMs": 15.200000000186265,
+            "lastMs": 1.900000000372529,
+            "meanMs": 5.945454545403746
+          },
+          {
+            "label": "地形网格更新",
+            "count": 8,
+            "totalMs": 96.80000000074506,
+            "maxMs": 25.90000000037253,
+            "lastMs": 3.300000000745058,
+            "meanMs": 12.100000000093132
+          },
+          {
+            "label": "植被重新贴地",
+            "count": 3,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "物体重新贴地",
+            "count": 3,
+            "totalMs": 17.299999999813735,
+            "maxMs": 11.700000000186265,
+            "lastMs": 0,
+            "meanMs": 5.7666666666045785
+          },
+          {
+            "label": "道路网络重建",
+            "count": 2,
+            "totalMs": 0.20000000018626451,
+            "maxMs": 0.20000000018626451,
+            "lastMs": 0,
+            "meanMs": 0.10000000009313226
+          },
+          {
+            "label": "桥墩更新",
+            "count": 2,
+            "totalMs": 3.099999999627471,
+            "maxMs": 2.2999999998137355,
+            "lastMs": 0.7999999998137355,
+            "meanMs": 1.5499999998137355
+          },
+          {
+            "label": "天空反射更新",
+            "count": 1,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          }
+        ],
+        "sky": {
+          "source": "manual",
+          "sunElev": 48,
+          "sunAzim": 135,
+          "date": "2026-10-16",
+          "hour": 12,
+          "latitude": 0,
+          "longitude": 0,
+          "timezone": 0,
+          "north": 0,
+          "turbidity": 3,
+          "rayleigh": 2,
+          "mie": 0.005,
+          "mieG": 0.8,
+          "energy": 1,
+          "environment": 0.65,
+          "ev": 0,
+          "whiteBalance": 6500,
+          "fog": 0.001,
+          "shadows": true,
+          "quality": "medium"
+        },
+        "camera": {
+          "fov": 46,
+          "position": [
+            88.00000000000001,
+            70,
+            110.00000000000001
+          ],
+          "target": [
+            0,
+            2,
+            0
+          ]
+        },
+        "buildMs": 407.70000000018626,
+        "cold": {
+          "stepMs": 0.40000000037252903,
+          "renderMs": 526.5999999996275,
+          "submitMs": 527,
+          "intervalMs": null,
+          "calls": 2160,
+          "triangles": 117230,
+          "points": 0,
+          "lines": 0
+        },
+        "submit": {
+          "samples": 30,
+          "mean": 21.106666666766007,
+          "p50": 20.200000000186265,
+          "p95": 36.700000000186265,
+          "max": 37.40000000037253
+        },
+        "interval": {
+          "samples": 29,
+          "mean": 852.2655172413793,
+          "p50": 849.9000000000087,
+          "p95": 899.9000000000015,
+          "max": 933.1999999999971
+        },
+        "calls": {
+          "samples": 30,
+          "mean": 2160,
+          "p50": 2160,
+          "p95": 2160,
+          "max": 2160
+        },
+        "triangles": {
+          "samples": 30,
+          "mean": 117230,
+          "p50": 117230,
+          "p95": 117230,
+          "max": 117230
+        },
+        "snapshot": {
+          "version": 1,
+          "startup": {
+            "constructionMs": null,
+            "firstFrameAtMs": 495.59999999962747,
+            "firstSubmitMs": 125.70000000018626,
+            "readyAtMs": null
+          },
+          "at": "2026-10-16T09:25:38.431Z",
+          "enabled": true,
+          "sequence": 74,
+          "frame": {
+            "interval": {
+              "samples": 29,
+              "mean": 852.2655172413793,
+              "p50": 849.9000000000087,
+              "p95": 899.9000000000015,
+              "max": 933.1999999999971
+            },
+            "submit": {
+              "samples": 30,
+              "mean": 21.106666666766007,
+              "p50": 20.200000000186265,
+              "p95": 36.700000000186265,
+              "max": 37.40000000037253
+            },
+            "step": {
+              "samples": 30,
+              "mean": 0.16666666666666666,
+              "p50": 0.10000000055879354,
+              "p95": 0.39999999944120646,
+              "max": 0.5
+            },
+            "render": {
+              "samples": 30,
+              "mean": 20.930000000074507,
+              "p50": 20.100000000558794,
+              "p95": 36.39999999944121,
+              "max": 37.30000000074506
+            },
+            "fps": 1.173343259547575,
+            "last": {
+              "stepMs": 0.09999999962747097,
+              "renderMs": 20.100000000558794,
+              "submitMs": 20.200000000186265,
+              "intervalMs": 849.8999999999942,
+              "calls": 2160,
+              "triangles": 117230,
+              "points": 0,
+              "lines": 0
+            }
+          },
+          "gpu": {
+            "supported": false,
+            "lastMs": null
+          },
+          "renderer": {
+            "geometries": 1094,
+            "textures": 16,
+            "programs": 15
+          },
+          "scene": {
+            "nodes": 1367,
+            "meshes": 1147,
+            "instances": 1812,
+            "geometries": 1160,
+            "materials": 624,
+            "textures": 13,
+            "attributeBytes": 2292564,
+            "textureBytesEstimate": 10485760
+          },
+          "heapUsedBytes": 16100000,
+          "lights": {
+            "active": 0,
+            "shadows": 0,
+            "budget": 8,
+            "emitters": 0,
+            "culled": 0
+          },
+          "viewport": {
+            "width": 960,
+            "height": 540,
+            "pixelRatio": 1,
+            "detail": "std"
+          },
+          "operations": [],
+          "recent": []
+        },
+        "packMs": 17.200000000186265,
+        "archiveBytes": 2135,
+        "restoreMs": 843
+      },
+      {
+        "fixture": {
+          "id": "dense",
+          "name": "密集城区",
+          "buildings": 48,
+          "trees": 0,
+          "lamps": 8,
+          "roads": 4,
+          "terrain": 65
+        },
+        "assets": {
+          "building": "house:adobe:Adobe 土坯平顶房",
+          "lamp": "traffic:street_lamp:Street Lamp 路灯",
+          "palace": "cn:lanternpole:宫灯杆",
+          "tree": "env:tree:行道树"
+        },
+        "buildOperations": [
+          {
+            "label": "自动地貌分类",
+            "count": 10,
+            "totalMs": 28.399999998509884,
+            "maxMs": 6.7999999998137355,
+            "lastMs": 1.1000000005587935,
+            "meanMs": 2.8399999998509884
+          },
+          {
+            "label": "地形网格更新",
+            "count": 7,
+            "totalMs": 44,
+            "maxMs": 9.099999999627471,
+            "lastMs": 3.300000000745058,
+            "meanMs": 6.285714285714286
+          },
+          {
+            "label": "植被重新贴地",
+            "count": 3,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "物体重新贴地",
+            "count": 3,
+            "totalMs": 11.299999999813735,
+            "maxMs": 6.7999999998137355,
+            "lastMs": 0,
+            "meanMs": 3.7666666666045785
+          },
+          {
+            "label": "道路网络重建",
+            "count": 2,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "天空反射更新",
+            "count": 2,
+            "totalMs": 5.2000000001862645,
+            "maxMs": 5.2000000001862645,
+            "lastMs": 0,
+            "meanMs": 2.6000000000931323
+          },
+          {
+            "label": "桥墩更新",
+            "count": 2,
+            "totalMs": 3.6000000005587935,
+            "maxMs": 3.1000000005587935,
+            "lastMs": 0.5,
+            "meanMs": 1.8000000002793968
+          }
+        ],
+        "sky": {
+          "source": "manual",
+          "sunElev": 48,
+          "sunAzim": 135,
+          "date": "2026-10-16",
+          "hour": 12,
+          "latitude": 0,
+          "longitude": 0,
+          "timezone": 0,
+          "north": 0,
+          "turbidity": 3,
+          "rayleigh": 2,
+          "mie": 0.005,
+          "mieG": 0.8,
+          "energy": 1,
+          "environment": 0.65,
+          "ev": 0,
+          "whiteBalance": 6500,
+          "fog": 0.001,
+          "shadows": true,
+          "quality": "medium"
+        },
+        "camera": {
+          "fov": 46,
+          "position": [
+            88.00000000000001,
+            70,
+            110.00000000000001
+          ],
+          "target": [
+            0,
+            2,
+            0
+          ]
+        },
+        "buildMs": 619.7999999998137,
+        "cold": {
+          "stepMs": 0.20000000018626451,
+          "renderMs": 692.2000000001863,
+          "submitMs": 692.4000000003725,
+          "intervalMs": null,
+          "calls": 6846,
+          "triangles": 344030,
+          "points": 0,
+          "lines": 0
+        },
+        "submit": {
+          "samples": 30,
+          "mean": 71.14666666671013,
+          "p50": 68.70000000018626,
+          "p95": 96.59999999962747,
+          "max": 96.69999999925494
+        },
+        "interval": {
+          "samples": 29,
+          "mean": 2054.5137931034487,
+          "p50": 2049.800000000003,
+          "p95": 2233.2000000000116,
+          "max": 2233.2999999999884
+        },
+        "calls": {
+          "samples": 30,
+          "mean": 6846,
+          "p50": 6846,
+          "p95": 6846,
+          "max": 6846
+        },
+        "triangles": {
+          "samples": 30,
+          "mean": 344030,
+          "p50": 344030,
+          "p95": 344030,
+          "max": 344030
+        },
+        "snapshot": {
+          "version": 1,
+          "startup": {
+            "constructionMs": null,
+            "firstFrameAtMs": 495.59999999962747,
+            "firstSubmitMs": 125.70000000018626,
+            "readyAtMs": null
+          },
+          "at": "2026-10-16T09:27:00.414Z",
+          "enabled": true,
+          "sequence": 113,
+          "frame": {
+            "interval": {
+              "samples": 29,
+              "mean": 2054.5137931034487,
+              "p50": 2049.800000000003,
+              "p95": 2233.2000000000116,
+              "max": 2233.2999999999884
+            },
+            "submit": {
+              "samples": 30,
+              "mean": 71.14666666671013,
+              "p50": 68.70000000018626,
+              "p95": 96.59999999962747,
+              "max": 96.69999999925494
+            },
+            "step": {
+              "samples": 30,
+              "mean": 0.20666666673496364,
+              "p50": 0.20000000018626451,
+              "p95": 0.2999999998137355,
+              "max": 0.30000000074505806
+            },
+            "render": {
+              "samples": 30,
+              "mean": 70.93999999997517,
+              "p50": 68.40000000037253,
+              "p95": 96.3999999994412,
+              "max": 96.59999999962747
+            },
+            "fps": 0.4867331644872769,
+            "last": {
+              "stepMs": 0.20000000018626451,
+              "renderMs": 53.299999999813735,
+              "submitMs": 53.5,
+              "intervalMs": 2066.600000000006,
+              "calls": 6846,
+              "triangles": 344030,
+              "points": 0,
+              "lines": 0
+            }
+          },
+          "gpu": {
+            "supported": false,
+            "lastMs": null
+          },
+          "renderer": {
+            "geometries": 3441,
+            "textures": 16,
+            "programs": 14
+          },
+          "scene": {
+            "nodes": 4168,
+            "meshes": 3494,
+            "instances": 6960,
+            "geometries": 3507,
+            "materials": 1495,
+            "textures": 13,
+            "attributeBytes": 6424404,
+            "textureBytesEstimate": 10485760
+          },
+          "heapUsedBytes": 16100000,
+          "lights": {
+            "active": 0,
+            "shadows": 0,
+            "budget": 8,
+            "emitters": 0,
+            "culled": 0
+          },
+          "viewport": {
+            "width": 960,
+            "height": 540,
+            "pixelRatio": 1,
+            "detail": "std"
+          },
+          "operations": [],
+          "recent": []
+        },
+        "packMs": 14.900000000372529,
+        "archiveBytes": 2175,
+        "restoreMs": 1470.5999999996275
+      },
+      {
+        "fixture": {
+          "id": "terrain",
+          "name": "起伏地形 + 植被",
+          "buildings": 0,
+          "trees": 600,
+          "lamps": 0,
+          "roads": 2,
+          "terrain": 129
+        },
+        "assets": {
+          "building": "house:adobe:Adobe 土坯平顶房",
+          "lamp": "traffic:street_lamp:Street Lamp 路灯",
+          "palace": "cn:lanternpole:宫灯杆",
+          "tree": "env:tree:行道树"
+        },
+        "buildOperations": [
+          {
+            "label": "自动地貌分类",
+            "count": 12,
+            "totalMs": 66.79999999981374,
+            "maxMs": 23.399999999441206,
+            "lastMs": 9.900000000372529,
+            "meanMs": 5.566666666651145
+          },
+          {
+            "label": "地形网格更新",
+            "count": 9,
+            "totalMs": 93.20000000018626,
+            "maxMs": 29.09999999962747,
+            "lastMs": 16.300000000745058,
+            "meanMs": 10.355555555576252
+          },
+          {
+            "label": "植被重新贴地",
+            "count": 3,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "物体重新贴地",
+            "count": 3,
+            "totalMs": 28.300000000745058,
+            "maxMs": 16.300000000745058,
+            "lastMs": 16.300000000745058,
+            "meanMs": 9.433333333581686
+          },
+          {
+            "label": "道路网络重建",
+            "count": 2,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "桥墩更新",
+            "count": 3,
+            "totalMs": 7.299999998882413,
+            "maxMs": 5.599999999627471,
+            "lastMs": 1.699999999254942,
+            "meanMs": 2.4333333329608045
+          },
+          {
+            "label": "地形生成",
+            "count": 1,
+            "totalMs": 51.299999999813735,
+            "maxMs": 51.299999999813735,
+            "lastMs": 51.299999999813735,
+            "meanMs": 51.299999999813735
+          },
+          {
+            "label": "植被批次重建",
+            "count": 1,
+            "totalMs": 3,
+            "maxMs": 3,
+            "lastMs": 3,
+            "meanMs": 3
+          },
+          {
+            "label": "天空反射更新",
+            "count": 1,
+            "totalMs": 7.6000000005587935,
+            "maxMs": 7.6000000005587935,
+            "lastMs": 7.6000000005587935,
+            "meanMs": 7.6000000005587935
+          }
+        ],
+        "sky": {
+          "source": "manual",
+          "sunElev": 48,
+          "sunAzim": 135,
+          "date": "2026-10-16",
+          "hour": 12,
+          "latitude": 0,
+          "longitude": 0,
+          "timezone": 0,
+          "north": 0,
+          "turbidity": 3,
+          "rayleigh": 2,
+          "mie": 0.005,
+          "mieG": 0.8,
+          "energy": 1,
+          "environment": 0.65,
+          "ev": 0,
+          "whiteBalance": 6500,
+          "fog": 0.001,
+          "shadows": true,
+          "quality": "medium"
+        },
+        "camera": {
+          "fov": 46,
+          "position": [
+            88.00000000000001,
+            70,
+            110.00000000000001
+          ],
+          "target": [
+            0,
+            2,
+            0
+          ]
+        },
+        "buildMs": 924,
+        "cold": {
+          "stepMs": 0.10000000055879354,
+          "renderMs": 229.3999999994412,
+          "submitMs": 229.5,
+          "intervalMs": null,
+          "calls": 869,
+          "triangles": 646522,
+          "points": 0,
+          "lines": 0
+        },
+        "submit": {
+          "samples": 30,
+          "mean": 10.99333333314086,
+          "p50": 10.699999999254942,
+          "p95": 15.700000000186265,
+          "max": 18.199999999254942
+        },
+        "interval": {
+          "samples": 29,
+          "mean": 2604.4965517241376,
+          "p50": 2583.2000000000116,
+          "p95": 2816.600000000006,
+          "max": 2983.1999999999825
+        },
+        "calls": {
+          "samples": 30,
+          "mean": 869,
+          "p50": 869,
+          "p95": 869,
+          "max": 869
+        },
+        "triangles": {
+          "samples": 30,
+          "mean": 646522,
+          "p50": 646522,
+          "p95": 646522,
+          "max": 646522
+        },
+        "snapshot": {
+          "version": 1,
+          "startup": {
+            "constructionMs": null,
+            "firstFrameAtMs": 495.59999999962747,
+            "firstSubmitMs": 125.70000000018626,
+            "readyAtMs": null
+          },
+          "at": "2026-10-16T09:28:47.019Z",
+          "enabled": true,
+          "sequence": 152,
+          "frame": {
+            "interval": {
+              "samples": 29,
+              "mean": 2604.4965517241376,
+              "p50": 2583.2000000000116,
+              "p95": 2816.600000000006,
+              "max": 2983.1999999999825
+            },
+            "submit": {
+              "samples": 30,
+              "mean": 10.99333333314086,
+              "p50": 10.699999999254942,
+              "p95": 15.700000000186265,
+              "max": 18.199999999254942
+            },
+            "step": {
+              "samples": 30,
+              "mean": 0.16000000005587936,
+              "p50": 0.19999999925494194,
+              "p95": 0.2999999998137355,
+              "max": 0.40000000037252903
+            },
+            "render": {
+              "samples": 30,
+              "mean": 10.826666666443149,
+              "p50": 10.5,
+              "p95": 15.5,
+              "max": 18.09999999962747
+            },
+            "fps": 0.38395136263014634,
+            "last": {
+              "stepMs": 0.2000000011175871,
+              "renderMs": 12.599999999627471,
+              "submitMs": 12.800000000745058,
+              "intervalMs": 2666.5999999999767,
+              "calls": 869,
+              "triangles": 646522,
+              "points": 0,
+              "lines": 0
+            }
+          },
+          "gpu": {
+            "supported": false,
+            "lastMs": null
+          },
+          "renderer": {
+            "geometries": 447,
+            "textures": 13,
+            "programs": 12
+          },
+          "scene": {
+            "nodes": 567,
+            "meshes": 499,
+            "instances": 1257,
+            "geometries": 512,
+            "materials": 468,
+            "textures": 10,
+            "attributeBytes": 9919364,
+            "textureBytesEstimate": 9437184
+          },
+          "heapUsedBytes": 16100000,
+          "lights": {
+            "active": 0,
+            "shadows": 0,
+            "budget": 8,
+            "emitters": 0,
+            "culled": 0
+          },
+          "viewport": {
+            "width": 960,
+            "height": 540,
+            "pixelRatio": 1,
+            "detail": "std"
+          },
+          "operations": [],
+          "recent": []
+        },
+        "packMs": 43.5,
+        "archiveBytes": 41503,
+        "restoreMs": 1043.0999999996275,
+        "terrainEditMs": 864.2000000011176
+      },
+      {
+        "fixture": {
+          "id": "night",
+          "name": "夜景多灯",
+          "buildings": 12,
+          "trees": 0,
+          "lamps": 32,
+          "palaces": 4,
+          "roads": 2,
+          "terrain": 65
+        },
+        "assets": {
+          "building": "house:adobe:Adobe 土坯平顶房",
+          "lamp": "traffic:street_lamp:Street Lamp 路灯",
+          "palace": "cn:lanternpole:宫灯杆",
+          "tree": "env:tree:行道树"
+        },
+        "buildOperations": [
+          {
+            "label": "自动地貌分类",
+            "count": 11,
+            "totalMs": 20.400000002235174,
+            "maxMs": 4,
+            "lastMs": 1,
+            "meanMs": 1.8545454547486522
+          },
+          {
+            "label": "地形网格更新",
+            "count": 8,
+            "totalMs": 42.20000000298023,
+            "maxMs": 10.200000001117587,
+            "lastMs": 2.5,
+            "meanMs": 5.275000000372529
+          },
+          {
+            "label": "植被重新贴地",
+            "count": 3,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "物体重新贴地",
+            "count": 3,
+            "totalMs": 12.800000000745058,
+            "maxMs": 9.900000000372529,
+            "lastMs": 0,
+            "meanMs": 4.266666666915019
+          },
+          {
+            "label": "道路网络重建",
+            "count": 2,
+            "totalMs": 0,
+            "maxMs": 0,
+            "lastMs": 0,
+            "meanMs": 0
+          },
+          {
+            "label": "天空反射更新",
+            "count": 2,
+            "totalMs": 5.799999998882413,
+            "maxMs": 5.799999998882413,
+            "lastMs": 0,
+            "meanMs": 2.8999999994412065
+          },
+          {
+            "label": "桥墩更新",
+            "count": 2,
+            "totalMs": 0.599999999627471,
+            "maxMs": 0.30000000074505806,
+            "lastMs": 0.2999999988824129,
+            "meanMs": 0.2999999998137355
+          }
+        ],
+        "sky": {
+          "source": "manual",
+          "sunElev": -14,
+          "sunAzim": 135,
+          "date": "2026-10-16",
+          "hour": 12,
+          "latitude": 0,
+          "longitude": 0,
+          "timezone": 0,
+          "north": 0,
+          "turbidity": 3,
+          "rayleigh": 2,
+          "mie": 0.005,
+          "mieG": 0.8,
+          "energy": 1,
+          "environment": 0.65,
+          "ev": 0,
+          "whiteBalance": 6500,
+          "fog": 0.001,
+          "shadows": true,
+          "quality": "medium"
+        },
+        "camera": {
+          "fov": 46,
+          "position": [
+            14.999999999999998,
+            10,
+            27.999999999999996
+          ],
+          "target": [
+            0,
+            2,
+            0
+          ]
+        },
+        "buildMs": 515.6000000014901,
+        "cold": {
+          "stepMs": 0.599999999627471,
+          "renderMs": 719.2000000011176,
+          "submitMs": 719.8000000007451,
+          "intervalMs": null,
+          "calls": 1075,
+          "triangles": 62542,
+          "points": 0,
+          "lines": 0
+        },
+        "submit": {
+          "samples": 30,
+          "mean": 20.026666666939853,
+          "p50": 19,
+          "p95": 24.399999998509884,
+          "max": 47.19999999925494
+        },
+        "interval": {
+          "samples": 29,
+          "mean": 1418.3310344827578,
+          "p50": 1416.5999999999767,
+          "p95": 1499.9000000000233,
+          "max": 1533.2999999999884
+        },
+        "calls": {
+          "samples": 30,
+          "mean": 1075,
+          "p50": 1075,
+          "p95": 1075,
+          "max": 1075
+        },
+        "triangles": {
+          "samples": 30,
+          "mean": 62542,
+          "p50": 62542,
+          "p95": 62542,
+          "max": 62542
+        },
+        "snapshot": {
+          "version": 1,
+          "startup": {
+            "constructionMs": null,
+            "firstFrameAtMs": 495.59999999962747,
+            "firstSubmitMs": 125.70000000018626,
+            "readyAtMs": null
+          },
+          "at": "2026-10-16T09:29:49.946Z",
+          "enabled": true,
+          "sequence": 191,
+          "frame": {
+            "interval": {
+              "samples": 29,
+              "mean": 1418.3310344827578,
+              "p50": 1416.5999999999767,
+              "p95": 1499.9000000000233,
+              "max": 1533.2999999999884
+            },
+            "submit": {
+              "samples": 30,
+              "mean": 20.026666666939853,
+              "p50": 19,
+              "p95": 24.399999998509884,
+              "max": 47.19999999925494
+            },
+            "step": {
+              "samples": 30,
+              "mean": 0.31000000008692347,
+              "p50": 0.30000000074505806,
+              "p95": 0.40000000037252903,
+              "max": 0.40000000037252903
+            },
+            "render": {
+              "samples": 30,
+              "mean": 19.706666666890182,
+              "p50": 18.59999999962747,
+              "p95": 24.09999999962747,
+              "max": 46.90000000037253
+            },
+            "fps": 0.7050540217253891,
+            "last": {
+              "stepMs": 0.2999999988824129,
+              "renderMs": 18.5,
+              "submitMs": 18.799999998882413,
+              "intervalMs": 1366.5,
+              "calls": 1075,
+              "triangles": 62542,
+              "points": 0,
+              "lines": 0
+            }
+          },
+          "gpu": {
+            "supported": false,
+            "lastMs": null
+          },
+          "renderer": {
+            "geometries": 907,
+            "textures": 20,
+            "programs": 19
+          },
+          "scene": {
+            "nodes": 1566,
+            "meshes": 1284,
+            "instances": 1840,
+            "geometries": 1297,
+            "materials": 741,
+            "textures": 16,
+            "attributeBytes": 3316356,
+            "textureBytesEstimate": 11534336
+          },
+          "heapUsedBytes": 16100000,
+          "lights": {
+            "active": 8,
+            "shadows": 1,
+            "budget": 8,
+            "emitters": 40,
+            "culled": 32
+          },
+          "viewport": {
+            "width": 960,
+            "height": 540,
+            "pixelRatio": 1,
+            "detail": "std"
+          },
+          "operations": [],
+          "recent": []
+        },
+        "packMs": 9.300000000745058,
+        "archiveBytes": 2138,
+        "restoreMs": 869.9000000003725
+      }
+    ],
+    "cancelled": false,
+    "notes": [
+      "RAF 间隔含浏览器调度；JS/渲染提交含驱动等待，不是纯 CPU 时间。",
+      "GPU 计时仅扩展可用时记录，资源字节是引用估算，不是显存实测。",
+      "运行结果只代表本设备 / 浏览器；各场景独立预热，冷帧单列。",
+      "场景按顺序运行并复用引擎缓存，构建并非浏览器全冷启动。"
+    ],
+    "afterCleanup": {
+      "version": 1,
+      "startup": {
+        "constructionMs": null,
+        "firstFrameAtMs": 495.59999999962747,
+        "firstSubmitMs": 125.70000000018626,
+        "readyAtMs": null
+      },
+      "at": "2026-10-16T09:29:53.812Z",
+      "enabled": true,
+      "sequence": 192,
+      "frame": {
+        "interval": {
+          "samples": 30,
+          "mean": 1498.143333333327,
+          "p50": 1416.5999999999767,
+          "p95": 1533.2999999999884,
+          "max": 3812.699999999837
+        },
+        "submit": {
+          "samples": 31,
+          "mean": 22.274193548627437,
+          "p50": 19.200000001117587,
+          "p95": 47.19999999925494,
+          "max": 89.69999999925494
+        },
+        "step": {
+          "samples": 31,
+          "mean": 0.30645161296331114,
+          "p50": 0.30000000074505806,
+          "p95": 0.40000000037252903,
+          "max": 0.40000000037252903
+        },
+        "render": {
+          "samples": 31,
+          "mean": 21.95806451634534,
+          "p50": 19,
+          "p95": 46.90000000037253,
+          "max": 89.5
+        },
+        "fps": 0.6674928745135673,
+        "last": {
+          "stepMs": 0.19999999925494194,
+          "renderMs": 89.5,
+          "submitMs": 89.69999999925494,
+          "intervalMs": 3812.699999999837,
+          "calls": 3,
+          "triangles": 8206,
+          "points": 0,
+          "lines": 0
+        }
+      },
+      "gpu": {
+        "supported": false,
+        "lastMs": null
+      },
+      "renderer": {
+        "geometries": 14,
+        "textures": 8,
+        "programs": 17
+      },
+      "scene": {
+        "nodes": 116,
+        "meshes": 66,
+        "instances": 0,
+        "geometries": 79,
+        "materials": 35,
+        "textures": 4,
+        "attributeBytes": 634292,
+        "textureBytesEstimate": 7340032
+      },
+      "heapUsedBytes": 16100000,
+      "lights": {
+        "active": 0,
+        "shadows": 0,
+        "budget": 8,
+        "emitters": 0,
+        "culled": 0
+      },
+      "viewport": {
+        "width": 824,
+        "height": 882,
+        "pixelRatio": 1,
+        "detail": "std"
+      },
+      "operations": [
+        {
+          "label": "工程序列化",
+          "count": 1,
+          "totalMs": 2.400000000372529,
+          "maxMs": 2.400000000372529,
+          "lastMs": 2.400000000372529,
+          "meanMs": 2.400000000372529
+        },
+        {
+          "label": "工程打包（异步）",
+          "count": 1,
+          "totalMs": 9.300000000745058,
+          "maxMs": 9.300000000745058,
+          "lastMs": 9.300000000745058,
+          "meanMs": 9.300000000745058
+        },
+        {
+          "label": "自动地貌分类",
+          "count": 7,
+          "totalMs": 11.699999999254942,
+          "maxMs": 5,
+          "lastMs": 1,
+          "meanMs": 1.6714285713221346
+        },
+        {
+          "label": "地形网格更新",
+          "count": 7,
+          "totalMs": 31.699999999254942,
+          "maxMs": 9,
+          "lastMs": 3.800000000745058,
+          "meanMs": 4.528571428464992
+        },
+        {
+          "label": "植被重新贴地",
+          "count": 3,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0,
+          "meanMs": 0
+        },
+        {
+          "label": "物体重新贴地",
+          "count": 3,
+          "totalMs": 7.700000001117587,
+          "maxMs": 3.900000000372529,
+          "lastMs": 3.800000000745058,
+          "meanMs": 2.5666666670391955
+        },
+        {
+          "label": "道路网络重建",
+          "count": 1,
+          "totalMs": 0,
+          "maxMs": 0,
+          "lastMs": 0,
+          "meanMs": 0
+        },
+        {
+          "label": "桥墩更新",
+          "count": 3,
+          "totalMs": 0.6999999992549419,
+          "maxMs": 0.40000000037252903,
+          "lastMs": 0,
+          "meanMs": 0.23333333308498064
+        },
+        {
+          "label": "工程恢复",
+          "count": 1,
+          "totalMs": 868.9000000003725,
+          "maxMs": 868.9000000003725,
+          "lastMs": 868.9000000003725,
+          "meanMs": 868.9000000003725
+        }
+      ],
+      "recent": [
+        {
+          "label": "工程序列化",
+          "ms": 2.400000000372529,
+          "at": 1792142989948
+        },
+        {
+          "label": "工程打包（异步）",
+          "ms": 9.300000000745058,
+          "at": 1792142989955
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 5,
+          "at": 1792142990050
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 9,
+          "at": 1792142990050
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1.5,
+          "at": 1792142990056
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 5.5,
+          "at": 1792142990056
+        },
+        {
+          "label": "植被重新贴地",
+          "ms": 0,
+          "at": 1792142990056
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1,
+          "at": 1792142990059
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 3.900000000372529,
+          "at": 1792142990059
+        },
+        {
+          "label": "物体重新贴地",
+          "ms": 3.900000000372529,
+          "at": 1792142990059
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1.099999999627471,
+          "at": 1792142990157
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 3.299999998882413,
+          "at": 1792142990157
+        },
+        {
+          "label": "植被重新贴地",
+          "ms": 0,
+          "at": 1792142990157
+        },
+        {
+          "label": "物体重新贴地",
+          "ms": 0,
+          "at": 1792142990157
+        },
+        {
+          "label": "道路网络重建",
+          "ms": 0,
+          "at": 1792142990157
+        },
+        {
+          "label": "桥墩更新",
+          "ms": 0.40000000037252903,
+          "at": 1792142990168
+        },
+        {
+          "label": "桥墩更新",
+          "ms": 0.2999999988824129,
+          "at": 1792142990169
+        },
+        {
+          "label": "工程恢复",
+          "ms": 868.9000000003725,
+          "at": 1792142990825
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1,
+          "at": 1792142993706
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 3.199999999254942,
+          "at": 1792142993706
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1.099999999627471,
+          "at": 1792142993709
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 3,
+          "at": 1792142993709
+        },
+        {
+          "label": "植被重新贴地",
+          "ms": 0,
+          "at": 1792142993709
+        },
+        {
+          "label": "自动地貌分类",
+          "ms": 1,
+          "at": 1792142993713
+        },
+        {
+          "label": "地形网格更新",
+          "ms": 3.800000000745058,
+          "at": 1792142993713
+        },
+        {
+          "label": "物体重新贴地",
+          "ms": 3.800000000745058,
+          "at": 1792142993713
+        },
+        {
+          "label": "桥墩更新",
+          "ms": 0,
+          "at": 1792142993713
+        }
+      ]
+    }
+  },
+  "devSmoke": {
+    "warmup": 2,
+    "samples": 3,
+    "fixtureCounts": [
+      {
+        "id": "town",
+        "calls": 2160,
+        "triangles": 117230
+      },
+      {
+        "id": "dense",
+        "calls": 6846,
+        "triangles": 344030
+      },
+      {
+        "id": "terrain",
+        "calls": 869,
+        "triangles": 646522
+      },
+      {
+        "id": "night",
+        "calls": 1075,
+        "triangles": 62542
+      }
+    ]
+  },
+  "startupCaptureSmoke": [
+    {
+      "entry": "dev",
+      "startup": {
+        "constructionMs": 199,
+        "firstFrameAtMs": 1028.300000000745,
+        "firstSubmitMs": 143.09999999962747,
+        "readyAtMs": 885
+      },
+      "shortcutsBlocked": true,
+      "escapeCloses": true
+    },
+    {
+      "entry": "file",
+      "startup": {
+        "constructionMs": 198.2999999988824,
+        "firstFrameAtMs": 501.30000000074506,
+        "firstSubmitMs": 135.60000000149012,
+        "readyAtMs": 365.40000000037253
+      },
+      "shortcutsBlocked": true,
+      "escapeCloses": true
+    }
+  ],
+  "notes": [
+    "Formal 8+30 run predates wiring constructionMs and readyAtMs; those historical fields remain null. Final dev/file startup and modal-keyboard smoke records are separate, not backfilled.",
+    "All hardware timings are sandbox-specific; resource counts and lifecycle assertions are primary regression criteria."
+  ]
+}

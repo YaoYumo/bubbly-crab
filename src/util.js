@@ -2,6 +2,9 @@
 // 通用工具：DOM 构建、数学、缓动、下载、释放
 // ---------------------------------------------------------------------------
 
+import { DESKTOP_BUILD } from './desktop-runtime.js';
+import { desktopSaves } from './desktop-save.js';
+
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const norm = (v, a, b) => (b - a === 0 ? 0 : (v - a) / (b - a));
@@ -61,6 +64,7 @@ export function clear(node) {
 }
 
 export function downloadBlob(blob, name) {
+  if (DESKTOP_BUILD) return desktopSaves.enqueue(blob, name);
   const url = URL.createObjectURL(blob);
   const a = el('a', { href: url, download: name });
   document.body.appendChild(a);
@@ -73,11 +77,15 @@ export function downloadBlob(blob, name) {
 
 /** 递归释放几何体/材质/贴图 */
 export function disposeDeep(root) {
+  const geometries = new Set(), materials = new Set(), textures = new Set();
   root.traverse?.((o) => {
-    if (o.geometry) o.geometry.dispose?.();
+    // InstancedMesh owns GPU instance buffers independently of its geometry.
+    if (o.isInstancedMesh) o.dispose?.();
+    if (o.geometry && !geometries.has(o.geometry)) { geometries.add(o.geometry); o.geometry.dispose?.(); }
     const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
     for (const m of mats) {
-      for (const v of Object.values(m)) if (v && v.isTexture) v.dispose?.();
+      if (!m || materials.has(m)) continue; materials.add(m);
+      for (const v of Object.values(m)) if (v?.isTexture && !textures.has(v)) { textures.add(v); v.dispose?.(); }
       m.dispose?.();
     }
   });

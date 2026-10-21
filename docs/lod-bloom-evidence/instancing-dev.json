@@ -1,0 +1,35 @@
+{
+  "entry": "http:",
+  "dense": {
+    "calls": {
+      "samples": 3,
+      "mean": 1586,
+      "p50": 1586,
+      "p95": 1586,
+      "max": 1586
+    },
+    "triangles": {
+      "samples": 3,
+      "mean": 344078,
+      "p50": 344078,
+      "p95": 344078,
+      "max": 344078
+    }
+  },
+  "before": {
+    "calls": 320,
+    "triangles": 20150
+  },
+  "after": {
+    "calls": 142,
+    "triangles": 20150
+  },
+  "pixels": {
+    "mean": 0.00005769230769230769,
+    "changedFraction": 0.000003205128205128205,
+    "max": 4
+  },
+  "instanceDisposals": 43,
+  "objectIds": 3,
+  "groups": 43
+}

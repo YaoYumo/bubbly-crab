@@ -1,0 +1,52 @@
+PASS solar position / UTC equivalence / orientation / sanitization
+PASS unified sky / IBL ownership / WB not baked / EV + ISO once / legacy presets {
+  noRebake: true,
+  exposure: 4,
+  owned: true,
+  protectedOwner: true,
+  neutral: true,
+  restored: true,
+  legacy: true,
+  sameSun: true,
+  amb: 0,
+  hemi: 0,
+  fill: 0,
+  rim: 0
+}
+PIXELS {
+  lit: 133.74074074074076,
+  dark: 0,
+  shadow: 0,
+  unshadowed: 133.74074074074076,
+  off: 0,
+  emissionIndependent: true,
+  offEmission: true,
+  whiteBalancePixels: true,
+  neutralRGB: [ 164.22222222222226, 131.7777777777778, 105.22222222222223 ],
+  coolRGB: [ 118.11111111111111, 132.66666666666666, 156.55555555555554 ],
+  warmRGB: [ 175.88888888888886, 130.77777777777777, 87.88888888888889 ]
+}
+PASS actual ground illumination / occluder shadow / independent emissive and light
+BUDGET {
+  medium: { active: 8, shadows: 1, budget: 8, emitters: 18, culled: 10 },
+  low: { active: 4, shadows: 0, budget: 4, emitters: 18, culled: 14 },
+  high: { active: 12, shadows: 2, budget: 12, emitters: 18, culled: 6 },
+  stable: true,
+  far: { active: 0, shadows: 0, budget: 12, emitters: 18, culled: 18 },
+  glowing: true,
+  day: 0,
+  forced: 1,
+  hidden: 0,
+  perf: true,
+  restored: true
+}
+PASS stable camera-distance budgets / day-night / manual override / visibility / memory-first
+PASS real UI / numeric commit / one-step undo-redo / date controls / transformed dual palace lamps / .previz package reload
+EXPORT {
+  video: { size: 8763, frames: 1, iso: 2, exposure: 5.65685424949238 },
+  editor: 2.82842712474619,
+  during: { exposure: 5.65685424949238, iso: 2, active: 2 },
+  restored: 2.82842712474619,
+  png: true
+}
+PASS old-project compatibility; no browser / shader errors

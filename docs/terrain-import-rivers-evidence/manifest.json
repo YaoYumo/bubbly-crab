@@ -1,0 +1,281 @@
+{
+  "dateLocal": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "baseCommit": "d630df175ed756517d319a6c0be7381bdb80787d",
+  "scope": "Phase 3A selected by user: 8/16-bit PNG height import and PNG/JPEG color overlay, manually editable river paths/water and explicit channel carving before erosion. Thermal/hydraulic erosion and automatic flow-derived rivers are NOT implemented.",
+  "status": "PASS scoped DEV + offline file acceptance. Not all historical tests, multi-GPU, large-data/GIS, or long-video acceptance.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1996936,
+    "sha256": "46cfa4b881990808624da72c4a355e15bcd2822e26c07dd5d5fcb167529889e0"
+  },
+  "documentation": {
+    "path": "docs/terrain-import-rivers.md",
+    "bytes": 10594,
+    "sha256": "3fb6f783526560788be48227a3f3e788c31bb7b71b2cf5e5d8dbc364926ee600"
+  },
+  "sources": [
+    {
+      "path": "src/terrain-import.js",
+      "bytes": 7279,
+      "sha256": "3053f3c28f42c8b11c18f8f4d025e75f78cd87bd19d5187e40dbac92089eb133"
+    },
+    {
+      "path": "src/terrain-river.js",
+      "bytes": 5412,
+      "sha256": "8c4b71223d3eb7244eea5abcef53482d53a161b37739a8796c506feb9986a33e"
+    },
+    {
+      "path": "src/terrain-workflow.js",
+      "bytes": 19783,
+      "sha256": "efc5b6491d7c5f01ad0316925b9e53d4520fff17afcc57a1cf3be43bb025f37a"
+    },
+    {
+      "path": "src/terrain-workflow-ui.js",
+      "bytes": 10427,
+      "sha256": "881d71211434a17f812bce371223d4993355d632f0cf3fb85ff23713f0474e90"
+    },
+    {
+      "path": "src/terrain.js",
+      "bytes": 34459,
+      "sha256": "ad792ce0f21594735913ddd7efd13d8e33b80805ae376689b55acbed23c161f9"
+    },
+    {
+      "path": "src/terrain-materials.js",
+      "bytes": 5676,
+      "sha256": "74ef81196e541dc450c418955d2333f0a60f34d96a58f4739523d92ab558f4a4"
+    },
+    {
+      "path": "src/app.js",
+      "bytes": 69032,
+      "sha256": "707b7785fc3b461ff11e851a48ecadb3c16edc09d4631b00d46c1672a24443eb"
+    },
+    {
+      "path": "src/panels.js",
+      "bytes": 131561,
+      "sha256": "4292925eec83a289d316b3818a1416c9e225b377fd6216060828481e11ca844b"
+    },
+    {
+      "path": "src/road-brush.js",
+      "bytes": 47670,
+      "sha256": "42ccc6a9c2c37667542b152e9efa1de74b4a1c8e84e96f5fa1b3fd93105b68f6"
+    },
+    {
+      "path": "src/vegetation-brush.js",
+      "bytes": 16482,
+      "sha256": "f73dd89dac460f257d2b07509409f938de1ce9b6391468a430ac0bd56e0835ab"
+    },
+    {
+      "path": "src/selective-bloom.js",
+      "bytes": 12498,
+      "sha256": "ab627d9c90a52884bd54f397e9763ebb320d3bd12fc7b10507ec889e7656e6f0"
+    },
+    {
+      "path": "src/export.js",
+      "bytes": 20738,
+      "sha256": "5b8b983d68dcfa978e1ac9b6345ade25a294da98603b6f8f7a9009eb3df0fc39"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/terrain-import-river.test.mjs",
+      "bytes": 7128,
+      "sha256": "22c638a0c4030c95d0c00ba2d3c99f1b2aacb22e0d8b0f0b42241cdb7ffbc5ac"
+    },
+    {
+      "path": "test/terrain-workflow-regression.mjs",
+      "bytes": 15168,
+      "sha256": "c5ffd2fbd7e90e5e858c9d000b08f8136ab01f00005931c1eb2c6b22bb40504c"
+    },
+    {
+      "path": "test/terrain-generation-regression.mjs",
+      "bytes": 11751,
+      "sha256": "a0bfcfe4c053b03978b43e06b5a1987b21b687b357189bfbcf8750cb9572a79e"
+    },
+    {
+      "path": "test/terrain-ui-regression.mjs",
+      "bytes": 8931,
+      "sha256": "b190cd296753e5fd0964a70ade3285d2bbf1dffd1e91d8da12b32a7f8e88e7ce"
+    },
+    {
+      "path": "test/terrain-roads-regression.mjs",
+      "bytes": 16029,
+      "sha256": "0a7c0c9cacec97ce32b0237bf38644d10a8279921ee6a420dda66b4711ff5bef"
+    },
+    {
+      "path": "test/selective-bloom-regression.mjs",
+      "bytes": 23146,
+      "sha256": "6a75f2016b0083f305be3458f5e73985520a005a3088fd04137fb8ffc4bb7d66"
+    },
+    {
+      "path": "test/export-compat-regression.mjs",
+      "bytes": 5170,
+      "sha256": "3a56fa5a496db2b59e074f32469469e77c92861cbf3c8f09f0bdcc4d30df6296"
+    },
+    {
+      "path": "test/runsuite.sh",
+      "bytes": 1733,
+      "sha256": "df87f14f7f0c75c8c8a15cbb119c1f84e388ecbab6f4fcc9cc35cfa18d8d3d68"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "docs/terrain-import-rivers-evidence/bloom-dev.log",
+      "bytes": 4282,
+      "sha256": "63cd6821ca939879bf21257ddfdba52bc6da24061275d8fca595b49101c6a1a6"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/bloom-file.log",
+      "bytes": 4331,
+      "sha256": "bfb6e648da091de57382ff077f762bdb3e91db98fab4ece87303e97d053deda1"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/build.log",
+      "bytes": 1559,
+      "sha256": "2f8558d67aedb58520b70502e2c7e97f80acee48785b0c222ed0e82008918582"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/decode-dev.log",
+      "bytes": 900,
+      "sha256": "931c4561f97901d608f478d122aed91fe8ae522cda827cf526810a4f41da6e81"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/decode-file.log",
+      "bytes": 901,
+      "sha256": "255bbab92ed9b311a50b2bea8c26355c72f76e29a78c08c00adf66b07987c3ed"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/dev.json",
+      "bytes": 1748,
+      "sha256": "ad10d57090bb5be515e10b6c7a753df7969bf7d34c535318fe3de6009ff0b864"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/dev.log",
+      "bytes": 2008,
+      "sha256": "b12c822c3674842c016a580e03e0bde3422e355423c1a3cf09dcc01800a66471"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/export-dev.log",
+      "bytes": 1253,
+      "sha256": "1a5b907fa9af3da59e12d44dee05a75b941b92ee82a8002c59eae79648fbbcb8"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/export-file.log",
+      "bytes": 1253,
+      "sha256": "842f31947642ec8e1843409a78d7784de1ce48891d0c32d4107f2a6545aa91d3"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/file.json",
+      "bytes": 1748,
+      "sha256": "dbc7995e44b4c863cac9adf5cbbd0a2a4b110a3a762c18cf3912db4832e1c744"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/file.log",
+      "bytes": 2008,
+      "sha256": "3c3c2fe0325074062c2d6bfae4f7e97b0b639355dd43f1c99b124128683963d4"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/generation-dev.log",
+      "bytes": 809,
+      "sha256": "761897a7b1289c1ce8f3259bf49962f696f4c14fe868e8f64dfe58d92ac644fd"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/generation-file.log",
+      "bytes": 809,
+      "sha256": "761897a7b1289c1ce8f3259bf49962f696f4c14fe868e8f64dfe58d92ac644fd"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/generation.log",
+      "bytes": 809,
+      "sha256": "761897a7b1289c1ce8f3259bf49962f696f4c14fe868e8f64dfe58d92ac644fd"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/node-tests.log",
+      "bytes": 1465,
+      "sha256": "79cbc51c28178d3bf7263430d5f27a6136157104fdf889609d4223188c31d5ff"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/roads-dev.log",
+      "bytes": 1617,
+      "sha256": "6551b82ae26b573e74bf86c263ce5330bb5818432e7053f03c67542806656082"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/ui-dev.log",
+      "bytes": 212,
+      "sha256": "7a30fe8066f98c71104d60af52998c2becbe79178e2fd8c7e4216bac8bd95c4b"
+    },
+    {
+      "path": "docs/terrain-import-rivers-evidence/ui-file.log",
+      "bytes": 212,
+      "sha256": "7a30fe8066f98c71104d60af52998c2becbe79178e2fd8c7e4216bac8bd95c4b"
+    }
+  ],
+  "ignoredMedia": [
+    {
+      "path": ".shots/terrain-workflow-dev.png",
+      "bytes": 35550,
+      "sha256": "6bc6b610f4422ac93359f5c5feda9968d0afcea5b98c9d309697a43617aae6ef"
+    },
+    {
+      "path": ".shots/terrain-workflow-dev.webm",
+      "bytes": 12342,
+      "sha256": "f545d2593bc8db01a669607bd4d1740b7fbb17b761563b835f74b5af63437983"
+    },
+    {
+      "path": ".shots/terrain-workflow-file.png",
+      "bytes": 35550,
+      "sha256": "6bc6b610f4422ac93359f5c5feda9968d0afcea5b98c9d309697a43617aae6ef"
+    },
+    {
+      "path": ".shots/terrain-workflow-file.webm",
+      "bytes": 12342,
+      "sha256": "f545d2593bc8db01a669607bd4d1740b7fbb17b761563b835f74b5af63437983"
+    }
+  ],
+  "environment": {
+    "browser": "Chromium 131",
+    "platform": "Linux x86_64",
+    "renderer": "ANGLE SwiftShader software",
+    "nativeVideoDecoder": "FFmpeg N-47683-g0e8eb07980-static",
+    "videoSmoke": {
+      "width": 480,
+      "height": 320,
+      "fps": 5,
+      "duration": 0.4,
+      "submittedFramesPerEntry": 2,
+      "decodedFramesPerEntry": 2
+    }
+  },
+  "checks": {
+    "newWorkflow": [
+      "DEV",
+      "offline file"
+    ],
+    "legacyGenerationAndTerrainUI": [
+      "DEV",
+      "offline file"
+    ],
+    "legacyTerrainRoads": [
+      "DEV only; legacy test uses dev-only debug constructors"
+    ],
+    "selectiveBloom": [
+      "DEV",
+      "offline file"
+    ],
+    "nativeMediaRecorderCompatibility": [
+      "DEV",
+      "offline file"
+    ],
+    "node": "PNG filters/8/16-bit/CRC/Adler/size mismatch/limits/precision/channel/orientation/alpha/cancel + river safety/world-depth/source ownership; existing effects/cold-work/647 pick/window/road/junction tests",
+    "build": "npm run all PASS; node --check; bash -n; git diff --check"
+  },
+  "limitations": [
+    "No thermal/hydraulic erosion or automated watershed routing",
+    "Piecewise-linear manually authored water, no physical flow/tributary boolean joins",
+    "Float32 height storage, not infinite precision; no georeferencing",
+    "Delete/edit water does not uncarve historical height changes",
+    "Main-thread cooperative work, no hard latency guarantee; bounded file/pixel limits",
+    "Two-frame true-decoded compatibility clips only; phase-1 long clips not rerun on current artifact"
+  ]
+}

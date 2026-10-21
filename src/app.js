@@ -2,19 +2,35 @@
 // App：状态与行为中枢（物体增删、选择、拖放、导入、路径、时间轴、导出）
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { ProjectAssets, packProject, unpackProject, localFileResources, persistLocal, restoreLocal } from './project-assets.js';
+import { MaterialAppearance } from './material-appearance.js';
+import { VegetationBrush, buildVegetationPatch } from './vegetation-brush.js';
 import { Stage, ASPECTS } from './stage.js';
+import { PerformanceMonitor } from './performance-monitor.js';
+import { ModelInstancing } from './model-instancing.js';
+import { RenderEffects } from './render-effects.js';
+import { LocalLights } from './local-lights.js';
+import { WindowLights } from './window-lights.js';
 import { Lighting } from './lighting.js';
 import { Shot, MOVE_BY_ID, SENSORS } from './camera.js';
 import { LIB, LIB_INDEX, buildAsset, defaultsFor, shade } from './assets.js';
+import { mergeSimilar, bakeMerge } from './geo.js';
 import { updateChar, setCharAnim, stepCrowd, ANIMS } from './character.js';
 import { LEVELS, setDetailLevel, setTexForce, textureStats, pruneTextureCache, texOn } from './detail.js';
 
 const v0 = new THREE.Vector3();
 const v1 = new THREE.Vector3();
 import { Mover } from './mover.js';
+import { motionProgress } from './motion-schedule.js';
+import { BehaviorWorkflow, hasBehavior, sampleActorBehavior } from './behavior-workflow.js';
+import { readBehaviorProgram, behaviorKeys } from './behavior-program.js';
 import { normalizePts, clonePts } from './curve.js';
 import { RoadBrush } from './road-brush.js';
+import { RoadPlanning } from './road-planning.js';
 import { Terrain } from './terrain.js';
+import { RoadTerrain } from './road-terrain.js';
+import { LayoutMaintenance } from './layout-maintenance.js';
+import { RoadDiagnostics } from './road-diagnostics.js';
 import { WeatherSystem } from './weather.js';
 import { clamp, uid, el, clear, busMake, snap as snapv, removeDeep, downloadBlob, copy, deg, rad } from './util.js';
 const _fsN = new THREE.Vector3(), _fsM = new THREE.Matrix3();   // 贴面判定用的小工具：一次重建要看几千个网格，别反复 new
@@ -27,14 +43,29 @@ export class SceneObj {
     this.key = j.key || null;             // 库索引（可重建）
     this.type = j.type || 'prop';
     this.params = j.params || {};
+    this.materialMode = ['on', 'off'].includes(j.materialMode) ? j.materialMode : 'inherit';
+    this.followTerrain = j.followTerrain !== false;
     this.root = j.root || new THREE.Group();
     this.root.userData.so = this;
     this.visible = j.visible !== false;
     this.locked = !!j.locked;
+    this.merged = !!j.merged;          // 批量造景时烘过几何：重建 / 载入后要再烘一次保持一致
     this.motion = j.motion || { keys: [], anim: 'idle', autoFace: true, speed: 1, easing: 'linear', loop: true, active: false };
     if (j.pos) this.root.position.fromArray(j.pos);
     if (j.rot) this.root.rotation.set(j.rot[0], j.rot[1], j.rot[2]);
     if (j.scale) this.root.scale.fromArray(j.scale);
+    if (this.motion.behavior) {
+      try {
+        this.motion.behavior = readBehaviorProgram(this.motion.behavior);
+        if (!this.isChar || this.root.userData.crowd || this.item?.type !== 'human') throw Error('行为只支持库中单个人物');
+        this.motion.keys = behaviorKeys(this.motion.behavior);
+        this.motion.mover = null;
+        this.motion.behaviorError = null;
+      } catch (e) {
+        this.motion.behavior = null; this.motion.behaviorError = '行为方案已禁用：' + e.message;
+        this.motion.active = false; this.motion.keys = []; this.motion.mover = null;
+      }
+    }
     this._mgroup = new THREE.Group();
     this._mgroup.userData.pickIgnore = false;
     app.stage.world.add(this.root);
@@ -44,6 +75,7 @@ export class SceneObj {
   }
   apply() {
     this.root.visible = this.visible;
+    this.app.appearance?.apply(this);
     if (this.motion?.anim) setCharAnim(this.root, this.motion.anim);
   }
   get item() { return this.key ? LIB_INDEX.get(this.key) : null; }
@@ -54,12 +86,23 @@ export class SceneObj {
     return bb.isEmpty() ? 1 : bb.max.y - bb.min.y;
   }
   setParams(patch, rebuild = true) {
+    if (hasBehavior(this)) throw Error('请先在多步骤行为里移除方案，再编辑人物参数');
     Object.assign(this.params, patch);
     if (rebuild) this.app.rebuildObject(this);
   }
   rebuildMarkers() {
     const g = this._mgroup;
     for (const c of [...g.children]) { c.traverse?.((o) => o.geometry?.dispose?.()); g.remove(c); }
+    if (hasBehavior(this)) {
+      if (this.motion.active && this.motion.behavior) {
+        const pts = behaviorKeys(this.motion.behavior).map(k => new THREE.Vector3(...k.p));
+        if (pts.length > 1) {
+          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x66d9a8, transparent: true, opacity: .85, depthTest: false }));
+          line.renderOrder = 690; line.userData.pickIgnore = true; g.add(line);
+        }
+      }
+      return;
+    }
     const keys = this.motion?.keys || [];
     if (!this.motion?.active || !keys.length) return;
     keys.forEach((k, i) => {
@@ -81,11 +124,13 @@ export class SceneObj {
     }
   }
   serialize() {
+    const { mover: _runtimeMover, curvePts, ...motion } = this.motion || {};
     return {
       id: this.id, name: this.name, key: this.key, type: this.type, params: this.params,
+      merged: this.merged ? 1 : undefined, materialMode: this.materialMode, followTerrain: this.followTerrain,
       pos: this.root.position.toArray(), rot: [this.root.rotation.x, this.root.rotation.y, this.root.rotation.z],
       scale: this.root.scale.toArray(), visible: this.visible, locked: this.locked,
-      motion: this.motion ? { ...this.motion, keys: (this.motion.keys || []).map((k) => ({ t: +k.t.toFixed(4), p: k.p.map((v) => +v.toFixed(3)) })) } : null,
+      motion: this.motion ? { ...motion, ...(curvePts && !motion.curve ? { curve: clonePts(curvePts) } : {}), keys: (this.motion.keys || []).map((k) => ({ t: +k.t.toFixed(4), p: k.p.map((v) => +v.toFixed(3)) })) } : null,
     };
   }
 }
@@ -103,7 +148,7 @@ export class App {
     this.editWhole = false;
     this.activeShot = null;
     this.state = {
-      preview: false, aspect: '1.85', thirds: true, snap: 0.25, grid: true,
+      preview: false, aspect: '1.85', thirds: true, snap: 0.25, grid: false, roadSnap: false, roadGridSize: 5, parcelZones: {},
       perf: false, fps: 30, speed: 1, loop: true, time: 0, duration: 6, playing: false,
       showHelpers: true, importScale: 0,
       detail: 'std', env: 0.8, tex: true, // 模型精度档位 / 环境反射强度 / 表面贴图
@@ -115,19 +160,38 @@ export class App {
     this._prevObjPos = new Map();
     this._gizmoPrev = new THREE.Vector3();
     this._gizmoPrevQ = new THREE.Quaternion();
+    this.projectAssets = new ProjectAssets();
+    this.appearance = new MaterialAppearance(this);
+    this.stage.appearance = this.appearance;
+    this.bus.on('objects', () => this.appearance.applyAll());
+    this.bus.on('light', () => this.appearance.applyAll());
     this.terrain = new Terrain(this);
     this.roadBrush = new RoadBrush(this);
     this.roadBrush.addToScene(this.stage.scene);
     this.weather = new WeatherSystem(this.stage.scene);
-    // 地形把地面盖住时，平面网格会在地形起伏上闪 → 由 Stage 统一决定可见性
-    this.stage.gridBlocked = () => !!(this.terrain && this.terrain.enabled);
+    // 绘制网格贴合地形；只有旧平面网格回退时才阻止穿插。
+    this.stage.gridBlocked = () => !this.stage.drawingGrid && !!this.terrain?.enabled;
+    this.roadPlanning = new RoadPlanning(this);
+    this.vegetationBrush = new VegetationBrush(this);
+    this.stage.setGridVisible(false);
     this.stage.setGroundY(-0.035);
+    this.localLights = new LocalLights(this);
+    this.lighting.localLights = this.localLights;
+    this.windowLights = new WindowLights(this);
+    this.lighting.windowLights = this.windowLights;
     this._bindStage();
+    this.roadTerrain = new RoadTerrain(this);
+    this.roadDiagnostics = new RoadDiagnostics(this);
     this.timeline = {
       get u() { return clamp(this.app.state.time / Math.max(0.05, this.app.state.duration), 0, 1); },
       app: this,
     };
-    this.loadEnv();
+    this.storageReady = this.loadEnv();
+    this.modelInstancing = new ModelInstancing(this);
+    this.renderEffects = new RenderEffects(this);
+    this.performance = new PerformanceMonitor(this);
+    this.layout = new LayoutMaintenance(this);
+    this.behaviors = new BehaviorWorkflow(this);
   }
 
   // ---------------------------------------------------------------- 选择
@@ -136,6 +200,7 @@ export class App {
   get selShot() { return this.sel?.kind === 'shot' || this.sel?.kind === 'key' ? this.sel.shot : null; }
 
   select(sel) {
+    if (sel?.kind === 'objkey' && hasBehavior(sel.so)) sel = { kind: 'obj', so: sel.so };
     this.sel = sel;
     if (sel?.kind === 'obj') this._prevObjPos.set(sel.so.id, sel.so.root.position.clone());
     this.selKeyIdx = sel?.i ?? -1;
@@ -185,12 +250,14 @@ export class App {
 
   // ---------------------------------------------------------------- 物体路径关键帧
   syncMotion(so) {
+    if (hasBehavior(so)) { this.notify('行为路线为只读，请重新预演或移除方案', 'warn'); return false; }
     so.motion.mover = so.motion.active && so.motion.keys?.length > 1 ? new Mover(so.motion.keys) : null;
     so.rebuildMarkers();
     this.bus.emit('objects');
   }
   addObjectKey(so = this.selObj, u = this.timeline.u) {
     if (!so) return null;
+    if (hasBehavior(so)) { this.notify('行为路线为只读，请重新预演或移除方案', 'warn'); return null; }
     this.beginOp('加物体关键帧 ' + (so.name || ''));
     so.motion.keys = so.motion.keys || [];
     const t = +clamp(u, 0, 1).toFixed(4);
@@ -204,6 +271,7 @@ export class App {
     return k;
   }
   removeObjectKey(so = this.selObj, i = this.selKeyIdx) {
+    if (hasBehavior(so)) { this.notify('行为路线为只读，请重新预演或移除方案', 'warn'); return false; }
     if (!so || !so.motion?.keys || i < 0 || !so.motion.keys[i]) return false;
     so.motion.keys.splice(i, 1);
     if (this.selKeyIdx >= so.motion.keys.length) this.selKeyIdx = so.motion.keys.length - 1;
@@ -213,6 +281,7 @@ export class App {
   }
   clearMotion(so = this.selObj) {
     if (!so) return;
+    if (hasBehavior(so)) { this.notify('请在多步骤行为里明确确认移除方案', 'warn'); return; }
     so.motion.keys = [];
     so.motion.active = false;
     so.motion.mover = null;
@@ -395,6 +464,7 @@ export class App {
   /** 单个物件重新贴地：移动 / 旋转 / 缩放之后，或模板把所有物件摆好之后（姿态变了，找平范围也得跟着变）。
    *  先把上一次找平填回去，再按当前包围盒重算，所以反复拖动不会在地形上留一堆旧补丁。 */
   refitOne(so, opts = {}) {
+    if (['road_brush','road_intersection','vegetation_patch'].includes(so?.type)) return;
     const tr = this.terrain;
     if (!so || !so.root || !tr || !tr.enabled) return;
     this._inRefit = true;
@@ -521,16 +591,19 @@ export class App {
     this.beginOp('放置 ' + (item.name || key));
     const params = { ...defaultsFor(item), ...(opts.params || {}) };
     const root = buildAsset(item, params);
+    if (opts.merge) this.mergeRoot(root);
     const arr = Array.isArray(point) ? point : point?.pos;
     const src = arr ? { x: arr[0], y: arr[1], z: arr[2] } : (point || {});
     const g = (v, d = 0) => (Number.isFinite(v) ? v : d);
     const so = new SceneObj(this, {
       name: opts.name || nextName(this, item.name), key, type: item.type, params, root,
+      merged: !!opts.merge,
       pos: [g(src.x), this.groundY(g(src.x), g(src.z), opts.keepY ? g(src.y) : null), g(src.z)],
     });
     if (item.anim) so.motion.anim = params.anim || 'idle';
     this.makeDecalSafe(so);
-    if (item.elev) {                                          // 屋顶 / 天花板：抬到一层之上，且不参与贴地（贴地会把它拽回地面）
+    if (opts.authored) { so.followTerrain = false; }
+    else if (item.elev) {                                          // 屋顶 / 天花板：抬到一层之上，且不参与贴地（贴地会把它拽回地面）
       so.root.position.y += item.elev;
       so.followTerrain = false;
       so.pad = true;
@@ -539,31 +612,50 @@ export class App {
       this.alignLinear(so);
       this.hugChildren(so);
     }
-    so.followTerrain = this.state.followTerrain && item.type !== 'fx' && this.terrain?.enabled !== false;
+    so.followTerrain = !opts.authored && this.state.followTerrain && item.type !== 'fx' && this.terrain?.enabled !== false;
     if (item.elev) so.followTerrain = false;                   // 楼板 / 屋顶不跟地形起伏（跟了就会被拽回地面）
     if (item.elev) so.pad = true;
     so.root.userData.itemKey = key;
     this.objects.push(so);
-    this.select({ kind: 'obj', so });
-    this.lighting.applyGlow(this.lighting.p.glow);
-    this.bus.emit('objects');
+    // 批量造景（一句话街区）期间由调用方统一刷新 UI，避免每个物体重绘一次面板
+    if (!this._quietAdd) {
+      this.select({ kind: 'obj', so });
+      this.lighting.applyGlow(this.lighting.p.glow);
+      this.bus.emit('objects');
+    }
     return so;
+  }
+  addVegetationPatch(params) {
+    const root = buildVegetationPatch(params);
+    const so = new SceneObj(this, { name: '植被笔刷区域', type: 'vegetation_patch', params, root, followTerrain: false });
+    this.objects.push(so);
+    return so;
+  }
+  /** 批量造景减 draw call：同规格重复件实例化 + 同材质零碎件烘成一个几何（geo.js 既有工具，外观不变） */
+  mergeRoot(root) {
+    mergeSimilar(root, { min: 2 });
+    bakeMerge(root);
+    return root;
   }
   /** 精度切换：按当前 params 重建所有程序化资产（段数/倒角/贴图都会变），只刷一次 UI */
   rebuildAll() {
     const t0 = performance.now();
     this._inCeil = true;
     for (const so of this.objects) {
+      if (so.type === 'vegetation_patch') { this.vegetationBrush.rebuild(so); continue; }
       if (!so.item) continue;                       // 导入的外部模型不做重建
       const old = so.root;
       const pos = old.position.clone(), rot = old.rotation.clone(), scl = old.scale.clone();
       const root = buildAsset(so.item, so.params);
+      if (so.merged) this.mergeRoot(root);
       so.root = root;
       root.userData.so = so;
       root.position.copy(pos); root.rotation.copy(rot); root.scale.copy(scl);
       this.makeDecalSafe(so);
       this.fitToGround(so);
       this.stage.world.add(root);
+      this.windowLights.release(old);
+      this.appearance.release(old);
       removeDeep(old);
       so.apply();
     }
@@ -588,13 +680,19 @@ export class App {
   }
   setEnv(v) {
     this.state.env = clamp(+v || 0, 0, 2);
-    this.stage.setEnvIntensity(this.state.env);
+    if (this.lighting.mode === 'physical') this.lighting.physical.configure({ environment: this.state.env });
+    else this.stage.setEnvIntensity(this.state.env);
   }
   /** 表面贴图开关（面板上的勾）：关 → 纯色低内存外观；开 → 跟随精度档位 */
   setTex(on) {
+    this.beginOp(on ? '全部开启材质' : '全部关闭材质');
     this.state.tex = !!on;
-    setTexForce(on ? null : false);
-    return this.rebuildAll();
+    setTexForce(null);
+    for (const so of this.objects) so.materialMode = 'inherit';
+    this.appearance.applyAll();
+    this.bus.emit('objects'); this.bus.emit('select');
+    this.saveLocal();
+    return 0;
   }
   detailStats() {
     const st = textureStats();
@@ -609,16 +707,20 @@ export class App {
     const old = so.root;
     const pos = old.position.clone(), rot = old.rotation.clone(), scl = old.scale.clone();
     const root = buildAsset(item, so.params);
+    if (so.merged) this.mergeRoot(root);
     so.root = root;
     root.userData.so = so;
     root.position.copy(pos); root.rotation.copy(rot); root.scale.copy(scl);
     this.makeDecalSafe(so);
     this.fitToGround(so);
     this.stage.world.add(root);
+    this.windowLights.release(old);
+    this.appearance.release(old);
     removeDeep(old);
     so.apply();
     this.lighting.applyGlow(this.lighting.p.glow);
     if (this.sel?.kind === 'obj' && this.sel.so === so) this.stage.setSelected(so);
+    this.layout?.afterHostEdit(so);
     this.bus.emit('objects');
     this.bus.emit('select');
   }
@@ -626,6 +728,8 @@ export class App {
     if (!so) return;
     this.beginOp('删除 ' + (so.name || '物体'));
     so.onRemove?.();
+    this.windowLights.release(so.root);
+    this.appearance.release(so.root);
     removeDeep(so.root);
     so._mgroup.parent?.remove(so._mgroup);
     this.objects = this.objects.filter((o) => o !== so);
@@ -638,13 +742,16 @@ export class App {
     const so = this.selObj;
     if (!so) return null;
     this.beginOp('复制物体');
-    const root = so.item ? buildAsset(so.item, so.params) : so.root.clone(true);
+    const root = so.item ? buildAsset(so.item, so.params) : so.type === 'vegetation_patch' ? buildVegetationPatch(so.params) : this.projectAssets.instantiate(so.params?.assetId) || so.root.clone(true);
     const np = so.root.position.clone(); np.x += 2; np.z += 2;
     const ns = new SceneObj(this, {
       name: so.name + ' 副本', key: so.key, type: so.type, params: copy(so.params), root,
       pos: np.toArray(), rot: [so.root.rotation.x, so.root.rotation.y, so.root.rotation.z],
-      scale: so.root.scale.toArray(), motion: copy(so.motion),
+      scale: so.root.scale.toArray(), motion: copy(so.motion), materialMode: so.materialMode, followTerrain: so.followTerrain,
     });
+    if (hasBehavior(ns)) { ns.motion = { keys: [], active: false, anim: ns.params.anim || 'idle', autoFace: true, speed: 1, loop: true, easing: 'linear' }; ns.rebuildMarkers(); ns.apply(); }
+    // A duplicate is an independent object, not a second linked copy snapping onto its source.
+    delete ns.params.sceneAttachment; delete ns.params.sceneKit; delete ns.params.sceneRecipeNode;
     if (!so.item) { ns.imported = true; }
     this.objects.push(ns);
     this.select({ kind: 'obj', so: ns });
@@ -667,10 +774,12 @@ export class App {
   }
   setMotion(so, patch) {
     if (!so) return;
+    if ((hasBehavior(so) || 'behavior' in (patch || {})) && !this.behaviors?._writing) throw Error('请通过多步骤行为预演并确认；生成的路径不可直接编辑');
+    if (patch?.behavior) patch = { ...patch, behavior: readBehaviorProgram(patch.behavior) };
     Object.assign(so.motion, patch || {});
     if ('curve' in (patch || {})) so.motion.curvePts = normalizePts(so.motion.curve);
     if (so.motion.anim && so.isChar) setCharAnim(so.root, so.motion.anim);
-    so.motion.mover = so.motion.active && so.motion.keys && so.motion.keys.length > 1
+    so.motion.mover = !so.motion.behavior && so.motion.active && so.motion.keys && so.motion.keys.length > 1
       ? new Mover(so.motion.keys, false, { ease: so.motion.easing || 'linear', scope: so.motion.scope || 'global', arc: so.motion.arc !== false, rot: 'slerp' })
       : null;
     so.rebuildMarkers();
@@ -798,7 +907,11 @@ export class App {
   // ---------------------------------------------------------------- 舞台事件
   _bindStage() {
     const st = this.stage;
-    st.bus.on('click', ({ hit }) => {
+    for (const event of ['objects', 'terrain', 'gizmo-live', 'shots']) {
+      this.bus.on(event, () => st.pickIndex.invalidate(event));
+    }
+    st.bus.on('click', ({ hit, ndc }) => {
+      if (this.roadPlanning?.pick(ndc)) return;
       if (!hit) return;
       // DOF 点选模式
       if (this.state.dofPickMode && hit.kind === 'obj') {
@@ -844,10 +957,13 @@ export class App {
     st.bus.on('transform-change', (obj) => this.onGizmoChange(obj));
     st.bus.on('transform-end', () => {
       const so = this.sel && this.sel.kind === 'obj' ? this.sel.so : null;
+      if (so?.type === 'road_brush') this.roadTerrain?.bakeTransform(so);
       if (so && this.terrain && this.terrain.enabled) {
         this.refitOne(so);                              // 旧的找平先还原，再按新的位置 / 朝向 / 缩放重算
         this.bus.emit('objects');
       }
+      this.layout?.afterHostEdit(so);
+      this.bus.emit('objects');
       this._prevObjPos.clear();
       if (this.selShot) this.selShot.syncAnchor();
       this.bus.emit('select');
@@ -916,6 +1032,8 @@ export class App {
     else { this.stage.tc.detach(); this.stage.setSelected(null); }
   }
   step(dt = 1 / 30, forExport = false) {
+    this.roadPlanning?.tick();
+    this.vegetationBrush?.tick();
     const S = this.state;
     this._repairGizmo();
     if (S.playing) {
@@ -929,11 +1047,19 @@ export class App {
     // 人物 / 物体路径
     for (const so of this.objects) {
       const m = so.motion;
+      if (so._mgroup) so._mgroup.visible = S.showHelpers && !S.preview;
       if (!so.root.visible) continue;
+      if (hasBehavior(so)) {
+        if (m.active && m.behavior) {
+          try { sampleActorBehavior(so, S.time); }
+          catch (e) { m.active = false; m.behaviorError = '行为方案已禁用：' + e.message; so.rebuildMarkers(); this.notify(m.behaviorError, 'warn'); this.bus.emit('objects'); }
+        }
+        continue;
+      }
       let dist = 0;
       if (m?.active && m.mover && m.mover.count > 1) {
         const prev = so.root.position.clone();
-        const s = m.mover.sample(u, { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: null }, 'linear',
+        const s = m.mover.sample(motionProgress(m, u), { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: null }, 'linear',
           { ease: m.easing || 'linear', scope: m.scope || 'global', arc: m.arc !== false, tension: m.tension ?? 0.5, progCurve: m.curvePts || null });
         if (s) {
           so.root.position.copy(s.p);
@@ -951,7 +1077,8 @@ export class App {
           dist = so.root.position.distanceTo(prev);
           if (m.autoFace) {
             const t = m.mover.tangent(u);
-            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z);
+            // faceOffset：模型车头非 +z（如轿车车头沿 +x → 偏移 -PI/2）时对齐行进方向
+            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z) + (m.faceOffset || 0);
           }
         }
       }
@@ -1007,6 +1134,11 @@ export class App {
       this.activeShot.rig.updateMatrixWorld(true);
       this.activeShot.helper.update?.();
     }
+    this.lighting.setIso(S.preview && this.activeShot ? this.activeShot.iso : 400);
+    this.lighting.physical.anchorSun(S.preview);
+    this.localLights.tick();
+    this.windowLights.tick();
+    if (forExport) this.lighting.flushEnvironment();
     this.bus.emit('tick', dt);
   }
 
@@ -1020,44 +1152,61 @@ export class App {
     const { MTLLoader } = await import('three/examples/jsm/loaders/MTLLoader.js');
     const out = [];
     const list = Array.from(files);
+    const resources = localFileResources(list);
     const mtlFile = list.find((f) => /\.mtl$/i.test(f.name));
     for (const f of list) {
       const name = f.name;
+      resources.setBase(f);
       try {
-      if (/\.(glb|gltf)$/i.test(name)) {
+      if (/\.(previz|zip)$/i.test(name)) {
+        this.loadJson(await unpackProject(await f.arrayBuffer()));
+        await this.projectAssets.ready();
+        await this.saveLocal();
+        this.notify('工程包已恢复，含模型与贴图');
+        out.projectLoaded = true;
+      } else if (/\.(glb|gltf)$/i.test(name)) {
         const buf = await f.arrayBuffer();
-        const gltf = await new Promise((res, rej) => new GLTFLoader().parse(buf, '', res, rej));
+        const gltf = await new Promise((res, rej) => new GLTFLoader(resources.manager).parse(buf, '', res, rej));
         const scene = gltf.scene || (gltf.scenes && gltf.scenes[0]);
         if (!scene) throw new Error('文件里没有可用网格');
-        out.push(this._adoptModel(scene, name, at, gltf));
+        await resources.ready();
+        out.push(await this._adoptModel(scene, name, at, gltf));
       } else if (/\.fbx$/i.test(name)) {
         const buf = await f.arrayBuffer();
-        const o = new FBXLoader().parse(buf, '');
-        out.push(this._adoptModel(o, name, at));
+        const o = new FBXLoader(resources.manager).parse(buf, '');
+        await resources.ready();
+        out.push(await this._adoptModel(o, name, at));
       } else if (/\.obj$/i.test(name)) {
         const txt = await f.text();
-        let o = new OBJLoader().parse(txt);
-        if (mtlFile) {
+        let o = new OBJLoader(resources.manager).parse(txt);
+        const reference = txt.match(/^mtllib\s+(.+)$/m)?.[1]?.trim();
+        const materialFile = reference ? resources.file(reference) : mtlFile;
+        if (reference && !materialFile) throw new Error('缺少材质文件「' + reference + '」，请连同 OBJ 一起导入');
+        if (materialFile) {
           try {
-            const mats = new MTLLoader().parse(await mtlFile.text());
+            resources.setBase(materialFile);
+            const mats = new MTLLoader(resources.manager).parse(await materialFile.text(), '');
             mats.preload();
-            o = new OBJLoader().setMaterials(mats).parse(txt);
-          } catch (e) { console.warn('MTL 载入失败', e); }
+            o = new OBJLoader(resources.manager).setMaterials(mats).parse(txt);
+          } catch (e) { throw new Error('MTL 载入失败：' + e.message); }
         }
-        out.push(this._adoptModel(o, name, at));
-      } else if (/\.(mtl)$/i.test(name)) { /* 与 obj 同批处理 */ }
+        await resources.ready();
+        out.push(await this._adoptModel(o, name, at));
+      } else if (/\.(mtl|bin|png|jpe?g|webp|gif|bmp)$/i.test(name)) { /* 模型依赖，与主模型同批处理 */ }
       else if (/\.(json)$/i.test(name)) {
-        try { this.pushUndo('载入工程文件'); this.loadJson(JSON.parse(await f.text())); this.notify('已载入工程文件（Ctrl+Z 可退回）'); } catch (e) { this.notify('工程文件解析失败：' + (e.message || e), 'err'); }
+        try { this.pushUndo('载入工程文件'); this.loadJson(JSON.parse(await f.text())); await this.projectAssets.ready(); await this.saveLocal(); this.notify('已载入工程文件（Ctrl+Z 可退回）'); } catch (e) { this.notify('工程文件解析失败：' + (e.message || e), 'err'); }
       } else this.notify(`「${name}」暂不支持，可用格式：.glb / .gltf / .obj(+.mtl) / .fbx / 工程 .json`, 'warn');
       } catch (e) {
         console.warn('导入失败', name, e);
         this.notify(`导入 ${name} 失败：${e.message || e}`, 'err');
       }
     }
+    resources.dispose();
+    if (out.length) await this.saveLocal();
     if (out.length) this.notify(`已导入 ${out.length} 个模型（已贴地${this.state.importScale > 0 ? '并归一化到 ' + this.state.importScale + 'm' : '，保持原始尺寸'}）`);
     return out;
   }
-  _adoptModel(src, filename, at, meta) {
+  async _adoptModel(src, filename, at, meta) {
     const root = new THREE.Group();
     root.add(src);
     const bb = new THREE.Box3().setFromObject(src);
@@ -1075,9 +1224,11 @@ export class App {
         mats.forEach((m) => { if (m && 'flatShading' in m) m.needsUpdate = true; });
       }
     });
+    if (meta?.animations?.length) root.animations = meta.animations;
+    const assetId = await this.projectAssets.register(root);
     const so = new SceneObj(this, {
       name: filename.replace(/\.[^.]+$/, ''), key: null, type: 'import',
-      params: { file: filename, size: [+size.x.toFixed(2), +size.y.toFixed(2), +size.z.toFixed(2)] },
+      params: { assetId, file: filename, size: [+size.x.toFixed(2), +size.y.toFixed(2), +size.z.toFixed(2)] },
       root, pos: [at?.x || 0, at?.y || 0, at?.z || 0],
     });
     so.imported = true;
@@ -1088,12 +1239,16 @@ export class App {
   }
 
   // ---------------------------------------------------------------- 序列化
-  serialize() {
+  serialize({ assets = true } = {}) {
     return {
-      v: 3, name: this.projectName || '未命名场景',
-      state: { aspect: this.state.aspect, duration: this.state.duration, fps: this.state.fps, thirds: this.state.thirds, snap: this.state.snap, perf: this.state.perf, detail: this.state.detail, env: this.state.env, tex: this.state.tex },
+      v: 4, assets: assets ? this.projectAssets.export(this.objects) : undefined, name: this.projectName || '未命名场景',
+      generation: this.sceneGeneration || null,
+      layoutRelations: this.layoutRelations || undefined,
+      state: { aspect: this.state.aspect, duration: this.state.duration, fps: this.state.fps, showHelpers:this.state.showHelpers, thirds: this.state.thirds, snap: this.state.snap, grid: this.state.grid, roadSnap: this.state.roadSnap, roadGridSize: this.state.roadGridSize, parcelZones: this.state.parcelZones, perf: this.state.perf, detail: this.state.detail, env: this.state.env, tex: this.state.tex },
       view: { pos: this.stage.view.position.toArray(), target: this.stage.orbit.target.toArray(), fov: this.stage.view.fov },
       light: this.lighting.toJSON(),
+      rendering: this.renderEffects.toJSON(),
+      weather: this.weather.toJSON(),
       terrain: this.terrain?.toJSON() || null,
       objects: this.objects.map((o) => o.serialize()),
       shots: this.shots.map((s) => s.toJSON()),
@@ -1101,20 +1256,29 @@ export class App {
     };
   }
   clearAll() {
+    this.sceneGeneration = null;
+    this.layoutRelations = null;
+    this.weather?.set(null);
+    this._clearingScene = true;
+    this.terrain?._cancelStroke?.();
+    this.terrain?.workflow?.reset();
+    this.roadPlanning?.reset();
+    this.vegetationBrush?.stop();
     const prev = this._suspendUndo;
     this._suspendUndo = true;                       // 清空是「一步」，由调用方（载入模板 / 一键清空）负责留快照
     for (const o of [...this.objects]) this.removeObject(o);
-    if (this.terrain) { this.terrain.h.fill(0); this.terrain.refresh(); this.terrain.setEnabled(true); }
+    if (this.terrain) { this.terrain.h.fill(0); this.terrain.weights.fill(0); this.terrain.refresh(); this.terrain.setEnabled(true); }
     for (const s of [...this.shots]) this.removeShot(s);
     this.activeShot = null;
     this._suspendUndo = prev;
+    this._clearingScene = false;
   }
   /** 破坏性操作前留一份快照，Ctrl+Z 可回 */
-  pushUndo(label = '') {
+  pushUndo(label = '', snapshot = null) {
     this._undo = this._undo || [];
     this._undoBytes = this._undoBytes || 0;
     try {
-      const j = JSON.parse(JSON.stringify(this.serialize()));
+      const j = JSON.parse(JSON.stringify(snapshot || this.serialize({ assets: false })));
       const size = JSON.stringify(j).length;
       this._undo.push({ label, j, size });
       this._undoBytes += size;
@@ -1150,12 +1314,13 @@ export class App {
     try { this.pushUndo(label); return fn ? fn() : undefined; } finally { this._suspendUndo = prev; }
   }
   undo() {
+    if (this.terrain?._strokeActive) { this.terrain._cancelStroke(); return true; }
     const u = (this._undo || []).pop();
     if (!u) { this.notify('没有可撤销的操作', 'warn'); this.bus?.emit('undoable'); return false; }
     this._undoBytes = Math.max(0, (this._undoBytes || 0) - (u.size || 0));
     this._opKey = null;
     try {
-      const cur = JSON.parse(JSON.stringify(this.serialize()));
+      const cur = JSON.parse(JSON.stringify(this.serialize({ assets: false })));
       this._redo = this._redo || [];
       this._redo.push({ label: u.label, j: cur, size: JSON.stringify(cur).length });
       if (this._redo.length > 40) this._redo.shift();
@@ -1171,10 +1336,10 @@ export class App {
     if (!r) { this.notify('没有可重做的操作', 'warn'); this.bus?.emit('undoable'); return false; }
     this._opKey = null;
     try {
-      const cur = JSON.parse(JSON.stringify(this.serialize()));
+      const cur = JSON.parse(JSON.stringify(this.serialize({ assets: false })));
       this._undo = this._undo || [];
       this._undo.push({ label: r.label, j: cur, size: JSON.stringify(cur).length });
-      this._undoBytes = (this._undoBytes || 0) + cur.size;
+      this._undoBytes = (this._undoBytes || 0) + this._undo.at(-1).size;
       while (this._undo.length > 40 || this._undoBytes > 12e6) { const g2 = this._undo.shift(); if (!g2) break; this._undoBytes -= g2.size || 0; }
       this._undoAvail = this._undo.length;
       this.loadJson(r.j);
@@ -1185,6 +1350,7 @@ export class App {
   }
   /** 一键清空：模型 / 机位 / 地形全清，回到可直接摆景的空白场 */
   clearScene({ blank = true } = {}) {
+    const nObj = this.objects.length, nShot = this.shots.length;
     this.pushUndo(blank ? '空白场景' : '清空场景');
     this.state.playing = false;
     this.state.time = 0;
@@ -1204,9 +1370,9 @@ export class App {
     for (const ev of ['objects', 'shots', 'terrain', 'time', 'select']) this.bus.emit(ev);
     this.updateAspectOverlay && this.updateAspectOverlay();
     this.saveLocal();
-    this.notify(blank
-      ? '已是空白场景：从左侧素材库拖模型进画面，按 C 以当前视角建机位'
-      : '已清空场景（Ctrl+Z 可撤销）');
+    this.notify(nObj || nShot
+      ? `已一键清空：${nObj} 个模型 · ${nShot} 个机位 → 空白场就绪 · Ctrl+Z 可撤销`
+      : '已是空白场景：点顶栏 ✦ 一句话生成造景，或展开「模型库」拖入模型，按 C 建机位');
     return true;
   }
   /** 工程 JSON 无法保存外部模型网格，导入物用半透明占位盒代替，位置/路径/朝向仍然保留 */
@@ -1223,28 +1389,36 @@ export class App {
     return g;
   }
   loadJson(j) {
-    if (!j || !j.objects) throw new Error('不是有效的工程 JSON');
+    if (!j || !Array.isArray(j.objects)) throw new Error('不是有效的工程 JSON');
+    this.projectAssets.hydrate(j.assets);
+    for (const o of j.objects) if (o.params?.assetId && !this.projectAssets.records.has(o.params.assetId)) throw new Error('工程缺少模型资源，请打开完整 .previz 工程包');
+    const importedRoots = new Map();
+    for (const o of j.objects) if (o.params?.assetId) importedRoots.set(o, this.projectAssets.instantiate(o.params.assetId));
     const dl = LEVELS[j.state?.detail] ? j.state.detail : 'std';   // 精度要先落到全局，后面建模型才用得上
     setDetailLevel(dl);
     this.state.detail = dl;
     this.state.env = j.state?.env ?? this.state.env;
     this.state.tex = j.state?.tex ?? true;
-    setTexForce(this.state.tex ? null : false);
+    setTexForce(null);
     this.stage.setEnvIntensity(this.state.env);
     this.clearAll();
     if (j.name) this.projectName = j.name;
+    this.sceneGeneration = j.generation || null;
+    this.layoutRelations = j.layoutRelations ? JSON.parse(JSON.stringify(j.layoutRelations)) : null;
     for (const o of j.objects) {
       if (o.type === 'road_brush' || o.type === 'road_intersection') continue;   // 手绘道路走 RoadBrush.restore，路口自动重建
       let root;
       const item = o.key ? LIB_INDEX.get(o.key) : null;
       if (item) root = buildAsset(item, o.params || {});
-      else root = this._importPlaceholder(o);
+      else if (o.type === 'vegetation_patch') root = buildVegetationPatch(o.params || {});
+      else root = importedRoots.get(o) || this._importPlaceholder(o);
+      if (o.merged && item) this.mergeRoot(root);
       const so = new SceneObj(this, {
-        id: o.id, name: o.name, key: o.key, type: o.type, params: o.params || {}, root,
+        id: o.id, name: o.name, key: o.key, type: o.type, params: o.params || {}, root, merged: !!o.merged, materialMode: o.materialMode, followTerrain: o.followTerrain,
         pos: o.pos, rot: o.rot, scale: o.scale, visible: o.visible, locked: o.locked,
-        motion: o.motion ? { ...o.motion, curvePts: normalizePts(o.motion.curve), mover: o.motion.keys?.length > 1 ? new Mover(o.motion.keys, false, { ease: o.motion.easing || 'linear', scope: o.motion.scope || 'global', arc: o.motion.arc !== false, rot: 'slerp' }) : null } : null,
+        motion: o.motion ? { ...o.motion, curvePts: normalizePts(o.motion.curve), mover: !o.motion.behavior && !o.motion.behaviorError && o.motion.keys?.length > 1 ? new Mover(o.motion.keys, false, { ease: o.motion.easing || 'linear', scope: o.motion.scope || 'global', arc: o.motion.arc !== false, rot: 'slerp' }) : null } : null,
       });
-      so.imported = !item;
+      so.imported = !item && o.type !== 'vegetation_patch';
       this.objects.push(so);
     }
     for (const sj of j.shots || []) {
@@ -1254,30 +1428,64 @@ export class App {
     }
     this.activeShot = this.shots.find((s) => s.id === j.activeShot) || this.shots[0] || null;
     this.refreshShotColors();
-    for (const so of this.objects) if (so.motion?.active && so.motion.keys?.length > 1) { so.motion.mover = new Mover(so.motion.keys, false, { ease: so.motion.easing || 'linear', rot: 'slerp' }); so.rebuildMarkers(); }
+    for (const so of this.objects) if (!hasBehavior(so) && so.motion?.active && so.motion.keys?.length > 1) { so.motion.mover = new Mover(so.motion.keys, false, { ease: so.motion.easing || 'linear', scope: so.motion.scope || 'global', arc: so.motion.arc !== false, rot: 'slerp' }); so.rebuildMarkers(); }
     this.lighting.fromJSON(j.light);
+    this.renderEffects.configure(j.rendering, { replace: true });
+    this.weather.fromJSON(j.weather);
+    this.bus.emit('weather');
     if (this.terrain) this.terrain.fromJSON(j.terrain || null);
     const roads = (j.objects || []).filter((o) => o.type === 'road_brush');
     if (roads.length) this.roadBrush.restore(roads);
-    Object.assign(this.state, { aspect: j.state?.aspect || '1.85', duration: j.state?.duration || 6, fps: j.state?.fps || 30, perf: !!j.state?.perf });
-    if (j.view) { this.stage.view.position.fromArray(j.view.pos); this.stage.orbit.target.fromArray(j.view.target); }
+    Object.assign(this.state, { aspect: j.state?.aspect || '1.85', duration: j.state?.duration || 6, fps: j.state?.fps || 30, showHelpers:j.state?.showHelpers!==false, perf: !!j.state?.perf });
+    Object.assign(this.state, { grid: j.state?.grid === true, roadSnap: j.state?.roadSnap === true,
+      roadGridSize: Math.max(1, Math.min(20, Number(j.state?.roadGridSize) || 5)), parcelZones: j.state?.parcelZones || {} });
+    this.roadPlanning.gridDirty = true;
+    this.stage.setGridVisible(this.state.grid);
+    this.roadPlanning.changed();
+    if (j.view) { this.stage.view.position.fromArray(j.view.pos); this.stage.orbit.target.fromArray(j.view.target); if(Number.isFinite(j.view.fov)){this.stage.view.fov=clamp(j.view.fov,10,120);this.stage.view.updateProjectionMatrix();} this.stage.orbit.update(); }
     this.stage.setPerfMode(!!this.state.perf);
     this.updateAspectOverlay();
-    const missing = this.objects.filter((x) => x.imported).length;
+    const missing = this.objects.filter((x) => x.imported && !x.params?.assetId).length;
     if (missing) this.notify(`${missing} 个导入模型只保留了占位盒与走位，请把原文件再拖进来`, 'warn');
     this.bus.emit('objects');
     this.bus.emit('shots');
     this.bus.emit('select');
     this.tick();
   }
-  saveLocal() {
-    try { localStorage.setItem('cameraref.project', JSON.stringify(this.serialize())); } catch (e) { console.warn(e); }
+  async saveProject() { return packProject(this); }
+  async saveLocal() {
+    // Do not persist temporary export poses, sampling duration or diagnostic state.
+    if (this.stage.exportOwner || this.stage.exporting || this.reference?.busy || this.aiScene?.busy || this.sceneRecipeBusy) return false;
+    if (this.benchmarkMode) return false; // Isolated benchmark tabs must never overwrite the user project.
+    let savedAt;
+    try {
+      const doc = JSON.parse(JSON.stringify(this.serialize({ assets: false })));
+      savedAt = this._lastSaveAt = Math.max(Date.now(), (this._lastSaveAt || 0) + 1);
+      doc._savedAt = savedAt;
+      const records = this.projectAssets.export(this.objects);
+      const pending = (this._saveQueue || Promise.resolve()).catch(() => {}).then(() => persistLocal(doc, records));
+      this._saveQueue = pending;
+      await pending;
+      // Lightweight synchronous fallback. Heavy resources live in IndexedDB.
+      try { localStorage.setItem('cameraref.project', JSON.stringify(doc)); } catch { /* IndexedDB succeeded */ }
+      this._saveWarning = false;
+      return true;
+    } catch (e) {
+      try {
+        localStorage.setItem('cameraref.project', JSON.stringify({ ...this.serialize(), _savedAt: savedAt || Date.now() }));
+        return true;
+      } catch {
+        if (!this._saveWarning) this.notify('自动保存失败（空间不足或浏览器限制），请使用「保存工程」下载完整工程包', 'warn');
+        this._saveWarning = true; return false;
+      }
+    }
   }
-  loadEnv() {
+  async loadEnv() {
     try {
       const raw = localStorage.getItem('cameraref.project');
-      if (raw) this._auto = JSON.parse(raw);
-    } catch (e) { this._auto = null; }
+      this._auto = raw ? JSON.parse(raw) : null;
+    } catch { this._auto = null; }
+    try { const doc = await restoreLocal(); if (doc && (!this._auto || (doc._savedAt || 0) >= (this._auto._savedAt || 0))) this._auto = doc; } catch { /* legacy/local fallback */ }
   }
   maybeRestore() {
     if (!this._auto) return false;

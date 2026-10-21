@@ -1,0 +1,21 @@
+{
+  "capabilities": {
+    "version": 1,
+    "configured": false,
+    "requiresAuth": true,
+    "model": "",
+    "input": "text+scene-workpack",
+    "output": "previz-ai-scene/1",
+    "maxBytes": 4194304,
+    "remoteCancel": false,
+    "persistence": "single-process 1h; no restart recovery",
+    "verification": "adapter only; not proof of real model behavior"
+  },
+  "disabledSubmission": {
+    "status": 503,
+    "response": {
+      "error": "AI搭景网关未完整配置（模型endpoint/key/model及24–256字符独立网关口令），使用本地配方或手动工作包；没有调用模型"
+    }
+  },
+  "realModelInference": false
+}

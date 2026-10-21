@@ -1,0 +1,129 @@
+{
+  "pass": true,
+  "mode": "file-offline",
+  "ui": {
+    "tabs": 6,
+    "visiblePanes": 1,
+    "height": 621.0625,
+    "labels": [
+      "基础",
+      "雕刻",
+      "侵蚀",
+      "河道",
+      "材质",
+      "导入"
+    ],
+    "closed": 4
+  },
+  "preview": {
+    "affected": 3939,
+    "maxDelta": 2.500000238418579,
+    "erodedVolume": 40206.79828040229,
+    "depositedVolume": 40206.797691916654,
+    "terrainVolumeDelta": -0.00014005345292389393,
+    "unplacedSedimentVolume": 3.6698769701306103e-13,
+    "returnedSedimentVolume": 13194.876067395226,
+    "floatRoundingVolume": -0.0001400534519426259,
+    "cellSize": 2.5
+  },
+  "renders": {
+    "hashes": {
+      "before": 357619264,
+      "result": 3187019249,
+      "erosion": 1221566033,
+      "sediment": 940276028,
+      "flow": 15969606,
+      "mask": 952925938,
+      "delta": 3353297254
+    },
+    "memory": [
+      {
+        "geometries": 15,
+        "textures": 8
+      },
+      {
+        "geometries": 15,
+        "textures": 8
+      },
+      {
+        "geometries": 15,
+        "textures": 8
+      },
+      {
+        "geometries": 15,
+        "textures": 8
+      }
+    ]
+  },
+  "applied": {
+    "undoSteps": 1,
+    "exactJSON": true,
+    "exactPreviz": true,
+    "settings": {
+      "mode": "combined",
+      "style": "rocky",
+      "strength": 0.6,
+      "iterations": 6,
+      "angle": 43,
+      "thermal": 0.12,
+      "drops": 1200,
+      "lifetime": 48,
+      "inertia": 0.3,
+      "erosion": 0.55,
+      "deposition": 0.4,
+      "evaporation": 0.035,
+      "capacity": 3,
+      "radius": 1.5,
+      "settling": 0.25,
+      "sedimentDepth": 0.7,
+      "maxChange": 2.5,
+      "layerScale": 2.5,
+      "seed": 12345,
+      "region": "all",
+      "riverId": "all",
+      "riverBand": 10,
+      "riverProtect": true,
+      "protectObjects": false,
+      "centerX": 0,
+      "centerZ": 0,
+      "width": 40,
+      "depth": 40
+    }
+  },
+  "exports": {
+    "width": 480,
+    "height": 320,
+    "videoFrames": 2,
+    "videoBytes": 16915,
+    "decodedFrames": 2,
+    "meanRGB": [
+      79.39727647569444,
+      79.39297526041666
+    ]
+  },
+  "safety": {
+    "cancelled": "地形任务已取消",
+    "conflict": "计算期间地形 / 河道 / 场景已变化，未应用侵蚀，请重算",
+    "reset": "地形任务已取消",
+    "river": {
+      "affected": 641,
+      "maxDelta": 2.450810432434082,
+      "erodedVolume": 1123.7030205274095,
+      "depositedVolume": 1123.70302512561,
+      "terrainVolumeDelta": 0.000047998037189245224,
+      "unplacedSedimentVolume": 0,
+      "returnedSedimentVolume": 344.3605695704903,
+      "floatRoundingVolume": 0.00004799803756082299,
+      "cellSize": 2.5
+    }
+  },
+  "linkage": {
+    "protectedVertices": 291,
+    "oldRoad": 2.8903999519348176,
+    "previewRoad": 2.8903999519348176,
+    "appliedRoad": 3.8157999706268315,
+    "undoneRoad": 2.8903999519348176,
+    "redoneRoad": 3.8157999706268315
+  },
+  "errors": []
+}

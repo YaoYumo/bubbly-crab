@@ -3,7 +3,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const wantShot = process.argv.slice(2).includes('shot');
 const errors = [];
 const fails = [];

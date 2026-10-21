@@ -66,6 +66,7 @@ export function buildTimeline(app, host) {
   const curveBtn = wrap.querySelector('.tl-r button');
 
   function toggle() {
+    if (!app.state.playing && (app.terrain?.workflow?.busy || app.terrain?.workflow?.erosionPreview)) { app.notify?.('请先完成 / 取消地形任务，或应用 / 放弃侵蚀预览', 'warn'); return; }
     app.state.playing = !app.state.playing;
     playBtn.innerHTML = app.state.playing ? '❚❚' : '▶';
     if (app.state.playing && app.activeShot && !app.state.preview) {

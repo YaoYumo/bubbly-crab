@@ -1,0 +1,1 @@
+PASS reference settings / frame convention / exact PNG16 / depth units / diagnostics / capability fail-closed / local BFF first-last multipart / status / credential isolation / origin refusal. Contract fixture only, NOT real vendor inference.

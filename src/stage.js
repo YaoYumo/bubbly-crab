@@ -2,6 +2,9 @@
 // Stage：渲染器 / 场景 / 视口相机 / 变换手柄 / 拾取 / 网格 / 天空 / 预览取景框
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass.js';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader.js';
+import { PickSpatialIndex, resolvePick } from './pick-spatial-index.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
@@ -318,6 +321,7 @@ export class Stage {
     this.scene.add(this.selRing);
 
     this.raycaster = new THREE.Raycaster();
+    this.pickIndex = new PickSpatialIndex(this);
     this.pointer = new THREE.Vector2();
     this.selected = null;
     this.gizmoMode = 'translate';
@@ -454,20 +458,7 @@ export class Stage {
   /** 射线拾取场景物体；excludeKind 可过滤 */
   pick() {
     this.raycaster.setFromCamera(this.pointer, this.view);
-    const hits = this.raycaster.intersectObjects([this.world, this.helperLayer], true);
-    for (const h of hits) {
-      if (h.object.userData?.pickIgnore) continue;
-      if (h.object.userData?.keyRef) return { kind: 'key', ...h.object.userData.keyRef, point: h.point };
-      let o = h.object;
-      while (o && !o.userData?.so && o !== this.world) o = o.parent;
-      if (o?.userData?.so) return { kind: 'obj', so: o.userData.so, object: o, point: h.point, distance: h.distance };
-      // 摄像机机位
-      o = h.object;
-      while (o && !o.userData?.shotRef && o !== this.world) o = o.parent;
-      if (o?.userData?.shotRef) return { kind: 'shot', shot: o.userData.shotRef, point: h.point };
-      if (h.object.userData?.ground) return { kind: 'ground', point: h.point };
-    }
-    return { kind: 'empty', point: this.groundPoint(0) };
+    return resolvePick(this, this.pickIndex.intersections(this.raycaster));
   }
 
   setSelected(so) {
@@ -478,6 +469,7 @@ export class Stage {
       if (this.tc.object && this.tc.object.userData?.so) this.tc.detach();
       return;
     }
+    if (so.motion?.behavior || so.motion?.behaviorError) { this.tc.detach(); return; }
     this.tc.attach(so.root);
   }
 
@@ -541,8 +533,8 @@ export class Stage {
     if (this.gridFine) this.gridFine.position.y = this.groundBaseY + 0.023;
     if (this.gridCoarse) this.gridCoarse.position.y = this.groundBaseY + 0.029;
   }
-  /** 网格：用户开了，但地形把地面盖住了 —— 网格与地形起伏不共面会整片闪烁，所以地形开启时隐藏 */
-  setGridVisible(v) { this.gridWanted = !!v; this.syncGrid(); }
+  /** 网格显隐：优先使用贴合地形的绘制网格；旧平面网格只作兼容回退。 */
+  setGridVisible(v) { this.gridWanted = !!v; this.syncGrid(); this.bus?.emit('road-planning'); }
   /** 程序化环境贴图：把天穹烘焙成 128×64 的小图再 PMREM —— 金属 / 玻璃 / 水面立刻有高光与环境色，
    *  不需要任何外部 HDR（保持「单文件 + 省内存」）。
    *  注意：`scene.environment` 在「有 ↔ 无」之间切换会让全场材质重新编译（大场景一次就是几百 ms），
@@ -550,6 +542,7 @@ export class Stage {
   setEnv(on) {
     const want = !!on;
     this.envOn = want;
+    if (this.environmentProvider?.active) { this.environmentProvider.restoreEnvironment(); return; }
     if (want) {
       if (this.envRT) { this.scene.environment = this.envRT.texture; this.view.invalidate?.(); }   // 内存优先退出后要把引用挂回去
       else this._rebuildEnv();
@@ -558,6 +551,7 @@ export class Stage {
     }
   }
   _rebuildEnv() {
+    if (this.environmentProvider?.active) { this.environmentProvider.restoreEnvironment(); return; }
     try {
       const pm = new THREE.PMREMGenerator(this.renderer);
       const src = makeEnvTexture(this._envCols || {});
@@ -594,6 +588,12 @@ export class Stage {
     this._envTimer = setTimeout(() => { this._envTimer = 0; this._rebuildEnv(); }, 140);
   }
   syncGrid() {
+    if (this.drawingGrid) {
+      this.gridFine.visible = this.gridCoarse.visible = false;
+      if (this.gridWanted) this.prepareDrawingGrid?.();
+      this.drawingGrid.visible = !!this.gridWanted && !this.preview;
+      return true;
+    }
     const blocked = !!(this.gridBlocked && this.gridBlocked());
     const on = !!this.gridWanted && !blocked;
     for (const g of [this.gridFine, this.gridCoarse]) if (g) g.visible = on;
@@ -610,6 +610,11 @@ export class Stage {
     this.perfMode = on;
     setTexForce(on ? false : null);                       // 内存优先：不生成/不挂表面贴图
     if (this.envRT || !on) this.setEnv(!on);                     // 环境反射一并撤掉
+    if (this.appearance) {
+      this.appearance.applyAll();
+      this.bus?.emit('perf', on);
+      return;
+    }
     if (on) {
       this.world.traverse((o) => {
         if (!o.isMesh && !o.isInstancedMesh) return;
@@ -678,25 +683,47 @@ export class Stage {
       }
     }
     const cam = this.view;
-    const usePostProcessing = (this.useComposer && this.bokehPass) || this.anamorphicEnabled;
-    if (usePostProcessing) {
-      this.renderPass.camera = cam;
-      if (this.bokehPass) {
-        this.bokehPass.camera = cam;
-        const bokehUniforms = this.bokehPass.uniforms;
-        if (this.dofParams) {
-          bokehUniforms['focus'].value = this.dofParams.focus || 8.0;
-          bokehUniforms['aperture'].value = this.dofParams.aperture || 0.025;
-          bokehUniforms['maxblur'].value = this.dofParams.maxblur || 0.01;
+    this.effects?.prepare();
+    const usePostProcessing = (this.useComposer && this.bokehPass) || this.anamorphicEnabled || !!this.effects?.pass;
+    const priorTarget = this.renderer.getRenderTarget();
+    const priorFace = this.renderer.getActiveCubeFace(), priorMip = this.renderer.getActiveMipmapLevel();
+    try {
+      this.effects?.begin(cam);
+      if (usePostProcessing) {
+        this.syncPostSize();
+        this.renderPass.camera = cam;
+        if (this.bokehPass) {
+          this.bokehPass.camera = cam;
+          const bokehUniforms = this.bokehPass.uniforms;
+          if (this.dofParams) {
+            bokehUniforms['focus'].value = this.dofParams.focus || 8.0;
+            bokehUniforms['aperture'].value = this.dofParams.aperture || 0.025;
+            bokehUniforms['maxblur'].value = this.dofParams.maxblur || 0.01;
+          }
+          bokehUniforms['nearClip'].value = cam.near;
+          bokehUniforms['farClip'].value = cam.far;
+          bokehUniforms['aspect'].value = cam.aspect;
+          this.bokehPass.enabled = this.useComposer;
         }
-        bokehUniforms['nearClip'].value = cam.near;
-        bokehUniforms['farClip'].value = cam.far;
-        bokehUniforms['aspect'].value = cam.aspect;
-        this.bokehPass.enabled = this.useComposer;
+        this.composer.render();
+      } else {
+        this.renderer.render(this.scene, cam);
       }
-      this.composer.render();
-    } else {
-      this.renderer.render(this.scene, cam);
+    } catch (error) {
+      // A failing post pass must not leave an offscreen framebuffer bound when
+      // the next frame switches back to direct rendering (e.g. Bloom disabled).
+      this.renderer.setRenderTarget(priorTarget, priorFace, priorMip);
+      throw error;
+    } finally { this.effects?.end(); }
+  }
+
+  syncPostSize() {
+    const size = this.postSize || this.renderer.getSize(new THREE.Vector2());
+    const ratio = this.postSize ? 1 : this.renderer.getPixelRatio();
+    if(this._postWidth!==size.x || this._postHeight!==size.y || this._postRatio!==ratio) {
+      this.composer.setPixelRatio(ratio);
+      this.composer.setSize(size.x,size.y);
+      this._postWidth=size.x;this._postHeight=size.y;this._postRatio=ratio;
     }
   }
 
@@ -732,10 +759,29 @@ export class Stage {
     r.setViewport(ox, oy, vw, vh);
     r.setScissor(ox, oy, vw, vh);
     r.setScissorTest(true);
-    r.render(this.scene, this.view);
-    r.setScissorTest(false);
-    r.setScissor(0, 0, rect.W, rect.H);
-    r.setViewport(0, 0, rect.W, rect.H);
+    // Composer passes reset render targets/viewports. Render into an inner-size
+    // target, then copy already tone-mapped output into the letterbox viewport.
+    const post = this.useComposer || this.anamorphicEnabled ||
+      (this.effects?.bloom.enabled && this.effects.bloom.strength > 0 && !this.perfMode);
+    const screen = this.composer.renderToScreen;
+    try {
+      if(post) { this.postSize=new THREE.Vector2(vw,vh);this.composer.renderToScreen=false; }
+      this.render();
+      if(post) {
+        if(!this._frameCopy) this._frameCopy=new FullScreenQuad(new THREE.ShaderMaterial({
+          uniforms:THREE.UniformsUtils.clone(CopyShader.uniforms),vertexShader:CopyShader.vertexShader,
+          fragmentShader:CopyShader.fragmentShader,depthTest:false,depthWrite:false,toneMapped:false,
+        }));
+        r.setRenderTarget(null);r.setViewport(ox,oy,vw,vh);r.setScissor(ox,oy,vw,vh);r.setScissorTest(true);
+        this._frameCopy.material.uniforms.tDiffuse.value=this.composer.readBuffer.texture;
+        this._frameCopy.render(r);
+      }
+    } finally {
+      this.postSize=null;this.composer.renderToScreen=screen;
+      r.setScissorTest(false);r.setScissor(0,0,rect.W,rect.H);r.setViewport(0,0,rect.W,rect.H);
+      // Keep inner-sized targets between video frames. The next ordinary
+      // render synchronizes them to the restored canvas, without per-frame reallocations.
+    }
   }
   snapV(v) {
     return snap(v, this.snapStep);

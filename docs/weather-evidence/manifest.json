@@ -1,0 +1,706 @@
+{
+  "date": "2026-10-20",
+  "change": "camera-local world-anchored precipitation with soft volume boundaries",
+  "build": {
+    "path": "previz-lab.html",
+    "bytes": 2220669,
+    "sha256": "d0bf265f98cca286aeeed5770a0f7e7738702faee47f6ad4182c9cc077bf32fa"
+  },
+  "unitTests": [
+    "weather-volume.test.mjs",
+    "showcase.test.mjs"
+  ],
+  "browser": {
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    },
+    "file": {
+      "mode": "file",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    }
+  },
+  "limitations": [
+    "Finite local particle volume, not global cloud physics.",
+    "No extra particles or draw calls; no new performance benchmark.",
+    "Reference weather freezing policy unchanged."
+  ],
+  "regressionAfterSceneRecipes": {
+    "date": "2026-10-20",
+    "build": {
+      "path": "previz-lab.html",
+      "bytes": 2240529,
+      "sha256": "e3f555c060b0f60b2c39a679026078c8d61fe47add60ac944ca445fa3d3307e6"
+    },
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    },
+    "offline": {
+      "mode": "file",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    },
+    "note": "原顶层build及其证据保留为历史记录；此节为第一批配方合入后重建版本的复验。"
+  },
+  "regressionAfterSpatialDynamics": {
+    "build": {
+      "path": "previz-lab.html",
+      "bytes": 2250848,
+      "sha256": "3ba2d84c7253cdc179f6f57889b7c11082f3a8ddb7478f8932415851101c1bd1"
+    },
+    "offline": {
+      "mode": "file",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    }
+  }
+}

@@ -6,17 +6,17 @@ import * as THREE from 'three';
 import { makeRng } from './util.js';
 import { seg as qseg, applyDetail, bevelGeo, Q as DQ } from './detail.js';
 import { geoCacheBegin, geoCacheEnd } from './geo.js';
+import { GROUPS as GROUPS_BLD } from './bld.js';
+import { GROUPS as GROUPS_ARCH } from './arch.js';
+import { GROUPS as GROUPS_NATURE } from './nature.js';
+import { GROUPS as GROUPS_PROPS } from './props.js';
+import { SHOWCASE_GROUPS } from './showcase-assets.js';
+import { GROUPS_CITY } from './city.js';   // 城市建筑/环境/人物（纯追加组，不改既有 16 组；见 city.js 头注）
 
-// ---- 材质工厂 ----
-const mk = (kind, o) => { const m = new THREE.MeshStandardMaterial(o); if (kind) m.userData.detail = kind; return m; };
-export const M = {
-  concrete: (c = 0x9aa0a8, r = 0.92) => mk('concrete', { color: c, roughness: r, metalness: 0.02 }),
-  metal: (c = 0x8d949c, r = 0.35, m = 0.9) => mk('metal', { color: c, roughness: r, metalness: m, envMapIntensity: 1.4 }),
-  dark: (c = 0x2c3138, r = 0.8) => mk('paint', { color: c, roughness: r, metalness: 0.1 }),
-  paint: (c = 0xcccccc, r = 0.6) => mk('paint', { color: c, roughness: r, metalness: 0.05 }),
-  glass: (c = 0x88bbdd) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.55, envMapIntensity: 1.6 }),
-  tile: (c = 0xb85c38, r = 0.7) => mk('tile', { color: c, roughness: r, metalness: 0.02 }),
-};
+// 材质工厂与 shade：抽到叶子模块 mat.js（断 assets→city→character→assets 导入环，
+// 否则不同入口顺序会触发 GROUPS_CITY TDZ），此处 re-export 保持既有 API。
+import { mk, M, shade } from './mat.js';
+export { M, shade };
 
 // ---- 几何工具 ----
 export const box = (w, h, d, mat, x = 0, y = 0, z = 0) => {
@@ -35,10 +35,7 @@ export const sph = (r, mat, s = 10, x = 0, y = 0, z = 0) => {
   const m = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.005, r), qseg(s), Math.max(4, qseg(s) - 2)), mat);
   m.position.set(x, y, z); return m;
 };
-export function shade(o, cast = true, recv = true) {
-  o.traverse?.((m) => { if (m.isMesh || m.isInstancedMesh) { m.castShadow = cast; m.receiveShadow = recv; } });
-  applyDetail(o); return o;
-}
+// shade() 已抽至 mat.js（由上方 import 引入并 re-export）
 
 // ---------------------------------------------------------------------------
 // 高细节共用构件（规格：门窗内缩 5~10cm · 门廊柱 12~16 边形 · 屋檐瓦片立体挤出 ·
@@ -60,6 +57,7 @@ function slabTop(w, t, d, mat, x = 0, y = 0, z = 0) {
  *  暗腔贴墙、玻璃比框面内退 5.5cm → 斜看有真实的 5~10cm 景深 */
 function winUnit(w, h, o = {}) {
   const G = new THREE.Group();
+  G.userData.role = 'window';
   const frameMat = o.frameMat || M.paint(0xf0ece4, 0.7);
   const glassMat = o.glassMat || M.glass(0x8fb4cc);
   const darkMat = o.darkMat || M.dark(0x151a20, 0.95);
@@ -102,6 +100,19 @@ function winUnit(w, h, o = {}) {
   return G;
 }
 
+/** 门窗套：两侧樘 + 过梁 + 窗台，中间留空。
+ *  旧版用一整块实心板做套，把门窗整扇（连气窗）盖死、还横跨两层压住上层窗。
+ *  openW/openH = 洞口净尺寸（要能容下门窗组件含扇/气窗的全部高度），t = 套线宽 */
+function surroundFrame(openW, openH, t, depth, mat, x, y, z, o = {}) {
+  const G = new THREE.Group();
+  G.userData.role = 'trim';
+  G.add(box(t, openH + t, depth, mat, -(openW / 2 + t / 2), t / 2, 0));
+  G.add(box(t, openH + t, depth, mat, openW / 2 + t / 2, t / 2, 0));
+  G.add(box(openW + t * 2, t, depth, mat, 0, openH / 2 + t / 2, 0));
+  if (o.sill !== false) G.add(box(openW + t * 2 + 0.12, 0.09, depth + 0.1, mat, 0, -openH / 2 - 0.045, 0.02));
+  G.position.set(x, y, z);
+  return G;
+}
 /** 内缩板门组件。原点 = 洞口中心，+Z = 墙外法线；门扇比框面内退 ~6cm */
 function doorUnit(w, h, o = {}) {
   const G = new THREE.Group();
@@ -110,8 +121,11 @@ function doorUnit(w, h, o = {}) {
   const panelMat = o.panelMat || M.paint(o.panelColor ?? 0x3d2c1a, 0.68);
   const darkMat = o.darkMat || M.dark(0x151a20, 0.95);
   const dep = o.dep ?? 0.1, ft = 0.09;
+  G.userData.role = 'door';
   G.add(box(w + 0.02, h + 0.02, 0.016, darkMat, 0, 0, 0.008));
-  G.add(box(w, h, 0.05, doorMat, 0, 0, dep - 0.06));
+  const leaf = box(w, h, 0.05, doorMat, 0, 0, dep - 0.06);
+  leaf.userData.role = 'doorleaf';
+  G.add(leaf);
   const pz = dep - 0.022;
   const pcols = o.panelCols ?? 2, prows = o.panelRows ?? 3;
   const cw = (w - 0.16) / pcols, chh = (h - 0.22) / prows;
@@ -142,6 +156,7 @@ function doorUnit(w, h, o = {}) {
     G.add(box(w + ft * 2 + 0.1, 0.08, dep + 0.04, frameMat, 0, h / 2 + ft + rF + 0.05, dep / 2));
   }
   if (o.lintel) G.add(box(w + ft * 2 + 0.14, 0.14, dep + 0.06, o.lintelMat || frameMat, 0, h / 2 + ft + 0.07, dep / 2 + 0.01));
+
   if (o.sidelights) for (const s of [-1, 1]) {                                     // 门侧采光条（窄窗组件）
     const sl = winUnit(0.18, h * 0.7, { frameMat, glassMat: M.glass(0x99bbcc), muntins: false, ft: 0.05, dep });
     sl.position.set(s * (w / 2 + ft + 0.15), 0, 0);
@@ -240,6 +255,7 @@ function bevelSign(w, h, d, mat, x = 0, y = 0, z = 0) {
 /** 连续橱窗带：暗腔 + 内退玻璃 + 竖框 + 上下外凸框 → 橱窗带真实深度。沿 X 布置 */
 function storefrontBand(w, h, o = {}) {
   const G = new THREE.Group();
+  G.userData.role = 'window';
   const frameMat = o.frameMat || M.paint(0x2c3138, 0.55);
   const glassMat = o.glassMat || M.glass(0x99ccdd);
   const darkMat = o.darkMat || M.dark(0x10141a, 0.95);
@@ -411,22 +427,47 @@ function buildCapeCod(p) {
   }
   g.add(box(w + 0.05, 0.12, 0.06, trimMat, 0, foundH + wallH + 0.06, d / 2 + 0.03));
   // 双坡屋顶 + 瓦垄立体挤出 + 山花填充
-  const rise = w * 0.32, slope = Math.hypot(w / 2, rise), roofTop = foundH + wallH + rise;
+  // 双坡屋顶：正脊沿 X（与街面平行）、坡面朝 ±Z —— 鳕鱼角式的山面朝向街道两侧，
+  // 老虎窗才能坐在前坡上。旧版把正脊摆成沿 Z，老虎窗整块被埋进屋面，外面看不见。
+  const ohZ = 0.42, ohX = 0.34;                                                   // 檐口出挑 / 山墙出檐
+  const run = d / 2 + ohZ;
+  const rise = run * 0.92;                                                        // 陡坡（≈43°）—— 鳕鱼角的招牌坡度
+  const slope = Math.hypot(run, rise), th = Math.atan2(rise, run);
+  const roofW = w + ohX * 2, eaveY = foundH + wallH;
+  // 屋面直线必须过「墙外皮 + 墙顶」：旧版让它过檐口外沿 (run, eaveY)，于是墙外皮处屋面底
+  // 比墙顶高出 (ohZ/run)·rise（本例 0.386m），整条檐口下通长一道缝，屋顶看着浮在墙上。
+  const drop = (run - d / 2) / run * rise;
+  const roofTop = eaveY + rise - drop;
   const slopes = [];
   for (const s of [1, -1]) {
-    const sl = box(slope, 0.16, d + 0.6, roofMat, s * w / 4, foundH + wallH + rise / 2, 0);
-    sl.rotation.z = -s * Math.atan2(rise, w / 2); g.add(sl); slopes.push(sl);
+    const sl = box(roofW, 0.16, slope, roofMat, 0, eaveY + rise / 2 - drop, s * run / 2);
+    sl.rotation.x = s * th; g.add(sl); slopes.push(sl);
+    g.add(shingleCourses(sl, Math.max(8, Math.round(slope / 0.34)), roofMat));
+    g.add(box(roofW + 0.2, 0.22, 0.07, trimMat, 0, eaveY + 0.02 - drop, s * (run + 0.02)));   // 封檐板
+    const nRaft = Math.max(4, Math.round(roofW / 0.42));                               // 出挑椽尾
+    for (let i = 0; i < nRaft; i++) {
+      const x = -roofW / 2 + (i + 0.5) * (roofW / nRaft);
+      g.add(box(0.09, 0.13, 0.32, roofMat, x, eaveY - drop - 0.01, s * (run - 0.16)));
+    }
   }
   const nCourse = Math.max(8, Math.round(slope / 0.34));
-  for (const sl of slopes) g.add(shingleCourses(sl, nCourse, roofMat));
-  g.add(box(0.14, 0.14, d + 0.7, roofMat, 0, roofTop - 0.02, 0));                  // 正脊
-  for (const sz of [-1, 1]) g.add(box(w + 0.5, 0.2, 0.07, trimMat, 0, foundH + wallH + 0.02, sz * (d / 2 + 0.29)));  // 封檐板
+  void nCourse;
+  g.add(box(roofW + 0.1, 0.16, 0.16, roofMat, 0, roofTop - 0.03, 0));              // 正脊
+  for (const sx of [1, -1]) for (const sz of [1, -1]) {                            // 山墙博风板
+    const b = box(0.09, 0.16, slope, trimMat, sx * (w / 2 + ohX - 0.03), eaveY + rise / 2 - drop, sz * run / 2);
+    b.rotation.x = sz * th; g.add(b);
+  }
   {
     const gsh = new THREE.Shape();
-    gsh.moveTo(-d / 2 - 0.05, 0); gsh.lineTo(d / 2 + 0.05, 0); gsh.lineTo(0, rise - 0.04); gsh.closePath();
+    gsh.moveTo(-d / 2 - 0.05, 0); gsh.lineTo(d / 2 + 0.05, 0); gsh.lineTo(0, rise - drop - 0.04); gsh.closePath();
     const ggeo = new THREE.ExtrudeGeometry(gsh, { depth: 0.14, bevelEnabled: false });
-    ggeo.rotateY(Math.PI / 2); ggeo.translate(-0.07, 0, 0);
-    for (const s of [-1, 1]) { const m = new THREE.Mesh(ggeo, wall); m.position.set(s * w / 2, foundH + wallH, 0); g.add(m); }
+    ggeo.rotateY(-Math.PI / 2);                                        // 挤出面正好落在墙面 x=±w/2 上，与外墙齐平
+    for (const s of [-1, 1]) {
+      const m = new THREE.Mesh(ggeo, wall);
+      m.position.set(s * w / 2, eaveY, 0);
+      if (s < 0) m.rotation.y = Math.PI;
+      g.add(m);
+    }
   }
   // 前立面：内缩板门 + 两侧内缩窗（百叶 + 花箱）
   const winMat = M.glass(0x99bbcc);
@@ -446,24 +487,37 @@ function buildCapeCod(p) {
     const z = -d / 4 + i * (d / 2);
     g.add(onWall(winUnit(0.72, 0.95, { frameMat: trimMat, glassMat: winMat, shutters: true, shutterMat }), sx * w / 2, winY, z, 'x', sx));
   }
-  // 老虎窗
-  const dormerW = w * 0.24, dormerH = 1.05;
-  const dormerY = foundH + wallH + rise * 0.3;
-  g.add(box(dormerW, dormerH, d * 0.34, wall, 0, dormerY + dormerH / 2, d * 0.06));
-  for (const s of [-1, 1]) g.add(box(0.08, dormerH, d * 0.34, trimMat, s * (dormerW / 2 - 0.04), dormerY + dormerH / 2, d * 0.06));
-  const ds = Math.hypot(dormerW / 2, dormerH * 0.62);
-  for (const s of [1, -1]) {
-    const sl = box(ds, 0.1, d * 0.38, roofMat, s * dormerW / 4, dormerY + dormerH + dormerH * 0.22, d * 0.06);
-    sl.rotation.z = -s * Math.atan2(dormerH * 0.62, dormerW / 2); g.add(sl);
+  // 老虎窗：对称山墙 dormer，坐在前坡屋面上（自身正脊沿 Z，垂直于主脊）
+  const nDorm = w >= 8 ? 2 : 1;
+  const dw = Math.min(2.1, Math.max(1.15, w * 0.21)), dd = 1.5;
+  const zf = d / 2 - 0.45;                                                        // 正立面比外墙退进一点
+  const yRoof = roofTop - (zf / run) * rise;                                      // 该处屋面标高
+  const dyTop = yRoof + 1.15, dyBot = yRoof - 0.85;                               // 上探出屋面 / 下埋进屋面（抬高 0.53，窗组件才装得进）
+  const dRise = dw * 0.34, dSlope = Math.hypot(dw / 2, dRise), dth = Math.atan2(dRise, dw / 2);
+  for (let i = 0; i < nDorm; i++) {
+    const dx = nDorm === 1 ? 0 : (i * 2 - 1) * w * 0.25;
+    const zc = zf - dd / 2;
+    g.add(box(dw, dyTop - dyBot, dd, wall, dx, (dyTop + dyBot) / 2, zc));
+    for (const s of [-1, 1]) g.add(box(0.09, dyTop - dyBot, 0.09, trimMat, dx + s * (dw / 2 - 0.045), (dyTop + dyBot) / 2, zf - 0.045));
+    for (const s of [1, -1]) {                                                    // 小坡顶 + 瓦垄
+      const sl = box(dSlope, 0.09, dd + 0.36, roofMat, dx + s * dw / 4, dyTop + dRise / 2, zc + 0.08);
+      sl.rotation.z = -s * dth; g.add(sl);
+      g.add(shingleCourses(sl, Math.max(4, Math.round(dSlope / 0.28)), roofMat));
+    }
+    g.add(box(0.1, 0.1, dd + 0.42, roofMat, dx, dyTop + dRise - 0.03, zc + 0.08));   // 小正脊
+    g.add(box(dw + 0.2, 0.18, 0.07, trimMat, dx, dyTop - 0.07, zf + 0.03));          // 正面檐板
+    g.add(box(dw + 0.26, 0.09, 0.05, trimMat, dx, dyBot + 0.9, zf + 0.05));          // 正面下檐
+    g.add(onWall(winUnit(dw * 0.5, 0.56, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 1, sill: true, shutters: true, shutterMat }), dx, yRoof + 0.58, zf, 'z', 1));
   }
-  g.add(onWall(winUnit(0.52, 0.62, { frameMat: trimMat, glassMat: winMat, sill: true }), 0, dormerY + dormerH * 0.52, d * 0.06 + d * 0.17, 'z', 1));
-  // 烟囱
-  const chimneyX = w * 0.32, chimneyTop = foundH + wallH + rise * 0.62;
+  // 烟囱：砖砌，穿过正脊出屋面
+  const chimneyX = w * 0.34, chimneyTop = roofTop + 0.62;
   g.add(box(0.55, chimneyTop - foundH, 0.45, M.concrete(0x8a7060), chimneyX, foundH + (chimneyTop - foundH) / 2, 0));
+  for (let i = 0; i < 3; i++) g.add(box(0.58, 0.045, 0.48, M.concrete(0x7d6a58), chimneyX, roofTop + 0.12 + i * 0.22, 0));
   g.add(box(0.65, 0.12, 0.55, M.concrete(0x7a6050), chimneyX, chimneyTop + 0.06, 0));
-  g.add(box(0.45, 0.08, 0.35, M.concrete(0x6a5040), chimneyX, chimneyTop + 0.16, 0));
-  // 入口门廊：两根 14 边形圆柱 + 门廊顶 + 三级踏步
+  g.add(box(0.45, 0.1, 0.35, M.concrete(0x6a5040), chimneyX, chimneyTop + 0.17, 0));
+  // 入口门廊：门廊台 + 两根 14 边形圆柱 + 门廊顶 + 三级踏步
   const porchZ = d / 2 + 0.85, colH = 2.35;
+  g.add(box(3.0, foundH, 0.9, M.concrete(0x9a9488), 0, foundH / 2, d / 2 + 0.45));   // 门廊台（柱子不再悬空）
   for (const s of [-1, 1]) {
     const c = porchColumn(colH, 0.11, trimMat, 14);
     c.position.set(s * 1.05, foundH, porchZ); g.add(c);
@@ -484,20 +538,32 @@ function buildBrownstone(p) {
   const trimMat = M.concrete(0x8a8478);
   g.add(box(w + 0.06, 0.5, d + 0.06, stoneMat, 0, 0.25, 0));
   g.add(box(w, h, d, brick, 0, 0.5 + h / 2, 0));
+  const stoopH = 1.2, dCy = stoopH + 1.125;                                       // 门廊台高 / 门中心
+  const fanTop = dCy + 2.25 / 2 + 0.09 + 0.01 + 0.59;                             // 气窗拱顶
+  const entY0 = stoopH, entY1 = fanTop + 0.14, entHX = (1.18 + 0.28) / 2;         // 入口竖向范围 / 门套半宽
   for (let f = 0; f <= floors; f++) {                                              // 层间腰线
-    const cy = 0.5 + f * floorH;
-    g.add(box(w + 0.12, 0.15, d + 0.12, trimMat, 0, cy + 0.075, 0));
+    const cy = 0.5 + f * floorH, by = cy + 0.075;
+    if (by + 0.075 > entY0 && by - 0.075 < entY1) {                                // 与入口相碰 → 正面断开让开门套
+      g.add(box(w + 0.12, 0.15, d + 0.06, trimMat, 0, by, -0.03));
+      for (const sgm of [-1, 1]) {
+        const a = sgm > 0 ? entHX : -(w / 2 + 0.06), b = sgm > 0 ? w / 2 + 0.06 : -entHX;
+        g.add(box(b - a, 0.15, 0.12, trimMat, (a + b) / 2, by, d / 2 + 0.03));
+      }
+    } else g.add(box(w + 0.12, 0.15, d + 0.12, trimMat, 0, by, 0));
   }
   for (const sx of [-1, 1]) for (let f = 0; f < floors; f++) {                     // 墙角隅石
     const cy = 0.5 + f * floorH + floorH / 2;
     g.add(box(0.14, floorH - 0.15, 0.14, stoneMat, sx * (w / 2 - 0.07), cy, d / 2 + 0.07));
     g.add(box(0.14, floorH - 0.15, 0.14, stoneMat, sx * (w / 2 - 0.07), cy, -d / 2 - 0.07));
   }
-  // 台阶门廊（stoop）+ 铁艺栏杆
-  const stoopH = 1.2, stoopW = w * 0.5;
-  g.add(box(stoopW, 0.15, 2.0, stoneMat, 0, stoopH - 0.075, d / 2 + 1.0));         // 平台面 = stoopH
-  for (let i = 0; i < 4; i++) {
-    g.add(slabTop(stoopW, 0.14, 0.36, stoneMat, 0, stoopH - 0.21 - i * 0.26, d / 2 + 1.82 + i * 0.36));
+  // 台阶门廊（stoop）+ 铁艺栏杆：整座是实心砌体，踏步不再一片片悬在空中
+  const stoopW = w * 0.5, nStep = 4, stepD = 0.36, stepH = stoopH / nStep;
+  g.add(box(stoopW, stoopH, 2.0, stoneMat, 0, stoopH / 2, d / 2 + 1.0));           // 平台（实心到地）
+  g.add(box(stoopW + 0.06, 0.06, 2.06, trimMat, 0, stoopH + 0.03, d / 2 + 1.0));   // 平台压顶
+  for (let i = 0; i < nStep; i++) {
+    const hh = stoopH - i * stepH, zz = d / 2 + 2.0 + i * stepD;
+    g.add(slabTop(stoopW, stepH, stepD, trimMat, 0, hh - stepH / 2, zz));
+    if (hh - stepH > 0.03) g.add(box(stoopW - 0.08, hh - stepH, stepD, stoneMat, 0, (hh - stepH) / 2, zz));
   }
   g.add(box(0.2, stoopH, 2.0, trimMat, -stoopW / 2 - 0.1, stoopH / 2, d / 2 + 1.0));
   g.add(box(0.2, stoopH, 2.0, trimMat, stoopW / 2 + 0.1, stoopH / 2, d / 2 + 1.0));
@@ -508,11 +574,12 @@ function buildBrownstone(p) {
     rail.position.set(sx * (stoopW / 2 - 0.02), stoopH, d / 2 + 1.05);
     g.add(rail);
   }
-  // 内缩板门 + 石门套 + 扇形气窗
+  // 内缩板门 + 石门套 + 扇形气窗（门套做成樘+过梁，洞口留空，不再整块压死门窗）
   const doorSurround = M.concrete(0x7a7468);
-  g.add(box(1.35, 2.6, 0.16, doorSurround, 0, stoopH + 1.3, d / 2 + 0.08));
-  g.add(onWall(doorUnit(1.0, 2.25, { frameMat: stoneMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true }), 0, stoopH + 1.125, d / 2, 'z', 1));
-  g.add(box(0.55, 0.34, 0.14, doorSurround, 0, stoopH + 2.72, d / 2 + 0.07));      // 拱心石
+  // 门中心 dCy / 气窗拱顶 fanTop 已在上面算好
+  g.add(surroundFrame(1.18, fanTop - stoopH, 0.14, 0.16, doorSurround, 0, stoopH + (fanTop - stoopH) / 2, d / 2 + 0.04, { sill: false }));
+  g.add(onWall(doorUnit(1.0, 2.25, { frameMat: stoneMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true }), 0, dCy, d / 2, 'z', 1));
+  g.add(box(0.55, 0.28, 0.14, doorSurround, 0, fanTop + 0.21, d / 2 + 0.05));      // 拱心石
   // 内缩窗：每层前 3 后 3，石材窗台 / 首层石过梁
   const winMat = M.glass(0x88aabb);
   for (let f = 0; f < floors; f++) {
@@ -521,7 +588,8 @@ function buildBrownstone(p) {
     const ww = f === 0 ? 0.9 : 0.8, wh = f === 0 ? 1.5 : 1.2;
     for (let i = 0; i < 3; i++) {
       const x = -w / 2 + (i + 0.5) * (w / 3);
-      g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, lintel: f > 0, lintelMat: stoneMat, sill: true }), x, wy, d / 2, 'z', 1));
+      if (!(f === 0 && i === 1))                                                   // 首层正中被门廊占据，不开窗
+        g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, lintel: f > 0, lintelMat: stoneMat, sill: true }), x, wy, d / 2, 'z', 1));
       g.add(onWall(winUnit(ww, wh, { frameMat: trimMat, glassMat: winMat, muntins: true }), x, wy, -d / 2, 'z', -1));
     }
   }
@@ -546,63 +614,74 @@ function buildCraftsman(p) {
     g.add(box(0.1, wallH, 0.1, trimMat, sx * (w / 2 - 0.05), foundH + wallH / 2, sz * (d / 2 - 0.05)));
   for (const t of [0.045, wallH - 0.045])                                           // 墙裙 / 檐下线脚
     g.add(box(w + 0.06, 0.09, 0.07, trimMat, 0, foundH + t, d / 2 + 0.035));
-  // 低坡双坡屋顶：坡面 + 沥青瓦垄立体挤出 + 山墙三角 + 封檐板
+  // 低坡双坡屋顶：坡面 + 沥青瓦垄立体挤出 + 山墙三角 + 出檐/封檐板/椽尾
   const roofMat = M.paint(p.roofColor, 0.78);
-  const rise = w * 0.22, slope = Math.hypot(w / 2, rise);
+  const ohX = 0.62;                                                               // 山面出檐
+  const run = w / 2 + ohX, rise = w * 0.22, slope = Math.hypot(run, rise);
+  const th = Math.atan2(rise, run), eaveY = foundH + wallH;
+  // 屋面直线必须过「墙外皮 + 墙顶」这一点：旧版让它过檐口外沿 (run, eaveY)，
+  // 于是屋面在墙外皮处已经抬起 ohX/run·rise，底面比墙顶高出 13.5cm —— 整条檐口下通长一道缝，
+  // 看着就是屋顶浮在墙上。把整组屋面向下落 drop 即可。
+  const drop = (run - w / 2) / run * rise;
   for (const s of [1, -1]) {
-    const sl = box(slope, 0.2, d + 1.4, roofMat, s * w / 4, foundH + wallH + rise / 2, 0);
-    sl.rotation.z = -s * Math.atan2(rise, w / 2); g.add(sl);
+    const sl = box(slope, 0.2, d + 1.4, roofMat, s * run / 2, eaveY + rise / 2 - drop, 0);
+    sl.rotation.z = -s * th; g.add(sl);
     g.add(shingleCourses(sl, Math.max(7, Math.round(slope / 0.4)), roofMat));
-    const rake = box(slope, 0.14, 0.09, trimMat, s * w / 4, foundH + wallH + rise / 2 + 0.16, d / 2 + 0.7);
-    rake.rotation.z = -s * Math.atan2(rise, w / 2); g.add(rake);
+    const rake = box(slope, 0.14, 0.09, trimMat, s * run / 2, eaveY + rise / 2 + 0.16 - drop, d / 2 + 0.7);
+    rake.rotation.z = -s * th; g.add(rake);
     const rake2 = rake.clone(); rake2.position.z = -d / 2 - 0.7; g.add(rake2);
+    g.add(box(0.07, 0.24, d + 1.42, trimMat, s * (run + 0.02), eaveY - drop + 0.03, 0));  // 封檐板
+    const nRaft = Math.max(4, Math.round((d + 1.2) / 0.42));                        // 出挑椽尾（贴在檐口下）
+    for (let i = 0; i < nRaft; i++) {
+      const z = -(d + 1.2) / 2 + (i + 0.5) * ((d + 1.2) / nRaft);
+      g.add(box(0.32, 0.13, 0.09, roofMat, s * (run - 0.16), eaveY - drop + (0.16 * rise) / run - 0.01, z));
+    }
   }
-  g.add(box(0.16, 0.16, d + 1.5, roofMat, 0, foundH + wallH + rise - 0.08, 0));     // 正脊
-  for (const sz of [-1, 1]) {                                                       // 山墙面
+  g.add(box(0.16, 0.16, d + 1.5, roofMat, 0, eaveY + rise - drop - 0.08, 0));       // 正脊
+  for (const sz of [-1, 1]) {                                                       // 山墙面（高度跟着 drop 收）
     const shp = new THREE.Shape();
-    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise); shp.closePath();
+    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise - drop); shp.closePath();
     const tri = new THREE.Mesh(new THREE.ExtrudeGeometry(shp, { depth: 0.12, bevelEnabled: false }), wood);
-    tri.position.set(0, foundH + wallH, sz * (d / 2));
+    tri.position.set(0, eaveY, sz * (d / 2));
     if (sz < 0) tri.rotation.y = Math.PI;
     g.add(tri);
   }
-  g.add(box(0.5, 0.34, 0.08, trimMat, 0, foundH + wallH + rise * 0.5, d / 2 + 0.16)); // 山墙通风百叶
-  for (let i = 0; i < 3; i++) g.add(box(0.44, 0.035, 0.03, M.dark(0x2a2620, 0.9), 0, foundH + wallH + rise * 0.5 - 0.11 + i * 0.11, d / 2 + 0.21));
-  const rafterCount = Math.floor((d + 1.2) / 0.42);                                 // 出挑椽尾
-  for (const s of [-1, 1]) for (let i = 0; i < rafterCount; i++) {
-    const z = -(d + 1.2) / 2 + (i + 0.5) * ((d + 1.2) / rafterCount);
-    g.add(box(0.07, 0.13, 0.07, roofMat, s * (w / 2 + 0.62), foundH + wallH - 0.07, z));
-  }
-  // 前廊：石砌柱墩 + 收分方柱（4 边形棱台）+ 斜撑 + 车木栏杆
-  const porchD = 2.4;
-  g.add(box(w + 0.6, 0.12, porchD + 0.2, stoneMat, 0, foundH - 0.06, d / 2 + porchD / 2 + 0.1));
-  const colH = wallH * 0.72, pierH = 0.62;
+  g.add(box(0.5, 0.34, 0.08, trimMat, 0, eaveY + (rise - drop) * 0.5, d / 2 + 0.16)); // 山墙通风百叶
+  for (let i = 0; i < 3; i++) g.add(box(0.44, 0.035, 0.03, M.dark(0x2a2620, 0.9), 0, eaveY + (rise - drop) * 0.5 - 0.11 + i * 0.11, d / 2 + 0.21));
+  // 前廊：落地门廊台 + 石砌柱墩 + 收分方柱（4 边形棱台）+ 斜撑 + 车木栏杆
+  const porchD = 2.4, colH = wallH * 0.72, pierH = 0.62;
+  const deckTop = foundH - 0.06, colTopY = deckTop + colH;
+  g.add(box(w + 0.66, deckTop, porchD + 0.3, stoneMat, 0, deckTop / 2, d / 2 + (porchD + 0.3) / 2));
+  g.add(box(w + 0.7, 0.1, 0.1, stoneMat, 0, deckTop - 0.05, d / 2 + porchD + 0.2));  // 台沿压条
   for (const s of [-1, 1]) {
     const cx = s * (w / 2 - 0.45), cz = d / 2 + porchD - 0.3;
-    g.add(box(0.52, pierH, 0.52, stoneMat, cx, pierH / 2, cz));                     // 石砌柱墩
-    g.add(box(0.42, 0.08, 0.42, trimMat, cx, pierH + 0.04, cz));
-    const shaft = cylRaw(0.115, 0.17, colH - pierH - 0.24, trimMat, 4, cx, pierH + 0.12 + (colH - pierH - 0.24) / 2, cz);
-    shaft.rotation.y = Math.PI / 4; g.add(shaft);                                   // 收分方柱
-    g.add(box(0.34, 0.1, 0.34, trimMat, cx, colH - 0.13, cz));
-    g.add(box(0.4, 0.12, 0.4, trimMat, cx, colH - 0.02, cz));
-    const brace = box(0.09, 0.62, 0.09, trimMat, cx - s * 0.2, colH - 0.44, cz);
-    brace.rotation.z = -s * 0.62; g.add(brace);                                     // 斜撑
+    g.add(box(0.52, pierH, 0.52, stoneMat, cx, deckTop + pierH / 2, cz));            // 石砌柱墩
+    g.add(box(0.44, 0.08, 0.44, trimMat, cx, deckTop + pierH + 0.04, cz));           // 柱础线脚
+    const shaftH = colH - pierH - 0.16;
+    const shaft = cylRaw(0.115, 0.17, shaftH, trimMat, 4, cx, deckTop + pierH + 0.08 + shaftH / 2, cz);
+    shaft.rotation.y = Math.PI / 4; g.add(shaft);                                    // 收分方柱
+    g.add(box(0.34, 0.1, 0.34, trimMat, cx, colTopY - 0.13, cz));                    // 柱头线脚
+    g.add(box(0.4, 0.12, 0.4, trimMat, cx, colTopY - 0.02, cz));
+    // 斜撑：下端落柱身、上端顶廊檐横梁底（旧版只有上端搭住柱子，下端 0.6m 悬在空中）
+    const bw = 0.58;
+    const brace = box(0.09, Math.hypot(bw, bw), 0.09, trimMat, cx - s * bw / 2, colTopY - bw / 2 + 0.05, cz);
+    brace.rotation.z = s * Math.PI / 4; g.add(brace);
   }
-  g.add(box(w - 0.5, 0.2, 0.2, wood, 0, colH + 0.1, d / 2 + porchD - 0.3));         // 廊檐横梁
-  g.add(box(w + 0.3, 0.1, porchD + 0.3, roofMat, 0, colH + 0.25, d / 2 + porchD / 2));
-  g.add(box(w + 0.34, 0.14, 0.1, trimMat, 0, colH + 0.24, d / 2 + porchD + 0.1));   // 封边板
+  g.add(box(w - 0.5, 0.2, 0.2, wood, 0, colTopY + 0.1, d / 2 + porchD - 0.3));       // 廊檐横梁
+  g.add(box(w + 0.3, 0.1, porchD + 0.3, roofMat, 0, colTopY + 0.25, d / 2 + porchD / 2));
+  g.add(box(w + 0.34, 0.14, 0.1, trimMat, 0, colTopY + 0.24, d / 2 + porchD + 0.1));  // 封边板
   const railH = 0.86, stairW = w * 0.42;
   for (const s of [-1, 1]) {                                                        // 前栏（中间留梯口）
     const seg = (w - 0.9 - stairW) / 2;
     const rail = balustrade(seg, railH, trimMat, { spacing: 0.16 });
-    rail.position.set(s * (stairW / 2 + seg / 2), foundH, d / 2 + porchD - 0.3);
+    rail.position.set(s * (stairW / 2 + seg / 2), deckTop, d / 2 + porchD - 0.3);
     g.add(rail);
     const side = balustrade(porchD - 0.7, railH, trimMat, { spacing: 0.17 });       // 侧栏
     side.rotation.y = Math.PI / 2;
-    side.position.set(s * (w / 2 - 0.45), foundH, d / 2 + (porchD - 0.7) / 2 + 0.15);
+    side.position.set(s * (w / 2 - 0.45), deckTop, d / 2 + (porchD - 0.7) / 2 + 0.15);
     g.add(side);
   }
-  const st = stairRun(stairW, 3, foundH / 3, 0.32, stoneMat);
+  const st = stairRun(stairW, 3, deckTop / 3, 0.32, stoneMat);
   st.position.set(0, 0, d / 2 + porchD + 0.24); g.add(st);
   // 内缩门 + 内缩窗（上亮分格）
   const doorMat = M.paint(0x5a4030, 0.7);
@@ -618,7 +697,8 @@ function buildCraftsman(p) {
     g.add(onWall(winUnit(0.9, 0.9, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 1 }), x, foundH + wallH * 0.56, -d / 2, 'z', -1));
   }
   // 石砌烟囱
-  const chX = -w * 0.35, chTop = foundH + wallH + rise * 0.5;
+  const chX = -w * 0.35;
+  const chTop = eaveY + (rise - drop) * (1 - Math.abs(chX) / (w / 2)) + 0.5;
   g.add(box(0.56, chTop, 0.5, stoneMat, chX, chTop / 2, 0));
   for (let i = 0; i < 5; i++) g.add(box(0.58, 0.045, 0.52, M.concrete(0x86705e), chX, 0.4 + i * 0.5, 0));
   g.add(box(0.66, 0.1, 0.6, M.concrete(0x7a6050), chX, chTop + 0.05, 0));
@@ -672,8 +752,9 @@ function buildSouthernColonial(p) {
   g.add(box(w - 0.2, 0.26, 0.26, trimMat, 0, foundH + h + 0.13, d / 2 + porchD / 2));
   g.add(box(w + 0.3, 0.14, porchD + 0.2, trimMat, 0, foundH + h + 0.33, d / 2 + porchD / 2));
   g.add(box(w + 0.34, 0.2, 0.1, trimMat, 0, foundH + h + 0.36, d / 2 + porchD + 0.05));
-  g.add(planeXZ(w + 0.2, porchD, stoneMat, 0, foundH + 0.01, d / 2 + porchD / 2));
-  const balconyD = 1.5, balconyH = foundH + floorH;
+  g.add(box(w + 0.2, 0.12, porchD, stoneMat, 0, foundH + 0.01 - 0.06, d / 2 + porchD / 2));  // 门廊地板（旧版是零厚度 plane，无厚度无边缘，侧看等于没有）
+  g.add(box(w + 0.24, 0.16, 0.07, trimMat, 0, foundH - 0.02, d / 2 + porchD + 0.03));            // 门廊台沿
+  const balconyD = porchD, balconyH = foundH + floorH;                                // 阳台板顶到墙外皮（旧版 1.5 深，离墙 1m 悬空）
   g.add(box(w - 0.3, 0.13, balconyD, stoneMat, 0, balconyH - 0.065, d / 2 + porchD - balconyD / 2));
   g.add(box(w - 0.34, 0.06, 0.08, trimMat, 0, balconyH - 0.16, d / 2 + porchD - 0.1));
   const balFront = balustrade(w - 0.6, 0.9, trimMat, { spacing: 0.32, belly: false });
@@ -692,8 +773,10 @@ function buildSouthernColonial(p) {
     rail.position.set(s * (stairW / 2 + segL / 2), foundH, d / 2 + porchD - 0.2);
     g.add(rail);
   }
-  const st = stairRun(stairW, 4, foundH / 4, 0.34, stoneMat);
-  st.position.set(0, 0, d / 2 + porchD + 0.42); g.add(st);
+  const stN = 4, stRise = (foundH + 0.01) / stN, stRun = 0.34;                       // 总升高 = 门廊地面标高，末级顶面与地面齐平
+  const st = stairRun(stairW, stN, stRise, stRun, stoneMat);
+  // 最高一级的顶面正好落在门廊前沿（旧版整段塞在门廊底下，只露出 0.42m）
+  st.position.set(0, 0, d / 2 + porchD + stN * stRun); g.add(st);                    // 末级后沿正好贴住门廊前沿
   // 内缩窗（含百叶）+ 扇形气窗门 + 门侧采光条
   const winMat = M.glass(0x88aabb);
   const shutterMat = M.paint(0x2a4a3a, 0.75);
@@ -710,7 +793,9 @@ function buildSouthernColonial(p) {
       g.add(onWall(winUnit(0.85, 1.4, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 3 }), sx * (w / 2), wy, 0, 'x', sx));
     }
   }
-  g.add(box(1.5, 2.72, 0.14, trimMat, 0, foundH + 1.36, d / 2 + 0.07));             // 门套
+  // 门套：樘 + 过梁留空（旧版一整块实心板把门扇和气窗一起盖死）
+  const scOpenH = 2.35 / 2 + 0.09 + 0.64 + 0.05 + 0.04 + 1.175;                     // 门底到气窗顶盖
+  g.add(surroundFrame(1.86, scOpenH, 0.14, 0.14, trimMat, 0, foundH + scOpenH / 2, d / 2 + 0.04, { sill: false }));
   g.add(onWall(doorUnit(1.1, 2.35, { frameMat: trimMat, doorMat: M.paint(0x4a3520, 0.7), panelCols: 2, panelRows: 3, fanlight: true, sidelights: true }), 0, foundH + 1.175, d / 2, 'z', 1));
   // 烟囱
   const chX = w * 0.36, chTop = foundH + h + rise * 0.42;
@@ -729,9 +814,12 @@ function buildAdobe(p) {
   g.add(box(w, wallH, d, adobe, 0, foundH + wallH / 2, 0));
   g.add(box(w + 0.16, 0.14, d + 0.16, adobe, 0, foundH + wallH + 0.07, 0));          // 女儿墙压顶
   g.add(box(w + 0.08, 0.22, 0.08, adobe, 0, foundH + wallH - 0.11, d / 2 + 0.04));
-  const wingW = w * 0.5, wingD = d * 0.6, wingH = wallH * 0.7;
-  g.add(box(wingW, wingH, wingD, adobe, w * 0.15, foundH + wingH / 2, 0));
-  g.add(box(wingW + 0.14, 0.12, wingD + 0.14, adobe, w * 0.15, foundH + wingH + 0.06, 0));
+  // 侧翼比主体浅（0.5d）——必须向前凸出，否则整只埋进主体里、翼上的窗完全看不见；
+  // 同时贴右端布置、右缘不超过 w/2，才能不压住正立面门窗和右侧墙窗
+  const wingW = w * 0.24, wingD = d * 0.5, wingH = wallH * 0.7;
+  const wingX = w / 2 - wingW / 2, wingFront = d / 2 + 0.35, wingZ = wingFront - wingD / 2;
+  g.add(box(wingW, wingH, wingD, adobe, wingX, foundH + wingH / 2, wingZ));
+  g.add(box(wingW + 0.14, 0.12, wingD + 0.14, adobe, wingX, foundH + wingH + 0.06, wingZ));
   // 木梁（vigas）与排水槽（canales）：8 边形原木，两端出挑
   const vigas = M.paint(0x6b4e35, 0.85);
   const vigaSpacing = 0.8;
@@ -746,7 +834,7 @@ function buildAdobe(p) {
   const nV2 = Math.max(2, Math.floor((wingD - 0.4) / vigaSpacing));
   for (let i = 0; i <= nV2; i++) {
     const z = -wingD / 2 + 0.2 + i * ((wingD - 0.4) / nV2);
-    const v = cylRaw(0.06, 0.07, 0.34, vigas, 8, w * 0.15 + wingW / 2 + 0.1, foundH + wingH - 0.14, z);
+    const v = cylRaw(0.06, 0.07, 0.34, vigas, 8, wingX + wingW / 2 + 0.1, foundH + wingH - 0.14, wingZ + z);
     v.rotation.z = Math.PI / 2; g.add(v);
   }
   for (const sx of [-1, 1]) {                                                       // canales
@@ -769,7 +857,7 @@ function buildAdobe(p) {
     const lat = cylRaw(0.035, 0.04, portalD + 0.16, vigas, 6, x, foundH + wallH * 0.75, d / 2 + portalD / 2);
     lat.rotation.x = Math.PI / 2; g.add(lat);
   }
-  g.add(planeXZ(w + 0.2, portalD, M.concrete(0xc4a882), 0, foundH + 0.01, d / 2 + portalD / 2));
+  g.add(box(w + 0.2, foundH, portalD + 0.1, M.concrete(0xc4a882), 0, foundH / 2, d / 2 + portalD / 2));   // 门廊地坪（实心，不再是一张悬空的面）
   g.add(box(w + 0.24, 0.16, 0.12, stoneMat, 0, foundH + 0.08, d / 2 + portalD + 0.06));
   // 内缩木门（木过梁）+ 内缩木框窗
   const doorMat = M.paint(0x5a4030, 0.7);
@@ -777,12 +865,12 @@ function buildAdobe(p) {
   g.add(onWall(doorUnit(0.86, 1.94, { frameMat: vigas, doorMat, panelCols: 1, panelRows: 2, panelColor: 0x4a3525, dep: 0.14 }), 0, foundH + 0.97, d / 2, 'z', 1));
   const winMat = M.glass(0x99aabb);
   for (const sx of [-1, 1]) {
-    const wx = sx * w * 0.28;
+    const wx = sx * w * 0.20;
     g.add(box(1.02, 0.14, 0.2, vigas, wx, foundH + wallH * 0.55 + 0.5, d / 2 + 0.05));   // 窗过梁
     g.add(onWall(winUnit(0.78, 0.78, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 2, ft: 0.09, dep: 0.13 }), wx, foundH + wallH * 0.55, d / 2, 'z', 1));
     g.add(box(0.94, 0.1, 0.24, stoneMat, wx, foundH + wallH * 0.55 - 0.52, d / 2 + 0.1)); // 石窗台
   }
-  g.add(onWall(winUnit(0.66, 0.66, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 1, ft: 0.09, dep: 0.13 }), w * 0.15 + wingW / 2, foundH + wingH * 0.55, wingD / 2, 'z', 1));
+  g.add(onWall(winUnit(0.66, 0.66, { frameMat: vigas, glassMat: winMat, muntins: true, cols: 2, rows: 1, ft: 0.09, dep: 0.13 }), wingX, foundH + wingH * 0.55, wingFront, 'z', 1));
   g.add(onWall(winUnit(0.62, 0.62, { frameMat: vigas, glassMat: winMat, muntins: false, ft: 0.08, dep: 0.13 }), -w / 2, foundH + wallH * 0.6, -d * 0.1, 'x', -1));
   for (let i = 0; i < 4; i++) {                                                     // 壁龛（nicho）
     const nx = w * 0.34 - i * 0.5;
@@ -802,22 +890,24 @@ function buildAdobe(p) {
       cb.rotation.x = sz * 0.18; g.add(cb);
     }
   }
-  // 矮院墙 + 木门
-  const wallLen = w * 0.62, gy = d / 2 + portalD + 1.5;
+  // 矮院墙 + 木门：整段落地，两侧加短墙接回主体（旧版悬在 foundH 高度、离主体 1.4m）
+  const wallLen = w * 0.62, gy = d / 2 + portalD + 1.5, wallH2 = foundH + 0.95;
   for (const sx of [-1, 1]) {
     const gx = sx * (0.7 + wallLen / 2);
-    g.add(box(wallLen, 0.95, 0.24, adobe, gx, foundH + 0.475, gy));
-    g.add(box(wallLen + 0.08, 0.08, 0.32, adobe, gx, foundH + 0.99, gy));
-    g.add(box(0.3, 1.12, 0.3, adobe, sx * 0.66, foundH + 0.56, gy));                 // 墙墩
+    g.add(box(wallLen, wallH2, 0.24, adobe, gx, wallH2 / 2, gy));
+    g.add(box(wallLen + 0.08, 0.08, 0.32, adobe, gx, wallH2 + 0.04, gy));
+    g.add(box(0.3, wallH2 + 0.17, 0.3, adobe, sx * 0.66, (wallH2 + 0.17) / 2, gy));  // 墙墩
+    g.add(box(0.24, wallH2 * 0.82, gy - (d / 2 + portalD), adobe,                     // 侧墙接回主体
+      sx * (w / 2 + 0.12), wallH2 * 0.41, (gy + d / 2 + portalD) / 2));
   }
-  const gate = doorUnit(1.0, 1.5, { frameMat: vigas, doorMat, panelColor: 0x4a3525, panelCols: 2, panelRows: 2, dep: 0.1 });
-  gate.position.set(0, foundH, gy); g.add(gate);
-  // 土坯长凳（banco）
+  const gate = doorUnit(1.0, 1.2, { frameMat: vigas, doorMat, panelColor: 0x4a3525, panelCols: 2, panelRows: 2, dep: 0.1 });
+  gate.position.set(0, 0.63, gy); g.add(gate);
+  // 土坯长凳（banco）：贴着外墙坐在地面上
   const banco = new THREE.Group();
   banco.add(slabTop(1.5, 0.12, 0.4, adobe, 0, 0.46, 0));
   banco.add(box(0.22, 0.46, 0.36, adobe, -0.6, 0.23, 0));
   banco.add(box(0.22, 0.46, 0.36, adobe, 0.6, 0.23, 0));
-  banco.position.set(-w / 2 - 0.5, foundH, d / 2 + portalD * 0.55);
+  banco.position.set(-w / 2 + 0.2, 0, d / 2 + portalD * 0.5);
   banco.rotation.y = Math.PI / 2; g.add(banco);
   // 圆形壁炉烟囱
   const chX = -w * 0.35, chZ = -d * 0.15;
@@ -871,7 +961,7 @@ function buildSpanishColonial(p) {
   }
   g.add(planeXZ(w + 0.2, archDep + 0.1, M.concrete(0xc4a882), 0, foundH + 0.012, d / 2 + archDep / 2));
   // 铁艺阳台：托梁 + 石板 + 6 边形铁栏柱 + 卷草
-  const balconyH = foundH + wallH * 0.62, balW = w * 0.72, balD = 1.2;
+  const balconyH = foundH + wallH * 0.68, balW = w * 0.72, balD = 1.2;
   g.add(box(balW, 0.13, balD, M.concrete(0x9a9488), 0, balconyH - 0.065, d / 2 + balD / 2));
   g.add(box(balW + 0.06, 0.07, balD + 0.06, M.concrete(0x8a8478), 0, balconyH - 0.16, d / 2 + balD / 2));
   const ironMat = M.metal(0x2a2a2a, 0.5, 0.8);
@@ -896,26 +986,29 @@ function buildSpanishColonial(p) {
     br.rotation.x = 0.36; g.add(br);
   }
   // 内缩窗 + 铁窗栅 + 拱心窗
+  // 竖向排布（旧版三层互相打架：阳台托梁横穿一层窗、阳台拱窗整扇埋进正面山墙）：
+  //   一层窗顶 → 阳台托梁底 → 阳台面 → 阳台拱窗 → 墙顶（山墙起点）
   const winMat = M.glass(0x88aabb);
+  const wy1 = foundH + wallH * 0.38;
   for (const x of [-w * 0.31, w * 0.31]) {
-    const wy = foundH + wallH * 0.5;
-    const wu = winUnit(0.9, 1.3, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13, ft: 0.1 });
-    for (const ss of [-1, 1]) wu.add(box(0.035, 1.44, 0.035, ironMat, ss * 0.56, 0, 0.07));
-    for (let k = 0; k < 4; k++) wu.add(box(1.16, 0.03, 0.03, ironMat, 0, -0.58 + k * 0.38, 0.07));
-    g.add(onWall(wu, x, wy, d / 2, 'z', 1));
+    const wu = winUnit(0.9, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13, ft: 0.1 });
+    for (const ss of [-1, 1]) wu.add(box(0.035, 1.34, 0.035, ironMat, ss * 0.56, 0, 0.07));
+    for (let k = 0; k < 4; k++) wu.add(box(1.16, 0.03, 0.03, ironMat, 0, -0.53 + k * 0.38, 0.07));
+    g.add(onWall(wu, x, wy1, d / 2, 'z', 1));
   }
   for (const sx of [-1, 1]) for (let i = 0; i < 2; i++) {
-    g.add(onWall(winUnit(0.8, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13 }), sx * (w / 2), foundH + wallH * 0.5, -d * 0.24 + i * d * 0.44, 'x', sx));
+    g.add(onWall(winUnit(0.8, 1.2, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: true, cols: 2, rows: 2, dep: 0.13 }), sx * (w / 2), wy1, -d * 0.24 + i * d * 0.44, 'x', sx));
   }
   for (const x of [-w * 0.24, w * 0.24]) {
-    g.add(onWall(winUnit(0.62, 0.7, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: false, arch: true, dep: 0.13 }), x, balconyH + 0.92, d / 2, 'z', 1));
+    g.add(onWall(winUnit(0.5, 0.4, { frameMat: M.paint(0x6b4e35, 0.85), glassMat: winMat, muntins: false, arch: true, dep: 0.13 }), x, foundH + wallH * 0.8, d / 2, 'z', 1));
   }
-  // 拱门 + 铁饰门钉
+  // 拱门 + 铁饰门钉（门套改成樘+过梁，洞口留空；拱券落回门头上，旧版悬空 0.25m）
   const doorMat = M.paint(0x5a4030, 0.7);
-  g.add(box(1.24, 2.34, 0.2, stucco, 0, foundH + 1.17, d / 2 + 0.1));
+  const archTop = foundH + 2.09 + 0.5;
+  g.add(surroundFrame(1.12, archTop - foundH, 0.13, 0.2, stucco, 0, foundH + (archTop - foundH) / 2, d / 2 + 0.06, { sill: false }));
   const doorArch = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 12, 1, false, 0, Math.PI), stucco);
   doorArch.rotation.z = Math.PI / 2; doorArch.rotation.y = Math.PI / 2;
-  doorArch.position.set(0, foundH + 2.34, d / 2 + 0.1); g.add(doorArch);
+  doorArch.position.set(0, foundH + 2.09, d / 2 + 0.08); g.add(doorArch);
   g.add(onWall(doorUnit(0.94, 2.0, { frameMat: M.paint(0x6b4e35, 0.85), doorMat, panelCols: 2, panelRows: 2, panelColor: 0x4a3525, dep: 0.16 }), 0, foundH + 1.0, d / 2, 'z', 1));
   g.add(box(0.5, 0.09, 0.05, ironMat, 0.3, foundH + 1.05, d / 2 + 0.17));
   g.add(cylRaw(0.028, 0.028, 0.1, ironMat, 8, 0.3, foundH + 1.05, d / 2 + 0.2));
@@ -987,13 +1080,14 @@ function buildColonialChurch(p) {
   const st = stairRun(2.6, 3, foundH / 3, 0.32, M.concrete(0x9a9488));
   st.position.set(0, 0, d / 2 + portD + 0.35); g.add(st);
   const winMat = M.glass(0x88aacc);
-  g.add(box(1.5, 2.62, 0.16, trimMat, 0, foundH + 1.31, d / 2 + 0.08));
+  const ccOpenH = 2.32 + 0.7;                                                       // 门底到拱券顶
+  g.add(surroundFrame(1.44, ccOpenH, 0.14, 0.16, trimMat, 0, foundH + ccOpenH / 2, d / 2 + 0.04, { sill: false }));
   for (const s of [-1, 1])                                                          // 双扇门
     g.add(onWall(doorUnit(0.6, 2.3, { frameMat: trimMat, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 3, dep: 0.14 }), s * 0.33, foundH + 1.15, d / 2, 'z', 1));
   const doorArch = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.1, 12, 1, false, 0, Math.PI), trimMat);
   doorArch.rotation.z = Math.PI / 2; doorArch.rotation.y = Math.PI / 2;
-  doorArch.position.set(0, foundH + 2.32, d / 2 + 0.08); g.add(doorArch);
-  g.add(box(1.6, 0.12, 0.2, trimMat, 0, foundH + 3.06, d / 2 + 0.1));
+  doorArch.position.set(0, foundH + 2.32, d / 2 + 0.06); g.add(doorArch);
+  g.add(box(1.6, 0.12, 0.2, trimMat, 0, foundH + 3.22, d / 2 + 0.1));
   // 拱心长窗（正立面）+ 侧立面拱窗
   for (const x of [-w * 0.31, w * 0.31])
     g.add(onWall(winUnit(0.7, 1.25, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 1, rows: 2, arch: true, ft: 0.09, dep: 0.12 }), x, foundH + wallH * 0.5, d / 2, 'z', 1));
@@ -1046,17 +1140,17 @@ function buildGoogieDiner(p) {
   bandL.position.set(-w * 0.3, foundH + 1.15, d / 2); g.add(bandL);
   const bandR = storefrontBand(w * 0.34, 2.1, { glassMat: winMat, frameMat: M.metal(0xc6ccd2, 0.28, 0.75), dep: 0.14, bulk: 0.62, mullionGap: 1.3 });
   bandR.position.set(w * 0.3, foundH + 1.15, d / 2); g.add(bandR);
-  const doorDep = 0.16;
-  g.add(box(1.4, 2.4, 0.03, M.dark(0x10141a, 0.95), 0, foundH + 1.2, d / 2 + 0.01));
-  g.add(box(1.1, 2.1, 0.03, winMat, 0, foundH + 1.15, d / 2 + doorDep - 0.07));
-  g.add(box(1.34, 2.36, 0.05, M.paint(0xcc3333, 0.6), 0, foundH + 1.18, d / 2 + doorDep / 2 - 0.14));
-  g.add(box(1.06, 2.06, 0.02, M.paint(0xcc3333, 0.6), 0, foundH + 1.18, d / 2 + doorDep / 2 - 0.12));
-  g.add(box(1.1, 2.1, 0.03, winMat, 0, foundH + 1.15, d / 2 + doorDep - 0.08));
+  const doorDep = 0.16, dCy = foundH + 1.15;
+  const redMat = M.paint(0xcc3333, 0.6);
+  g.add(box(1.4, 2.4, 0.03, M.dark(0x10141a, 0.95), 0, foundH + 1.2, d / 2 + 0.015));   // 洞口暗腔
+  g.add(box(1.1, 2.1, 0.03, winMat, 0, dCy, d / 2 + 0.05));                              // 玻璃（只留一片）
+  for (const sy of [1, -1]) g.add(box(1.34, 0.14, 0.05, redMat, 0, dCy + sy * 1.12, d / 2 + 0.075));
+  for (const sx of [1, -1]) g.add(box(0.14, 2.38, 0.05, redMat, sx * 0.6, dCy, d / 2 + 0.075));
   g.add(box(1.5, 0.12, doorDep + 0.1, M.metal(0xc6ccd2, 0.28, 0.75), 0, foundH + 2.4, d / 2 + doorDep / 2));
-  g.add(box(0.09, 0.34, 0.09, M.metal(0xd4af37, 0.3, 0.8), 0.44, foundH + 1.1, d / 2 + doorDep - 0.02));
+  g.add(box(0.09, 0.34, 0.09, M.metal(0xd4af37, 0.3, 0.8), 0.44, foundH + 1.1, d / 2 + 0.14));
   for (const s of [-1, 1]) {                                                        // 侧立面带形窗
-    g.add(box(0.16, 1.1, d * 0.6, M.dark(0x10141a, 0.95), s * (w / 2 + 0.01), foundH + wallH * 0.55, 0));
-    g.add(box(0.05, 0.95, d * 0.58, winMat, s * (w / 2 + 0.05), foundH + wallH * 0.55, 0));
+    g.add(box(0.16, 1.1, d * 0.6, M.dark(0x10141a, 0.95), s * (w / 2 - 0.02), foundH + wallH * 0.55, 0));
+    g.add(box(0.05, 0.95, d * 0.58, winMat, s * (w / 2 + 0.09), foundH + wallH * 0.55, 0));
     g.add(box(0.2, 0.09, d * 0.62, M.metal(0xc6ccd2, 0.28, 0.75), s * (w / 2 + 0.03), foundH + wallH * 0.55 + 0.6, 0));
     g.add(box(0.2, 0.09, d * 0.62, M.metal(0xc6ccd2, 0.28, 0.75), s * (w / 2 + 0.03), foundH + wallH * 0.55 - 0.6, 0));
   }
@@ -1064,10 +1158,10 @@ function buildGoogieDiner(p) {
   const chrome = M.metal(0xc6ccd2, 0.28, 0.75);
   const porthole = (x, y, z, rot) => {
     const P = new THREE.Group();
-    const ring = cylRaw(0.4, 0.4, 0.14, chrome, 12); ring.rotation.x = Math.PI / 2; P.add(ring);
-    const cav = cylRaw(0.33, 0.33, 0.05, M.dark(0x10141a, 0.95), 12); cav.rotation.x = Math.PI / 2; cav.position.z = -0.05; P.add(cav);
-    const gl = cylRaw(0.31, 0.31, 0.03, winMat, 12); gl.rotation.x = Math.PI / 2; gl.position.z = 0.05; P.add(gl);
-    for (let i = 0; i < 2; i++) { const bar = box(0.64, 0.045, 0.05, chrome, 0, 0, 0.07); bar.rotation.z = i * Math.PI / 2; P.add(bar); }
+    const cav = cylRaw(0.34, 0.34, 0.05, M.dark(0x10141a, 0.95), 12); cav.rotation.x = Math.PI / 2; cav.position.z = -0.02; P.add(cav);
+    const gl = cylRaw(0.31, 0.31, 0.03, winMat, 12); gl.rotation.x = Math.PI / 2; gl.position.z = 0.03; P.add(gl);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.365, 0.045, 6, 12), chrome); rim.position.z = 0.05; P.add(rim);
+    for (let i = 0; i < 2; i++) { const bar = box(0.62, 0.045, 0.05, chrome, 0, 0, 0.07); bar.rotation.z = i * Math.PI / 2; P.add(bar); }
     P.position.set(x, y, z); P.rotation.y = rot; return P;
   };
   for (let i = 0; i < 5; i++) g.add(porthole(-w * 0.36 + i * w * 0.18, foundH + wallH * 0.56, -d / 2, Math.PI));
@@ -1100,59 +1194,74 @@ function buildCraftsmanCafe(p) {
   g.add(box(w, wallH, d, wood, 0, foundH + wallH / 2, 0));
   for (const sx of [-1, 1]) g.add(box(0.12, wallH, 0.12, trimMat, sx * (w / 2 - 0.06), foundH + wallH / 2, d / 2 - 0.06));
   for (const t of [0.05, wallH * 0.5, wallH - 0.05]) g.add(box(w + 0.08, 0.1, 0.07, trimMat, 0, foundH + t, d / 2 + 0.035));
-  // 低坡屋顶 + 瓦垄 + 椽尾 + 山墙
+  // 低坡屋顶 + 瓦垄 + 出檐/封檐板/椽尾 + 山墙
   const roofMat = M.paint(p.roofColor, 0.78);
-  const rise = w * 0.25, slope = Math.hypot(w / 2, rise);
+  const ohX = 0.52;                                                               // 山面出檐
+  const run = w / 2 + ohX, rise = w * 0.25, slope = Math.hypot(run, rise);
+  const th = Math.atan2(rise, run), eaveY = foundH + wallH;
+  // 同 house:craftsman / house:cape_cod：屋面直线必须过「墙外皮 + 墙顶」，否则墙外皮处
+  // 屋面底比墙顶高出 (ohX/run)·rise（本例 0.236m），整条檐口下通长一道缝。
+  const drop = (run - w / 2) / run * rise;
   for (const s of [1, -1]) {
-    const sl = box(slope, 0.2, d + 1.2, roofMat, s * w / 4, foundH + wallH + rise / 2, 0);
-    sl.rotation.z = -s * Math.atan2(rise, w / 2); g.add(sl);
+    const sl = box(slope, 0.2, d + 1.2, roofMat, s * run / 2, eaveY + rise / 2 - drop, 0);
+    sl.rotation.z = -s * th; g.add(sl);
     g.add(shingleCourses(sl, Math.max(7, Math.round(slope / 0.42)), roofMat));
+    g.add(box(0.07, 0.24, d + 1.22, trimMat, s * (run + 0.02), eaveY + 0.03 - drop, 0));   // 封檐板
+    const raftN = Math.max(6, Math.floor((d + 1.0) / 0.36));
+    for (let i = 0; i < raftN; i++)
+      g.add(box(0.3, 0.12, 0.08, roofMat, s * (run - 0.15), eaveY - drop - 0.01, -(d + 1.0) / 2 + (i + 0.5) * ((d + 1.0) / raftN)));
   }
-  g.add(box(0.16, 0.16, d + 1.3, roofMat, 0, foundH + wallH + rise - 0.08, 0));
-  const raftN = Math.max(6, Math.floor((d + 1.0) / 0.36));
-  for (const s of [-1, 1]) for (let i = 0; i < raftN; i++)
-    g.add(box(0.07, 0.11, 0.07, roofMat, s * (w / 2 + 0.52), foundH + wallH - 0.06, -(d + 1.0) / 2 + (i + 0.5) * ((d + 1.0) / raftN)));
+  g.add(box(0.16, 0.16, d + 1.3, roofMat, 0, eaveY + rise - drop - 0.08, 0));
   for (const sz of [-1, 1]) {
     const shp = new THREE.Shape();
-    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise); shp.closePath();
+    shp.moveTo(-w / 2, 0); shp.lineTo(w / 2, 0); shp.lineTo(0, rise - drop); shp.closePath();
     const tri = new THREE.Mesh(new THREE.ExtrudeGeometry(shp, { depth: 0.12, bevelEnabled: false }), wood);
     tri.position.set(0, foundH + wallH, sz * (d / 2));
     if (sz < 0) tri.rotation.y = Math.PI;
     g.add(tri);
   }
-  // 2 段倒角主招牌 + 悬挑小招牌
+  // 主招牌：钉在正面山墙三角上（旧版整块浮在屋脊上方 0.62m，像「起飞」）
   const signMat = M.paint(p.signColor, 0.6);
-  g.add(bevelSign(w * 0.58, 1.0, 0.16, signMat, 0, foundH + wallH + rise + 0.62, d / 2 + 0.12));
-  g.add(bevelSign(w * 0.52, 0.78, 0.06, trimMat, 0, foundH + wallH + rise + 0.62, d / 2 + 0.21));
-  for (const s of [-1, 1]) g.add(box(0.1, 0.1, 0.5, M.metal(0x2a2a2a, 0.5, 0.8), s * w * 0.24, foundH + wallH + rise + 0.62, d / 2 - 0.12));
+  const signY = eaveY + (rise - drop) * 0.30, signH = Math.max(0.5, (rise - drop) * 0.34), signW = w * 0.46;
+  g.add(bevelSign(signW, signH, 0.16, signMat, 0, signY, d / 2 + 0.12));
+  g.add(bevelSign(signW * 0.88, signH * 0.72, 0.06, trimMat, 0, signY, d / 2 + 0.21));
+  for (const s of [-1, 1]) g.add(box(0.09, 0.09, 0.34, M.metal(0x2a2a2a, 0.5, 0.8), s * signW * 0.33, signY - signH * 0.42, d / 2 + 0.02));
   const hangZ = d / 2 + 0.5;
   g.add(box(0.1, 0.1, 0.9, M.metal(0x2a2a2a, 0.5, 0.8), w * 0.36, foundH + wallH - 0.3, hangZ - 0.35));
   g.add(cylRaw(0.02, 0.02, 0.3, M.metal(0x2a2a2a, 0.5, 0.8), 6, w * 0.36 - 0.14, foundH + wallH - 0.45, hangZ));
   g.add(cylRaw(0.02, 0.02, 0.3, M.metal(0x2a2a2a, 0.5, 0.8), 6, w * 0.36 + 0.14, foundH + wallH - 0.45, hangZ));
   g.add(bevelSign(0.62, 0.5, 0.08, signMat, w * 0.36, foundH + wallH - 0.85, hangZ));
-  // 门廊：石墩方柱 + 线脚 + 连续橱窗带
-  const porchD = 1.8;
-  g.add(box(w + 0.4, 0.14, porchD, stoneMat, 0, foundH - 0.07, d / 2 + porchD / 2));
+  // 门廊：落地门廊台 + 石墩方柱（柱身不再比柱头短一截）+ 连续橱窗带
+  const porchD = 1.8, deckTop = foundH - 0.07, colTop = foundH + wallH * 0.62;
+  g.add(box(w + 0.5, deckTop, porchD + 0.2, stoneMat, 0, deckTop / 2, d / 2 + porchD / 2 - 0.05));
   for (const s of [-1, 1]) {
-    const cx = s * (w / 2 - 0.32);
-    g.add(box(0.36, 0.5, 0.36, stoneMat, cx, 0.25, d / 2 + porchD - 0.2));
-    g.add(box(0.3, 0.08, 0.3, trimMat, cx, 0.54, d / 2 + porchD - 0.2));
-    const shaft = cylRaw(0.1, 0.13, wallH * 0.62 - 0.66, trimMat, 4, cx, 0.58 + (wallH * 0.62 - 0.66) / 2, d / 2 + porchD - 0.2);
-    shaft.rotation.y = Math.PI / 4; g.add(shaft);
-    g.add(box(0.32, 0.1, 0.32, trimMat, cx, foundH + wallH * 0.62 - 0.04, d / 2 + porchD - 0.2));
-    const br = box(0.08, 0.5, 0.08, trimMat, cx - s * 0.18, foundH + wallH * 0.62 - 0.34, d / 2 + porchD - 0.2);
-    br.rotation.z = -s * 0.6; g.add(br);
+    const cx = s * (w / 2 - 0.32), cz = d / 2 + porchD - 0.2;
+    g.add(box(0.36, 0.5, 0.36, stoneMat, cx, deckTop + 0.25, cz));                 // 石墩
+    g.add(box(0.32, 0.08, 0.32, trimMat, cx, deckTop + 0.54, cz));                 // 柱础
+    const shaftH = colTop - 0.14 - (deckTop + 0.58);
+    const shaft = cylRaw(0.1, 0.13, shaftH, trimMat, 4, cx, deckTop + 0.58 + shaftH / 2, cz);
+    shaft.rotation.y = Math.PI / 4; g.add(shaft);                                   // 收分方柱
+    g.add(box(0.32, 0.14, 0.32, trimMat, cx, colTop - 0.07, cz));                   // 柱头
+    // 斜撑：下端落柱身、上端顶廊檐横梁底（旧版下端悬在柱身外 0.3m，旋转方向也是反的）
+    const bw = 0.58;
+    const br = box(0.08, Math.hypot(bw, bw), 0.08, trimMat, cx - s * bw / 2, colTop - bw / 2 + 0.05, cz);
+    br.rotation.z = s * Math.PI / 4; g.add(br);
   }
-  g.add(box(w - 0.2, 0.16, 0.18, wood, 0, foundH + wallH * 0.62 + 0.08, d / 2 + porchD - 0.2));
-  g.add(box(w + 0.2, 0.09, porchD + 0.2, roofMat, 0, foundH + wallH * 0.62 + 0.21, d / 2 + porchD / 2 - 0.1));
-  g.add(box(w + 0.24, 0.13, 0.09, trimMat, 0, foundH + wallH * 0.62 + 0.2, d / 2 + porchD + 0.02));
+  g.add(box(w - 0.2, 0.16, 0.18, wood, 0, colTop + 0.08, d / 2 + porchD - 0.2));
+  g.add(box(w + 0.2, 0.09, porchD + 0.2, roofMat, 0, colTop + 0.21, d / 2 + porchD / 2 - 0.1));
+  g.add(box(w + 0.24, 0.13, 0.09, trimMat, 0, colTop + 0.2, d / 2 + porchD + 0.02));
+  // 店面：橱窗带与门都贴在墙外皮（旧版 z = d/2-0.42，整片玻璃被实心墙吞掉），
+  // 门居左、橱窗带居右，两者横向不重叠（旧版门落在橱窗带里，门扇与玻璃互穿）
   const winMat = M.glass(0x99bbcc);
-  const band = storefrontBand(w * 0.8, 1.95, { frameMat: wood, glassMat: winMat, dep: 0.14, bulk: 0.55, mullionGap: 1.15 });
-  band.position.set(0, foundH + 1.02, d / 2 - 0.42); g.add(band);
-  g.add(onWall(doorUnit(0.95, 2.05, { frameMat: wood, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 2, panelColor: 0x4a3525, lintel: true, lintelMat: trimMat, dep: 0.14 }), -w * 0.33, foundH + 1.025, d / 2 - 0.42, 'z', 1));
+  const faceZ = d / 2 + 0.01;
+  const doorX = -w * 0.33, doorHalf = 0.95 / 2 + 0.09 + 0.07;                     // 含门套与门楣
+  const bandL = doorX + doorHalf + 0.18, bandR = w / 2 - 0.4;
+  const band = storefrontBand(bandR - bandL, 1.95, { frameMat: wood, glassMat: winMat, dep: 0.14, bulk: 0.55, mullionGap: 1.15 });
+  band.position.set((bandL + bandR) / 2, foundH + 1.02, faceZ); g.add(band);
+  g.add(onWall(doorUnit(0.95, 2.05, { frameMat: wood, doorMat: M.paint(0x5a4030, 0.7), panelCols: 1, panelRows: 2, panelColor: 0x4a3525, lintel: true, lintelMat: trimMat, dep: 0.14 }), doorX, foundH + 1.025, faceZ, 'z', 1));
   for (const s of [-1, 1]) g.add(onWall(winUnit(0.8, 1.1, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 3, rows: 1 }), s * (w / 2), foundH + wallH * 0.58, 0, 'x', s));
-  const entry = stairRun(w * 0.3, 2, foundH / 2, 0.3, stoneMat);
-  entry.position.set(-w * 0.33, 0, d / 2 + porchD + 0.05); g.add(entry);
+  const entry = stairRun(w * 0.3, 2, deckTop / 2, 0.3, stoneMat);
+  entry.position.set(-w * 0.33, 0, d / 2 + porchD + 0.55); g.add(entry);
   shade(g); return g;
 }
 
@@ -1233,14 +1342,15 @@ function buildSpanishLibrary(p) {
     g.add(tri);
   }
   // 入口柱廊：两根 12 边形圆柱 + 横梁 + 2 段倒角匾额
-  const colH = wallH * 0.8, colZ = d / 2 + 0.55;
+  // 柱位从 0.3w 外移到 0.42w：旧版两根柱正好压在立面拱窗中央，把窗挡掉六成
+  const colH = wallH * 0.8, colZ = d / 2 + 0.55, colX = w * 0.42;
   for (const s of [-1, 1]) {
     const c = porchColumn(colH, 0.22, trimMat, 12);
-    c.position.set(s * w * 0.3, foundH, colZ); g.add(c);
+    c.position.set(s * colX, foundH, colZ); g.add(c);
   }
-  g.add(box(w * 0.78, 0.26, 0.34, trimMat, 0, foundH + colH + 0.13, colZ));
-  g.add(box(w * 0.82, 0.1, 0.42, trimMat, 0, foundH + colH + 0.31, colZ));
-  g.add(box(w * 0.8, 0.12, colZ - d / 2 + 0.2, stucco, 0, foundH + colH + 0.42, d / 2 + (colZ - d / 2) / 2));
+  g.add(box(colX * 2 + 0.66, 0.26, 0.34, trimMat, 0, foundH + colH + 0.13, colZ));
+  g.add(box(colX * 2 + 0.86, 0.1, 0.42, trimMat, 0, foundH + colH + 0.31, colZ));
+  g.add(box(colX * 2 + 0.7, 0.12, colZ - d / 2 + 0.2, stucco, 0, foundH + colH + 0.42, d / 2 + (colZ - d / 2) / 2));
   g.add(bevelSign(w * 0.34, 0.42, 0.09, M.paint(0xb4552f, 0.62), 0, foundH + colH - 0.5, d / 2 + 0.12));
   g.add(bevelSign(w * 0.28, 0.28, 0.05, trimMat, 0, foundH + colH - 0.5, d / 2 + 0.18));
   const st = stairRun(w * 0.4, 3, foundH / 3, 0.34, M.concrete(0x9a9488));
@@ -1288,15 +1398,29 @@ function buildColumnsBank(p) {
     g.add(box(0.22, wallH, 0.22, trimMat, sx * (w / 2 - 0.11), baseY + wallH / 2, sz * (d / 2 - 0.11)));
   g.add(box(w + 0.16, 0.14, d + 0.16, trimMat, 0, baseY + 0.07, 0));
   g.add(box(w + 0.16, 0.14, d + 0.16, trimMat, 0, baseY + wallH - 0.07, 0));
-  // 山花 + 齿饰檐口
-  const pedimentH = 1.4;
+  // 山花 + 齿饰檐口。旧版用 ConeGeometry(…, 4)（四棱锥）当山花，底面 15×15m 且比屋顶高 1.87m，
+  // 于是整块「屋顶」像漂在建筑上方、前后各探出 7m —— 改成真正的三角挤出山花 + 两道斜檐口。
+  const pedimentH = 1.4, triH = 0.9;
+  const pedY = baseY + wallH + 0.32, pedW = w + 0.6, pedD = 0.5, pedZ = d / 2 + 0.1;
   g.add(box(w + 0.8, 0.32, 0.72, stone, 0, baseY + wallH + 0.16, d / 2 + 0.16));
   g.add(dentils(w + 0.7, trimMat, 0, baseY + wallH + 0.02, d / 2 + 0.5, 0.3));
-  g.add(box(w + 0.6, pedimentH, 0.5, stone, 0, baseY + wallH + 0.32 + pedimentH / 2, d / 2 + 0.1));
-  const triH = 0.9;
-  g.add(new THREE.Mesh(new THREE.ConeGeometry(w / 2 + 0.5, triH, 4), stone).translateY(baseY + wallH + 0.32 + pedimentH + triH / 2));
-  g.add(box(w + 1.0, 0.12, 0.62, trimMat, 0, baseY + wallH + 0.32 + pedimentH + 0.06, d / 2 + 0.1));
-  g.add(bevelSign(w * 0.3, 0.44, 0.1, trimMat, 0, baseY + wallH + 0.32 + pedimentH * 0.4, d / 2 + 0.36));   // 山花匾额
+  g.add(box(pedW, pedimentH, pedD, stone, 0, pedY + pedimentH / 2, pedZ));            // 山花（额枋段）
+  g.add(box(pedW + 0.28, 0.12, pedD + 0.2, trimMat, 0, pedY + 0.06, pedZ));           // 山花基座线脚
+  {
+    const shp = new THREE.Shape();
+    shp.moveTo(-pedW / 2, 0); shp.lineTo(pedW / 2, 0); shp.lineTo(0, triH); shp.closePath();
+    const geo = new THREE.ExtrudeGeometry(shp, { depth: pedD, bevelEnabled: false });
+    geo.translate(0, 0, -pedD / 2);
+    const tri = new THREE.Mesh(geo, stone);
+    tri.position.set(0, pedY + pedimentH, pedZ);
+    g.add(tri);
+    const rakeLen = Math.hypot(pedW / 2, triH), rakeA = Math.atan2(triH, pedW / 2);
+    for (const s of [1, -1]) {                                                        // 两道斜檐口
+      const rk = box(rakeLen + 0.2, 0.14, pedD + 0.16, trimMat, s * pedW / 4, pedY + pedimentH + triH / 2, pedZ);
+      rk.rotation.z = -s * rakeA; g.add(rk);
+    }
+  }
+  g.add(bevelSign(w * 0.3, 0.44, 0.1, trimMat, 0, pedY + pedimentH * 0.4, pedZ + pedD / 2 + 0.04));   // 山花匾额
   g.add(box(w + 0.3, 0.3, d + 0.3, stone, 0, baseY + wallH + 0.15, 0));
   g.add(box(w + 0.4, 0.1, d + 0.4, trimMat, 0, baseY + wallH + 0.34, 0));
   // 6 根 12 边形凹槽圆柱（柱础 + 收分柱身 + 6 条凹槽 + 柱头线脚）
@@ -1316,12 +1440,12 @@ function buildColumnsBank(p) {
   g.add(box(w + 0.3, 0.14, 0.9, stone, 0, baseY + colH + 0.43, d / 2 + 0.2));
   g.add(planeXZ(w + 0.2, 0.9, M.concrete(0x9a9488), 0, baseY + 0.012, d / 2 + 0.25));
   // 内缩铜门 + 石过梁 + 内缩窗
-  g.add(box(1.56, 2.96, 0.18, trimMat, 0, baseY + 1.48, d / 2 + 0.09));
+  g.add(surroundFrame(1.43, 2.79, 0.14, 0.18, trimMat, 0, baseY + 1.395, d / 2 + 0.05, { sill: false }));
   g.add(box(1.72, 0.18, 0.24, trimMat, 0, baseY + 3.05, d / 2 + 0.12));
   g.add(onWall(doorUnit(1.25, 2.7, { frameMat: trimMat, doorMat: M.metal(0x8a6a3a, 0.35, 0.75), panelCols: 2, panelRows: 3, panelColor: 0x6d5327, dep: 0.16 }), 0, baseY + 1.35, d / 2, 'z', 1));
   const winMat = M.glass(0x88aacc);
   for (const x of [-w * 0.31, w * 0.31]) {
-    g.add(box(1.16, 2.0, 0.14, trimMat, x, baseY + wallH * 0.5, d / 2 + 0.07));
+    g.add(surroundFrame(1.1, 1.99, 0.12, 0.14, trimMat, x, baseY + wallH * 0.5, d / 2 + 0.04, { sill: false }));
     g.add(onWall(winUnit(0.9, 1.75, { frameMat: trimMat, glassMat: winMat, muntins: true, cols: 2, rows: 3, ft: 0.1, dep: 0.14 }), x, baseY + wallH * 0.5, d / 2, 'z', 1));
   }
   for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
@@ -1346,27 +1470,31 @@ function buildSchool(p) {
   g.add(box(w, h, d, brick, 0, h / 2, 0));
   g.add(box(w + 0.14, 0.5, d + 0.14, roofMat, 0, h - 0.25, 0));
   g.add(box(w + 0.3, 0.24, d + 0.3, trim, 0, h + 0.12, 0));
-  const wingH = h * 0.72, wingX = w / 2 + w * 0.13;
+  // 侧翼比主体浅（旧版 0.82d 几乎包住整片侧墙，把侧墙窗全挡死、屋面板还切穿二层窗）
+  const wingH = h * 0.72, wingX = w / 2 + w * 0.13, wingD = d * 0.62;
   for (const sx of [-1, 1]) {
-    g.add(box(w * 0.26, wingH, d * 0.82, brick, sx * wingX, wingH / 2, 0));
-    g.add(box(w * 0.26 + 0.12, 0.4, d * 0.82 + 0.12, roofMat, sx * wingX, wingH - 0.2, 0));
-    g.add(box(w * 0.26 + 0.26, 0.2, d * 0.82 + 0.26, trim, sx * wingX, wingH + 0.1, 0));
+    g.add(box(w * 0.26, wingH, wingD, brick, sx * wingX, wingH / 2, 0));
+    g.add(box(w * 0.26 + 0.12, 0.4, wingD + 0.12, roofMat, sx * wingX, wingH - 0.2, 0));
+    g.add(box(w * 0.26 + 0.26, 0.2, wingD + 0.26, trim, sx * wingX, wingH + 0.1, 0));
     for (let f = 0; f < 2; f++) for (let i = 0; i < 3; i++)
-      g.add(box(0.95, 1.15, 0.08, winMat, sx * wingX + (i - 1) * (w * 0.08), 1.5 + f * floorH, d * 0.41 + 0.03));
+      g.add(box(0.95, 1.15, 0.08, winMat, sx * wingX + (i - 1) * (w * 0.08), wingH * (0.28 + f * 0.42), wingD / 2 + 0.03));
   }
+  const bayW = w * 0.24;                                                          // 入口凸出体，正面窗要避开它
   for (let f = 0; f < floors; f++) {
+    const wy = floorH * 0.52 + f * floorH;
     for (let i = 0; i < 6; i++) {
       const x = -w * 0.4 + i * (w * 0.16);
-      g.add(box(1.15, 1.35, 0.07, winMat, x, floorH * 0.52 + f * floorH, d / 2 + 0.035));
-      g.add(box(1.3, 0.12, 0.14, trim, x, floorH * 0.52 + f * floorH - 0.74, d / 2 + 0.06));
-      g.add(box(1.15, 1.35, 0.07, winMat, x, floorH * 0.52 + f * floorH, -d / 2 - 0.035));
+      g.add(box(1.15, 1.35, 0.07, winMat, x, wy, -d / 2 - 0.035));                 // 背面：无凸出体，整排都留
+      if (Math.abs(x) < bayW / 2 + 0.75) continue;                                 // 正面：让开中央入口
+      g.add(box(1.15, 1.35, 0.07, winMat, x, wy, d / 2 + 0.035));
+      g.add(box(1.3, 0.12, 0.14, trim, x, wy - 0.74, d / 2 + 0.06));
     }
-    for (const sx of [-1, 1]) for (let i = 0; i < 3; i++)
-      g.add(box(0.07, 1.35, 1.15, winMat, sx * (w / 2 + 0.035), floorH * 0.52 + f * floorH, -d * 0.28 + i * d * 0.28));
+    for (const sx of [-1, 1]) for (const sz of [-1, 1])                           // 侧墙窗：贴侧翼前后，避让侧翼与侧翼屋面板
+      g.add(box(0.07, 1.35, 1.15, winMat, sx * (w / 2 + 0.035), wy, sz * d * 0.415));
     g.add(box(w + 0.08, 0.14, d + 0.08, trim, 0, f * floorH + 0.07, 0));
   }
   // 中央入口山墙 + 台阶 + 双开门
-  const bayW = w * 0.24, bayH = h + 1.0;
+  const bayH = h + 1.0;
   g.add(box(bayW, bayH, 0.5, brick, 0, bayH / 2, d / 2 + 0.25));
   g.add(box(bayW + 0.3, 0.24, 0.7, trim, 0, bayH + 0.12, d / 2 + 0.25));
   const ped = new THREE.Mesh(new THREE.ConeGeometry(bayW * 0.78, 1.0, 4), roofMat);
@@ -1404,9 +1532,9 @@ function buildFireStation(p) {
     for (let j = 0; j < 5; j++) g.add(box(bayW * 0.94, 0.07, 0.05, M.metal(0xb9c0c8, 0.5, 0.7), x, 0.45 + j * 0.62, d / 2 + 0.16));
     g.add(box(0.5, 0.4, 0.1, M.dark(0x22262b, 0.9), x, bayH + 0.55, d / 2 + 0.08));
   }
-  for (const sx of [-1, 1]) {
-    g.add(box(0.14, 0.9, 0.9, trimMat, sx * (w * 0.45), 2.6, d / 2 + 0.02));
-    g.add(box(0.08, 0.7, 0.7, winMat, sx * (w * 0.45), 2.6, d / 2 + 0.08));
+  for (const sx of [-1, 1]) {                                                      // 立面小窗：玻璃薄轴必须与墙面法线一致
+    g.add(box(0.9, 0.9, 0.14, trimMat, sx * (w * 0.45), 2.6, d / 2 + 0.02));
+    g.add(box(0.7, 0.7, 0.08, winMat, sx * (w * 0.45), 2.6, d / 2 + 0.12));
   }
   // 瞭望塔（ Hose tower）+ 挑檐 + 爬梯
   const towerW = 1.9, towerH = 4.2, tx = w * 0.32;
@@ -1561,7 +1689,12 @@ function buildPostOffice(p) {
     g.add(box(0.44, 0.16, 0.44, stone, x, 1.0, d / 2 + 0.85));
     g.add(box(0.42, 0.14, 0.42, stone, x, colH + 0.92, d / 2 + 0.85));
   }
-  for (let i = 0; i < 3; i++) g.add(box(w * 0.5, 0.14, 0.44 + i * 0.16, stone, 0, 0.07 + (2 - i) * 0.14, d / 2 + 1.2 + i * 0.3));
+  const nSt = 3, stH = 1.0 / nSt, stD = 0.4;                                       // 实心台阶：一直砌到地面
+  for (let i = 0; i < nSt; i++) {
+    const hh = 1.0 - i * stH, zz = d / 2 + 0.85 + i * stD;
+    g.add(slabTop(w * 0.5, stH, stD, stone, 0, hh - stH / 2, zz));
+    if (hh - stH > 0.03) g.add(box(w * 0.5 - 0.08, hh - stH, stD, stone, 0, (hh - stH) / 2, zz));
+  }
   // 门窗
   g.add(box(1.5, 2.5, 0.12, stone, 0, 1.35, d / 2 + 0.05));
   g.add(box(1.2, 2.2, 0.1, M.paint(0x5a4030, 0.7), 0, 1.2, d / 2 + 0.09));
@@ -1583,9 +1716,13 @@ function buildPostOffice(p) {
     g.add(box(0.07, 1.55, 0.88, winMat, sx * (w / 2 + 0.08), wallH * 0.52, z));
   }
   // 旗杆 + 邮箱 + 标识牌
+  g.add(box(0.56, 0.2, 0.56, stone, w * 0.42, 0.1, d / 2 + 1.4));                   // 旗杆基座
   g.add(cylRaw(0.05, 0.06, 4.0, M.metal(0x888888, 0.4, 0.7), 8, w * 0.42, 2.0, d / 2 + 1.4));
   g.add(box(1.1, 0.66, 0.05, M.paint(0x2a4a8a, 0.6), w * 0.42 + 0.58, 3.6, d / 2 + 1.4));
-  for (let i = 0; i < 2; i++) g.add(box(0.5, 0.9, 0.4, M.metal(0x2a4a8a, 0.4, 0.5), -w * 0.34 + i * 0.7, 0.65, d / 2 + 1.6));
+  for (let i = 0; i < 2; i++) {                                                    // 邮箱：立柱落地
+    g.add(box(0.5, 1.1, 0.4, M.metal(0x2a4a8a, 0.4, 0.5), -w * 0.34 + i * 0.7, 0.55, d / 2 + 1.6));
+    g.add(box(0.2, 0.9, 0.2, M.metal(0x4a4f56, 0.5, 0.6), -w * 0.34 + i * 0.7, 0.45, d / 2 + 1.6));
+  }
   g.add(box(w * 0.34, 0.56, 0.14, stone, 0, wallH - 0.5, d / 2 + 0.12));
   shade(g); return g;
 }
@@ -1685,19 +1822,23 @@ function buildWorkbench(p) {
   g.add(box(0.17, 0.15, 0.012, black, vx, h + 0.14, d / 2 - 0.038));
   const screw = cylRaw(0.024, 0.024, 0.24, steel, 8, vx, h + 0.12, d / 2 - 0.15);
   screw.rotation.x = Math.PI / 2; g.add(screw);
-  const hnd = cylRaw(0.011, 0.011, 0.26, steel, 6, vx, h + 0.12, d / 2 + 0.02);
+  const hnd = cylRaw(0.011, 0.011, 0.26, steel, 6, vx, h + 0.12, d / 2 - 0.04);   // 穿过丝杆前端，旧版悬在钳口外
   hnd.rotation.z = Math.PI / 2; g.add(hnd);
-  for (const s of [-1, 1]) g.add(cylRaw(0.022, 0.022, 0.035, steel, 6, vx + s * 0.13, h + 0.12, d / 2 + 0.02));
+  for (const s of [-1, 1]) g.add(cylRaw(0.022, 0.022, 0.035, steel, 6, vx + s * 0.13, h + 0.12, d / 2 - 0.04));
   // 端钳（左端）
   g.add(box(0.06, 0.16, d - 0.2, steel, -w / 2 + 0.03, h + 0.08, 0));
   g.add(box(0.05, 0.13, d * 0.4, darkWood, -w / 2 - 0.02, h + 0.08, 0));
   // 夹式工作灯
   g.add(box(0.09, 0.06, 0.14, black, -w / 2 + 0.14, h - 0.1, -d / 2 + 0.1));
-  const arm1 = box(0.03, 0.36, 0.03, steel, -w / 2 + 0.14, h + 0.09, -d / 2 + 0.1);
-  arm1.rotation.z = 0.22; g.add(arm1);
-  const arm2 = box(0.03, 0.3, 0.03, steel, -w / 2 + 0.24, h + 0.36, -d / 2 + 0.1);
+  // 灯臂逐级铰接：上臂底端 = 下臂顶端，灯头贴上臂顶（旧版三段互不接触）
+  const a1 = 0.22, lx = -w / 2 + 0.14, lz = -d / 2 + 0.1;
+  const arm1 = box(0.03, 0.36, 0.03, steel, lx, h + 0.09, lz);
+  arm1.rotation.z = a1; g.add(arm1);
+  const jx = lx + Math.sin(a1) * 0.18, jy = h + 0.09 + Math.cos(a1) * 0.18;
+  // 上臂轴线穿过下臂顶（旧版肘部在 z 向错开 8cm，侧视/轴测灯头悬空）
+  const arm2 = box(0.03, 0.34, 0.03, steel, jx, jy - 0.07, lz);
   arm2.rotation.x = 0.5; g.add(arm2);
-  const shadeM = cylRaw(0.03, 0.075, 0.09, M.metal(0xd8dee4, 0.35, 0.7), 8, -w / 2 + 0.24, h + 0.5, -d / 2 + 0.2);
+  const shadeM = cylRaw(0.03, 0.075, 0.09, M.metal(0xd8dee4, 0.35, 0.7), 8, jx, jy + 0.09, lz + 0.05);
   shadeM.rotation.x = 0.5; g.add(shadeM);
   // 下层料箱
   for (let i = 0; i < 2; i++) {
@@ -1832,7 +1973,7 @@ function buildToolChest(p) {
   // 侧拉手 + 锁 + 脚轮
   for (const sx of [-1, 1]) {
     g.add(box(0.04, 0.16, 0.04, steel, sx * (w / 2 + 0.01), h * 0.72, 0));
-    const hd = cylRaw(0.016, 0.016, 0.14, steel, 6, sx * (w / 2 + 0.05), h * 0.72, 0);
+    const hd = cylRaw(0.016, 0.016, 0.14, steel, 6, sx * (w / 2 + 0.035), h * 0.72, 0);  // 贴着支座，旧版离缝 4mm
     g.add(hd);
   }
   g.add(box(0.09, 0.07, 0.03, steel, 0, h * 0.52, d / 2 + 0.03));
@@ -1845,7 +1986,7 @@ function buildToolChest(p) {
     g.add(cylRaw(0.014, 0.014, 0.045, steel, 6, wx, 0.055, wz));
   }
   // 侧面挂杆 + 顶部工具槽
-  const bar = cylRaw(0.014, 0.014, d - 0.2, steel, 6, w / 2 + 0.04, h * 0.4, 0);
+  const bar = cylRaw(0.014, 0.014, d - 0.2, steel, 6, w / 2 + 0.012, h * 0.4, 0);   // 贴侧板，旧版悬空 2.6cm
   bar.rotation.x = Math.PI / 2; g.add(bar);
   for (let i = 0; i < 4; i++) g.add(box(0.02, 0.05, 0.16, black, -w * 0.3 + i * w * 0.2, h + 0.09, 0));
   shade(g); return g;
@@ -2029,9 +2170,10 @@ function buildFrontDoor(p) {
   g.add(box(w + 0.5, 0.1, 0.42, M.concrete(0xb8b2a6, 0.9), 0, 0.05, 0.16));
   g.add(box(w + 0.66, 0.1, 0.5, M.concrete(0xb8b2a6, 0.9), 0, 0.0, 0.28));
   // 门套（casing）+ 门楣 + 内缩门组件（扇形亮子 + 侧窗）
-  g.add(box(w + 0.42, h + 0.42, 0.1, trim, 0, (h + 0.42) / 2 + 0.1, -0.01));
-  g.add(box(w + 0.62, 0.14, 0.16, trim, 0, h + 0.56, 0.02));
-  g.add(box(w + 0.74, 0.09, 0.2, trim, 0, h + 0.67, 0.03));
+  // 门楣/檐口要抬到扇形亮子之上（旧版横压在亮子中间，把气窗挡掉四成）
+  g.add(box(w + 0.42, h + 0.9, 0.1, trim, 0, (h + 0.9) / 2 + 0.1, -0.01));
+  g.add(box(w + 0.62, 0.14, 0.16, trim, 0, h + 0.89, 0.02));
+  g.add(box(w + 0.74, 0.09, 0.2, trim, 0, h + 1.005, 0.03));
   const du = doorUnit(w, h, { frameMat: trim, doorMat, panelColor: 0x4a3020, panelCols: 2, panelRows: 3, fanlight: true, dep: 0.12 });
   du.position.set(0, h / 2 + 0.1, 0); g.add(du);
   for (const s of [-1, 1]) {
@@ -2040,7 +2182,7 @@ function buildFrontDoor(p) {
     g.add(box(0.3, 0.06, 0.16, trim, s * (w / 2 + 0.2), 0.12, 0.02));
   }
   // 门牌 + 双壁灯 + 地垫
-  g.add(box(0.26, 0.13, 0.025, M.metal(0x8a6a3a, 0.35, 0.75), 0, h + 0.44, 0.06));
+  g.add(box(0.26, 0.13, 0.025, M.metal(0x8a6a3a, 0.35, 0.75), 0, h * 0.62, 0.10));   // 门牌钉在门扇上，不再浮在气窗前
   for (const s of [-1, 1]) {
     g.add(box(0.1, 0.16, 0.09, M.metal(0x2c3138, 0.4, 0.7), s * (w / 2 + 0.44), h * 0.74, 0.03));
     g.add(box(0.08, 0.12, 0.07, M.paint(0xfff0c8, 0.5), s * (w / 2 + 0.44), h * 0.74, 0.08));
@@ -2070,8 +2212,16 @@ function buildSashWindow(p) {
   for (const sx of [-1, 1]) g.add(box(0.09, h + 0.34, 0.07, trim, sx * (w / 2 + 0.11), h / 2 + 0.02, 0.02));
   g.add(box(w + 0.42, 0.1, 0.14, trim, 0, h + 0.2, 0.03));
   g.add(box(w + 0.52, 0.07, 0.19, trim, 0, h + 0.28, 0.04));
-  const ped = new THREE.Mesh(new THREE.ConeGeometry(w * 0.3, 0.16, 4), trim);
-  ped.rotation.y = Math.PI / 4; ped.position.set(0, h + 0.38, 0.02); g.add(ped);
+  const pedH = 0.2, pedW = w + 0.3;                                  // 山花：三棱柱（原来是四棱锥，看着像块歪着的金字塔）
+  const pedShape = new THREE.Shape();
+  pedShape.moveTo(-pedW / 2, 0); pedShape.lineTo(pedW / 2, 0); pedShape.lineTo(0, pedH); pedShape.closePath();
+  const ped = new THREE.Mesh(new THREE.ExtrudeGeometry(pedShape, { depth: 0.16, bevelEnabled: false }), trim);
+  ped.translateZ(-0.08); ped.position.set(0, h + 0.3, 0.02); g.add(ped);
+  const rakeL = Math.hypot(pedW / 2, pedH), rakeA = Math.atan2(pedH, pedW / 2);
+  for (const s of [-1, 1]) {
+    const rk = box(rakeL, 0.06, 0.2, trim, s * pedW / 4, h + 0.3 + pedH / 2, 0.02);
+    rk.rotation.z = -s * rakeA; g.add(rk);
+  }
   g.add(box(w + 0.5, 0.06, 0.22, trim, 0, -0.03, 0.06));
   for (const sx of [-1, 1]) g.add(box(0.07, 0.12, 0.2, trim, sx * (w / 2 + 0.2), 0.03, 0.05));
   // 中梃 + 纱窗框
@@ -2088,11 +2238,12 @@ function buildDiningSet(p) {
   // 圆桌：桌面 + 边裙 + 中柱 + 三爪底座
   g.add(cylRaw(tableR, tableR, 0.045, woodMat, 18, 0, tableH - 0.022, 0));
   g.add(cylRaw(tableR - 0.02, tableR - 0.02, 0.07, darkWood, 18, 0, tableH - 0.08, 0));
-  g.add(cylRaw(0.075, 0.11, tableH - 0.12, woodMat, 12, 0, (tableH - 0.12) / 2 + 0.06, 0));
-  g.add(cylRaw(0.13, 0.16, 0.09, woodMat, 12, 0, 0.06, 0));
+  // 支撑链落地：爪足/底座贴 y=0，中柱从底座顶穿到边裙底（旧版整张桌悬空 1.5cm）
+  g.add(cylRaw(0.075, 0.11, tableH - 0.14, woodMat, 12, 0, 0.05 + (tableH - 0.14) / 2, 0));
+  g.add(cylRaw(0.13, 0.16, 0.09, woodMat, 12, 0, 0.045, 0));
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2 + Math.PI / 6;
-    const foot = box(0.1, 0.06, tableR * 0.62, woodMat, Math.cos(a) * tableR * 0.28, 0.045, Math.sin(a) * tableR * 0.28);
+    const foot = box(0.1, 0.06, tableR * 0.62, woodMat, Math.cos(a) * tableR * 0.28, 0.03, Math.sin(a) * tableR * 0.28);
     foot.rotation.y = -a + Math.PI / 2; g.add(foot);
   }
   // 4 把椅子：软座（微倒角）+ 4 腿 + 靠背立柱 + 顶冠板 + 前撑
@@ -2126,7 +2277,7 @@ function buildFourPosterBed(p) {
   // 床架侧板 + 床头/床尾板 + 床垫（微倒角）
   const railH = 0.24, railY = 0.28;
   for (const sx of [-1, 1]) g.add(box(0.06, railH, d - 0.16, woodMat, sx * (w / 2 - 0.06), railY + railH / 2, 0));
-  for (let i = 0; i < 5; i++) g.add(box(w - 0.2, 0.03, 0.09, darkWood, 0, railY + 0.03, -d / 2 + 0.24 + i * ((d - 0.48) / 4)));
+  for (let i = 0; i < 5; i++) g.add(box(w - 0.2, 0.03, 0.09, darkWood, 0, railY + railH - 0.02, -d / 2 + 0.24 + i * ((d - 0.48) / 4)));
   g.add(slabTop(w - 0.12, 0.24, d - 0.12, mattressMat, 0, railY + railH + 0.12, 0));
   g.add(slabTop(w - 0.18, 0.09, d * 0.62, quilt, 0, railY + railH + 0.28, d * 0.16));
   g.add(box(w - 0.18, 0.16, 0.05, quilt, 0, railY + railH + 0.24, d * 0.16 - d * 0.31));
@@ -2171,7 +2322,7 @@ function buildSofa(p) {
   g.add(box(w, seatH - baseY, d, darkFab, 0, baseY + (seatH - baseY) / 2, 0));
   g.add(box(w + 0.02, 0.1, d + 0.02, fabricMat, 0, baseY - 0.02, 0));
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    g.add(cylRaw(0.028, 0.04, baseY, woodMat, 6, sx * (w / 2 - 0.12), baseY / 2 - 0.04, sz * (d / 2 - 0.12)));
+    g.add(cylRaw(0.028, 0.04, baseY + 0.02, woodMat, 6, sx * (w / 2 - 0.12), (baseY + 0.02) / 2, sz * (d / 2 - 0.12)));
   }
   // 3 块座垫 + 3 块靠垫（均带 8mm 微倒角）+ 缝隙压条
   const cw = (w - 0.34) / 3;
@@ -2181,6 +2332,9 @@ function buildSofa(p) {
     g.add(slabTop(cw - 0.03, 0.42, 0.17, fabricMat, x, seatH + 0.32, -d / 2 + 0.16));
     g.add(box(cw - 0.06, 0.02, d * 0.66, darkFab, x, seatH + 0.14, d * 0.06));
     g.add(box(0.02, 0.13, d * 0.7, darkFab, x - cw / 2 + 0.01, seatH + 0.07, d * 0.06));
+    // 绷扣（拉扣沙发）
+    for (const bx of [-0.11, 0.11]) for (const by of [-0.1, 0.1])
+      g.add(sph(0.017, darkFab, 6, x + bx, seatH + 0.32 + by, -d / 2 + 0.16 - 0.085));
   }
   // 靠背 + 顶梁 + 两侧扶手（含卷垫）
   g.add(box(w - 0.28, 0.62, 0.18, fabricMat, 0, seatH + 0.34, -d / 2 + 0.1));
@@ -2266,29 +2420,30 @@ function buildRollTopDesk(p) {
   const deskH = h * 0.62;
   // 桌面（微倒角）+ 皮垫 + 侧板 + 背板 + 踢脚
   g.add(slabTop(w + 0.06, 0.05, d + 0.04, woodMat, 0, deskH, 0));
-  g.add(box(w - 0.14, 0.012, d - 0.16, M.paint(0x3a4a3a, 0.8), 0, deskH + 0.032, 0.02));
-  for (const sx of [-1, 1]) g.add(box(0.05, deskH - 0.08, d - 0.06, woodMat, sx * (w / 2 - 0.025), (deskH - 0.08) / 2, 0));
+  g.add(box(w - 0.14, 0.012, d - 0.36, M.paint(0x3a4a3a, 0.8), 0, deskH + 0.031, 0.12));            // 皮垫前移（原位置压在鸽笼格底下）
+  for (const sx of [-1, 1]) g.add(box(0.05, deskH - 0.08, d - 0.06, woodMat, sx * (w / 2 - 0.025), (deskH + 0.08) / 2, 0));  // 侧板：顶插进桌面、底压住踢脚（原中心算错，顶离桌底 5.5cm 整段悬空）
   g.add(box(w - 0.1, deskH - 0.1, 0.03, darkWood, 0, (deskH - 0.1) / 2, -d / 2 + 0.04));
   for (const sx of [-1, 1]) g.add(box(0.1, 0.08, d - 0.1, darkWood, sx * (w / 2 - 0.06), 0.04, 0));
-  // 卷帘顶：半圆筒 + 木条压线
-  const rollR = d * 0.42, rollY = deskH + 0.03;
+  // 卷帘顶：半圆筒 + 木条压线（圆筒轴沿桌宽方向；曾多转 90° 导致筒身横穿进深、前后各探出一截）
+  const rollR = d * 0.42;
+  const cubY = deskH + 0.025, cubH = rollR * 0.8;                       // 鸽笼格直接坐在桌面上（原来悬空 3.5cm）
+  const rollY = cubY + cubH + 0.0125 - rollR * 0.42;                    // 卷帘弦面正好压在鸽笼格顶板上
   const roll = new THREE.Mesh(new THREE.CylinderGeometry(rollR, rollR, w - 0.08, 12, 1, false, 0, Math.PI), woodMat);
-  roll.rotation.z = Math.PI / 2; roll.rotation.y = Math.PI / 2;
+  roll.rotation.z = Math.PI / 2;
   roll.position.set(0, rollY + rollR * 0.42, -d / 2 + rollR);
   g.add(roll);
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 9) * Math.PI * 0.92 + 0.06;
-    g.add(box(w - 0.1, 0.014, 0.014, darkWood,
+  for (let i = 0; i < 16; i++) {                                        // 密排帘片：厚度=片距（片贴片），底端收在桌面高度
+    const a = (i / 15) * Math.PI * 0.79 + 0.06;
+    g.add(box(w - 0.1, 0.05, 0.05, darkWood,
       0, rollY + rollR * 0.42 + Math.cos(a) * (rollR + 0.005), -d / 2 + rollR + Math.sin(a) * (rollR + 0.005)));
   }
   g.add(box(w - 0.06, 0.06, 0.05, woodMat, 0, rollY + rollR * 0.42 + rollR, -d / 2 + rollR));
   g.add(box(0.16, 0.03, 0.04, brass, 0, rollY + rollR * 0.42 + rollR - 0.05, -d / 2 + rollR + 0.03));
   // 内部鸽笼格 + 小抽屉 + 中央柜门
-  const cubY = deskH + 0.06, cubH = rollR * 0.8;
   g.add(box(w - 0.14, 0.025, d * 0.4, darkWood, 0, cubY + cubH / 2, -d / 2 + d * 0.22));
   g.add(box(w - 0.14, 0.025, d * 0.4, darkWood, 0, cubY + cubH, -d / 2 + d * 0.22));
   for (let i = 0; i < 6; i++) {
-    g.add(box(0.02, cubH, d * 0.38, woodMat, -w * 0.36 + i * w * 0.144, cubY + cubH * 0.75, -d / 2 + d * 0.22));
+    g.add(box(0.02, cubH, d * 0.38, woodMat, -w * 0.36 + i * w * 0.144, cubY + cubH * 0.5, -d / 2 + d * 0.22));  // 隔板中心归位（原 0.75 使隔板下悬 6cm、上穿顶板 5cm）
   }
   for (const sx of [-1, 1]) {
     g.add(box(0.02, cubH * 0.5, d * 0.38, woodMat, sx * (w / 2 - 0.09), cubY + cubH * 0.25, -d / 2 + d * 0.22));
@@ -2299,6 +2454,7 @@ function buildRollTopDesk(p) {
     }
   }
   // 下部：3 抽屉 + 2 柜门 + 铜拉手
+  g.add(box(w - 0.1, deskH - 0.1, 0.03, darkWood, 0, 0.08 + (deskH - 0.1) / 2, d / 2 - 0.04));   // 背板：上插桌底、下落踢脚、两侧贴侧板（原抽屉柜门上下都不着边）
   const dh = (deskH - 0.2) / 3;
   for (let i = 0; i < 3; i++) {
     const y = 0.12 + dh * (i + 0.5);
@@ -2329,8 +2485,8 @@ function buildBookcase(p) {
   // 顶冠线脚（2 段倒角）+ 底座踢脚
   g.add(bevelSign(w + 0.1, 0.09, d + 0.08, woodMat, 0, h + 0.01, 0));
   g.add(box(w + 0.14, 0.05, d + 0.1, darkWood, 0, h + 0.08, 0));
-  g.add(box(w + 0.06, 0.1, d + 0.03, woodMat, 0, -0.02, 0.01));
-  for (const sx of [-1, 1]) g.add(box(0.08, 0.12, d + 0.02, woodMat, sx * (w / 2 - 0.02), -0.05, 0.01));
+  g.add(box(w + 0.06, 0.1, d + 0.03, woodMat, 0, 0.05, 0.01));
+  for (const sx of [-1, 1]) g.add(box(0.08, 0.12, d + 0.02, woodMat, sx * (w / 2 - 0.02), 0.06, 0.01));
   // 4 层搁板（微倒角）+ 前沿收边
   const ns = 4;
   for (let i = 1; i <= ns; i++) {
@@ -2364,125 +2520,314 @@ function buildBookcase(p) {
 // ===========================================================================
 // Ch6 — American Road Types & Intersections (10)
 // ===========================================================================
-export function buildTwoWayRoad(p) {
-  const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  g.add(box(0.15, 0.02, d, M.paint(0xffcc00, 0.8), 0, 0.02, 0));
-  for (const s of [-1, 1]) g.add(box(0.12, 0.02, d, M.paint(0xffffff, 0.8), s * w * 0.4, 0.02, 0));
-  shade(g); return g;
+// ---- 真实工程尺度常量（m，参考 AASHTO/城市道路惯例） ----
+const PT = 0.15;                    // 路面顶标高（面层厚）
+const CURB_H = 0.15, CURB_W = 0.45; // 缘石高 / 缘石带宽
+const SW_W = 1.8;                   // 人行道净宽
+const SIDE = CURB_W + SW_W;         // 路侧带 = 2.25
+const LANE = 3.7;                   // 车道宽
+const MY = PT + 0.012;              // 标线顶面
+const RRET = 5.0;                   // 缘石回转半径
+const mAsph = () => M.concrete(0x3a3d42, 0.95);
+const mConc = () => M.concrete(0x9d9c97, 0.9);
+const mWalk = () => M.concrete(0xc8c3b7, 0.9);
+const mCurb = () => M.concrete(0xb0aca4, 0.9);
+const mWhite = () => M.paint(0xf2f2ee, 0.75);
+const mYellow = () => M.paint(0xe0b230, 0.8);
+const mTan = () => M.concrete(0xc7ad83, 0.95);
+const mGreen = () => M.paint(0x6a8a58, 0.9);
+const mDark = () => M.concrete(0x6f6e6a, 0.9);
+function rdFlat(pts, mat, y, rotY = 0) {
+  const sh = new THREE.Shape(pts.map((q) => new THREE.Vector2(q[0], q[1])));
+  const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat);
+  m.rotation.x = -Math.PI / 2; m.rotation.y = rotY; m.position.y = y;
+  return m;
 }
-
-export function buildOneWayRoad(p) {
+function rdArrow(L, mat, x, z, rotY = 0) {
+  const a = 0.1, b = 0.3, hl = 0.6;
+  const m = rdFlat([[-a, 0], [a, 0], [a, L - hl], [b, L - hl], [0, L], [-b, L - hl], [-a, L - hl]], mat, MY);
+  m.position.set(x, MY, z); m.rotation.y = rotY;
+  return m;
+}
+function rdTriXZ(p1, p2, p3, mat, y) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([p1[0], y, p1[1], p2[0], y, p2[1], p3[0], y, p3[1]], 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0.5, 1], 2));
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, mat);
+}
+function rdZebra(span, cx, cz, alongX, mat) {          // 大陆式斑马线：条宽0.45 中距1.05 长2.4
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  for (let i = 0; i < 3; i++) {
-    const x = -w * 0.2 + i * (w * 0.4 / 2);
-    g.add(box(0.12, 0.02, d * 0.6, M.paint(0xffffff, 0.8), x, 0.02, 0));
+  const n = Math.max(4, Math.round(span / 1.05));
+  for (let i = 0; i < n; i++) {
+    const o = -span / 2 + 0.45 + i * ((span - 0.9) / (n - 1));
+    g.add(alongX ? box(2.4, 0.02, 0.45, mat, cx, MY, cz + o) : box(0.45, 0.02, 2.4, mat, cx + o, MY, cz));
   }
-  g.add(box(0.5, 0.02, 0.8, M.paint(0xffffff, 0.8), 0, 0.02, d / 2 - 1.0));
-  shade(g); return g;
+  return g;
+}
+function rdDashX(g, x, d, mat, wdt = 0.1) {            // 沿 z 的虚线（城市 3m 线 / 6m 间隔）
+  const n = Math.max(2, Math.floor(d / 9));
+  for (let i = 0; i < n; i++) g.add(box(wdt, 0.02, 3, mat, x, MY, -d / 2 + (i + 0.5) * (d / n)));
+}
+function rdSideZ(g, d, s, pav) {                       // 直路段路侧带：缘石+人行道+横缝
+  g.add(box(CURB_W, 0.3, d, mCurb(), s * (pav / 2 + CURB_W / 2), PT, 0));
+  g.add(box(SW_W, 0.3, d, mWalk(), s * (pav / 2 + CURB_W + SW_W / 2), PT, 0));
+  const n = Math.max(2, Math.round(d / 1.8));
+  for (let i = 1; i < n; i++) g.add(box(SW_W * 0.94, 0.02, 0.04, mDark(), s * (pav / 2 + CURB_W + SW_W / 2), PT + 0.16, -d / 2 + i * (d / n)));
+}
+function rdCornerQuad(g, w2, d2, pa, sx, sz) {         // 路口人行道象限：方块拼合+R5 弧形缘石回转
+  const c = pa / 2, R = Math.min(RRET, w2 - c - 2.9, d2 - c - 2.9);
+  const cx = c + R, cz = c + R;
+  if (d2 - (c + R) > 0.05) g.add(box(w2 - c, 0.3, d2 - c - R, mWalk(), sx * (c + w2) / 2, PT, sz * (c + R + d2) / 2));
+  if (w2 - (c + R) > 0.05) g.add(box(w2 - c - R, 0.3, R, mWalk(), sx * (c + R + w2) / 2, PT, sz * (c + cz) / 2));
+  const arc = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.03, R + 0.03, 0.32, 14, 1, true, 0, Math.PI / 2), mCurb());
+  arc.rotation.y = Math.atan2(-sx, -sz) - Math.PI / 4;
+  arc.position.set(sx * cx, PT + 0.01, sz * cz);          // 外移3cm防共面, 顶高出1cm作缘石棱线
+  g.add(arc);
+  const csh = new THREE.Shape();                      // 回转封顶：1/4圆盘挤出角块(圆心=回转中心,顶=人行道顶)
+  csh.moveTo(sx * R, 0);
+  csh.absarc(sx * R, sz * R, R, -sz * Math.PI / 2, sx > 0 ? Math.PI : 0, sx * sz > 0);
+  csh.lineTo(sx * R, sz * R);
+  csh.closePath();
+  const cgeo = new THREE.ExtrudeGeometry(csh, { depth: 0.3, bevelEnabled: false });
+  const cm = new THREE.Mesh(cgeo, mWalk());
+  cm.rotation.x = Math.PI / 2;
+  cm.position.set(sx * c, PT + 0.15, sz * c);
+  g.add(cm);
+  for (const [lx, lz, lw, ld] of [[sx * (c + 0.225), sz * (c + R + d2) / 2, CURB_W, d2 - c - R], [sx * (c + R + w2) / 2, sz * (c + 0.225), w2 - c - R, CURB_W]]) {
+    if (lw > 0.05 && ld > 0.05) g.add(box(lw, 0.3, ld, mCurb(), lx, PT, lz));
+  }
+  return R;
 }
 
-export function buildConcreteRoad(p) {
+export function buildTwoWayRoad(p) {                   // 双向双车道：7.4m 车行+双侧路侧带
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x999999, 0.9), 0, 0.01, 0));
-  const nJoints = Math.floor(d / 3);
-  for (let i = 0; i < nJoints; i++) {
-    const z = -d / 2 + (i + 0.5) * (d / nJoints);
-    g.add(box(w, 0.02, 0.04, M.concrete(0x777777, 0.9), 0, 0.02, z));
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mAsph(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
+  for (const s of [-1, 1]) {
+    g.add(box(0.15, 0.02, d, mWhite(), s * (pav / 2 - 0.6), MY, 0));
+    g.add(box(0.1, 0.02, d, mYellow(), s * 0.15, MY, 0));
   }
   shade(g); return g;
 }
 
-export function buildGardenPath(p) {
+export function buildOneWayRoad(p) {                   // 单向三车道：虚线分道+行车箭头
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mAsph(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
+  for (const s of [-1, 1]) g.add(box(0.15, 0.02, d, mWhite(), s * (pav / 2 - 0.6), MY, 0));
+  rdDashX(g, -pav / 6, d, mWhite()); rdDashX(g, pav / 6, d, mWhite());
+  g.add(rdArrow(2.2, mWhite(), pav / 3, d / 2 - 3.2, Math.PI));
+  shade(g); return g;
+}
+
+export function buildConcreteRoad(p) {                 // 混凝土路：4.8m 板块+锯缝+ gutter 缝
+  const g = new THREE.Group();
+  const w = p.width, d = p.length, pav = w - 2 * SIDE;
+  g.add(box(pav, PT, d, mConc(), 0, PT / 2, 0));
+  rdSideZ(g, d, -1, pav); rdSideZ(g, d, 1, pav);
+  const nJ = Math.max(2, Math.round(d / 4.8));
+  for (let i = 1; i < nJ; i++) g.add(box(pav, 0.02, 0.05, mDark(), 0, MY, -d / 2 + i * (d / nJ)));
+  for (const s of [-1, 1]) {
+    g.add(box(0.05, 0.02, d, mDark(), s * pav / 6, MY, 0));
+    g.add(box(0.05, 0.02, d, mDark(), s * (pav / 2 - 0.45), MY, 0));
+  }
+  shade(g); return g;
+}
+
+export function buildGardenPath(p) {                   // 庭院小径：砂垫层+人字砖+立砖收边(直)
+  const g = new THREE.Group();
+  const w = p.width, d = p.length, pw = Math.min(1.5, w * 0.5);
+  g.add(box(w, 0.1, d, mTan(), 0, 0.05, 0));
+  g.add(box(pw + 0.24, 0.05, d, M.concrete(0xbfa87e, 0.95), 0, 0.11, 0));
   const brickMat = M.paint(p.brickColor, 0.85);
-  const brickW = 0.2, brickD = 0.1;
-  const nX = Math.floor(w / brickW), nZ = Math.floor(d / brickD);
-  for (let i = 0; i < nX; i++) {
-    for (let j = 0; j < nZ; j++) {
-      const x = -w / 2 + (i + 0.5) * brickW;
-      const z = -d / 2 + (j + 0.5) * brickD + (i % 2) * brickD * 0.5;
-      g.add(box(brickW * 0.9, 0.04, brickD * 0.9, brickMat, x, 0.02, z));
+  const m = Math.max(2, Math.floor(pw / 2 / 0.14));
+  const n = Math.floor((d - 0.2) / 0.16);
+  for (let i = 0; i <= n; i++) {
+    const z = -d / 2 + 0.1 + i * 0.16;
+    for (let k = -m; k <= m; k++) {
+      const br = box(0.2, 0.06, 0.1, brickMat, k * 0.13, 0.15, z);
+      br.rotation.y = ((i + k) & 1) ? Math.PI / 4 : -Math.PI / 4;
+      g.add(br);
     }
   }
-  shade(g); return g;
-}
-
-export function buildGravelRoad(p) {
-  const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x8a8580, 0.95), 0, 0.01, 0));
-  const rng = makeRng(42);
-  for (let i = 0; i < 200; i++) {
-    const x = (rng() - 0.5) * w * 0.9;
-    const z = (rng() - 0.5) * d * 0.9;
-    const s = 0.05 + rng() * 0.1;
-    g.add(box(s, 0.02, s, M.concrete(0x7a7570, 0.9), x, 0.02, z));
+  for (const s of [-1, 1]) {                            // 立砖收边
+    const nb = Math.floor(d / 0.21);
+    for (let i = 0; i < nb; i++) g.add(box(0.1, 0.08, 0.2, M.concrete(0x9a958c, 0.9), s * (pw / 2 + 0.07), 0.15, -d / 2 + 0.1 + i * 0.21));
   }
   shade(g); return g;
 }
 
-function buildFourWayStop(p) {
+export function buildGravelRoad(p) {                   // 碎石路：路拱面+波浪车辙+路肩料垄
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  g.add(box(w, 0.02, 0.15, M.paint(0xffffff, 0.8), 0, 0.02, 0));
-  g.add(box(0.15, 0.02, d, M.paint(0xffffff, 0.8), 0, 0.02, 0));
-  const stopSignMat = M.paint(0xcc2222, 0.7);
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * w * 0.45, z = sz * d * 0.45;
-    g.add(cyl(0.04, 0.04, 1.5, M.metal(0x888888, 0.4, 0.7), 8, x, 0.75, z));
-    g.add(box(0.5, 0.5, 0.04, stopSignMat, x, 1.5, z));
+  const w = p.width, d = p.length, gr = w - 1.2;
+  g.add(box(w, 0.1, d, mTan(), 0, 0.05, 0));
+  g.add(box(gr, 0.08, d, M.concrete(0x8a8580, 0.95), 0, 0.12, 0));
+  g.add(box(gr * 0.5, 0.04, d, M.concrete(0x938e88, 0.95), 0, 0.17, 0));   // 路拱
+  const nR = Math.max(4, Math.round(d / 0.6));
+  for (const s of [-1, 1]) for (let i = 0; i < nR; i++) {
+    const z = -d / 2 + (i + 0.5) * (d / nR);
+    const seg = box(gr * 0.16, 0.02, d / nR + 0.08, M.concrete(0x6e6963, 0.95), s * gr * 0.22 + Math.sin(z * 0.7) * 0.08, 0.19, z);
+    seg.rotation.y = -Math.cos(z * 0.7) * 0.05;
+    g.add(seg);
+  }
+  for (const s of [-1, 1]) g.add(box(0.5, 0.1, d, M.concrete(0x7a7570, 0.95), s * (w / 2 - 0.3), 0.13, 0));
+  const rng = makeRng(42), placed = [];
+  for (let i = 0; i < 160 && placed.length < 90; i++) {
+    const s = i & 1 ? 1 : -1;
+    const x = s * (w / 2 - 0.3) + (rng() - 0.5) * 0.4, z = (rng() - 0.5) * d * 0.98, sz = 0.08 + rng() * 0.12;
+    if (placed.some((q) => (q[0] - x) ** 2 + (q[1] - z) ** 2 < (q[2] + sz) * (q[2] + sz) * 0.8)) continue;   // 防平面重叠遮盲
+    placed.push([x, z, sz]);
+    const st = box(sz, 0.08 + rng() * 0.05, sz * (0.8 + rng() * 0.5), M.concrete(0x767169, 0.9), x, 0.15 + rng() * 0.04, z);
+    st.rotation.y = rng() * Math.PI;
+    g.add(st);
   }
   shade(g); return g;
 }
 
-function buildTJunction(p) {
+export function buildFourWayStop(p) {                         // 十字路口：7.4m 进口+R5 回转+大陆斑马线+停止线
   const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  g.add(box(w * 0.5, 0.02, 0.12, M.paint(0xffffff, 0.8), 0, 0.02, 0));
-  g.add(box(0.12, 0.02, d, M.paint(0xffffff, 0.8), -w * 0.25, 0.02, 0));
-  shade(g); return g;
-}
-
-function buildRoundabout(p) {
-  const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  const centerR = Math.min(w, d) * 0.2;
-  g.add(cyl(centerR, centerR, 0.08, M.concrete(0x888888, 0.9), 20, 0, 0.04, 0));
-  g.add(cyl(centerR + 0.1, centerR + 0.1, 0.02, M.paint(0xffcc00, 0.8), 20, 0, 0.09, 0));
-  shade(g); return g;
-}
-
-function buildCulDeSac(p) {
-  const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  const turnR = w * 0.4;
-  const turnMesh = new THREE.Mesh(new THREE.CylinderGeometry(turnR, turnR, 0.02, qseg(32)), M.concrete(0x33373c, 0.95));
-  turnMesh.position.set(0, 0.02, d / 2 - turnR);
-  g.add(turnMesh);
-  shade(g); return g;
-}
-
-function buildFreeway(p) {
-  const g = new THREE.Group();
-  const w = p.width, d = p.length;
-  g.add(planeXZ(w, d, M.concrete(0x33373c, 0.95), 0, 0.01, 0));
-  const nLanes = 4;
-  for (let i = 0; i < nLanes; i++) {
-    const x = -w * 0.3 + i * (w * 0.6 / (nLanes - 1));
-    g.add(box(0.1, 0.02, d, M.paint(0xffffff, 0.8), x, 0.02, 0));
+  const w = p.width, d = p.length, pa = 7.4;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  const R = rdCornerQuad(g, w / 2, d / 2, pa, 1, 1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, 1);
+  rdCornerQuad(g, w / 2, d / 2, pa, 1, -1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, -1);
+  const zc = pa / 2 + R + 1.5;
+  for (const s of [-1, 1]) {
+    g.add(rdZebra(pa - 1.2, 0, s * zc, false, mWhite()));
+    g.add(rdZebra(pa - 1.2, s * zc, 0, true, mWhite()));
+    g.add(box(3.4, 0.02, 0.6, mWhite(), s * 1.8, MY, s * (zc - 1.8)));    // 右半停止线
+    g.add(box(0.6, 0.02, 3.4, mWhite(), s * (zc - 1.8), MY, -s * 1.8));
   }
-  g.add(box(0.2, 0.02, d, M.paint(0xffcc00, 0.8), 0, 0.02, 0));
-  for (const s of [-1, 1]) g.add(box(0.15, 0.02, d, M.paint(0xffffff, 0.8), s * w * 0.45, 0.02, 0));
+  shade(g); return g;
+}
+
+export function buildTJunction(p) {                           // T 形路口：三进口+封边人行带+R5 回转
+  const g = new THREE.Group();
+  const w = p.width, d = p.length, pa = 7.4, c = pa / 2;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  g.add(box(w, 0.3, d / 2 - c, mWalk(), 0, PT, (c + d / 2) / 2));          // 北封边人行带
+  g.add(box(w, 0.3, CURB_W, mCurb(), 0, PT, c + CURB_W / 2));
+  const R = rdCornerQuad(g, w / 2, d / 2, pa, 1, -1);
+  rdCornerQuad(g, w / 2, d / 2, pa, -1, -1);
+  const e = c + R + 1.5;
+  for (const s of [-1, 1]) g.add(rdZebra(pa - 1.2, s * e, 0, true, mWhite()));
+  g.add(rdZebra(pa - 1.2, 0, -e, false, mWhite()));
+  for (const s of [-1, 1]) {
+    g.add(box(0.6, 0.02, 3.4, mWhite(), s * (e - 1.8), MY, s * 1.8));
+    rdDashX(g, 0, d / 2 - e - 1.0, mWhite());
+  }
+  g.add(box(3.4, 0.02, 0.6, mWhite(), -1.8, MY, -(e - 1.8)));
+  for (const s of [-1, 1]) for (let i = 0; i < 2; i++) g.add(box(3, 0.02, 0.1, mWhite(), s * (w / 2 - e - 2 - i * 4), MY, 0));
+  shade(g); return g;
+}
+
+export function buildRoundabout(p) {                          // 单 lane 环岛：4.2m 环道+卡车 apron+导流岛
+  const g = new THREE.Group();
+  const w = p.width, d = p.length;
+  const Ro = Math.min(w, d) / 2 - SIDE;
+  const c = 3.7, rG = Ro - 5.5, rA = rG + 0.3, rAp = rG + 1.3;
+  g.add(box(w, PT, d, mAsph(), 0, PT / 2, 0));
+  const shp = new THREE.Shape();                        // 象限人行道=方-圆环块(挤出)
+  const za = Math.sqrt(Math.max(0.01, Ro * Ro - c * c));
+  shp.moveTo(c, za);
+  shp.absarc(0, 0, Ro, Math.atan2(za, c), Math.atan2(c, za), true);
+  shp.lineTo(w / 2, c); shp.lineTo(w / 2, d / 2); shp.lineTo(c, d / 2);
+  shp.closePath();
+  const geo = new THREE.ExtrudeGeometry(shp, { depth: 0.3, bevelEnabled: false });
+  for (let k = 0; k < 4; k++) {
+    const m = new THREE.Mesh(geo, mWalk());
+    m.rotation.x = Math.PI / 2; m.rotation.z = -k * Math.PI / 2;
+    m.position.y = PT + 0.15;
+    g.add(m);
+  }
+  const beta = Math.asin(Math.min(1, c / Ro));
+  for (let k = 0; k < 4; k++) {
+    const arc = new THREE.Mesh(new THREE.CylinderGeometry(Ro - 0.03, Ro - 0.03, 0.36, 18, 1, true, k * Math.PI / 2 + beta, Math.PI / 2 - 2 * beta), mCurb());
+    arc.position.y = PT + 0.02;
+    g.add(arc);
+  }
+  g.add(cyl(rAp, rAp, 0.33, M.concrete(0xc0bcb2, 0.9), 24, 0, PT + 0.015, 0));   // 中心岛：浅色铺装圆盘(图鉴式)
+  const islCurb = new THREE.Mesh(new THREE.CylinderGeometry(rAp, rAp + 0.06, 0.33, 24, 1, true), mCurb());
+  islCurb.position.y = PT + 0.015;
+  g.add(islCurb);
+  const rm = (rAp + Ro) / 2;
+  for (let k = 0; k < 4; k++) {                           // 环行箭头
+    const a0 = k * Math.PI / 2 + Math.PI / 4 - 0.45, a1 = a0 + 0.9;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(rm - 0.18, rm + 0.18, 14, 1, a0, 0.9), mWhite());
+    ring.rotation.x = -Math.PI / 2; ring.position.y = MY;
+    g.add(ring);
+    const px = Math.cos(a1) * rm, pz = -Math.sin(a1) * rm;
+    const tx = -Math.sin(a1), tz = -Math.cos(a1), nx = Math.cos(a1), nz = -Math.sin(a1);
+    g.add(rdTriXZ([px - nx * 0.34, pz - nz * 0.34], [px + nx * 0.34, pz + nz * 0.34], [px + tx * 0.7, pz + tz * 0.7], mWhite(), MY));
+  }
+  for (let k = 0; k < 4; k++) {                           // 进口斑马线(导流岛后)
+    const zb = rdZebra(6.2, 0, 0, false, mWhite());
+    zb.position.set(0, 0, 0);
+    const hh = new THREE.Group();
+    hh.add(zb);
+    hh.rotation.y = k * Math.PI / 2;
+    zb.position.z = Ro + 0.9;
+    g.add(hh);
+  }
+  shade(g); return g;
+}
+
+export function buildCulDeSac(p) {                            // 尽端路：R≈11 圆头+8.5m 颈+环形人行道
+  const g = new THREE.Group();
+  const w = p.width, d = p.length;
+  const Rb = w / 2 - SIDE, zc = d / 2 - Rb - SIDE, nh = 4.25;
+  g.add(box(w, 0.12, d, mTan(), 0, 0.06, 0));
+  g.add(box(nh * 2, PT, zc + d / 2, mAsph(), 0, PT / 2, (zc - d / 2) / 2));
+  g.add(cyl(Rb, Rb, PT, mAsph(), 32, 0, PT / 2, zc));
+  const Rc = Rb + CURB_W / 2, gam = Math.asin(Math.min(1, nh / Rc));
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(Rc, Rc, 0.3, 32, 1, true, -Math.PI / 2 + gam, 2 * Math.PI - 2 * gam), mCurb());
+  ring.position.set(0, PT, zc);
+  g.add(ring);
+  const zt = zc - Math.sqrt(Math.max(0.01, Rc * Rc - (nh + CURB_W / 2) ** 2));
+  const rf = 1.2, a0x = nh + CURB_W / 2;
+  for (const s of [-1, 1]) {
+    g.add(box(CURB_W, 0.3, zt + d / 2, mCurb(), s * a0x, PT, (-d / 2 + zt) / 2));
+    const cx0 = a0x - rf, dz0 = Math.sqrt(Math.max(0.01, (Rc - rf) ** 2 - cx0 ** 2));
+    const C = [s * cx0, zc - dz0];                        // 颈-环凹弧过渡圆心(内切)
+    const th1 = s * Math.PI / 2, th2 = Math.atan2(C[0], C[1] - zc);
+    const fil = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, 0.3, 10, 1, true, Math.min(th1, th2), Math.abs(th2 - th1)), mCurb());
+    fil.position.set(C[0], PT, C[1]);
+    g.add(fil);
+  }
+  const Rs1 = Rb + CURB_W, Rs2 = Rs1 + SW_W, g2 = Math.asin(Math.min(1, a0x / Rs1));
+  const swSh = new THREE.Shape();
+  swSh.absarc(0, 0, Rs2, -Math.PI / 2 + g2, Math.PI * 1.5 - g2, false);
+  swSh.absarc(0, 0, Rs1, Math.PI * 1.5 - g2, -Math.PI / 2 + g2, true);
+  swSh.closePath();
+  const swGeo = new THREE.ExtrudeGeometry(swSh, { depth: 0.3, bevelEnabled: false });
+  const swM = new THREE.Mesh(swGeo, mWalk());
+  swM.rotation.x = Math.PI / 2; swM.position.set(0, PT + 0.15, zc);
+  g.add(swM);
+  for (const s of [-1, 1]) g.add(box(SW_W, 0.3, zt + d / 2 + 0.4, mWalk(), s * (a0x + SW_W / 2), PT, (-d / 2 + zt + 0.4) / 2 - 0.2));
+  shade(g); return g;
+}
+
+export function buildFreeway(p) {                             // 高速：2×2 车道+4m 中央带+硬路肩+护栏
+  const g = new THREE.Group();
+  const w = p.width, d = p.length;
+  const dirW = (w - 4) / 2;
+  for (const s of [-1, 1]) g.add(box(dirW, PT, d, mAsph(), s * (2 + dirW / 2), PT / 2, 0));
+  g.add(box(4, PT, d, M.concrete(0x8f8b82, 0.9), 0, PT / 2, 0));
+  g.add(box(1.0, 0.25, d, mCurb(), 0, PT + 0.1, 0));
+  g.add(box(0.6, 0.85, d, M.concrete(0xb5b1a8, 0.9), 0, PT + 0.55, 0));    // 中央防撞墙
+  for (const s of [-1, 1]) {
+    const xc = s * (2 + dirW / 2);
+    g.add(box(0.1, 0.02, d, mYellow(), s * 2.5, MY, 0));
+    g.add(box(0.15, 0.02, d, mWhite(), s * (w / 2 - 2.8), MY, 0));
+    rdDashX(g, s * (2.5 + (w / 2 - 2.8)) / 2, d, mWhite());
+    const nP = Math.floor(d / 2.5);
+    for (let i = 0; i < nP; i++) g.add(box(0.15, 0.7, 0.15, M.metal(0x888888, 0.4, 0.7), s * (w / 2 - 0.5), 0.35, -d / 2 + (i + 0.5) * (d / nP)));
+    g.add(box(0.1, 0.3, d, M.metal(0x999999, 0.35, 0.7), s * (w / 2 - 0.55), 0.6, 0));   // W 梁护栏
+  }
   shade(g); return g;
 }
 
@@ -2934,7 +3279,7 @@ function buildJoshuaTree(p) {
 // ===========================================================================
 // 注册表
 // ===========================================================================
-export const LIB = [
+const LIB_AM = [
   {
     cat: '住宅风格', id: 'house', items: [
       { type: 'cape_cod', name: 'Cape Cod 鳕鱼角式', icon: 'house', build: buildCapeCod, params: [PR('width', '宽 m', 6, 14, 0.5, 9), PR('depth', '深 m', 5, 12, 0.5, 7), PC('wallColor', '墙色', '#e8e0d4'), PC('roofColor', '屋顶色', '#5a4a3a')] },
@@ -2991,16 +3336,16 @@ export const LIB = [
   },
   {
     cat: '道路', id: 'road', items: [
-      { type: 'two_way_road', name: 'Two-Way Road 双向道路', icon: 'road', build: buildTwoWayRoad, params: [PR('width', '宽 m', 5, 12, 0.5, 7), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'one_way_road', name: 'One-Way Road 单向道路', icon: 'road', build: buildOneWayRoad, params: [PR('width', '宽 m', 4, 10, 0.5, 6), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'concrete_road', name: 'Concrete Road 混凝土路', icon: 'road', build: buildConcreteRoad, params: [PR('width', '宽 m', 4, 10, 0.5, 6), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'garden_path', name: 'Garden Path 庭院小径', icon: 'road', build: buildGardenPath, params: [PR('width', '宽 m', 1.0, 3.0, 0.1, 1.5), PR('length', '长 m', 3, 15, 0.5, 6), PC('brickColor', '砖色', '#c45a3a')] },
-      { type: 'gravel_road', name: 'Gravel Road 碎石路', icon: 'road', build: buildGravelRoad, params: [PR('width', '宽 m', 3, 8, 0.5, 5), PR('length', '长 m', 10, 50, 1, 20)] },
-      { type: 'four_way_stop', name: 'Four-Way Stop 十字路口', icon: 'road', build: buildFourWayStop, params: [PR('width', '宽 m', 8, 16, 0.5, 10), PR('length', '长 m', 8, 16, 0.5, 10)] },
-      { type: 't_junction', name: 'T-Junction T 形路口', icon: 'road', build: buildTJunction, params: [PR('width', '宽 m', 6, 14, 0.5, 8), PR('length', '长 m', 8, 16, 0.5, 10)] },
-      { type: 'roundabout', name: 'Roundabout 环形路口', icon: 'road', build: buildRoundabout, params: [PR('width', '宽 m', 10, 20, 0.5, 14), PR('length', '长 m', 10, 20, 0.5, 14)] },
-      { type: 'cul_de_sac', name: 'Cul-de-Sac 尽端路', icon: 'road', build: buildCulDeSac, params: [PR('width', '宽 m', 6, 12, 0.5, 8), PR('length', '长 m', 10, 25, 1, 15)] },
-      { type: 'freeway', name: 'Freeway 高速公路', icon: 'road', build: buildFreeway, params: [PR('width', '宽 m', 12, 24, 0.5, 16), PR('length', '长 m', 30, 100, 5, 50)] },
+      { type: 'two_way_road', name: 'Two-Way Road 双向道路', icon: 'road', build: buildTwoWayRoad, params: [PR('width', '宽 m', 9, 16, 0.5, 12), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'one_way_road', name: 'One-Way Road 单向道路', icon: 'road', build: buildOneWayRoad, params: [PR('width', '宽 m', 10, 18, 0.5, 14), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'concrete_road', name: 'Concrete Road 混凝土路', icon: 'road', build: buildConcreteRoad, params: [PR('width', '宽 m', 9, 16, 0.5, 12), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'garden_path', name: 'Garden Path 庭院小径', icon: 'road', build: buildGardenPath, params: [PR('width', '宽 m', 1.0, 3.0, 0.1, 1.5), PR('length', '长 m', 3, 20, 0.5, 8), PC('brickColor', '砖色', '#c45a3a')] },
+      { type: 'gravel_road', name: 'Gravel Road 碎石路', icon: 'road', build: buildGravelRoad, params: [PR('width', '宽 m', 4, 9, 0.5, 6.5), PR('length', '长 m', 10, 60, 1, 24)] },
+      { type: 'four_way_stop', name: 'Four-Way Stop 十字路口', icon: 'road', build: buildFourWayStop, params: [PR('width', '宽 m', 20, 30, 0.5, 22), PR('length', '长 m', 20, 30, 0.5, 22)] },
+      { type: 't_junction', name: 'T-Junction T 形路口', icon: 'road', build: buildTJunction, params: [PR('width', '宽 m', 20, 34, 0.5, 24), PR('length', '长 m', 18, 30, 0.5, 22)] },
+      { type: 'roundabout', name: 'Roundabout 环形路口', icon: 'road', build: buildRoundabout, params: [PR('width', '宽 m', 18, 30, 0.5, 22), PR('length', '长 m', 18, 30, 0.5, 22)] },
+      { type: 'cul_de_sac', name: 'Cul-de-Sac 尽端路', icon: 'road', build: buildCulDeSac, params: [PR('width', '宽 m', 18, 34, 0.5, 26), PR('length', '长 m', 24, 60, 1, 36)] },
+      { type: 'freeway', name: 'Freeway 高速公路', icon: 'road', build: buildFreeway, params: [PR('width', '宽 m', 20, 34, 0.5, 26), PR('length', '长 m', 30, 120, 5, 60)] },
     ],
   },
   {
@@ -3032,6 +3377,9 @@ export const LIB = [
     ],
   },
 ];
+
+// 素材库 = 美式 64 款 + 建筑构件 / 中式古建 / 美式经典 / 室内 / 自然 / 战争 / 星际 / 玄幻特效
+export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS, ...SHOWCASE_GROUPS];
 
 export const LIB_INDEX = new Map();
 for (const grp of LIB) for (const it of grp.items) LIB_INDEX.set(`${grp.id}:${it.type}:${it.name}`, { ...it, cat: grp.cat, catId: grp.id });

@@ -1,0 +1,29 @@
+PASS pick spatial index / original exact raycast + editing + archive {
+  "entry": "file:",
+  "offline": true,
+  "comparisons": 69,
+  "objectHits": 43,
+  "fixtures": [
+    {
+      "fixture": "dense",
+      "roots": 121,
+      "candidates": 3.5510204081632653,
+      "cold": 2.7999999998137355,
+      "legacy": {
+        "samples": 30,
+        "mean": 1.0054421768713822,
+        "p50": 1.0040816326568625,
+        "p95": 1.0285714285600247,
+        "max": 1.0367346938927562
+      },
+      "index": {
+        "samples": 30,
+        "mean": 0.07789115646068438,
+        "p50": 0.07755102040436194,
+        "p95": 0.08367346939915905,
+        "max": 0.08775510205602159
+      },
+      "ratio": 0.07746955344866972
+    }
+  ]
+}

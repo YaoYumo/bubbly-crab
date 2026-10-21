@@ -1,0 +1,45 @@
+name: Windows desktop preflight build
+# Explicit installer request: branch bootstrap push plus manual dispatch. No model calls or release publication.
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena/3f9ececc-bubbly-crab]
+    paths: [.github/workflows/desktop-windows.yml]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm ci
+      - run: npm run test:desktop
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+      - name: Build unsigned x64 installer (downloads WebView2 on user install only if missing)
+        run: npm run desktop:build
+      - name: Record actual byte sizes and hashes
+        run: node scripts/desktop-artifacts.mjs --require-windows
+      - name: Install and launch smoke check (not full UI acceptance)
+        shell: pwsh
+        run: ./scripts/windows-install-smoke.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: previz-lab-windows-x64-unsigned
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/previz-lab.exe
+            src-tauri/Cargo.lock
+            .shots/desktop-artifacts.json
+            .shots/windows-install-smoke.json
+            docs/desktop-windows.md

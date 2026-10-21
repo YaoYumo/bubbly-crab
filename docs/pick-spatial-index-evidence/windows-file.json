@@ -1,0 +1,28 @@
+{
+  "entry": "file:",
+  "brightness": {
+    "mean": 1.1195416666666667,
+    "changed": 4642
+  },
+  "dark": {
+    "calls": 306,
+    "triangles": 10202
+  },
+  "bright": {
+    "calls": 306,
+    "triangles": 10202
+  },
+  "batched": {
+    "calls": 113,
+    "triangles": 10202
+  },
+  "unbatched": {
+    "calls": 306,
+    "triangles": 10202
+  },
+  "lights": 13,
+  "ordinaryUnits": 7,
+  "proceduralSurfaces": 5,
+  "legacyPreserved": true,
+  "archive": true
+}

@@ -51,12 +51,13 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       const val = Number(getv() ?? 0);
       const num = el('input', {
         class: 'num', type: 'number', min: f.min, max: f.max, step: f.step ?? (f.t === 'int' ? 1 : 0.01), value: f.t === 'int' ? Math.round(val) : val,
-        oninput: (e) => { let v = parseFloat(e.target.value); if (Number.isNaN(v)) return; v = f.t === 'int' ? Math.round(v) : v; setv(clamp(v, f.min, f.max)); sync(); },
+        oninput: (e) => { if(f.commit)return; let v = parseFloat(e.target.value); if (Number.isNaN(v)) return; v = f.t === 'int' ? Math.round(v) : v; setv(clamp(v, f.min, f.max)); sync(); },
       });
       const rng = el('input', {
         class: 'rng', type: 'range', min: f.min, max: f.max, step: f.step ?? 0.01, value: f.t === 'int' ? Math.round(val) : val,
-        oninput: (e) => { const v = parseFloat(e.target.value); setv(f.t === 'int' ? Math.round(v) : v); sync(); },
+        oninput: (e) => { if(f.commit){num.value=e.target.value;return;} const v = parseFloat(e.target.value); setv(f.t === 'int' ? Math.round(v) : v); sync(); },
       });
+      if(f.commit)for(const control of [rng,num])control.addEventListener('change',e=>{const v=Number(e.target.value);if(Number.isFinite(v))setv(clamp(f.t==='int'?Math.round(v):v,f.min,f.max));});
       const grp = el('div', { class: 'rg' }, [rng, num]);
       input = grp;
       sync = () => {
@@ -85,6 +86,9 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       const i0 = el('input', { class: 'tx', type: 'text', maxlength: '12', placeholder: f.ph || '', value: String(getv() ?? ''), oninput: (e) => setv(e.target.value) });
       input = i0;
       refs.set(f.k, () => { if (document.activeElement !== i0) i0.value = String(getv() ?? ''); });
+    } else if (f.t === 'date') {
+      const d = el('input', { class: 'txt', type: 'date', value: getv() || '', onchange: e => { if (e.target.value) setv(e.target.value); } });
+      input = d; refs.set(f.k, () => { if (document.activeElement !== d) d.value = getv() || ''; });
     } else if (f.t === 'color') {
       const c = el('input', { class: 'col', type: 'color', value: toHex(getv() ?? '#ffffff'), oninput: (e) => setv(e.target.value) });
       input = el('div', { class: 'col-wrap' }, [c, el('span', { class: 'col-h', text: toHex(getv() ?? '#ffffff') })]);
@@ -133,6 +137,7 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       continue;
     }
     const row = rowOf(f.l, input, f.help);
+    if(f.k)row.dataset.field=f.k;
     if (f.class) row.classList.add(f.class);
     visible.set(row, f);
     root.appendChild(row);

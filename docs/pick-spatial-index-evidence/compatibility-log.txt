@@ -1,0 +1,531 @@
+
+=== pick-compat-file-lighting-offline.txt ===
+PASS offline shipped UI / lamp parameters / undo-redo / real light and shadow map / WB-IBL separation / .previz reload / PNG ISO consistency {
+  lit: 1,
+  shadowMap: true,
+  noRebake: true,
+  project: true,
+  exposure: 2,
+  during: 4,
+  after: 2,
+  png: true
+}
+
+=== pick-compat-file-road-diagnostics-regression.txt ===
+PASS road diagnostics: signed metric grade / read-only / cancel + stale guard / terrain / actual underside clearance + lateral checks / at-grade exclusion / hidden road / derived following / actual blocked pier location / native UI + focus / comparison / archive / helper exclusion {
+  entry: 'file:',
+  slope: {
+    length: 60,
+    length3D: 60.29925372672529,
+    minY: 0,
+    maxY: 6,
+    maxGrade: 10.000000000000144,
+    verticalSegments: 0,
+    maxIntrusion: -0.24482221138598304,
+    minClearance: null,
+    terrainSamples: 711,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  buried: {
+    length: 50,
+    length3D: 50,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: 1.8299999970197678,
+    minClearance: null,
+    terrainSamples: 612,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  low: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.699999982118606,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  high: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 7.699999982118605,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  edge: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.680000001192093,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  follow: {
+    length: 60,
+    length3D: 60,
+    minY: 3,
+    maxY: 3,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.17000004768371557,
+    minClearance: null,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  underJunction: {
+    length: 12,
+    length3D: 12,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.7799999895691867,
+    terrainSamples: 153,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  outside: {
+    length: 30,
+    length3D: 30,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: null,
+    minClearance: null,
+    terrainSamples: 0,
+    terrainOutside: 369,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  blocked: {
+    length: 90,
+    length3D: 90,
+    minY: 7,
+    maxY: 7,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -7.170000002980231,
+    minClearance: null,
+    terrainSamples: 1089,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 7
+  },
+  cancelled: true,
+  staleCancelled: true
+}
+
+=== pick-compat-file-road-planning-offline.txt ===
+PASS offline single-file planning: {"grid":false,"snap":false,"n":1,"count":9}
+
+=== pick-compat-file-road-properties-offline.txt ===
+PASS offline road property controls, stable identity + actual cap width, no page errors
+
+=== pick-compat-file-window-lights-regression.txt ===
+PASS window emission / ordinary and instanced rooms + city grid / deterministic seed / no geometry or real lights / opaque instancing / gray shader chain / Basic restore / bounded variants / per-object controls / undo-redo / archive / old project / native UI + day-night + locked / cleanup {
+  entry: 'file:',
+  brightness: { mean: 1.1195416666666667, changed: 4642 },
+  dark: { calls: 306, triangles: 10202 },
+  bright: { calls: 306, triangles: 10202 },
+  batched: { calls: 113, triangles: 10202 },
+  unbatched: { calls: 306, triangles: 10202 },
+  lights: 13,
+  ordinaryUnits: 7,
+  proceduralSurfaces: 5,
+  legacyPreserved: true,
+  archive: true
+}
+
+=== pick-compat-junction-surface.test.txt ===
+PASS junction asphalt subtraction, area conservation and sidewalk ray coverage: 6 angles × T/four-way × unequal widths
+
+=== pick-compat-model-instancing-regression.txt ===
+PASS building render-only instancing / pixels / original picking + gizmo / move undo-redo / material + hidden fallback / rebuild / archive / disposal / negative scale + callbacks / failure restoration {
+  entry: 'http:',
+  dense: {
+    calls: { samples: 3, mean: 1586, p50: 1586, p95: 1586, max: 1586 },
+    triangles: { samples: 3, mean: 344078, p50: 344078, p95: 344078, max: 344078 }
+  },
+  before: { calls: 320, triangles: 20150 },
+  after: { calls: 142, triangles: 20150 },
+  pixels: {
+    mean: 0.00005769230769230769,
+    changedFraction: 0.000003205128205128205,
+    max: 4
+  },
+  instanceDisposals: 43,
+  objectIds: 3,
+  groups: 43
+}
+
+=== pick-compat-performance-regression.txt ===
+PASS performance: real intervals / bounded sampling / multipass / renderer restore / stable instancing and preview buffers / mesh disposal / undo-quality lifecycle / isolated cancellable four-fixture benchmarks / autosave protection / JSON archive roundtrip
+{
+  "comparison": {
+    "legacyUnchanged": [
+      34.199999999953434,
+      27.199999999953434,
+      23.899999999906868,
+      12.699999999953434,
+      17.699999999953434
+    ],
+    "inPlaceUnchanged": [
+      1.1999999999534339,
+      1.6999999999534339,
+      0.30000000004656613,
+      0.30000000004656613,
+      0.6000000000931323
+    ],
+    "legacyChanged": [
+      31.100000000093132,
+      13.899999999906868,
+      36.300000000046566,
+      12.199999999953434,
+      13
+    ],
+    "inPlaceChanged": [
+      23.5,
+      17.9000000001397,
+      5.899999999906868,
+      19.100000000093132,
+      5.599999999860302
+    ],
+    "plants": 400,
+    "iterations": 12
+  },
+  "residency": [
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 4,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 4,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "town",
+      "calls": 584,
+      "triangles": 117230,
+      "p50": 20.600000000093132,
+      "p95": 22.399999999906868,
+      "archiveBytes": 2175
+    },
+    {
+      "id": "dense",
+      "calls": 1586,
+      "triangles": 344078,
+      "p50": 57.799999999813735,
+      "p95": 78.70000000018626,
+      "archiveBytes": 2219
+    },
+    {
+      "id": "terrain",
+      "calls": 177,
+      "triangles": 646522,
+      "p50": 2.3999999999068677,
+      "p95": 2.5,
+      "archiveBytes": 41548
+    },
+    {
+      "id": "night",
+      "calls": 722,
+      "triangles": 66226,
+      "p50": 22.59999999962747,
+      "p95": 76.5,
+      "archiveBytes": 2168
+    }
+  ]
+}
+
+=== pick-compat-pick-spatial-index.test.txt ===
+PASS 647 exact-pick comparisons / ties / ignore / hidden / layers / near-far / keys / shots / ground / terrain / transforms / descendants / geometry / delete / dynamic fallback / instances / custom raycasts / singular / failure / toggle / release
+
+=== pick-compat-project-resources-regression.txt ===
+PASS companion OBJ/MTL/PNG; deduplicated embedded assets; fresh-registry archive roundtrip; actual texture image, transform and independent material policies; undo refs; invalid load preserves scene; Share absent 928322
+PASS IndexedDB reload restores model resources and appearance
+PASS library rebuild/performance mode/global reset + actual UI; no page errors
+
+=== pick-compat-road-diagnostics-regression.txt ===
+PASS road diagnostics: signed metric grade / read-only / cancel + stale guard / terrain / actual underside clearance + lateral checks / at-grade exclusion / hidden road / derived following / actual blocked pier location / native UI + focus / comparison / archive / helper exclusion {
+  entry: 'http:',
+  slope: {
+    length: 60,
+    length3D: 60.29925372672529,
+    minY: 0,
+    maxY: 6,
+    maxGrade: 10.000000000000144,
+    verticalSegments: 0,
+    maxIntrusion: -0.24482221138598304,
+    minClearance: null,
+    terrainSamples: 711,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  buried: {
+    length: 50,
+    length3D: 50,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: 1.8299999970197678,
+    minClearance: null,
+    terrainSamples: 612,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  low: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.699999982118606,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  high: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 7.699999982118605,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  edge: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.680000001192093,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  follow: {
+    length: 60,
+    length3D: 60,
+    minY: 3,
+    maxY: 3,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.17000004768371557,
+    minClearance: null,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  underJunction: {
+    length: 12,
+    length3D: 12,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.7799999895691867,
+    terrainSamples: 153,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  outside: {
+    length: 30,
+    length3D: 30,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: null,
+    minClearance: null,
+    terrainSamples: 0,
+    terrainOutside: 369,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  blocked: {
+    length: 90,
+    length3D: 90,
+    minY: 7,
+    maxY: 7,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -7.170000002980231,
+    minClearance: null,
+    terrainSamples: 1089,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 7
+  },
+  cancelled: true,
+  staleCancelled: true
+}
+
+=== pick-compat-road-diagnostics.test.txt ===
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
+
+=== pick-compat-terrain-roads-regression.txt ===
+{
+  "local": {
+    "paint": 0.6499999761581421,
+    "far": 0,
+    "heightSame": true,
+    "refined": 257,
+    "height": 0,
+    "paintRetained": true,
+    "saved": true
+  },
+  "cliffBefore": 1.446441332248135,
+  "cliffAfter": 0.6890171364770395,
+  "slopeFinite": true,
+  "hills": {
+    "center": 4.010477632073795,
+    "terrain": 4,
+    "actual": 4.180477828979492,
+    "finite": true,
+    "verts": 93840
+  },
+  "raised": 6.010477632073795,
+  "undo": 4.011176479003009,
+  "redo": 6.011176479003009,
+  "bridge": {
+    "junctions": 0,
+    "count": 16,
+    "status": {
+      "built": 8,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 54,
+          "point": [
+            0,
+            9,
+            -1
+          ]
+        }
+      ]
+    },
+    "collision": false,
+    "buildingCollision": false,
+    "blocked": 4,
+    "regenerated": true,
+    "lowBuildingCollision": false
+  },
+  "plants": {
+    "deleted": true,
+    "clearRetained": true
+  },
+  "fill": {
+    "crossing": 0,
+    "away": 8.979999542236328,
+    "remote": 0
+  },
+  "archive": {
+    "mode": "fixed",
+    "height": 8.979999542236328,
+    "n": 97
+  }
+}
+Extra checks {
+  holes: 0,
+  buried: 0,
+  minClear: 0.17003919194661393,
+  junctions: 1,
+  initial: true,
+  deleted: true,
+  oneUndo: true,
+  restored: true,
+  redone: true,
+  selfCollision: false,
+  supportCount: 20,
+  editLevel: 8,
+  editMode: 'fixed',
+  overflowHeight: 100
+}
+PASS local splat materials, refinement, steep smoothing, following roads, grade separation, full-volume pier collisions, vegetation clearance, safe embankment, undo/redo and archive
+
+=== pick-compat-window-lights-regression.txt ===
+PASS window emission / ordinary and instanced rooms + city grid / deterministic seed / no geometry or real lights / opaque instancing / gray shader chain / Basic restore / bounded variants / per-object controls / undo-redo / archive / old project / native UI + day-night + locked / cleanup {
+  entry: 'http:',
+  brightness: { mean: 1.1195416666666667, changed: 4642 },
+  dark: { calls: 306, triangles: 10202 },
+  bright: { calls: 306, triangles: 10202 },
+  batched: { calls: 113, triangles: 10202 },
+  unbatched: { calls: 306, triangles: 10202 },
+  lights: 13,
+  ordinaryUnits: 7,
+  proceduralSurfaces: 5,
+  legacyPreserved: true,
+  archive: true
+}
+
+=== pick-compat-window-lights.test.txt ===
+PASS window settings / deterministic occupancy / metadata scope / no source mutation / bounded material pairs / unchanged geometry / gray + legacy restore / day-night factor / release

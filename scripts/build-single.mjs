@@ -62,7 +62,8 @@ if (!jsInlined || !cssInlined) {
 html = html.replace(/<link[^>]*rel="(?:modulepreload|preload)"[^>]*>/g, '');
 
 const dest = path.join(root, 'previz-lab.html');
-fs.writeFileSync(dest, html);
+// Third-party GLSL templates contain whitespace-only lines; keep generated diffs clean.
+fs.writeFileSync(dest, html.replace(/^[ \t]+$/gm, ''));
 const kb = (fs.statSync(dest).size / 1024).toFixed(0);
 console.log(`✔ 已生成 ${path.relative(process.cwd(), dest)}（${kb} KB，含全部 three.js 与加载器，可离线双击打开）`);
 fs.rmSync(outDir, { recursive: true, force: true });

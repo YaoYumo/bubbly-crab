@@ -1,0 +1,68 @@
+PASS actual MediaRecorder compatibility + empty retry {
+  "entry": "file:",
+  "streamProbes": [
+    {
+      "fps": 0,
+      "manual": true
+    },
+    {
+      "fps": 0,
+      "manual": true
+    },
+    {
+      "fps": 5,
+      "manual": true
+    },
+    {
+      "fps": 0,
+      "manual": true
+    },
+    {
+      "fps": 5,
+      "manual": true
+    }
+  ],
+  "files": [
+    {
+      "mode": "manual",
+      "requested": "manual",
+      "phases": [
+        "prepare",
+        "render",
+        "render",
+        "render",
+        "render",
+        "render",
+        "done"
+      ],
+      "ext": "webm",
+      "mime": "video/webm;codecs=vp9",
+      "decodedFrames": 5
+    },
+    {
+      "mode": "auto",
+      "requested": "missing-requestFrame",
+      "phases": [
+        "prepare",
+        "render",
+        "render",
+        "render",
+        "render",
+        "render",
+        "done"
+      ],
+      "ext": "webm",
+      "mime": "video/webm;codecs=vp9",
+      "decodedFrames": 5
+    }
+  ],
+  "tracksStopped": 5,
+  "retries": 1,
+  "checks": [
+    "real manual MediaRecorder WebM",
+    "missing requestFrame recaptures automatic stream",
+    "actual MIME/extension",
+    "all tracks stopped",
+    "empty retry exactly once/no download/last-good preserved"
+  ]
+}

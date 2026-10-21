@@ -15,7 +15,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push('CONSOLE: ' + 
 const R = { errors, checks: {} };
 const ck = (n, v) => { R.checks[n] = v; };
 
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
+await page.goto((process.env.URL || 'http://localhost:5174/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
 await page.waitForFunction(() => window.__previzBooted && window.app && window.app.shots.length > 0, { timeout: 60000 });
 await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* ignore */ } });
 await new Promise((r) => setTimeout(r, 800));

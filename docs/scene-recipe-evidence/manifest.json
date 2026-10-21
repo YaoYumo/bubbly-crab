@@ -1,0 +1,713 @@
+{
+  "date": "2026-10-20",
+  "scope": "第一批：两类本地参数化精细配方，共享示例资产／工厂与受控规则；未扩展任意 AI 建模",
+  "build": {
+    "path": "previz-lab.html",
+    "bytes": 2240529,
+    "sha256": "e3f555c060b0f60b2c39a679026078c8d61fe47add60ac944ca445fa3d3307e6"
+  },
+  "unitTests": {
+    "scene-recipes.test.mjs": {
+      "pass": true,
+      "layouts": 210,
+      "seedSweep": 48,
+      "independentBoundaryCombinations": 162,
+      "maxima": {
+        "people": 48,
+        "cars": 12,
+        "lanterns": 180
+      },
+      "reservedPagodaParcelRejection": true,
+      "sizeAndDensityChangeActualLayout": true,
+      "goldenScenesUnmutated": true
+    },
+    "towngen.mjs": "PASS",
+    "townbuild.mjs": "PASS",
+    "showcase.test.mjs": "PASS 253 authored assets",
+    "weather-volume.test.mjs": "PASS",
+    "ai-scene.test.mjs": "PASS; fixture protocol only, no real inference"
+  },
+  "browser": {
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "kind": "cyber-rain",
+          "models": 90,
+          "objects": 90,
+          "options": {
+            "seed": 82,
+            "size": 320,
+            "density": 0.65,
+            "floors": 30,
+            "cars": 8,
+            "people": 20,
+            "riverWidth": 20,
+            "lanterns": 108,
+            "weather": "rain",
+            "lighting": "night",
+            "fog": 0.017,
+            "opening": "street",
+            "palette": "cyan"
+          },
+          "undoRedo": true,
+          "roundtrip": true
+        },
+        {
+          "kind": "lantern-river",
+          "models": 162,
+          "objects": 168,
+          "options": {
+            "seed": 42,
+            "size": 320,
+            "density": 0.65,
+            "floors": 34,
+            "cars": 9,
+            "people": 28,
+            "riverWidth": 16,
+            "lanterns": 120,
+            "weather": "none",
+            "lighting": "night",
+            "fog": 0.0024,
+            "opening": "river",
+            "palette": "cyan"
+          },
+          "undoRedo": true,
+          "roundtrip": true
+        }
+      ],
+      "previewPure": true,
+      "manualOverrides": true,
+      "cancelledQueue": true,
+      "injectedRollback": true,
+      "legacyRouting": true,
+      "errors": []
+    },
+    "offline": {
+      "mode": "file",
+      "results": [
+        {
+          "kind": "cyber-rain",
+          "models": 90,
+          "objects": 90,
+          "options": {
+            "seed": 82,
+            "size": 320,
+            "density": 0.65,
+            "floors": 30,
+            "cars": 8,
+            "people": 20,
+            "riverWidth": 20,
+            "lanterns": 108,
+            "weather": "rain",
+            "lighting": "night",
+            "fog": 0.017,
+            "opening": "street",
+            "palette": "cyan"
+          },
+          "undoRedo": true,
+          "roundtrip": true
+        },
+        {
+          "kind": "lantern-river",
+          "models": 162,
+          "objects": 168,
+          "options": {
+            "seed": 42,
+            "size": 320,
+            "density": 0.65,
+            "floors": 34,
+            "cars": 9,
+            "people": 28,
+            "riverWidth": 16,
+            "lanterns": 120,
+            "weather": "none",
+            "lighting": "night",
+            "fog": 0.0024,
+            "opening": "river",
+            "palette": "cyan"
+          },
+          "undoRedo": true,
+          "roundtrip": true
+        }
+      ],
+      "previewPure": true,
+      "manualOverrides": true,
+      "cancelledQueue": true,
+      "injectedRollback": true,
+      "legacyRouting": true,
+      "errors": []
+    }
+  },
+  "compatibility": {
+    "showcase": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      },
+      "offline": {
+        "mode": "offline",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      }
+    },
+    "weather": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 1.75,
+            "above": 4053,
+            "below": 3947,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 80,
+            "above": 4000,
+            "below": 4000,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 220,
+            "above": 4008,
+            "below": 3992,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 1200,
+            "above": 4038,
+            "below": 3962,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 1.75,
+            "above": 4053,
+            "below": 3947,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 80,
+            "above": 4000,
+            "below": 4000,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 220,
+            "above": 4008,
+            "below": 3992,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 1200,
+            "above": 4038,
+            "below": 3962,
+            "particles": 8000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 1.75,
+            "above": 6082,
+            "below": 5918,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 80,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 220,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 1200,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 1.75,
+            "above": 2033,
+            "below": 1967,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 80,
+            "above": 1978,
+            "below": 2022,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 220,
+            "above": 1977,
+            "below": 2023,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 1200,
+            "above": 2021,
+            "below": 1979,
+            "particles": 4000
+          }
+        ],
+        "errors": []
+      },
+      "offline": {
+        "mode": "file",
+        "results": [
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 1.75,
+            "above": 4053,
+            "below": 3947,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 80,
+            "above": 4000,
+            "below": 4000,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 220,
+            "above": 4008,
+            "below": 3992,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "points",
+            "y": 1200,
+            "above": 4038,
+            "below": 3962,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 1.75,
+            "above": 4053,
+            "below": 3947,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 80,
+            "above": 4000,
+            "below": 4000,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 220,
+            "above": 4008,
+            "below": 3992,
+            "particles": 8000
+          },
+          {
+            "type": "rain",
+            "style": "streaks",
+            "y": 1200,
+            "above": 4038,
+            "below": 3962,
+            "particles": 8000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 1.75,
+            "above": 6082,
+            "below": 5918,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 80,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 220,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "storm",
+            "style": "points",
+            "y": 1200,
+            "above": 5954,
+            "below": 6046,
+            "particles": 12000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 1.75,
+            "above": 2033,
+            "below": 1967,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 80,
+            "above": 1978,
+            "below": 2022,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 220,
+            "above": 1977,
+            "below": 2023,
+            "particles": 4000
+          },
+          {
+            "type": "snow",
+            "style": "points",
+            "y": 1200,
+            "above": 2021,
+            "below": 1979,
+            "particles": 4000
+          }
+        ],
+        "errors": []
+      }
+    },
+    "aiBaseDev": {
+      "sourceUnchangedByPreview": true,
+      "staleRefused": true,
+      "injectedRollback": true,
+      "oneUndoRedo": true,
+      "lockedRefused": true,
+      "cameras": 4,
+      "motionSecondsToNormalized": true,
+      "referenceProvenance": true,
+      "cancelled": true,
+      "catalogEntries": 210,
+      "uiPreview": true,
+      "errors": []
+    },
+    "aiSafety": {
+      "dev": {
+        "selectedRebuildStableIdUndoRedo": true,
+        "existingMetadataPreserved": true,
+        "metadataPatchRefused": true,
+        "selectedOnlyEditApplied": true,
+        "unselectedEditRefused": true,
+        "parallelRefused": true,
+        "referencePNGAndTerrainMutex": true,
+        "exactGroundY": 4,
+        "sourceResourcesNotDisposed": true,
+        "fourPrepareDiscardCycles": true,
+        "protectedRoadSegmentRefused": true,
+        "concurrentEditPreserved": true,
+        "importedRollback": true,
+        "personPhaseRestored": true,
+        "importedResourceAndTerrainUndoRedo": true,
+        "errors": []
+      },
+      "offline": {
+        "selectedRebuildStableIdUndoRedo": true,
+        "existingMetadataPreserved": true,
+        "metadataPatchRefused": true,
+        "selectedOnlyEditApplied": true,
+        "unselectedEditRefused": true,
+        "parallelRefused": true,
+        "referencePNGAndTerrainMutex": true,
+        "exactGroundY": 4,
+        "sourceResourcesNotDisposed": true,
+        "fourPrepareDiscardCycles": true,
+        "protectedRoadSegmentRefused": true,
+        "concurrentEditPreserved": true,
+        "importedRollback": true,
+        "personPhaseRestored": true,
+        "importedResourceAndTerrainUndoRedo": true,
+        "errors": []
+      }
+    },
+    "referenceUIOffline": {
+      "entry": "file",
+      "frames": 2,
+      "captureButton": true,
+      "overlayRemoved": true,
+      "nativeZIPDownload": true,
+      "attemptContainsOriginalZIP": true,
+      "attemptContainsResult": true,
+      "attemptContainsReview": true,
+      "errors": []
+    }
+  },
+  "visualReview": {
+    "screenshots": [
+      ".shots/recipe-plan.png",
+      ".shots/recipe-cyber-rain.png",
+      ".shots/recipe-lantern-river.png"
+    ],
+    "entry": "rebuilt single file, browser offline",
+    "reviewed": true,
+    "cjkFont": "Noto Sans CJK SC supplied only to test Chromium, not bundled"
+  },
+  "commands": [
+    "node test/scene-recipes.test.mjs",
+    "bash test/withchrome.sh node test/scene-recipes-regression.mjs",
+    "TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome.sh node test/scene-recipes-regression.mjs",
+    "npm run all"
+  ],
+  "boundaries": [
+    "二维布局草图，不是最终3D候选；共用工厂不表示每个参数生成都等于精选黄金示例。",
+    "生成时局部锚点挂接，部件独立编辑；不是持续rig或自动重挂接。",
+    "受控骨架、241样本/路线、塔楼保守AABB和佛塔地块规则；不是通用mesh碰撞、导航或电影评分。",
+    "Esc仅取消开始前的排队；同步应用不支持中途交互取消。",
+    "原模型库只增不动；未知复杂资产仍需导入／人工，无任意AI代码执行。",
+    "未调用真实AI推理或付费3D服务；既有AI计划协议和参考包接口未拓展。",
+    "湿街和水面碎金不是SSR或光追；孔明灯为成组漂移。",
+    "Vite保留既有大chunk告警；没有本轮全场性能或长视频新验收。"
+  ],
+  "regressionAfterSpatialDynamics": {
+    "date": "2026-10-20",
+    "build": {
+      "path": "previz-lab.html",
+      "bytes": 2250848,
+      "sha256": "3ba2d84c7253cdc179f6f57889b7c11082f3a8ddb7478f8932415851101c1bd1"
+    },
+    "browser": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "kind": "cyber-rain",
+            "models": 90,
+            "objects": 90,
+            "options": {
+              "seed": 82,
+              "size": 320,
+              "density": 0.65,
+              "floors": 30,
+              "cars": 8,
+              "people": 20,
+              "riverWidth": 20,
+              "lanterns": 108,
+              "weather": "rain",
+              "lighting": "night",
+              "fog": 0.017,
+              "opening": "street",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          },
+          {
+            "kind": "lantern-river",
+            "models": 162,
+            "objects": 168,
+            "options": {
+              "seed": 42,
+              "size": 320,
+              "density": 0.65,
+              "floors": 34,
+              "cars": 9,
+              "people": 28,
+              "riverWidth": 16,
+              "lanterns": 120,
+              "weather": "none",
+              "lighting": "night",
+              "fog": 0.0024,
+              "opening": "river",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          }
+        ],
+        "previewPure": true,
+        "manualOverrides": true,
+        "cancelledQueue": true,
+        "injectedRollback": true,
+        "legacyRouting": true,
+        "errors": []
+      },
+      "offline": {
+        "mode": "file",
+        "results": [
+          {
+            "kind": "cyber-rain",
+            "models": 90,
+            "objects": 90,
+            "options": {
+              "seed": 82,
+              "size": 320,
+              "density": 0.65,
+              "floors": 30,
+              "cars": 8,
+              "people": 20,
+              "riverWidth": 20,
+              "lanterns": 108,
+              "weather": "rain",
+              "lighting": "night",
+              "fog": 0.017,
+              "opening": "street",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          },
+          {
+            "kind": "lantern-river",
+            "models": 162,
+            "objects": 168,
+            "options": {
+              "seed": 42,
+              "size": 320,
+              "density": 0.65,
+              "floors": 34,
+              "cars": 9,
+              "people": 28,
+              "riverWidth": 16,
+              "lanterns": 120,
+              "weather": "none",
+              "lighting": "night",
+              "fog": 0.0024,
+              "opening": "river",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          }
+        ],
+        "previewPure": true,
+        "manualOverrides": true,
+        "cancelledQueue": true,
+        "injectedRollback": true,
+        "legacyRouting": true,
+        "errors": []
+      }
+    },
+    "evidence": "../spatial-dynamics-evidence/manifest.json",
+    "note": "顶层历史build与记录保留，此节为第二批复验"
+  }
+}

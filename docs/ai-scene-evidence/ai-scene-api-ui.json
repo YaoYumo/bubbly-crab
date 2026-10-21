@@ -1,0 +1,14 @@
+{
+  "contractOnly": true,
+  "realInference": false,
+  "accessTokenMemoryOnly": true,
+  "posts": 1,
+  "gets": 2,
+  "doubleClickRefused": true,
+  "stopIsLocalOnly": true,
+  "resumeWithoutPOST": true,
+  "doesNotAutoApply": true,
+  "manualPrepareAndConfirm": true,
+  "originAudit": true,
+  "errors": []
+}

@@ -1,0 +1,189 @@
+{
+  "entry": "http:",
+  "offline": false,
+  "ids": 12,
+  "lod": {
+    "original": {
+      "calls": 282,
+      "triangles": 40286
+    },
+    "distant": {
+      "calls": 276,
+      "triangles": 35102,
+      "stats": {
+        "settings": {
+          "enabled": true,
+          "near": 90,
+          "far": 200,
+          "pixels": 1.5
+        },
+        "near": 0,
+        "medium": 0,
+        "far": 12,
+        "culledMeshes": 28,
+        "simplifiedMeshes": 48,
+        "sourceTriangles": 6912,
+        "lodTriangles": 1728,
+        "prepareMs": 1.599999999627471,
+        "builds": 0,
+        "pending": 0,
+        "idle": {
+          "slices": 11,
+          "steps": 479,
+          "maxSliceMs": 10.599999999627471,
+          "errors": 0
+        },
+        "cachedGeometries": 4,
+        "geometryBytes": 15712
+      }
+    },
+    "pixels": {
+      "mean": 0.03895192307692308,
+      "fraction": 0.002544871794871795,
+      "max": 64
+    },
+    "cold": {
+      "settings": {
+        "enabled": true,
+        "near": 90,
+        "far": 200,
+        "pixels": 1.5
+      },
+      "near": 0,
+      "medium": 0,
+      "far": 12,
+      "culledMeshes": 28,
+      "simplifiedMeshes": 0,
+      "sourceTriangles": 960,
+      "lodTriangles": 0,
+      "prepareMs": 2.900000000372529,
+      "builds": 0,
+      "pending": 48,
+      "idle": {
+        "slices": 0,
+        "steps": 0,
+        "maxSliceMs": 0,
+        "errors": 0
+      },
+      "cachedGeometries": 0,
+      "geometryBytes": 0
+    },
+    "cpu": {
+      "original": {
+        "samples": 30,
+        "mean": 9.719999999987582,
+        "p50": 8.299999999813735,
+        "p95": 18.700000000186265
+      },
+      "lod": {
+        "samples": 30,
+        "mean": 8.730000000012417,
+        "p50": 9,
+        "p95": 11.400000000372529
+      }
+    }
+  },
+  "bloom": {
+    "original": {
+      "calls": 282,
+      "triangles": 40286
+    },
+    "enabled": {
+      "calls": 296,
+      "triangles": 40300
+    },
+    "pixels": {
+      "mean": 2.296282051282051,
+      "fraction": 0.11071474358974359,
+      "max": 209
+    },
+    "cpu": {
+      "disabled": {
+        "samples": 30,
+        "mean": 7.0933333333271245,
+        "p50": 6.400000000372529,
+        "p95": 10.299999999813735
+      },
+      "enabled": {
+        "samples": 30,
+        "mean": 11.19000000000621,
+        "p50": 7.2000000001862645,
+        "p95": 26.799999999813735
+      }
+    },
+    "combined": {
+      "calls": 290,
+      "triangles": 35116,
+      "lod": {
+        "settings": {
+          "enabled": true,
+          "near": 90,
+          "far": 200,
+          "pixels": 1.5
+        },
+        "near": 0,
+        "medium": 0,
+        "far": 12,
+        "culledMeshes": 28,
+        "simplifiedMeshes": 48,
+        "sourceTriangles": 6912,
+        "lodTriangles": 1728,
+        "prepareMs": 0.6999999992549419,
+        "builds": 0,
+        "pending": 0,
+        "idle": {
+          "slices": 27,
+          "steps": 1437,
+          "maxSliceMs": 10.599999999627471,
+          "errors": 0
+        },
+        "cachedGeometries": 4,
+        "geometryBytes": 15712
+      }
+    },
+    "videoBytes": 8786,
+    "pngBytes": 4266,
+    "lowSize": {
+      "enabled": true,
+      "strength": 0.6,
+      "radius": 0.3,
+      "threshold": 0.8,
+      "quality": "low",
+      "active": true,
+      "blockedReason": null,
+      "glowWidth": 50,
+      "glowHeight": 33
+    },
+    "highSize": {
+      "enabled": true,
+      "strength": 0.6,
+      "radius": 0.3,
+      "threshold": 0.8,
+      "quality": "high",
+      "active": true,
+      "blockedReason": null,
+      "glowWidth": 200,
+      "glowHeight": 130
+    },
+    "blackBarsMax": 0
+  },
+  "checks": [
+    "source references/visibility stable",
+    "actual far triangle reduction",
+    "30 render submission samples/path",
+    "selected + near full quality",
+    "failure restoration + instances",
+    "Bloom pixels + no DOF",
+    "quality + DPR + unsupported HDR fallback",
+    "repeated framed output keeps target allocation stable",
+    "zero strength exact bypass",
+    "DOF + anamorphic composition",
+    "Basic pause/restore",
+    "letterboxed output + PNG + one-frame video",
+    "combined active far LOD/Bloom + 30 Bloom submission samples/path",
+    "undo/redo + archive IDs",
+    "rebuild release + original pick/gizmo",
+    "legacy defaults + native UI",
+    "dispose"
+  ]
+}

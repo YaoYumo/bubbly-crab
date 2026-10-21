@@ -8,6 +8,8 @@
 //             t 目标物体下标, hh 手持幅度, mo 流畅度设置, cur 曲线预设 }
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { SHOWCASE_SCENES } from './showcase-scenes.js';
+import { nearestRiver, cleanRiver } from './terrain-river.js';
 import { SCENES2 } from './scenes2.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -19,15 +21,17 @@ function lookQuat(from, to) {
 export const SCENES = [];
 
 // 第二组（8 个有故事的调度）追加到同一个列表里，顶栏「示例场景」统一显示
-SCENES.push(...SCENES2);
+SCENES.push(...SCENES2, ...SHOWCASE_SCENES);
 
 export const SCENE_BY_ID = Object.fromEntries(SCENES.map((s) => [s.id, s]));
 
 /** 载入模板：清空当前场景后按声明式数据重建 */
-function _applyScene(app, id) {
-  const sc = SCENE_BY_ID[id] || SCENES[0];
+function _applyScene(app, sc) {
   if (!sc) return false;
+  app.state.playing = false; app.setPreview(false);
   app.clearAll();
+  // Authored night scenes must not inherit a previous gray/unlit inspection mode.
+  if(sc.authored){app.state.tex=true;app.state.perf=false;app.lighting.setEnabled(true);}
   app.projectName = sc.name;
   const prevFollow = app.state.followTerrain;
 
@@ -46,6 +50,12 @@ function _applyScene(app, id) {
     else if (tt.waterY != null) tr.setWaterLevel(tt.waterY);
     tr.app.state.terrainTool = null;
   }
+  if (sc.river && tr) {
+    tr.setResolution(257); tr.exaggerate=1; tr.h.fill(0);tr.weights.fill(0);
+    const river=cleanRiver(sc.river,tr.size),reach=river.width/2+river.bank;
+    for(let j=0;j<tr.n;j++)for(let i=0;i<tr.n;i++){const x=(i/(tr.n-1)-.5)*tr.size,z=(j/(tr.n-1)-.5)*tr.size,q=nearestRiver(river.points,x,z);if(q.distance<reach){const t=Math.max(0,(q.distance-river.width/2)/river.bank),blend=t*t*(3-2*t);const bed=q.y-river.depth*(1-.75*Math.min(1,q.distance/(river.width/2))**2);tr.h[j*tr.n+i]=q.distance<=river.width/2?bed:(q.y-river.depth*.25)*(1-blend);}}
+    tr.workflow.precise=true;tr.refresh();tr.workflow.storeRiver(river);
+  }
   if (app.stage.setGroundVisible) app.stage.setGroundVisible(sc.ground !== false);
 
   // 物体
@@ -53,9 +63,13 @@ function _applyScene(app, id) {
   let missing = 0;
   for (const o of sc.objs || []) {
     const [key, x, z, r, params, extra] = o;
-    const so = app.addAsset(key, V(x || 0, 0, z || 0), { params: params || {} });
+    const so = app.addAsset(key, V(x || 0, extra?.y ?? 0, z || 0), { params: params || {}, authored:!!sc.authored, name:extra?.name });
     if (!so) { list.push(null); missing++; continue; }
     const e = extra || {};
+    if(e.windows)so.params.windowLighting={...e.windows};
+    if(e.assembly)so.params.sceneKit={...e.assembly};
+    if(sc.relations)so.params.sceneRecipeNode=`node-${list.length}`;
+    if(e.routeRole)so.params.sceneRouteRole=e.routeRole;
     if (r) so.root.rotation.y = r;
     if (e.s) so.root.scale.setScalar(e.s);
     if (e.y != null) { so.followTerrain = false; so.root.position.y = e.y; }
@@ -64,6 +78,10 @@ function _applyScene(app, id) {
     if (e.m) app.setMotion(so, e.m);
     list.push(so);
   }
+
+  app.layout?.captureKits(list);
+
+  if(sc.roads) app.roadBrush.restore(sc.roads);
 
   // 目标解析：数字＝物体下标；字符串＝库名 / 物体名（可带序号，如 '轿车 2'）
   const byName = new Map();
@@ -95,6 +113,7 @@ function _applyScene(app, id) {
       name: s.n, focal: s.f || 35, pos: s.from, quat: lookQuat(s.from, s.to), duration: s.d || 8,
     });
     if (!shot) continue;
+    if(sc.authored)shot.showFrustum=false;
     const tgt = resolveTarget(s.t);
     if (s.t != null && !tgt) tgtMiss++;
     if (tgt) { shot.setTarget(tgt); shot.aim = s.aim || 'target'; }
@@ -113,12 +132,17 @@ function _applyScene(app, id) {
 
   // 光影 + 视角
   if (sc.atmos) app.lighting.applyPreset(sc.atmos);
+  if(sc.light){Object.assign(app.lighting.override,sc.light);app.lighting.update();}
+  app.weather.set(sc.weather?.type||null,sc.weather||{});
+  if(sc.authored){app.renderEffects.configure({bloom:sc.bloom},{replace:true});app.state.grid=false;app.stage.setGridVisible(false);app.state.showHelpers=false;}
+  app.bus.emit('weather');
   if (sc.view) {
     app.stage.view.position.fromArray(sc.view.pos);
     app.stage.orbit.target.fromArray(sc.view.target);
+    if(sc.view.fov){app.stage.view.fov=sc.view.fov;app.stage.view.updateProjectionMatrix();}
     app.stage.orbit.update();
   }
-  for (const so of list) if (so) app.refitOne(so, { quiet: true });
+  for (const so of list) if (so && !sc.authored) app.refitOne(so, { quiet: true });
   app.updateAspectOverlay();
   app.bus.emit('objects');
   app.bus.emit('shots');
@@ -136,6 +160,11 @@ function _applyScene(app, id) {
 export function applyScene(app, id) {
   const sc = SCENE_BY_ID[id] || SCENES[0];
   if (!sc) return false;
-  if (app && app.batchOp) return app.batchOp('载入模板 ' + sc.name, () => _applyScene(app, id));
-  return _applyScene(app, id);
+  if (app && app.batchOp) return app.batchOp('载入模板 ' + sc.name, () => _applyScene(app, sc));
+  return _applyScene(app, sc);
+}
+
+/** Internal compiler output only; user AI plans still go through their own strict validator. */
+export function applySceneData(app, scene) {
+  return app.batchOp("一句话配方 " + scene.name, () => _applyScene(app, scene));
 }
