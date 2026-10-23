@@ -43,8 +43,8 @@ try {
   await p.evaluate(()=>{const set=Storage.prototype.setItem;Storage.prototype.setItem=()=>{throw Error('storage unavailable');};try{app.onboarding.start();app.onboarding.close();}finally{Storage.prototype.setItem=set;}});
   await p.evaluate(()=>{app.exporter.running=true;app.onboarding.start();});assert.equal(await p.evaluate(()=>app.onboarding.isOpen),false);await p.evaluate(()=>app.exporter.running=false);
   await p.evaluate(()=>app.onboarding.start());await p.click('.tour-skip');assert.equal(await p.evaluate(()=>app.onboarding.isOpen),false);
-  assert.equal(await p.$$eval('#top button',n=>n.length),7);
+  assert.equal(await p.$$eval('#top button',n=>n.length),10);
   assert.deepEqual(errors,[]);assert.deepEqual(await p.evaluate(()=>__tourCSP),[]);
-  const report={platform:'Linux Chromium (not native Windows UI)',autoFirstVisit:true,skipPersists:true,reopenFromTools:true,steps:titles,backAndNext:true,keyboardTrap:true,escape:true,narrowWindow:true,noSceneChanges:true,noUndoOrSelectionChanges:true,restoresPageLibraryAndView:true,blockedStorageSafe:true,exportGuard:true,topStillSevenButtons:true,errors,csp:await p.evaluate(()=>__tourCSP)};
+  const report={platform:'Linux Chromium (not native Windows UI)',autoFirstVisit:true,skipPersists:true,reopenFromTools:true,steps:titles,backAndNext:true,keyboardTrap:true,escape:true,narrowWindow:true,noSceneChanges:true,noUndoOrSelectionChanges:true,restoresPageLibraryAndView:true,blockedStorageSafe:true,exportGuard:true,sevenCoreButtonsAndThreeThemes:true,errors,csp:await p.evaluate(()=>__tourCSP)};
   fs.writeFileSync(`docs/onboarding-evidence/${mode}.json`,JSON.stringify(report,null,2));console.log('PASS',JSON.stringify(report));
 } finally {await browser.close();}

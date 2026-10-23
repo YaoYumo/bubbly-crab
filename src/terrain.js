@@ -63,7 +63,7 @@ export class Terrain {
     this.generation = cleanGeneration();
     this.enabled = true;
     this.exaggerate = 1;         // 高度夸张（不改变存下来的数据）
-    this.state = { water: true, waterY: 0.06, brushSize: 9, brushStrength: 0.6, brushFalloff: .65, flattenHeight: 0, material: 'grass', maxSlope: 20 };
+    this.state = { water: false, waterY: 0.06, brushSize: 9, brushStrength: 0.6, brushFalloff: .65, flattenHeight: 0, material: 'grass', maxSlope: 20 };
     this.rng = makeRng(20260924);
 
     this._buildMesh();
@@ -178,15 +178,18 @@ export class Terrain {
     this.state.water = force == null ? this.state.water : !!force;
     this.water.visible = this.enabled && this.state.water;
     this.refreshSurface();
+    this.app.bus.emit('terrain');
   }
 
   /** 水面高度（相对平均地面），-999 表示关闭 */
-  setWaterLevel(v) {
+  setWaterLevel(v, { enable = true } = {}) {
+    if (!Number.isFinite(v)) return;
     if (v <= -900) { this.state.water = false; }
-    else { this.state.water = true; this.state.waterY = clamp(v, -6, 30); }
+    else { if (enable) this.state.water = true; this.state.waterY = clamp(v, -6, 30); }
     this.water.position.y = this.state.waterY;
     this.water.visible = this.enabled && this.state.water;
     this.refreshSurface();
+    this.app.bus.emit('terrain');
   }
 
   setResolution(n) {
@@ -278,7 +281,7 @@ export class Terrain {
     this.app.beginOp('生成地形与自动地貌');
     const result=generateHeightfield(this.n,this.size,{kind,amp,seed});
     this.generation=result.settings;this.h=result.h;this.autoSurface.enabled=true;
-    if(result.waterY!==undefined){this.state.water=true;this.state.waterY=result.waterY;this.water.position.y=result.waterY;}
+    if(result.waterY!==undefined){this.state.waterY=result.waterY;this.water.position.y=result.waterY;}
     this.enabled=true;this.refresh();
     this.app.bus.emit('terrain');this.app.bus.emit('objects');this.app.saveLocal?.();
     return true;
@@ -571,7 +574,7 @@ export class Terrain {
     this.state.brushFalloff = clamp(d.brushFalloff ?? .65,.02,1); this.state.flattenHeight = d.flattenHeight ?? 0;
     this.state.material = TERRAIN_MATERIALS.some(m=>m.id===d.material)?d.material:'grass';
     this.enabled = d.enabled !== false;
-    this.state.water = d.water !== false;
+    this.state.water = d.water === true;
     this.state.waterY = d.waterY ?? this.state.waterY;
     this.state.brushSize = d.brushSize ?? this.state.brushSize;
     this.state.brushStrength = d.brushStrength ?? this.state.brushStrength;

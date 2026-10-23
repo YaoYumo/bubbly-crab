@@ -6,7 +6,7 @@ try{
  if(process.env.TEST_FILE_URL)await p.setOfflineMode(true);
  await p.goto(process.env.TEST_FILE_URL||process.env.TEST_URL||'http://localhost:5174/',{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>window.__previzBooted&&window.app?.radialMenu,{timeout:90000});
  await p.evaluate(()=>{app.suspended=true;app.state.playing=false;app.clearAll();app.terrain.setEnabled(false);app.state.showHelpers=false;app.step(0,true);app.stage.render();});
- const top=await p.$$eval('#top button',ns=>ns.map(n=>n.textContent.trim().replace(/^[✦⬇◴]\s*/,'')));
+ const top=await p.$$eval('#top button:not(.skin-dot)',ns=>ns.map(n=>n.textContent.trim().replace(/^[✦⬇◴]\s*/,'')));
  assert.deepEqual(top,['Direct','Scene','Camera','Generate','Export','性能','桌面检查']);
  const rect=()=>p.$eval('#stage canvas',n=>{const r=n.getBoundingClientRect();return{x:r.x,y:r.y,w:r.width,h:r.height};});
  const right=async(x,y)=>{await p.mouse.click(x,y,{button:'right'});await p.waitForSelector('.radial-menu:not([hidden])',{timeout:5000}).catch(async e=>{console.error('RIGHT DEBUG',await p.evaluate(({x,y})=>({x,y,w:innerWidth,hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,200),playing:app.state.playing,dragging:app.stage.dragging,exporting:app.stage.exporting,owner:!!app.stage.exportOwner,busy:app.exporter.running}),{x,y}));throw e;});};
@@ -32,7 +32,7 @@ try{
  const fits=await p.$eval('.radial-menu',n=>{const a=n.getBoundingClientRect(),r=app.stage.canvas.getBoundingClientRect();return a.left>=r.left&&a.top>=r.top&&a.right<=r.right&&a.bottom<=r.bottom;});assert.ok(fits);
  const grid=await p.evaluate(()=>app.state.grid);await choose('grid');assert.equal(await p.evaluate(()=>app.state.grid),!grid);
  await right(r.x+30,r.y+80);await choose('more');await p.waitForSelector('.viewport-tools-panel');
- assert.ok(await p.$('.viewport-tools-panel .skin-wrap'));
+ assert.ok(await p.$('#top > .skin-wrap'));
  await p.click('.viewport-tools-panel button[title="场景"]');
  const templateItem=await p.$$('button.dd-item');for(const item of templateItem){if((await item.evaluate(n=>n.textContent)).includes('示例场景')){await item.click();break;}}
  assert.equal(await p.$('.viewport-tools-mask'),null);assert.ok(await p.$('.menu.scenes.on'));await p.keyboard.press('Escape');

@@ -68,8 +68,10 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       refs.set(f.k, () => sync());
     } else if (f.t === 'bool') {
       const b = el('button', { class: 'sw', type: 'button', onclick: () => { setv(!getv()); sync(); } });
-      sync = () => b.classList.toggle('on', !!getv());
-      input = el('div', { class: 'sw-wrap' }, [b, el('span', { class: 'sw-l', text: f.on || '开' })]);
+      const label = el('span', { class: 'sw-l', text: f.on || '开' });
+      b.setAttribute('role', 'switch'); b.setAttribute('aria-label', f.l);
+      sync = () => { const on=!!getv();b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));if(f.off)label.textContent=on?(f.on||'开'):f.off; };
+      input = el('div', { class: 'sw-wrap' }, [b, label]);
       refs.set(f.k, sync);
     } else if (f.t === 'sel') {
       const s = el('select', {

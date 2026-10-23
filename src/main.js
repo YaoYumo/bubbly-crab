@@ -2,6 +2,7 @@
 // 入口：装配工作台、工具条、快捷键、渲染循环、示例场景
 // ---------------------------------------------------------------------------
 import './styles.css';
+import { installThemeControls } from './theme-ui.js';
 import { installOnboarding } from './onboarding.js';
 import { ModelLibrary } from './model-library.js';
 import { installRadialMenu } from './radial-menu.js';
@@ -50,33 +51,8 @@ const tbtn = (label, { icon, title, onClick, on, cls } = {}) => el('button', {
   onclick: (e) => onClick && onClick(e.currentTarget, e),
 }, [icon ? el('span', { class: 'i', html: icon }) : null, label ? el('span', { class: 't', text: label }) : null]);
 
-/* 品牌 / 皮肤切换：三个实心圆点 */
-const skinWrap = el('div', { class: 'skin-wrap' });
-const SKINS = [
-  { id: 'light', color: '#F4EFE7', border: '#c8c0b4', label: '浅色模式' },
-  { id: 'dark', color: '#282940', border: '#454668', label: '深色模式' },
-  { id: 'custom', color: 'linear-gradient(135deg,#ff6b6b,#4ecdc4,#45b7d1)', border: 'transparent', label: '自定义色彩（开发中）' },
-];
-const skinDots = [];
-function applySkin(id) {
-  if (id === 'custom') { toast('自定义主题开发中'); return; }
-  app.state.skin = id;
-  document.documentElement.dataset.skin = id;
-  skinDots.forEach(d => d.el.classList.toggle('on', d.id === id));
-}
-for (const s of SKINS) {
-  const dot = el('button', {
-    class: 'skin-dot' + (app.state.skin === s.id ? ' on' : ''),
-    type: 'button',
-    title: s.label,
-    style: s.color.startsWith('linear') ? `background:${s.color}` : `background:${s.color};border-color:${s.border}`,
-  });
-  dot.onclick = () => applySkin(s.id);
-  skinDots.push({ id: s.id, el: dot });
-  skinWrap.appendChild(dot);
-}
-app.state.skin = 'light';
-// Theme controls live in the viewport tools dialog, not the minimal top bar.
+/* 主题切换恢复到顶栏左侧，自定义配色独立保存。 */
+installThemeControls(app,top);
 
 /* 胶囊页签 */
 const capsules = el('div', { class: 'capsules' });
@@ -397,7 +373,7 @@ function openViewportTools() {
   app.closeViewportTools=dismiss;
   const close=el('button',{class:'fbtn',type:'button',text:'关闭',onclick:dismiss});
   panel.append(el('header',{},[el('b',{text:'视口工具与工程'}),close]),toolRow,
-    el('div',{class:'viewport-settings'},[el('label',{},['主题',skinWrap]),el('label',{},['变换吸附',snapSel]),el('label',{},['画幅',aspectSel]),el('label',{},['模型精度',detailSel]),el('div',{class:'btnrow'},[undoBtn,redoBtn,el('button',{class:'fbtn',type:'button',text:'新手指引',dataset:{onboardingOpen:'1'},onclick:()=>{app.closeViewportTools?.();app.onboarding?.start();}})])]));
+    el('div',{class:'viewport-settings'},[el('label',{},['变换吸附',snapSel]),el('label',{},['画幅',aspectSel]),el('label',{},['模型精度',detailSel]),el('div',{class:'btnrow'},[undoBtn,redoBtn,el('button',{class:'fbtn',type:'button',text:'新手指引',dataset:{onboardingOpen:'1'},onclick:()=>{app.closeViewportTools?.();app.onboarding?.start();}})])]));
   mask.append(panel);document.body.append(mask);close.focus();
   mask.addEventListener('pointerdown',e=>{if(e.target===mask)dismiss();});
   mask.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dismiss();}if(e.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,[tabindex="0"]')].filter(n=>!n.disabled&&n.getClientRects().length),i=nodes.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();nodes.at(-1)?.focus();}else if(!e.shiftKey&&i===nodes.length-1){e.preventDefault();nodes[0]?.focus();}}});
@@ -490,6 +466,8 @@ buildSceneInspector(app, document.getElementById('inspector-scene'));
   if (libBtn && libBox) {
     const setLib = (open) => {
       libBox.style.display = open ? '' : 'none';
+      libBox.parentElement.classList.toggle('library-open',open);
+      libBtn.setAttribute('aria-expanded',String(open));
       if (libState) libState.textContent = open ? '收起 ▾' : '展开 ▸';
       libBtn.classList.toggle('on', open);
       libBtn.title = open ? '收起模型库' : `展开模型库（${libBox.querySelectorAll('.card').length} 个模型）`;

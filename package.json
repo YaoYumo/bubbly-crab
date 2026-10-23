@@ -1,7 +1,7 @@
 {
   "name": "previz-lab",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.2",
   "type": "module",
   "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
   "scripts": {
@@ -43,7 +43,8 @@
     "test:cn-stairs": "node test/cn-stairs.test.mjs && bash test/withchrome.sh node test/cn-stairs-regression.mjs",
     "test:radial-ui": "node test/radial-menu.test.mjs && bash test/withchrome.sh node test/radial-ui-regression.mjs",
     "test:model-library": "bash test/withchrome.sh node test/model-library-regression.mjs",
-    "test:onboarding": "bash test/withchrome.sh node test/onboarding-regression.mjs"
+    "test:onboarding": "bash test/withchrome.sh node test/onboarding-regression.mjs",
+    "test:workspace-ui": "bash test/withchrome.sh node test/workspace-ui-regression.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.4",

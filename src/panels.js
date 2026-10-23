@@ -902,8 +902,8 @@ function tabTerrain(app, rerender, ctx) {
 
   const g2 = section('水面');
   const f2 = buildForm([
-    { k: 'water', l: '显示水面', t: 'bool', on: '开', set: (v) => { app.beginOp('切换水面');tr.setWater(v); } },
-    { k: 'waterY', l: '水位 m', t: 'range', commit: true, min: -6, max: 24, step: 0.05, set: (v) => { app.beginOp('调整水位与岸带');tr.setWaterLevel(v); } },
+    { k: 'water', l: '显示水面', t: 'bool', on: '开', off: '关', get: () => tr.state.water, set: (v) => { app.beginOp('切换水面');tr.setWater(v); } },
+    { k: 'waterY', l: '水位 m', t: 'range', get: () => tr.state.waterY, commit: true, min: -6, max: 24, step: 0.05, set: (v) => { app.beginOp('调整水位与岸带');tr.setWaterLevel(v, { enable: false }); } },
   ], { water: tr.state.water, waterY: tr.state.waterY }, () => { app.saveLocal(); });
   g2.body.appendChild(f2.root);
   root.appendChild(g2.wrap);

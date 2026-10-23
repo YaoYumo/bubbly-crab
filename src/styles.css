@@ -961,3 +961,28 @@ textarea.prompt{background:var(--bg2);white-space:pre-wrap;font-family:ui-monosp
 .tour-skip:hover{color:var(--acc)}
 .tour-card small{display:block;margin-top:14px;color:var(--fg3);font-size:10px;line-height:1.6}
 .tour-card button:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+
+/* Theme controls remain in the original top-left position. */
+.theme-mask{position:fixed;inset:0;z-index:12000;background:#10122077;display:grid;place-items:center;padding:16px}
+.theme-dialog{width:min(440px,100%);max-height:90dvh;overflow:auto;background:var(--card);color:var(--fg);border:1px solid var(--line2);border-radius:14px;padding:20px;box-shadow:var(--shadow3)}
+.theme-dialog p{font-size:12px;color:var(--fg2)}
+.theme-colors{display:grid;gap:14px;margin:20px 0}
+.theme-colors label{display:flex;align-items:center;gap:12px}
+.theme-colors label>span:first-child{flex:1}
+.theme-colors input{width:48px;height:32px;padding:2px;border:1px solid var(--line2);background:var(--card);cursor:pointer}
+.theme-dialog footer{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+/* Compact group selection + a dedicated scrolling card pane: no sticky overlay. */
+#library-scene,#library{display:flex;flex-direction:column;overflow:hidden;flex:1 1 auto;min-height:0;padding:6px}
+#library-scene .libbar,#library .libbar{position:static;flex:none;padding:0 0 4px;display:grid;gap:4px}
+.library-group-filter{width:100%;min-width:0;height:28px;background:var(--card);color:var(--fg);border:1px solid var(--line2);border-radius:6px;font:inherit;font-size:11px;padding:0 6px}
+.library-toolbar{flex-wrap:nowrap}
+.library-toolbar .fbtn{min-width:0;padding:4px 5px;font-size:10px}
+.library-grid{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;overscroll-behavior:contain;scrollbar-gutter:stable}
+#objlist-scene{flex:1 1 auto;min-height:70px;max-height:none}
+#left-scene.library-open #objlist-scene{flex:0 1 20%;max-height:110px}
+.library-card .ico.library-thumbnail{aspect-ratio:16/9}
+.library-grid{grid-auto-rows:max-content}
+.library-place{gap:4px}
+.library-card{padding:5px}
+.library-card .nm{min-height:26px}
+.library-card-actions{padding-top:3px}

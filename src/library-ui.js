@@ -32,7 +32,7 @@ export function buildModelLibrary(app, host, {categories=[]}={}) {
   const library=app.modelLibrary;
   const thumbs=new LibraryThumbnails(app);
   const state={cat:'all',q:''};
-  const grid=el('div',{class:'grid library-grid'}),chips=el('div',{class:'chips'}),count=el('div',{class:'libcount'});
+  const grid=el('div',{class:'grid library-grid'}),chips=el('select',{class:'library-group-filter','aria-label':'模型分组',onchange:e=>{state.cat=e.target.value;render();grid.scrollTop=0;}}),count=el('div',{class:'libcount'});
   const search=el('input',{class:'search',type:'search',placeholder:'搜索模型或分组…','aria-label':'搜索模型库',oninput:e=>{state.q=e.target.value;render();}});
   const importBtn=el('button',{class:'fbtn',type:'button',text:'导入至分组',dataset:{libraryImport:'1'},onclick:openImport});
   const groupBtn=el('button',{class:'fbtn',type:'button',text:'新建分组',dataset:{libraryNewGroup:'1'},onclick:()=>openGroup()});
@@ -112,7 +112,7 @@ export function buildModelLibrary(app, host, {categories=[]}={}) {
     const thumbnail=el('div',{class:'ico library-thumbnail',html:fallback,dataset:{thumbnail:'pending'}});
     thumbs.watch(thumbnail,item);
     const placeButton=el('button',{class:'library-place',type:'button',title:`${item.name}｜点击放置，或拖入视口${item.description?'｜'+item.description:''}`,'aria-label':'放置 '+item.name,onclick:e=>{e.stopPropagation();place();}},[
-      thumbnail,el('span',{class:'nm',text:item.name}),el('span',{class:'library-kind',text:item.assetId?`用户 · ${item.format}`:'内置模型'}),
+      thumbnail,el('span',{class:'nm',text:item.name}),item.assetId?el('span',{class:'library-kind',text:`用户 · ${item.format}`}):null,
     ]);
     const controls=el('div',{class:'library-card-actions',dataset:{libraryControl:'1'}});
     controls.append(el('button',{class:'library-remove',type:'button',text:item.assetId?'删除':'移除',title:item.assetId?'从分组删除用户模型':'从库中移除（可恢复）','aria-label':(item.assetId?'删除 ':'移除 ')+item.name,onclick:e=>{e.stopPropagation();remove(item);}}));
@@ -132,10 +132,10 @@ export function buildModelLibrary(app, host, {categories=[]}={}) {
   function render(){
     thumbs.reset();clear(grid);clear(chips);
     const all=rows(),q=state.q.trim().toLowerCase(),cats=filters();
-    const mk=(id,text)=>el('button',{class:'chip'+(state.cat===id?' on':''),type:'button',text,dataset:{cat:id},onclick:()=>{state.cat=id;render();}});
+    const mk=(id,text)=>el('option',{value:id,text});
     chips.append(mk('all',`全部 ${all.length}`));
     for(const c of cats)chips.append(mk(c.id,`${c.label} ${all.filter(it=>c.libIds.includes(it.groupId)).length}`));
-    const active=chips.querySelector('.on');if(active)chips.scrollTop=Math.max(0,active.offsetTop-chips.clientHeight/2);
+    chips.value=state.cat;
     const allowed=state.cat==='all'?null:cats.find(c=>c.id===state.cat)?.libIds||[state.cat];
     let shown=0;
     for(const g of library.groups()){

@@ -1,0 +1,60 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import puppeteer from 'puppeteer';
+const browser=await puppeteer.launch({headless:'shell',args:['--no-sandbox','--disable-dev-shm-usage'],protocolTimeout:180000});
+const mode=process.env.TEST_FILE_URL?'file':process.env.TEST_URL?'desktop-csp':'web';
+try{
+ const p=await browser.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.setViewport({width:1568,height:842});
+ await p.evaluateOnNewDocument(()=>{window.__uiCSP=[];document.addEventListener('securitypolicyviolation',e=>__uiCSP.push(e.effectiveDirective));});
+ if(process.env.TEST_FILE_URL)await p.setOfflineMode(true);
+ await p.goto(process.env.TEST_FILE_URL||process.env.TEST_URL||'http://localhost:5174/',{waitUntil:'domcontentloaded'});
+ const boot=()=>p.waitForFunction(()=>window.__previzBooted&&window.app?.modelLibrary,{timeout:90000});await boot();
+ await p.evaluate(()=>{app.suspended=true;app.state.playing=false;});
+ assert.equal(await p.evaluate(()=>app.terrain.state.water),false,'fresh scene water must default off');
+ assert.equal(await p.evaluate(()=>app.terrain.water.visible),false);
+ assert.equal(await p.$$eval('#top > .skin-wrap .skin-dot',ns=>ns.length),3);
+ assert.equal(await p.$eval('#top',n=>n.firstElementChild.className),'skin-wrap');
+ const scene=await p.evaluate(()=>JSON.stringify(app.serialize({assets:false})));
+ await p.click('[aria-label="深色模式"]');assert.equal(await p.evaluate(()=>document.documentElement.dataset.skin),'dark');
+ await p.click('[aria-label="浅色模式"]');assert.equal(await p.evaluate(()=>document.documentElement.dataset.skin),'light');
+ await p.click('[aria-label="自定义主题"]');await p.waitForSelector('.theme-dialog');
+ const setColor=async(key,value)=>p.$eval(`[data-theme-color="${key}"]`,(n,v)=>{n.value=v;n.dispatchEvent(new Event('input',{bubbles:true}));},value);
+ await setColor('accent','#167c88');assert.equal(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()),'#167c88');
+ await p.keyboard.press('Escape');assert.equal(await p.evaluate(()=>document.documentElement.dataset.skin),'light');
+ await p.click('[aria-label="自定义主题"]');await setColor('background','#e4edf3');await setColor('panel','#f8fcff');await setColor('accent','#167c88');await p.click('[data-theme-save]');
+ assert.equal(await p.evaluate(()=>document.documentElement.dataset.skin),'custom');
+ assert.equal(await p.evaluate(()=>JSON.stringify(app.serialize({assets:false}))),scene,'theme must not change project');
+ await p.reload({waitUntil:'domcontentloaded'});await boot();await p.evaluate(()=>app.suspended=true);
+ assert.equal(await p.evaluate(()=>document.documentElement.dataset.skin),'custom');assert.equal(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()),'#167c88');
+ await p.click('[aria-label="自定义主题"]');await setColor('accent','#ee3344');await p.keyboard.press('Escape');assert.equal(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()),'#167c88');
+ await p.click('[aria-label="深色模式"]');assert.notEqual(await p.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--acc').trim()),'#167c88');await p.click('[aria-label="浅色模式"]');
+ if(await p.$eval('#library-scene',n=>n.style.display==='none'))await p.click('#lib-toggle');
+ await p.waitForFunction(()=>document.querySelectorAll('.library-thumbnail[data-thumbnail="ready"]').length>=4,{timeout:90000});
+ if(fs.existsSync('/tmp/fonts/NotoSansSC-Regular.otf')){const data=fs.readFileSync('/tmp/fonts/NotoSansSC-Regular.otf').toString('base64');await p.evaluate(async data=>{const font=new FontFace('Regression CJK',`url(data:font/otf;base64,${data})`);await font.load();document.fonts.add(font);document.body.style.fontFamily='Regression CJK, sans-serif';},data);}
+ const metrics=await p.evaluate(()=>{const g=document.querySelector('#library-scene .library-grid'),r=g.getBoundingClientRect(),bar=document.querySelector('#library-scene .libbar').getBoundingClientRect();return{height:r.height,top:r.top,bottom:r.bottom,barBottom:bar.bottom,visible:[...g.querySelectorAll('.library-card')].filter(n=>{const c=n.getBoundingClientRect();return c.top>=r.top&&c.bottom<=r.bottom;}).length,options:document.querySelector('.library-group-filter').options.length};});
+ assert.ok(metrics.visible>=4,JSON.stringify(metrics));
+ assert.ok(await p.$$eval('.library-card',ns=>ns.every(n=>n.getBoundingClientRect().height>=110)),'Cards must not collapse into overlapping rows');assert.ok(metrics.top>=metrics.barBottom-1);
+ await p.select('.library-group-filter','cn');assert.equal(await p.evaluate(()=>app.lib.state.cat),'cn');assert.ok(await p.$$eval('.library-card',ns=>ns.length)>0);await p.select('.library-group-filter','all');
+ const scrolled=await p.evaluate(()=>{const g=document.querySelector('#library-scene .library-grid'),bar=document.querySelector('#library-scene .libbar'),y=bar.getBoundingClientRect().top;g.scrollTop=g.scrollHeight;const last=g.lastElementChild.getBoundingClientRect(),r=g.getBoundingClientRect();return{topStable:y===bar.getBoundingClientRect().top,lastVisible:last.bottom<=r.bottom+1&&last.top>=r.top,scrolled:g.scrollTop>0};});assert.ok(scrolled.topStable&&scrolled.lastVisible&&scrolled.scrolled);
+ // The compact selector keeps the list usable at short window heights as well.
+ await p.setViewport({width:1024,height:720});await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+ assert.ok(await p.$eval('.library-grid',n=>n.getBoundingClientRect().height>140));await p.setViewport({width:1568,height:842});
+ await p.click('#inspector-scene .itabs button:nth-child(2)');
+ await p.evaluate(()=>{const row=document.querySelector('#inspector-scene [data-field="water"]');if(row.closest('.sec').classList.contains('closed'))row.closest('.sec').querySelector('.sec-h').click();});
+ const toggle='#inspector-scene [data-field="water"] .sw';
+ for(const on of [true,false,true,false]){await p.click(toggle);assert.equal(await p.evaluate(()=>app.terrain.state.water),on);assert.equal(await p.$eval(toggle,n=>n.getAttribute('aria-checked')),String(on));assert.equal(await p.evaluate(()=>app.terrain.water.visible),on&&await p.evaluate(()=>app.terrain.enabled));}
+ await p.$eval('#inspector-scene [data-field="waterY"] input.num',n=>{n.value='1.25';n.dispatchEvent(new Event('change',{bubbles:true}));});
+ assert.equal(await p.evaluate(()=>app.terrain.state.waterY),1.25);assert.equal(await p.evaluate(()=>app.terrain.state.water),false,'editing a level must not re-enable water');
+ await p.click(toggle);await p.evaluate(()=>app.undo());assert.equal(await p.evaluate(()=>app.terrain.state.water),false);await p.evaluate(()=>app.redo());assert.equal(await p.evaluate(()=>app.terrain.state.water),true);assert.equal(await p.$eval(toggle,n=>n.getAttribute('aria-checked')),'true');
+ await p.evaluate(async()=>{app.terrain.setWater(true);await app.saveLocal();});
+ await p.reload({waitUntil:'domcontentloaded'});await boot();await p.evaluate(()=>app.suspended=true);assert.equal(await p.evaluate(()=>app.terrain.state.water),true,'saved explicit water setting must survive');
+ await p.evaluate(()=>{const t=app.terrain;t.setWater(false);t.generate('island',2,123);});assert.equal(await p.evaluate(()=>app.terrain.state.water),false,'generation must not silently re-enable water');
+ await p.evaluate(()=>{const t=app.terrain,d=t.toJSON();delete d.water;t.fromJSON(d);});assert.equal(await p.evaluate(()=>app.terrain.state.water),false,'missing legacy flag defaults off');
+ if(await p.$eval('#library-scene',n=>n.style.display==='none'))await p.click('#lib-toggle');
+ await p.waitForFunction(()=>document.querySelectorAll('.library-thumbnail[data-thumbnail="ready"]').length>=4,{timeout:90000});
+ await p.evaluate(()=>{app.step(0,true);app.stage.render();});
+ fs.mkdirSync('docs/workspace-ui-evidence',{recursive:true});await p.screenshot({path:`.shots/workspace-ui-${mode}.png`});
+ assert.deepEqual(errors,[]);assert.deepEqual(await p.evaluate(()=>__uiCSP),[]);
+ const report={platform:'Linux Chromium, not native Windows',themeControlsTopLeft:true,customPreviewCancelSaveReload:true,themeDoesNotChangeProject:true,library:metrics,scroll:scrolled,shortWindow:true,waterDefaultsOff:true,repeatedWaterToggle:true,levelDoesNotEnableWater:true,waterUndoRedoAndSavedSetting:true,generationRespectsWaterOff:true,missingLegacyFlagOff:true,errors,csp:await p.evaluate(()=>__uiCSP)};
+ fs.writeFileSync(`docs/workspace-ui-evidence/${mode}.json`,JSON.stringify(report,null,2)+'\n');console.log('PASS',JSON.stringify(report));
+}finally{await browser.close();}
