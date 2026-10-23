@@ -124,7 +124,9 @@ export function buildModelLibrary(app, host, {categories=[]}={}) {
       }});
       for(const g of library.groups())move.append(el('option',{value:g.id,text:g.cat}));move.value=item.groupId;controls.prepend(move);
     }
-    return el('article',{class:'card library-card',draggable:true,'data-asset-key':item.key,onclick:e=>{if(e.target===e.currentTarget)place();},ondragstart:e=>{
+    // draggable is an enumerated HTML attribute: an empty value means auto,
+    // unlike Boolean attributes. Use the literal string so pointer drags start.
+    return el('article',{class:'card library-card',draggable:'true','data-asset-key':item.key,onclick:e=>{if(e.target===e.currentTarget)place();},ondragstart:e=>{
       if(e.target.closest('[data-library-control]')){e.preventDefault();return;}
       e.dataTransfer.setData('text/asset',item.key);e.dataTransfer.effectAllowed='copy';
     }},[placeButton,controls]);
