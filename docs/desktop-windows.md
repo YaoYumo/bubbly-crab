@@ -2,7 +2,26 @@
 
 # Windows 轻量桌面版：Tauri 2 预检工程
 
-## 下载并安装：1.3.0 本地模型对话版
+## 下载并安装：1.3.1 ASProxy 网络组件兼容修订
+
+[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39919645702/artifacts/12487271269)（可能需要登录 GitHub；附件保留至 2027-01-21）。
+
+1. 建议先重启 Windows，清理 1.3.0 崩溃后可能残留的 `llama-server.exe`，避免显存占用或安装文件被锁住。
+2. 解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.3.1_x64-setup.exe`，覆盖安装到原目录。**不要直接运行 ZIP 中的裸应用 EXE。两个 GGUF 无需重下、合并、改名或搬动。** 升级前仍建议另存备份重要 `.previz` 工程。
+3. 按原方式打开“一句话生成”，先发送“放一座中式大殿”检查。不要求关闭 VPN、不改系统网络或注册表，也不强制切换 CPU。
+
+修订依据：用户的 1.3.0 Windows 记录为 `ASProxy64.dll 2.3.6.3 / 0xC0000005 / +0xC274`；模型日志已显示加载完成并开始监听。相关公开兼容报告：[5](https://github.com/freeok/so-novel/issues/279)。本次隔离本地模型通信触发路径，不把它误诊为缺失模型或直接归因显存不足。
+
+- 端口分配、健康检查和 OpenAI-compatible 请求现在由固定随包 `previz-loopback.exe` 执行，使用阻塞 TCP；GUI 只读写有界 stdio 管道，不在本地模型路径创建 Winsock/Tokio TCP 对象。辅助进程异常退出将返回错误，取消/超时会回收进程。
+- 辅助进程只访问 127.0.0.1 的两个固定端点，不执行 arbitrary URL、shell、外部脚本，不跟随重定向，不读取代理配置。令牌/提示词经 stdin 传入，不放入辅助进程命令行。
+- [Windows run 39919645702](https://github.com/YaoYumo/bubbly-crab/actions/runs/39919645702) / job `120301503253` 全部成功；源码 `cda4b6404076bf5a38470e45303011d65bf3f9f2`。10项独立通信 Rust 单测、4项消息/模型边界单测、原生编译/NSIS、实际安装后原生辅助进程的中文 JSON 回传/分块响应/无代理环境依赖/拒绝重定向/超时/子进程结束测试，以及模型目录用户文件重装保留与主窗口启动检查通过。
+- 通信测试使用本机 HTTP fixture；终止子进程测试的宿主是测试进程。**没有在 CI 注入用户的 ASProxy DLL，没有复现用户原生崩溃，也没有加载真实 Qwen 权重；不能宣称已在用户环境验证闪退消失或验证完整原生 GUI 交互。** 需要升级后在原环境重试。前端模拟推理对话与模型拖拽回归通过；15个前端文件路径、大小和 SHA256 与实际 Windows 包逐项一致。
+- 安装器 **20,944,952 bytes**；SHA256 `b32be9285628237687d6e6bed29f7e6505e993c42c76831a6c8199d90524aaf2`。
+- ZIP **23,505,047 bytes**；GitHub 上传摘要 `5d237ac9ca99080c043ee4a2150e2a1728df7a8c732b7c35121f76f4ddbdb306`。仍未签名，不含模型权重；未在沙箱另行下载二进制做第二次独立哈希校验。
+
+证据：[Windows 步骤](desktop-1.3.1-evidence/windows-run.json)、[完整清单](desktop-1.3.1-evidence/windows-artifacts.json)、[安装后本机通信](desktop-1.3.1-evidence/loopback-installed.json)、[安装与重装](desktop-1.3.1-evidence/windows-install-smoke.json)、[附件元数据](desktop-1.3.1-evidence/artifact-metadata.json)、[验收边界](desktop-1.3.1-evidence/verification.json)。代码和文档已推当前开发分支，未合并 main 或发布 Release。
+
+## 1.3.0 本地模型对话版（历史，ASProxy 兼容问题请升级 1.3.1）
 
 [下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089/artifacts/12483458580)（可能需要登录 GitHub；附件保留至 2027-01-21）。
 

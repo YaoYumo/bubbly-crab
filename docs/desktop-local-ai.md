@@ -1,6 +1,6 @@
 # Windows 1.3.1：本地模型一句话搭景与对话修改
 
-[下载 Windows 1.3.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089/artifacts/12483458580) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.3.1 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/39919645702/artifacts/12487271269) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 
@@ -32,7 +32,7 @@ Rust 只执行随包固定的 `runtime/llama/llama-server.exe`，只从安装目
 
 ## 开发与验收说明
 
-Windows 源码打包前运行 `powershell -NoProfile -File scripts/prepare-desktop-engine.ps1` 和 `powershell -NoProfile -File scripts/prepare-desktop-loopback.ps1`，再运行 `npm run desktop:build`。推理二进制只由脚本/CI准备，不提交到 Git，不把模型权重打包。
+Windows 源码打包使用 PowerShell 7（pwsh），打包前运行 `pwsh -NoProfile -File scripts/prepare-desktop-engine.ps1` 和 `pwsh -NoProfile -File scripts/prepare-desktop-loopback.ps1`，再运行 `npm run desktop:build`。推理二进制只由脚本/CI准备，不提交到 Git，不把模型权重打包。
 
 `test/local-scene-chat-regression.mjs` 在实际桌面构建+CSP预览中使用 **模拟原生推理 IPC**，覆盖直接搭建、混合增改、一次撤销、非法/越权/不支持拒绝、大删确认、取消、文件夹按钮。它不代表真实 GGUF 推理成功。Windows CI另执行引擎 `--version`、Rust边界单元测试、原生编译、安装与窗口启动。**上述测试都不等于 4070 Ti 上 Qwen 的速度、显存占用或语义理解已实测。** 这些需要用户机器上的完整权重和实际场景验证。
 
@@ -42,4 +42,4 @@ Windows 源码打包前运行 `powershell -NoProfile -File scripts/prepare-deskt
 
 1.3.1 不修改或卸载第三方软件，不删除 DLL、不重置 Winsock、不写代理排除注册表，不自动切换 CPU 或改变模型量化。修订的目标是移除 GUI 中本地模型网络 I/O 的触发路径，并隔离辅助进程的原生崩溃。即使辅助进程仍被不兼容 DLL 影响，也应返回错误而非因该进程的访问冲突带走 GUI。
 
-编译/安装检查不会在 CI 中注入 Astrill DLL，也不会加载用户的 Qwen 权重，不能宣称用户故障已实机复现或消失。升级后仍需用户在原环境重试。
+编译/安装检查不会在 CI 中注入 Astrill DLL，也不会加载用户的 Qwen 权重，不能宣称用户故障已实机复现或消失。升级后仍需用户在原环境重试。建议升级前重启 Windows，清理旧版异常退出后可能残留的推理进程，避免显存占用或文件锁定；然后覆盖安装到原目录，两个 GGUF 保持原样。
