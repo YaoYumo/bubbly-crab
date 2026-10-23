@@ -74,6 +74,21 @@ const raised = await compileConversationTerrain(t, doc(t), {
 assert.equal(raised.heightAt(0, 0), 5);
 assert.equal(raised.heightAt(70, 70), 0);
 assert.deepEqual(t.h, before);
+const disabled = make();
+disabled.enabled = false;
+disabled.h[0] = 10;
+const off = await compileConversationTerrain(
+  disabled,
+  doc(disabled),
+  { water: { enabled: false } },
+  {
+    protect: () => {
+      throw Error("must not reveal hidden heights");
+    },
+  },
+);
+assert.equal(off.document.enabled, false);
+assert.equal(off.heightAt(-80, -80), 0);
 const flat = await compileConversationTerrain(t, doc(t), {
   generate: { kind: "flat", height: 3 },
 });

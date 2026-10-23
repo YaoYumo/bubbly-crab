@@ -1,27 +1,27 @@
 {
   "sourceCommit": null,
   "cargoLock": null,
-  "frontendBytes": 2862293,
+  "frontendBytes": 2862446,
   "frontend": [
     {
-      "path": "desktop/dist/assets/FBXLoader-7ZalGz9_.js",
+      "path": "desktop/dist/assets/FBXLoader-Ddtgrw6-.js",
       "bytes": 47775,
-      "sha256": "c0ae059c74eb0ebaed3078abcdea6faffa62a98ac6d16b527531eaa97b2094eb"
+      "sha256": "5ee93c798d3b6b829551d10b0d682c01a8931b77c0e62042759da5581a7a121c"
     },
     {
-      "path": "desktop/dist/assets/GLTFLoader-D6ANH4mf.js",
+      "path": "desktop/dist/assets/GLTFLoader-JXugJnsj.js",
       "bytes": 44891,
-      "sha256": "3a334e15dbbb63ca7b2732326bdc2bcfaec148e175cc22a1f2331fe53ab2ab55"
+      "sha256": "a4a08cad5eb2d263e3a827c11d93c37688ee5099f350546ac2be0850af154698"
     },
     {
-      "path": "desktop/dist/assets/MTLLoader-DMcqaSwi.js",
+      "path": "desktop/dist/assets/MTLLoader-DkwuWA6r.js",
       "bytes": 4112,
-      "sha256": "11ea67a6232a2a829da42f4b5e4be6aadbb73529c5d883227ca8cdf552a90d16"
+      "sha256": "f2e11e2e44079b1eeff555d79da8374d7150e11213adbdc67270cc20abd3867b"
     },
     {
-      "path": "desktop/dist/assets/OBJLoader-BpsZOL56.js",
+      "path": "desktop/dist/assets/OBJLoader-CxkPboWt.js",
       "bytes": 8741,
-      "sha256": "88df44e26bc2b95862d0b064553b056acb2d76238e69bdc30adc614f52d58d44"
+      "sha256": "83e34158ced077ecd5413ee2fb57fea924589c33570f33ef66e8d1c60a102900"
     },
     {
       "path": "desktop/dist/assets/core-B9ij_roJ.js",
@@ -34,9 +34,9 @@
       "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
     },
     {
-      "path": "desktop/dist/assets/index-CXf5031w.js",
-      "bytes": 2525695,
-      "sha256": "93037fa6d7eb0a0e51c7de48446b59af79862d397da6357dc330f680719df887"
+      "path": "desktop/dist/assets/index-C_GS9u_D.js",
+      "bytes": 2525848,
+      "sha256": "1b06c030d19ae1763378accea2f50af676ebae6b83897d828eaea03f0ede4f2c"
     },
     {
       "path": "desktop/dist/assets/index-CqAuepLP.css",
@@ -76,7 +76,7 @@
     {
       "path": "desktop/dist/index.html",
       "bytes": 6228,
-      "sha256": "b21e2f7fcf851ef9b3b5c08ba9e5497d48b013213ca02255d5f6b035bd0340b6"
+      "sha256": "5436298bb5aaa5082ae66e8d0619adacb26e59f8bcb9a8966b04225125c2106e"
     }
   ],
   "installers": [],

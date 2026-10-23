@@ -180,8 +180,6 @@ export async function compileConversationTerrain(
     actions = [];
   let heightChanged = false,
     overwrite = false;
-  if (!terrain.enabled && terrain.h.some((v) => Math.abs(v) > 0.005))
-    protect(null);
   if (p.generate) {
     protect(null);
     const g = p.generate;
@@ -332,12 +330,20 @@ export async function compileConversationTerrain(
     actions.push(p.water.enabled ? "开启全局水面" : "关闭全局水面");
   }
   doc.size = size;
-  doc.enabled = true;
+  doc.enabled = terrain.enabled || heightChanged;
+  if (
+    !terrain.enabled &&
+    heightChanged &&
+    terrain.h.some((v) => Math.abs(v) > 0.005)
+  )
+    protect(null);
+  if (p.water?.enabled && !doc.enabled)
+    warnings.push("当前地形关闭，水面设置已保存但尚不显示；可继续要求生成地形");
   doc.h32 = packFloat32(h);
   delete doc.h64;
   doc.workflow = { ...doc.workflow, precise: true, rivers };
   const heightAt = (x, z) =>
-    sampleGrid(h, n, n, x / size + 0.5, z / size + 0.5) * ex;
+    doc.enabled ? sampleGrid(h, n, n, x / size + 0.5, z / size + 0.5) * ex : 0;
   if (p.groundObjects) actions.push("原静态物体贴地");
   if (!actions.length) throw Error("没有可执行的地形操作");
   return {
