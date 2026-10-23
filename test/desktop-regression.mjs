@@ -80,9 +80,11 @@ try {
       if (this.hasAttribute("download")) __anchorDownloads++;
       return click.call(this);
     };
+    app.openViewportTools();
     [...document.querySelectorAll("button.dd-item")]
       .find((n) => n.textContent.includes("保存工程"))
       .click();
+    document.querySelector(".viewport-tools-panel header button")?.click();
   });
   await page.waitForFunction(
     () =>
@@ -436,9 +438,11 @@ try {
     __mockNative.mode = "gate";
     __mockNative.release = null;
     app.projectName = "desktop-roundtrip";
+    app.openViewportTools();
     [...document.querySelectorAll("button.dd-item")]
       .find((n) => n.textContent.includes("保存工程"))
       .click();
+    document.querySelector(".viewport-tools-panel header button")?.click();
   });
   await page.waitForFunction(() => typeof __mockNative.release === "function");
   assert.equal(

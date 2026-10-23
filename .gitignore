@@ -43,3 +43,6 @@ local-ai/logs/**
 src-tauri/target/
 src-tauri/gen/
 desktop/dist/
+
+# Reproducible, user-facing model exports (not source-controlled assets)
+model-exports/

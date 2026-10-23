@@ -32,8 +32,9 @@ try {
     app._quietAdd = true;
   });
   const open = async (text) => {
-    await page.click('#top button[title^="一句话生成街区"]');
+    await page.click('.viewport-create');
     await page.waitForSelector(".tg-mask.on");
+    await page.click(".tg-advanced > summary");
     await page.$eval(
       ".tg-input",
       (e, text) => {

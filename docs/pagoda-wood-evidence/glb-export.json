@@ -1,0 +1,12 @@
+{
+  "file": "model-exports/Pagoda-wood.glb",
+  "bytes": 4043268,
+  "sha256": "0e0f91cd65353d107f951d52ab4ee3d180bd0101cfc4f407c843713af61db3a9",
+  "triangles": 34392,
+  "meshes": 9,
+  "textured": 9,
+  "appImport": true,
+  "appImportedTextured": 9,
+  "externalResources": 0,
+  "nativeWindowsTested": false
+}

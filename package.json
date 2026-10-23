@@ -1,7 +1,7 @@
 {
   "name": "previz-lab",
   "private": true,
-  "version": "1.1.1",
+  "version": "1.2.0",
   "type": "module",
   "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
   "scripts": {
@@ -37,7 +37,13 @@
     "test:desktop": "node test/desktop.test.mjs",
     "test:desktop:browser": "bash test/withchrome.sh node test/desktop-regression.mjs",
     "test:camera-edit": "node test/camera-edit.test.mjs && bash test/withchrome.sh node test/camera-edit-regression.mjs",
-    "test:timeline-ui": "bash test/withchrome.sh node test/timeline-usability-regression.mjs"
+    "test:timeline-ui": "bash test/withchrome.sh node test/timeline-usability-regression.mjs",
+    "test:pagoda": "node test/pagoda.test.mjs && bash test/withchrome.sh node test/pagoda-regression.mjs",
+    "test:pagoda:wood": "node test/pagoda-wood.test.mjs && bash test/withchrome.sh node test/pagoda-wood-regression.mjs",
+    "test:cn-stairs": "node test/cn-stairs.test.mjs && bash test/withchrome.sh node test/cn-stairs-regression.mjs",
+    "test:radial-ui": "node test/radial-menu.test.mjs && bash test/withchrome.sh node test/radial-ui-regression.mjs",
+    "test:model-library": "bash test/withchrome.sh node test/model-library-regression.mjs",
+    "test:onboarding": "bash test/withchrome.sh node test/onboarding-regression.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.4",

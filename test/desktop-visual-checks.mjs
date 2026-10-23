@@ -25,7 +25,9 @@ export async function inspectDesktopVisuals(page) {
       };
     };
     try {
+      a.openViewportTools?.();
       const themes = [...document.querySelectorAll(".skin-dot")].map(color);
+      document.querySelector(".viewport-tools-panel header button")?.click();
       a.clearAll();
       a.terrain.setEnabled(false);
       a.state.showHelpers = true;

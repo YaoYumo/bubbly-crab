@@ -1,0 +1,52 @@
+{
+  "format": 1,
+  "sourceFile": "Pagoda.gltf",
+  "sourceSHA256": "e4d508a51cc1cccec89e1c7101cf362a5d28e0d9ce4b9b5d0d2e7f7f3318be1e",
+  "sourceBounds": {
+    "min": [
+      -6.651932746171951,
+      -0.0022584543087614648,
+      -9.48747960049033
+    ],
+    "max": [
+      6.651932746171951,
+      23.900000951213027,
+      9.487479685408884
+    ],
+    "size": [
+      13.303865492343903,
+      23.90225940552179,
+      18.974959285899214
+    ]
+  },
+  "sourceNodes": 540,
+  "sourceMeshes": 531,
+  "triangles": 34392,
+  "vertices": 103176,
+  "materialsInSource": 0,
+  "texturesInSource": 0,
+  "animationsInSource": 0,
+  "drawMeshes": 1,
+  "attributes": {
+    "position": {
+      "offset": 0,
+      "length": 309528,
+      "itemSize": 3
+    },
+    "normal": {
+      "offset": 1238112,
+      "length": 309528,
+      "itemSize": 3
+    },
+    "uv": {
+      "offset": 2476224,
+      "length": 206352,
+      "itemSize": 2
+    }
+  },
+  "rawBytes": 3301632,
+  "compressedBytes": 281381,
+  "packedSHA256": "02f98aaa66128df29201342d0a8ea676d9fb490fee19956684277d94c1fc56af",
+  "normalization": "center X/Z and bottom Y=0; source axes and proportions retained; no polygon reduction",
+  "license": "User supplied. Redistribution permission has not been verified; not a public-release license grant."
+}

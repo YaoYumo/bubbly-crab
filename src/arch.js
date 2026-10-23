@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { M, shade, box, cyl, sph, planeXZ, cone, row, ring, seg, curvedRoof, ridgeOrnament, dougong, roofSurf, eaveCornice, hipRidge, cnRoofY, jinRoofY, stoneRail, caihua, plaque, plaqueTex, batch, mergeSimilar, bakeMerge, gableSlabs, windBell, chiwen, benchRail, archFace, baoguShi } from './geo.js';
 import { clamp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
+import { addStairCheek } from './cn-stairs.js';
 
 /** 中式构件收尾：贴程序化表面 + 把重复小件合成实例（draw call 省 5～10 倍） */
 function cnShade(g) {
@@ -92,7 +93,11 @@ function buildHall(p) {
     const nUp = multi ? clamp(Math.round((ph - walk2) / stH) + 2, 2, n) : n;   // +2 级尾端埋进落脚层，行走面边缘不露缝
     for (const sx of [1, -1]) {
       for (let i = 0; i < nUp; i++) g.add(box(sw * 0.44, stH, run, stone, sx * (sw * 0.3), ph - stH * (i + 0.5), pd / 2 - 0.14 + i * run));   // i=0 顶级咬入台基 face，向外逐级降（旧版反向）
-      g.add(box(sw * 0.1, ph * 0.9, n * run * 1.02, stone, sx * (sw * 0.56), ph * 0.45, pd / 2 - 0.14 + n * run * 0.5, 0.03));   // 垂带石
+      const landing = multi ? walk2 : 0;
+      const visible = Math.max(1, Math.ceil((ph - landing) / stH - 1e-6));
+      // Sloping coping follows the tread noses; stop at this flight's landing, not the ground below other tiers.
+      addStairCheek(g,{x:sx*sw*.56,zHigh:pd/2-.14-run/2,zLow:pd/2-.14+(visible-.5)*run,
+        yHigh:ph+stH+.08,yLow:ph-(visible-1)*stH+.08,baseY:landing,width:sw*.1,material:stone});
     }
     if (!multi) {                                                     // 单层台基（hall2 等）：保留旧版整跑御路直达地坪
       const L = Math.hypot(ph, n * run);
@@ -116,6 +121,8 @@ function buildHall(p) {
         for (const sx of [1, -1]) {
           g.add(box(sw * 0.44, topA - walk1, run, stone, sx * (sw * 0.3), (topA + walk1) / 2, zA0 + run * 0.5));
           g.add(box(sw * 0.44, topB - walk1, run, stone, sx * (sw * 0.3), (topB + walk1) / 2, zA0 + run * 1.5));
+          addStairCheek(g,{x:sx*sw*.56,zHigh:zA0,zLow:zA0+2*run,
+            yHigh:topA+drop2+.06,yLow:topB+.06,baseY:walk1,width:sw*.1,material:stone});
         }
         // 下跑御路[19]：从行走面沿边跨过下跑降到散水，前后端各咬入 ~7cm
         const yB = walk2 - 0.075, yF = walk1 - 0.07, run2 = 1.42;
@@ -853,8 +860,9 @@ function buildGate(p) {
     for (let i = 1; i < n; i++) rampB.push({ p: [W / 2 + 1.15, stH * i / 2, D / 2 - 0.3 - (n - i) * 0.44], s: [2.5, stH * i + 0.02, 0.44] });   // 踏步下实心梯体（旧版楼梯下面是空的）
     const rb = batch(new THREE.BoxGeometry(1, 1, 1), stone, rampB);
     if (rb) g.add(rb);
-    g.add(box(0.35, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 0.12, H * 0.47, D / 2 - n * 0.22 - 0.3));
-    g.add(box(0.3, H * 0.94, n * 0.44 + 0.3, stone, W / 2 + 2.4, H * 0.47, D / 2 - n * 0.22 - 0.3));
+    for(const [x,width] of [[W/2+.12,.35],[W/2+2.4,.3]])
+      addStairCheek(g,{x,width,zHigh:D/2-.52,zLow:D/2-.3-(n+.5)*.44,
+        yHigh:H+stH+.08,yLow:stH+.08,material:stone});
     g.add(box(3.6, 0.26, 2.0, stone, W / 2 + 0.7, H + 0.13, D / 2 - 0.74 - 1.0));          // 马道顶平台：搭接城顶与梯头（旧版梯顶悬断）
     for (const sx of [1, -1]) g.add(box(0.24, 0.62, 2.0, stone, W / 2 + 0.7 + sx * 1.7, H + 0.44, D / 2 - 0.74 - 1.0));
     g.add(box(3.6, 0.62, 0.24, stone, W / 2 + 0.7, H + 0.44, D / 2 - 0.74 - 2.0 + 0.12));
@@ -965,9 +973,8 @@ function buildCityWall(p) {
     g.add(box(2.6, 0.26, 1.6, stone2, L / 2 - 2.4, H + 0.13, T / 2 - 0.6));                 // 步梯顶平台接通城顶
     for (const sx of [1, -1]) g.add(box(0.22, 0.6, 1.6, stone, L / 2 - 2.4 + sx * 1.2, H + 0.42, T / 2 - 0.6));
     for (const sz of [1, -1]) {
-      const wall2 = box(0.26, H * 0.9, nS * 0.42 + 0.8, stone, L / 2 - 2.4 + sz * 1.0, H * 0.45, T / 2 + 0.21 + (nS - 1) * 0.21);
-      wall2.rotation.y = 0;
-      g.add(wall2);
+      addStairCheek(g,{x:L/2-2.4+sz*1.0,width:.26,zHigh:T/2,zLow:T/2+nS*.42,
+        yHigh:H+stH+.08,yLow:stH+.08,material:stone});
     }
   }
   if (p.tower) {                                                      // 敌台（台体 + 券窗 + 一层楼 + 顶）
@@ -1475,7 +1482,17 @@ function buildEarthTerrace(p) {
   const jb = batch(new THREE.BoxGeometry(1, 1, 1), M.stone(0x8f8a80, 0.9), joints);
   if (jb) g.add(jb);
   if (p.rail !== false) {                                                                     // 顶面宇墙栏杆（坐墁砖面）
-    for (const sz of [1, -1]) { const r1 = stoneRail({ len: W - 0.5, h: 0.55, y: H + 0.16, mat: stone2 }); r1.position.z = sz * (D / 2 - 0.16); g.add(r1); }
+    for (const sz of [1, -1]) {
+      if(sz===1 && p.stairs!==false) {
+        // Leave a real stair opening; do not cap the newly sloping approach with a transverse rail.
+        const gap=3.2,len=(W-.5-gap)/2;
+        for(const sx of [-1,1]) {
+          const x=sx*(gap/2+len/2);
+          if(len>=.6){const r=stoneRail({len,h:.55,y:H+.16,mat:stone2});r.position.set(x,0,D/2-.16);g.add(r);}
+          else g.add(box(Math.max(.1,len),.5,.22,stone2,x,H+.41,D/2-.16));
+        }
+      } else {const r1=stoneRail({len:W-.5,h:.55,y:H+.16,mat:stone2});r1.position.z=sz*(D/2-.16);g.add(r1);}
+    }
     for (const sx of [1, -1]) { const r2 = stoneRail({ len: D - 0.5, h: 0.55, y: H + 0.16, mat: stone2, axis: 'z' }); r2.position.x = sx * (W / 2 - 0.16); g.add(r2); }
   }
   const nc = clamp(Math.round(num(p.cols, 6)), 0, 12);
@@ -1484,14 +1501,15 @@ function buildEarthTerrace(p) {
     g.add(box(0.66, 0.14, 0.66, stone2, cx, H + 0.23, cz));
     g.add(cyl(0.26, 0.3, 0.42, stone2, seg(10), cx, H + 0.51, cz));
   }
-  if (p.stairs !== false) {                                                                   // 登台阶梯：踏步 + 实心梯体 + 夹墙
+  if (p.stairs !== false) {                                                                   // 登台阶梯：踏步 + 实心梯体 + 顺坡垂带石
     const n = clamp(Math.round(H / 0.3), 4, 26), stH = H / n;
     const st = [];
     for (let i = 0; i < n; i++) st.push({ p: [0, stH * (i + 0.5), D / 2 + 0.1 + (n - 1 - i) * 0.4], s: [2.4, stH, 0.42] });
     for (let i = 1; i < n; i++) st.push({ p: [0, stH * i / 2, D / 2 + 0.1 + (n - 1 - i) * 0.4], s: [2.4, stH * i + 0.02, 0.42] });   // 踏步下实心（防"楼梯下空"）
     const sb = batch(new THREE.BoxGeometry(1, 1, 1), stone2, st);
     if (sb) g.add(sb);
-    for (const sx of [1, -1]) g.add(box(0.24, H * 0.82, n * 0.4 + 0.7, stone2, sx * 1.44, H * 0.41, D / 2 + 0.1 + (n - 1) * 0.2));
+    for (const sx of [1, -1]) addStairCheek(g,{x:sx*1.44,width:.24,zHigh:D/2-.11,zLow:D/2+.31+(n-1)*.4,
+      yHigh:H+stH+.08,yLow:stH+.08,material:stone2});
   }
   const ties = [];                                                                            // 夯土墙筋（木骨）：嵌进斜面 0.4m、露头 7cm
   for (const fy of [0.45, 0.62, 0.79]) for (const tz of [-0.25, 0, 0.25]) {

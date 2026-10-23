@@ -11,6 +11,7 @@ import { GROUPS as GROUPS_ARCH } from './arch.js';
 import { GROUPS as GROUPS_NATURE } from './nature.js';
 import { GROUPS as GROUPS_PROPS } from './props.js';
 import { SHOWCASE_GROUPS } from './showcase-assets.js';
+import { USER_MODEL_GROUPS, PAGODA_WOOD_ITEM } from './user-models.js';
 import { GROUPS_CITY } from './city.js';   // 城市建筑/环境/人物（纯追加组，不改既有 16 组；见 city.js 头注）
 
 // 材质工厂与 shade：抽到叶子模块 mat.js（断 assets→city→character→assets 导入环，
@@ -3379,7 +3380,9 @@ const LIB_AM = [
 ];
 
 // 素材库 = 美式 64 款 + 建筑构件 / 中式古建 / 美式经典 / 室内 / 自然 / 战争 / 星际 / 玄幻特效
-export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS, ...SHOWCASE_GROUPS];
+export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS, ...SHOWCASE_GROUPS, ...USER_MODEL_GROUPS].map(group => group.id === 'cn'
+  ? {...group,items:group.items.flatMap(item => item.type === 'pagoda' ? [item,PAGODA_WOOD_ITEM] : [item])}
+  : group);
 
 export const LIB_INDEX = new Map();
 for (const grp of LIB) for (const it of grp.items) LIB_INDEX.set(`${grp.id}:${it.type}:${it.name}`, { ...it, cat: grp.cat, catId: grp.id });

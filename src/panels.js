@@ -1,3 +1,4 @@
+import { buildModelLibrary } from './library-ui.js';
 import { DESKTOP_BUILD } from './desktop-runtime.js';
 // ---------------------------------------------------------------------------
 // 面板：素材库 / 场景列表 / 右侧检查器（物体 · 运镜 · 光影 · 导出）
@@ -152,73 +153,9 @@ export const ICON = {
 };
 const svg = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICON[k] || ICON.crate}</svg>`;
 
-// ---------------------------------------------------------------------------
+// Shared catalog renderer: the Scene and optional Direct library use identical cards.
 export function buildLibrary(app, host) {
-  // 默认「全部」：所有分类的模型都在素材库里带标题分组显示，不依赖示例场景模板
-  const total = LIB.reduce((a, g) => a + g.items.length, 0);
-  const state = { cat: 'all', q: '' };
-  const grid = el('div', { class: 'grid' });
-  const count = el('div', { class: 'libcount' });
-  const search = el('input', { class: 'search', type: 'search', placeholder: `搜索 ${total} 个模型：宫殿 / 坦克 / 沙发 / 山峰…`, oninput: (e) => { state.q = e.target.value; render(); } });
-  const chips = el('div', { class: 'chips' });
-  const mk = (id, l) => el('button', { class: 'chip' + (state.cat === id ? ' on' : ''), type: 'button', text: l, title: '只看这一类', dataset: { cat: id }, onclick: () => { state.cat = id; render(); } });
-  chips.appendChild(mk('all', `全部 ${total}`));
-  for (const g of LIB) chips.appendChild(mk(g.id, `${g.cat} ${g.items.length}`));
-  const iscale = el('label', { class: 'imp', title: '导入模型的归一化高度（米）；0 = 保持原始尺寸' }, [
-    el('span', { text: '导入 m' }),
-    el('input', {
-      type: 'number', class: 'num sm', min: 0, max: 30, step: 0.5, value: app.state.importScale || 0,
-      onchange: (e) => {
-        app.state.importScale = clamp(+e.target.value || 0, 0, 30);
-        e.target.value = app.state.importScale;
-        toast(app.state.importScale > 0 ? `之后导入的模型会归一化到 ${app.state.importScale}m 高` : '之后导入的模型保持原始尺寸');
-      },
-    }),
-  ]);
-  host.append(el('div', { class: 'libbar' }, [search, chips, iscale, count]), grid);
-
-  function render() {
-    clear(grid);
-    [...chips.children].forEach((c) => c.classList.toggle('on', c.dataset.cat === state.cat));
-    let shown = 0;
-    const q = state.q.trim().toLowerCase();
-    for (const g of LIB) {
-      if (state.cat !== 'all' && g.id !== state.cat) continue;
-      const items = [];
-      for (const it of g.items) {
-        const key = `${g.id}:${it.type}:${it.name}`;
-        if (q && !(`${it.name} ${key}`.toLowerCase().includes(q))) continue;
-        items.push({ key, it, grp: g });
-      }
-      if (!items.length) continue;
-      if (state.cat === 'all') {
-        grid.appendChild(el('div', {
-          class: 'libhead',
-          html: `<b>${g.cat}</b><i>${items.length}</i><u>${g.items.map((x) => x.name).slice(0, 3).join(' / ')}</u>`,
-        }));
-      }
-      for (const { key, it } of items) {
-      const card = el('div', {
-        class: 'card', draggable: 'true', title: `${it.name}｜拖到场景里放置，或点击放置到视图中心`,
-        ondragstart: (e) => { e.dataTransfer.setData('text/asset', key); e.dataTransfer.effectAllowed = 'copy'; },
-        onclick: () => { const p = app.stage.orbit.target.clone(); p.y = 0; app.addAsset(key, p); toast(`已放置 ${it.name}`); },
-      }, [
-        el('div', { class: 'ico', html: svg(it.icon) }),
-        el('div', { class: 'nm', text: it.name }),
-        el('div', { class: 'hint', text: it.type === 'human' || it.type === 'crowd' ? '可带动作' : '可拖放' }),
-      ]);
-        grid.appendChild(card);
-      }
-      shown += items.length;
-    }
-    if (!shown) grid.appendChild(el('div', { class: 'empty', text: q ? `没有匹配「${state.q}」的模型 · 试试「宫殿 / 坦克 / 沙发 / 山峰 / 法阵」` : '这一类暂无模型' }));
-    count.textContent = `${shown} / ${total} 个模型`;
-    libmark();
-  }
-  // 让顶栏「素材库」按钮也能一键回到「全部」
-  function libmark() { app.lib = { state, render, showAll: () => { state.cat = 'all'; state.q = ''; if (search) search.value = ''; render(); } }; }
-  render();
-  return { render, showAll: () => app.lib.showAll() };
+  return buildModelLibrary(app, host);
 }
 
 export function buildShotList(app, host) {
@@ -1166,59 +1103,7 @@ const SCENE_CATS = [
 }
 
 export function buildSceneAssets(app, host) {
-  const total = LIB.reduce((a, g) => a + g.items.length, 0);
-  const state = { cat: 'all', q: '' };
-  const grid = el('div', { class: 'grid' });
-  const search = el('input', { class: 'search', type: 'search', placeholder: `Search ${total} assets…`, oninput: (e) => { state.q = e.target.value; render(); } });
-  const chips = el('div', { class: 'chips' });
-  const mk = (id, l) => el('button', { class: 'chip' + (state.cat === id ? ' on' : ''), type: 'button', text: l, dataset: { cat: id }, onclick: () => { state.cat = id; render(); } });
-  chips.appendChild(mk('all', `All ${total}`));
-  for (const c of SCENE_CATS) chips.appendChild(mk(c.id, `${c.label} ${LIB.filter(g => c.libIds.includes(g.id)).reduce((a, g) => a + g.items.length, 0)}`));
-  host.append(el('div', { class: 'libbar' }, [search, chips]), grid);
-
-  function getLibIds() {
-    if (state.cat === 'all') return null;
-    const cat = SCENE_CATS.find(c => c.id === state.cat);
-    return cat ? cat.libIds : [];
-  }
-  function render() {
-    clear(grid);
-    [...chips.children].forEach((c) => c.classList.toggle('on', c.dataset.cat === state.cat));
-    const libIds = getLibIds();
-    const q = state.q.trim().toLowerCase();
-    let shown = 0;
-    for (const g of LIB) {
-      if (libIds && !libIds.includes(g.id)) continue;
-      const items = [];
-      for (const it of g.items) {
-        const key = `${g.id}:${it.type}:${it.name}`;
-        if (q && !(`${it.name} ${key}`.toLowerCase().includes(q))) continue;
-        items.push({ key, it });
-      }
-      if (!items.length) continue;
-      if (state.cat === 'all') {
-        grid.appendChild(el('div', {
-          class: 'libhead',
-          html: `<b>${g.cat}</b><i>${items.length}</i>`,
-        }));
-      }
-      for (const { key, it } of items) {
-        const card = el('div', {
-          class: 'card', draggable: 'true', title: `${it.name} · drag to place`,
-          ondragstart: (e) => { e.dataTransfer.setData('text/asset', key); e.dataTransfer.effectAllowed = 'copy'; },
-          onclick: () => { const p = app.stage.orbit.target.clone(); p.y = 0; app.addAsset(key, p); toast(`Placed ${it.name}`); },
-        }, [
-          el('div', { class: 'ico', html: svg(it.icon) }),
-          el('div', { class: 'nm', text: it.name }),
-        ]);
-        grid.appendChild(card);
-        shown++;
-      }
-    }
-    if (!shown) grid.appendChild(el('div', { class: 'empty', text: q ? `No match for "${state.q}"` : 'No assets in this category' }));
-  }
-  render();
-  return { render };
+  return buildModelLibrary(app, host, {categories:SCENE_CATS});
 }
 
 /* ---- 天气系统 tab ---- */

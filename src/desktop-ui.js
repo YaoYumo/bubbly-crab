@@ -1,4 +1,4 @@
-import { DESKTOP_BUILD, isDesktopShell } from "./desktop-runtime.js";
+import { isDesktopShell } from "./desktop-runtime.js";
 import { desktopSaves } from "./desktop-save.js";
 export function desktopCapabilities(app) {
   const gl = app.stage.renderer.getContext();
@@ -53,7 +53,7 @@ export async function probeDesktopStorage() {
   }
 }
 export function installDesktopTools(app) {
-  if (!DESKTOP_BUILD) return;
+  // Browser builds also expose capability checks; native writes remain shell-gated.
   const button = document.createElement("button");
   button.type = "button";
   button.className = "tb";

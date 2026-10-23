@@ -2,6 +2,9 @@
 // 入口：装配工作台、工具条、快捷键、渲染循环、示例场景
 // ---------------------------------------------------------------------------
 import './styles.css';
+import { installOnboarding } from './onboarding.js';
+import { ModelLibrary } from './model-library.js';
+import { installRadialMenu } from './radial-menu.js';
 import { installDesktopTools } from './desktop-ui.js';
 import * as THREE from 'three';
 import { installPerformanceUI } from './performance-ui.js';
@@ -34,6 +37,7 @@ const constructionStartedAt = performance.now();
 const app = new App(host);
 app.performance.startup.constructionMs = performance.now() - constructionStartedAt;
 window.app = app;
+app.modelLibrary = new ModelLibrary(app, LIB);
 app.aiScene = new AISceneWorkflow(app);
 app.benchmarkMode = new URLSearchParams(location.search).get('benchmark') === '1';
 if (app.benchmarkMode) app._suspendUndo = true;
@@ -72,7 +76,7 @@ for (const s of SKINS) {
   skinWrap.appendChild(dot);
 }
 app.state.skin = 'light';
-top.appendChild(skinWrap);
+// Theme controls live in the viewport tools dialog, not the minimal top bar.
 
 /* 胶囊页签 */
 const capsules = el('div', { class: 'capsules' });
@@ -135,7 +139,7 @@ const toolRow = el('div', { class: 'tool-row' });
 /* 一句话生成街区：本地关键词解析 → 程序化造镇（Scene 页专属，随工具条显隐） */
 toolRow.appendChild(tbtn('一句话生成', {
   icon: '✦', cls: 'pri', title: '一句话生成街区（本地解析，不联网、不消耗积分）',
-  onClick: () => openTownDialog(app),
+  onClick: () => {app.closeViewportTools?.();openCreate();},
 }));
 
 const gizmoBtns = [];
@@ -230,7 +234,7 @@ function makeDropdown(label, icon, items) {
       item.icon ? el('span', { class: 'dd-ico', html: item.icon }) : null,
       el('span', { text: item.text }),
     ]);
-    mi.onclick = (e) => { e.stopPropagation(); item.onClick?.(mi); if (!item.keepOpen) wrap.classList.remove('open'); };
+    mi.onclick = (e) => { e.stopPropagation(); if(!item.keepOpen)app.closeViewportTools?.(); item.onClick?.(mi); if (!item.keepOpen) wrap.classList.remove('open'); };
     if (item.ref) item.ref.el = mi;
     menu.appendChild(mi);
   });
@@ -337,7 +341,7 @@ viewMenu.querySelector('.dd-menu').appendChild(weatherSel);
     item.icon ? el('span', { class: 'dd-ico', html: item.icon }) : null,
     el('span', { text: item.text }),
   ]);
-  mi.onclick = (e) => { e.stopPropagation(); item.onClick?.(mi); if (!item.keepOpen) viewMenu.classList.remove('open'); };
+  mi.onclick = (e) => { e.stopPropagation(); if(!item.keepOpen)app.closeViewportTools?.(); item.onClick?.(mi); if (!item.keepOpen) viewMenu.classList.remove('open'); };
   viewMenu.querySelector('.dd-menu').appendChild(mi);
 });
 
@@ -381,9 +385,41 @@ toolRow.append(
   sceneMenu,
   clearBtn,               // 一键清空：挂在最顺手的位置，单击即清
 );
-top.appendChild(toolRow);
-toolRow.style.display = currentPage === 'scene' ? '' : 'none';
-app.bus.on('page-change', (id) => { toolRow.style.display = id === 'scene' ? '' : 'none'; });
+// Preserve engineering/import/view commands in a secondary dialog, never discard them.
+function openViewportTools() {
+  if(document.querySelector('.viewport-tools-mask'))return;
+  const previous=document.activeElement;
+  [snapSel,snapSelInline].forEach(n=>n.value=String(app.state.snap));
+  [aspectSel,aspectSelInline].forEach(n=>n.value=app.state.aspect);
+  [detailSel,detailSelInline].forEach(n=>n.value=app.state.detail);
+  const mask=el('div',{class:'viewport-tools-mask'}),panel=el('section',{class:'viewport-tools-panel',role:'dialog','aria-modal':'true','aria-label':'视口工具与工程',tabindex:'-1'});
+  const dismiss=()=>{panel.querySelectorAll('.tb-dropdown.open').forEach(n=>n.classList.remove('open'));mask.remove();app.closeViewportTools=null;previous?.isConnected&&previous.focus({preventScroll:true});};
+  app.closeViewportTools=dismiss;
+  const close=el('button',{class:'fbtn',type:'button',text:'关闭',onclick:dismiss});
+  panel.append(el('header',{},[el('b',{text:'视口工具与工程'}),close]),toolRow,
+    el('div',{class:'viewport-settings'},[el('label',{},['主题',skinWrap]),el('label',{},['变换吸附',snapSel]),el('label',{},['画幅',aspectSel]),el('label',{},['模型精度',detailSel]),el('div',{class:'btnrow'},[undoBtn,redoBtn,el('button',{class:'fbtn',type:'button',text:'新手指引',dataset:{onboardingOpen:'1'},onclick:()=>{app.closeViewportTools?.();app.onboarding?.start();}})])]));
+  mask.append(panel);document.body.append(mask);close.focus();
+  mask.addEventListener('pointerdown',e=>{if(e.target===mask)dismiss();});
+  mask.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dismiss();}if(e.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,[tabindex="0"]')].filter(n=>!n.disabled&&n.getClientRects().length),i=nodes.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();nodes.at(-1)?.focus();}else if(!e.shiftKey&&i===nodes.length-1){e.preventDefault();nodes[0]?.focus();}}});
+}
+app.openViewportTools=openViewportTools;
+const openCreate=()=>{switchPage('scene');openTownDialog(app);};
+const openLibrary=()=>{switchPage('scene');const box=document.getElementById('library-scene');if(box?.style.display==='none')document.getElementById('lib-toggle')?.click();box?.querySelector('input.search')?.focus();};
+app.radialMenu=installRadialMenu(app,{actions:ctx=>{
+  const item=(id,label,run,extra={})=>({id,label,run,...extra});
+  const undo=item('undo','撤销',()=>undoBtn.click(),{disabled:undoBtn.disabled});
+  const more=item('more','工具 / 工程',openViewportTools);
+  if(ctx.kind==='obj'){
+    const locked=!!(ctx.so.motion?.behavior||ctx.so.motion?.behaviorError);
+    return [item('move','移动',()=>setGizmo('translate'),{disabled:locked}),item('rotate','旋转',()=>setGizmo('rotate'),{disabled:locked}),item('scale','缩放',()=>setGizmo('scale'),{disabled:locked}),item('focus','聚焦',()=>app.focusSelected()),item('copy','复制',()=>app.duplicateSelected()),item('delete','删除',()=>app.removeObject(ctx.so),{danger:true}),undo,more];
+  }
+  if(ctx.kind==='shot')return [item('move','移动',()=>setGizmo('translate')),item('rotate','旋转',()=>setGizmo('rotate')),item('focus','聚焦机位',()=>app.focusSelected()),item('preview','取景预览',()=>togglePreview()),item('key','记录关键帧',()=>{app.beginOp('记录机位关键帧');ctx.shot.addKeyAt(app.timeline.u,app.stage.view);}),item('delete','删除机位',()=>app.removeShot(ctx.shot),{danger:true}),undo,more];
+  return [item('add','添加模型',openLibrary),item('camera','新建机位',()=>app.shotFromView()),item('generate','一句话生成',openCreate),item('grid',app.state.grid?'关闭网格':'显示网格',()=>gridBtn.click()),item('snap',app.stage.snapStep?'自由移动':'吸附 0.25m',()=>{app.state.snap=app.stage.snapStep?0:.25;snapSel.value=String(app.state.snap);app.stage.setSnap(app.state.snap);}),undo,item('redo','重做',()=>redoBtn.click(),{disabled:redoBtn.disabled}),more];
+}});
+const createEntry=el('button',{class:'viewport-create',type:'button',text:'✦ 一句话生成',title:'描述场景，在视口中央生成',onclick:openCreate});
+const radialEntry=el('button',{class:'viewport-operations',type:'button',text:'操作 · 右键',title:'右键单击打开操作菜单；右键拖动保持平移',onclick:()=>{const r=app.stage.canvas.getBoundingClientRect();app.radialMenu.open(r.left+r.width/2,r.top+r.height/2,{selection:true});}});
+host.append(createEntry,radialEntry);
+app.bus.on('page-change',id=>{createEntry.hidden=id!=='scene';radialEntry.hidden=!['scene','direct','camera'].includes(id);app.radialMenu.close(false);app.closeViewportTools?.();});
 
 /* ------------------------------ 面板装配 --------------------------------- */
 const left = document.getElementById('left');
@@ -679,7 +715,7 @@ function syncHud() {
     }
   }
 }
-installPerformanceUI(app, toolRow, tbtn);
+installPerformanceUI(app, top, tbtn);
 let stats = { fps: 0, acc: 0, n: 0, t: 0 };
 function loop(timestamp = performance.now()) {
   const dt = Math.min(0.06, app._clock.getDelta());
@@ -770,7 +806,7 @@ app.bus.on('preview', () => {
 window.addEventListener('keydown', (e) => {
   if (app.reference?.busy || app.aiScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const k = e.key.toLowerCase();
   if (k === ' ') { e.preventDefault(); }
   else if (k === 'w') setGizmo('translate');
@@ -910,6 +946,7 @@ function showHelp(on) {
     el('button', { class: 'mclose', text: '关闭 ✕', onclick: () => showHelp(false) }),
     el('h2', { text: 'PREVIZ LAB — 给 AI 视频做运镜 & 动作参考' }),
     el('p', { text: '低模 + 强光影 + 真实镜头语言的Previz工作台。目标不是出成片，而是让 AI 明白「镜头怎么走、人物怎么动、光从哪来」。' }),
+    el('button',{class:'fbtn pri',type:'button',text:'启动新手指引',onclick:()=>{showHelp(false);app.onboarding.start();}}),
     el('h3', { text: '标准工作流' }), flow,
     el('h3', { text: '快捷键' }),
     el('div', { class: 'cols' }, keys.map(([a, b]) => el('p', {}, [a ? el('span', { class: 'kbd', text: a }) : el('span', {}), ' ' + (b || '')]))),
@@ -924,11 +961,13 @@ function showHelp(on) {
 }
 document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') showHelp(false); });
 
+app.onboarding=installOnboarding(app,{switchPage,openTools:openViewportTools});
+
 /* 数字键快速放置 */
 window.addEventListener('keydown', (e) => {
   if (app.reference?.busy || app.aiScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const n = parseInt(e.key, 10);
   if (!n || e.metaKey || e.ctrlKey || e.altKey) return;
   const flat = [];
@@ -943,13 +982,14 @@ window.addEventListener('beforeunload', () => app.saveLocal());
 app.bus.on('gizmo', () => { });
 app.bus.on('toast', (d) => toast(typeof d === 'string' ? d : d?.msg, typeof d === 'object' && d?.kind ? d.kind : 'info'));
 async function bootApp() {
+await app.modelLibrary.ready;
 const FRESH = app.benchmarkMode || /[?&]fresh/.test(location.search);
 if (!FRESH) await app.storageReady;
 const didRestore = !FRESH && app.maybeRestore();
 if (didRestore) await app.projectAssets.ready();
 /* 恢复提示：自动存档是【几何点位】原样回放——旧版大环路会跟着回魂，必须让用户知道
    这是上次的场景而不是新生成的（开新场：一键清空 或 ?fresh=1） */
-const restored = didRestore && app.objects.length > 0;
+const restored = didRestore && (app.objects.length > 0 || app.shots.length > 0);
 if (FRESH) {
   const pick = new URLSearchParams(location.search).get('scene');
   if (!app.benchmarkMode && pick && SCENES.some((s) => s.id === pick)) applyScene(app, pick);
@@ -958,23 +998,18 @@ app.updateAspectOverlay();
 syncHud();
 /* 落地即「一句话生成」：启动直接进 Scene 页（boot 遮罩尚未撤下，无闪跳） */
 switchPage('scene');
-/* 每个标签页首访自动弹出生成对话框；自动化（webdriver）与 ?fresh 调试路径不受影响 */
-try {
-  if (!navigator.webdriver && !FRESH && !sessionStorage.getItem('tg-first')) {
-    sessionStorage.setItem('tg-first', '1');
-    setTimeout(() => openTownDialog(app), 250);
-  }
-} catch (e) { /* 存储不可用时静默跳过 */ }
+// First-run onboarding replaces the old automatic scene-generation popup.
 app.performance.startup.readyAtMs = performance.now();
 installDesktopTools(app);
 window.__previzBooted = true;
 if (window.__bootWatch) clearTimeout(window.__bootWatch);
 document.getElementById('boot')?.remove();
+app.onboarding.maybeStart();
 setInterval(syncHud, 1000);
 loop();
 setTimeout(() => {
-  if (restored) toast('已恢复上次自动保存的场景（含旧版路网几何）· 开新场：点顶栏「一键清空」，或地址后加 ?fresh=1', 'info', 7000);
-  else if (!app.objects.length) toast('场景空着？点顶栏 ✦ 一句话生成：「黄昏的加州林荫小镇，商业30%，丘陵」');
+  if (restored) toast('已恢复上次自动保存的工程 · 开新场：右键 → 工具 / 工程 → 场景 → 清空场景', 'info', 7000);
+  else if (!app.objects.length) toast('场景空着？点视口下方「一句话生成」，或右键添加模型');
 }, 900);
 
 if (import.meta.env.DEV) {

@@ -37,7 +37,7 @@ export function openTownDialog(app) {
     recipeEdits = {},
     sessionSeed = randomSeed(),
     pending = null,
-    closed = false;
+    closed = false, running = false;
   let seedOverride = 0; // 0 = 跟随文本里的种子 / 随机
   let layoutPick = null; // 手动「道路布局」点选（最高优先；输入文字即清除）
   let templatePick = null; // 手动「场景模板」点选（最高优先；输入文字即清除）
@@ -48,7 +48,7 @@ export function openTownDialog(app) {
     rows: 3,
     spellcheck: "false",
     placeholder:
-      "例：赛博都市，30层高楼，8辆悬浮车，浓雾下雨，街面视角\n或：中式古城沿河两岸，石拱桥、牌楼、佛塔、108盏孔明灯",
+      "描述想要的场景，例如：沿河的中式小镇，石桥与佛塔，黄昏",
   });
   const matchedBox = el("div", { class: "tg-chips" });
   const noteBox = el("div", { class: "tg-note" });
@@ -255,6 +255,7 @@ export function openTownDialog(app) {
   }
 
   function render() {
+    genBtn.disabled = running || !(ta.value.trim() || templatePick || recipePick || layoutPick);
     const intent = recipeIntent();
     for (const { id, b } of recipeButtons)
       b.classList.toggle("on", id === recipePick);
@@ -359,6 +360,7 @@ export function openTownDialog(app) {
       );
     }
     if (
+      ta.value.trim() &&
       !parsed.matched.length &&
       !parsed.unsupported.length &&
       !parsed.ignored.length
@@ -371,7 +373,7 @@ export function openTownDialog(app) {
       );
     }
     genBtn.textContent =
-      parsed.matched.length || ta.value.trim() ? "生成街区" : "生成默认小镇";
+      ta.value.trim() ? "生成场景" : "生成";
   }
 
   // 同步解析：不设防抖。预览 iframe / 后台页的 setTimeout 会被 Chrome 节流到 1s+，
@@ -408,62 +410,61 @@ export function openTownDialog(app) {
     examples.appendChild(b);
   }
 
-  const modal = el("div", { class: "tg-modal", role: "dialog" }, [
-    el("div", { class: "tg-head" }, [
-      el("b", { text: "一句话生成街区" }),
-      el("span", {
-        class: "tg-sub",
-        text: "本地配方 / 关键词 · 不联网 · 不消耗积分",
-      }),
-      (() => {
-        const x = el("button", { class: "tg-x", type: "button", text: "✕" });
-        x.onclick = close;
-        return x;
-      })(),
-    ]),
-    el("div", { class: "tg-body" }, [
-      ta,
+  const advanced = el("details", {class:"tg-advanced"}, [
+    el("summary", {text:"更多选项"}),
+    el("div",{class:"tg-advanced-body"},[
       examples,
-      el("div", {
-        class: "tg-plabel",
-        text: "生成配方（不命中则保持原造镇流程）",
-      }),
-      recipeRow,
-      recipePanel,
-      el("div", { class: "tg-plabel", text: "普通场景模板" }),
-      tplRow,
-      el("div", { class: "tg-plabel", text: "道路布局" }),
-      layoutRow,
-      el("div", { class: "tg-plabel", text: "解析结果" }),
-      matchedBox,
-      noteBox,
-      statusEl,
-    ]),
-    el("div", { class: "tg-foot" }, [
-      el("span", {
-        class: "tg-hint",
-        text: "生成会清空当前场景，Ctrl+Z 可一次退回 · Ctrl+Enter 生成",
-      }),
-      cancelBtn,
-      genBtn,
+      el("div",{class:"tg-plabel",text:"生成配方"}),recipeRow,recipePanel,
+      el("div",{class:"tg-plabel",text:"场景模板"}),tplRow,
+      el("div",{class:"tg-plabel",text:"道路布局"}),layoutRow,
+      el("div",{class:"tg-plabel",text:"解析结果"}),matchedBox,
     ]),
   ]);
-  const mask = el("div", { class: "tg-mask" }, [modal]);
-  document.body.appendChild(mask);
-  requestAnimationFrame(() => mask.classList.add("on"));
+  const previousFocus=document.activeElement;
+  const modal = el("div", {class:"tg-modal",role:"dialog","aria-label":"一句话生成"},[
+    el("div",{class:"tg-head"},[
+      el("b",{text:"一句话生成"}),el("span",{class:"tg-sub",text:"本地生成 · 无需联网"}),
+      el("button",{class:"tg-x",type:"button",text:"✕","aria-label":"关闭一句话生成",onclick:close}),
+    ]),
+    el("div",{class:"tg-body"},[ta,advanced,noteBox,statusEl]),
+    el("div",{class:"tg-foot"},[
+      el("span",{class:"tg-hint",text:"会替换当前场景，可撤销 · Ctrl+Enter 生成"}),cancelBtn,genBtn,
+    ]),
+  ]);
+  const mask=el("div",{class:"tg-mask tg-viewport-mask"},[modal]);
+  function positionDialog(){
+    const r=app.stage.canvas.getBoundingClientRect();
+    mask.style.left=r.left+'px';mask.style.top=r.top+'px';mask.style.width=r.width+'px';mask.style.height=r.height+'px';
+  }
+  document.body.appendChild(mask);positionDialog();
+  const observer=new ResizeObserver(positionDialog);observer.observe(app.stage.canvas);
+  window.addEventListener('resize',positionDialog);
+  const offPage=app.bus.on('page-change',close);
+  requestAnimationFrame(() => {if(!closed)mask.classList.add("on");});
 
   function close() {
+    if(closed)return;
     closed = true;
+    observer.disconnect();window.removeEventListener('resize',positionDialog);offPage();
+    if(previousFocus?.isConnected)previousFocus.focus({preventScroll:true});
     if (pending != null) clearTimeout(pending);
     mask.classList.remove("on");
     document.removeEventListener("keydown", onKey, true);
     setTimeout(() => mask.remove(), 160);
   }
   function onKey(e) {
+    e.stopPropagation();
+    if(e.key==='Tab'){
+      const nodes=[...modal.querySelectorAll('button,textarea,select,input,summary')].filter(n=>!n.disabled&&n.getClientRects().length);
+      const i=nodes.indexOf(document.activeElement);
+      if(e.shiftKey&&i<=0){e.preventDefault();nodes.at(-1)?.focus();}
+      else if(!e.shiftKey&&i===nodes.length-1){e.preventDefault();nodes[0]?.focus();}
+    }
     if (e.key === "Escape") {
+      e.preventDefault();
       e.stopPropagation();
       close();
-    } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    } else if (!e.isComposing && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       e.stopPropagation();
       run();
@@ -477,7 +478,7 @@ export function openTownDialog(app) {
   genBtn.onclick = run;
 
   function run() {
-    if (closed || genBtn.disabled) return;
+    if (closed || running || genBtn.disabled) return;
     // 生成前同步重解析：以输入框当前内容为准 + 布局点选覆盖，绝不依赖防抖定时器
     parsed = readPrompt();
     if (layoutPick) parsed.schema.roadTopology = layoutPick;
@@ -486,6 +487,7 @@ export function openTownDialog(app) {
       ...parsed.schema,
       seed: seedOverride || parsed.schema.seed,
     };
+    running=true;ta.disabled=true;
     genBtn.disabled = cancelBtn.disabled = true;
     statusEl.textContent = "生成中…";
     // 让「生成中」先绘制出来：生成本身是同步的重活
@@ -521,6 +523,7 @@ export function openTownDialog(app) {
       } catch (e) {
         console.error("[towngen]", e);
         statusEl.textContent = "";
+        running=false;ta.disabled=false;
         genBtn.disabled = cancelBtn.disabled = false;
         app.notify("生成失败：" + (e?.message || e), "err");
         return;

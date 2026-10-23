@@ -34,8 +34,9 @@ try {
     ],
     ["lantern-river", "中式古城沿河，6位行人，行人速度1.5倍，错峰，种子42"],
   ]) {
-    await p.click('#top button[title^="一句话生成街区"]');
+    await p.click('.viewport-create');
     await p.waitForSelector(".tg-mask.on");
+    await p.click(".tg-advanced > summary");
     await p.$eval(
       ".tg-input",
       (e, t) => {

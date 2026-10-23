@@ -588,6 +588,7 @@ export class App {
     return st.groundPoint(0);
   }
   addAsset(key, point = new THREE.Vector3(0, 0, 0), opts = {}) {
+    if (key?.startsWith('userlib:')) return this.modelLibrary?.place(key, point);
     const item = this.itemByKey(key);
     if (!item) return null;
     this.beginOp('放置 ' + (item.name || key));
@@ -947,7 +948,7 @@ export class App {
     st.bus.on('drop', ({ type, point, ndc }) => {
       if (!type) return;
       const key = type;
-      if (!LIB_INDEX.has(key)) return;
+      if (!LIB_INDEX.has(key) && !this.modelLibrary?.find(key)) return;
       const at = ndc ? this.dropPoint(ndc) : point;
       this.addAsset(key, at, { keepY: false });
     });
@@ -1148,13 +1149,14 @@ export class App {
 
   // ---------------------------------------------------------------- 导入
   notify(msg, kind = 'info') { this.bus.emit('toast', { msg, kind }); }
-  async importFiles(files, at) {
-    this.beginOp('导入模型');
+  async importFiles(files, at, opts = {}) {
+    if (!opts.libraryOnly) this.beginOp('导入模型');
     const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
     const { FBXLoader } = await import('three/examples/jsm/loaders/FBXLoader.js');
     const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js');
     const { MTLLoader } = await import('three/examples/jsm/loaders/MTLLoader.js');
     const out = [];
+    out.errors = [];
     const list = Array.from(files);
     const resources = localFileResources(list);
     const mtlFile = list.find((f) => /\.mtl$/i.test(f.name));
@@ -1162,6 +1164,7 @@ export class App {
       const name = f.name;
       resources.setBase(f);
       try {
+      if (opts.libraryOnly && /\.(previz|zip|json)$/i.test(name)) throw Error('模型库不接收工程文件');
       if (/\.(previz|zip)$/i.test(name)) {
         this.loadJson(await unpackProject(await f.arrayBuffer()));
         await this.projectAssets.ready();
@@ -1174,12 +1177,12 @@ export class App {
         const scene = gltf.scene || (gltf.scenes && gltf.scenes[0]);
         if (!scene) throw new Error('文件里没有可用网格');
         await resources.ready();
-        out.push(await this._adoptModel(scene, name, at, gltf));
+        out.push(await this._adoptModel(scene, name, at, gltf, opts));
       } else if (/\.fbx$/i.test(name)) {
         const buf = await f.arrayBuffer();
         const o = new FBXLoader(resources.manager).parse(buf, '');
         await resources.ready();
-        out.push(await this._adoptModel(o, name, at));
+        out.push(await this._adoptModel(o, name, at, null, opts));
       } else if (/\.obj$/i.test(name)) {
         const txt = await f.text();
         let o = new OBJLoader(resources.manager).parse(txt);
@@ -1195,28 +1198,29 @@ export class App {
           } catch (e) { throw new Error('MTL 载入失败：' + e.message); }
         }
         await resources.ready();
-        out.push(await this._adoptModel(o, name, at));
+        out.push(await this._adoptModel(o, name, at, null, opts));
       } else if (/\.(mtl|bin|png|jpe?g|webp|gif|bmp)$/i.test(name)) { /* 模型依赖，与主模型同批处理 */ }
       else if (/\.(json)$/i.test(name)) {
         try { this.pushUndo('载入工程文件'); this.loadJson(JSON.parse(await f.text())); await this.projectAssets.ready(); await this.saveLocal(); this.notify('已载入工程文件（Ctrl+Z 可退回）'); } catch (e) { this.notify('工程文件解析失败：' + (e.message || e), 'err'); }
       } else this.notify(`「${name}」暂不支持，可用格式：.glb / .gltf / .obj(+.mtl) / .fbx / 工程 .json`, 'warn');
       } catch (e) {
+        out.errors.push({file:name,message:e.message});
         console.warn('导入失败', name, e);
         this.notify(`导入 ${name} 失败：${e.message || e}`, 'err');
       }
     }
     resources.dispose();
-    if (out.length) await this.saveLocal();
-    if (out.length) this.notify(`已导入 ${out.length} 个模型（已贴地${this.state.importScale > 0 ? '并归一化到 ' + this.state.importScale + 'm' : '，保持原始尺寸'}）`);
+    if (out.length && !opts.libraryOnly) await this.saveLocal();
+    if (out.length && !opts.libraryOnly) this.notify(`已导入 ${out.length} 个模型（已贴地${this.state.importScale > 0 ? '并归一化到 ' + this.state.importScale + 'm' : '，保持原始尺寸'}）`);
     return out;
   }
-  async _adoptModel(src, filename, at, meta) {
+  async _adoptModel(src, filename, at, meta, opts = {}) {
     const root = new THREE.Group();
     root.add(src);
     const bb = new THREE.Box3().setFromObject(src);
     const size = bb.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-    const norm = this.state.importScale;
+    const norm = opts.scale ?? this.state.importScale;
     if (norm > 0) src.scale.setScalar(norm / maxDim);
     const bb2 = new THREE.Box3().setFromObject(src);
     const c = bb2.getCenter(new THREE.Vector3());
@@ -1229,7 +1233,8 @@ export class App {
       }
     });
     if (meta?.animations?.length) root.animations = meta.animations;
-    const assetId = await this.projectAssets.register(root);
+    const assetId = await (opts.resources || this.projectAssets).register(root);
+    if (opts.libraryOnly) return {name:filename.replace(/\.[^.]+$/, ''),file:filename,assetId};
     const so = new SceneObj(this, {
       name: filename.replace(/\.[^.]+$/, ''), key: null, type: 'import',
       params: { assetId, file: filename, size: [+size.x.toFixed(2), +size.y.toFixed(2), +size.z.toFixed(2)] },
@@ -1240,6 +1245,23 @@ export class App {
     this.select({ kind: 'obj', so });
     this.bus.emit('objects');
     return so;
+  }
+
+  async addStoredModel(model, text, at) {
+    this.projectAssets.hydrate({[model.assetId]:text});
+    const root = this.projectAssets.instantiate(model.assetId);
+    await this.projectAssets.ready();
+    try {
+      this.modelLibrary.assertEditable();
+      if (!this.modelLibrary.find(model.key)) throw Error('模型已从库中删除');
+      this.beginOp('放置用户模型 ' + model.name);
+      const x=at?.x||0,z=at?.z||0;
+      const so=new SceneObj(this,{name:model.name,key:null,type:'import',params:{assetId:model.assetId,file:model.name},root,pos:[x,this.groundY(x,z),z]});
+      so.imported=true;
+      this.objects.push(so);this.select({kind:'obj',so});this.bus.emit('objects');
+      this.notify('已放置 '+model.name);
+      return so;
+    } catch(e) { removeDeep(root);throw e; }
   }
 
   /** Shared by paused seeks, playback, PNGs and both video export paths. */

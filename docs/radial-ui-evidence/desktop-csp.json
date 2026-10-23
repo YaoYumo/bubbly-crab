@@ -1,0 +1,37 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "top": [
+    "Direct",
+    "Scene",
+    "Camera",
+    "Generate",
+    "Export",
+    "性能",
+    "桌面检查"
+  ],
+  "objectPickAndActions": true,
+  "duplicateDeleteUndo": true,
+  "cancelPreservesSelection": true,
+  "rightDragPreserved": true,
+  "edgePlacement": true,
+  "narrowWindows": true,
+  "keyboard": true,
+  "exportGuard": true,
+  "compactViewportDialog": {
+    "centerError": 0,
+    "inside": true,
+    "advanced": false,
+    "visibleExamples": 0,
+    "disabled": true
+  },
+  "advancedOptIn": true,
+  "cancelDoesNotGenerate": true,
+  "cameraBodyPickAndActivation": true,
+  "recordKeyUndo": true,
+  "selectionAwareLauncher": true,
+  "compactGenerationAndUndo": true,
+  "settingsAndTemplatesReachable": true,
+  "inputDoesNotTriggerSceneHotkeys": true,
+  "errors": [],
+  "csp": []
+}
