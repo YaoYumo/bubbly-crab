@@ -12,7 +12,16 @@ try{
    if(command==='local_ai_stop'){window.__rejectChat?.('已停止');window.__rejectChat=null;return;}
    if(command!=='local_ai_chat')throw Error('Unexpected IPC: '+command);
    const data=JSON.parse(args.messages[1].content);window.__lastChat=data;
-   const key=data.catalog.find(a=>a.key.startsWith('cn:hall:')).key;
+   const key=data.catalog.find(a=>a.key.startsWith('cn:hall:'))?.key;
+   if(__chatMode.startsWith('river-screenshot-')){
+    window.__riverScreenshotCalls??={};__riverScreenshotCalls[__chatMode]=(__riverScreenshotCalls[__chatMode]||0)+1;
+    window.__riverPromptBytes=new TextEncoder().encode(args.messages[0].content+args.messages[1].content).length;
+    window.__riverCatalogCount=data.catalog.length;
+    if(__chatMode==='river-screenshot-unsupported')return JSON.stringify({unsupported:''});
+    if(__chatMode==='river-screenshot-empty'&&args.messages.length===2)return JSON.stringify({reply:'已完成',operations:[],terrain:{}});
+    window.__riverBeforeCommit={undo:app._undo.length,h:Array.from(app.terrain.h)};
+    return JSON.stringify({reply:'生成河道',operations:[],unsupported:'',terrain:{rivers:[{action:'add',...(data.riverRequest?.shape?{shape:data.riverRequest.shape}:{}),water:true}]}});
+   }
    if(__chatMode==='wait')return await new Promise((resolve,reject)=>{window.__resolveChat=resolve;window.__rejectChat=reject;});
    if(__chatMode==='terrain-mixed')return JSON.stringify({reply:'已生成丘陵、大殿与道路',terrain:{generate:{kind:'hills',amp:10,seed:42,size:160}},operations:[{op:'add',key,pos:[20,0,-30],placement:'ground'},{op:'road',points:[[-60,0,-55],[60,0,-55]],width:6,roadType:'concrete',name:'测试道路'}]});
    if(__chatMode==='terrain-local')return JSON.stringify({reply:'已局部抬高',terrain:{edits:[{tool:'raise',center:[30,30],radius:12,amount:4}]},operations:[]});
@@ -115,8 +124,22 @@ try{
  const city=await p.evaluate(()=>({buildings:app.objects.filter(o=>o.key?.startsWith('cn:folkhouse:')).length,roads:app.objects.filter(o=>o.type==='road_brush').length,rivers:app.terrain.workflow.rivers.length,calls:__cityCalls,uncommittedAtRepair:__cityBefore===0,undo:app._undo.length,water:app.terrain.state.water}));
  assert.deepEqual(city,{buildings:30,roads:3,rivers:0,calls:2,uncommittedAtRepair:true,undo:cityUndo+1,water:false});
  await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.length),0);
+ // Screenshot regressions with actual UI/controller/compiler, including a failed native reply.
+ const riverBaseline=await p.evaluate(()=>({undo:app._undo.length,h:Array.from(app.terrain.h)}));
+ await send('在中央生成一条约20米宽弯曲的河流，深度5米','river-screenshot-unsupported');
+ assert.equal(await undo(),riverBaseline.undo);assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),riverBaseline.h);
+ assert.ok(!await p.$eval('.local-chat-status',n=>n.textContent.includes('Cannot read')));assert.ok(await p.$('.local-chat-diagnostics'));assert.equal(await p.$eval('.local-chat-diagnostics',n=>n.open),false);
+ assert.equal(await p.evaluate(()=>app.localScene.lastFailure.attempts.length),2);
+ await send('在中央生成一条约20米宽弯曲的河流，深度5米','river-screenshot-empty');
+ const riverScreenshot=await p.evaluate(()=>{const r=app.terrain.workflow.rivers[0];return{width:r?.width,depth:r?.depth,curved:r?.points.length===17&&r.points.some(p=>Math.abs(p[0])>5),bed:app.terrain.heightAt(0,0),globalWater:app.terrain.state.water,objects:app.objects.length,calls:__riverScreenshotCalls['river-screenshot-empty'],promptBytes:__riverPromptBytes,catalog:__riverCatalogCount,undo:app._undo.length};});
+ assert.ok(riverScreenshot.promptBytes<5000);assert.deepEqual({...riverScreenshot,promptBytes:undefined},{width:20,depth:5,curved:true,bed:-5,globalWater:false,objects:0,calls:2,promptBytes:undefined,catalog:0,undo:riverBaseline.undo+1});
+ assert.equal(await p.$('.local-chat-diagnostics'),null);await p.click('[data-local-chat-undo]');assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),riverBaseline.h);
+ await p.evaluate(()=>app.redo());await p.evaluate(()=>app.terrain.workflow.ready());assert.equal(await p.evaluate(()=>app.terrain.workflow.rivers[0].width),20);assert.equal(await p.evaluate(()=>app.terrain.heightAt(0,0)),-5);await p.click('[data-local-chat-undo]');
+ await send('生成一条河流','river-screenshot-simple');assert.deepEqual(await p.evaluate(()=>({width:app.terrain.workflow.rivers[0].width,depth:app.terrain.workflow.rivers[0].depth,points:app.terrain.workflow.rivers[0].points.length,calls:__riverScreenshotCalls['river-screenshot-simple']})),{width:6,depth:2,points:2,calls:1});await p.click('[data-local-chat-undo]');
+ await p.evaluate(async()=>{const c=await app.aiScene.context({mode:'add'});const o=app.addAsset(c.catalog.find(a=>a.key.startsWith('cn:hall:')).key,[0,0,0],{authored:true});o.locked=true;});
+ const lockedRiverUndo=await undo();await send('在中央生成一条约20米宽弯曲的河流，深度5米','river-screenshot-locked');assert.equal(await undo(),lockedRiverUndo);assert.match(await p.$eval('.local-chat-status',n=>n.textContent),/锁定|保护/);assert.equal(await p.evaluate(()=>__riverScreenshotCalls['river-screenshot-locked']),1);assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),riverBaseline.h);
  assert.equal(await p.evaluate(()=>__folderOpened),1);assert.ok((await p.evaluate(()=>__calls)).includes('local_ai_stop'));
  const snapshot=await p.evaluate(()=>({objects:app.objects.length,messages:app.localScene.messages.map(m=>({role:m.role,text:m.text})),ipc:__calls,csp:__chatCSP}));assert.deepEqual(snapshot.csp,[]);assert.deepEqual(errors,[]);
- fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,restoredLockedTransform,terrainSafety,city,errors,realGGUF:false},null,2));
+ fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,restoredLockedTransform,terrainSafety,city,riverScreenshot,errors,realGGUF:false},null,2));
  console.log('PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.');
 }finally{await b.close();}

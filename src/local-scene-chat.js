@@ -5,6 +5,7 @@ import {
   terrainAuthorization,
   ModelToolError,
 } from "./local-scene-tools.js";
+import { riverConversationInstruction } from "./local-scene-river.js";
 import { terrainSummary } from "./local-scene-terrain.js";
 import { uid } from "./util.js";
 
@@ -42,6 +43,27 @@ function messagesFor(
   terrain,
   authorization,
 ) {
+  if (authorization.riverRequest !== undefined) {
+    const data = {
+      request: prompt,
+      riverRequest: authorization.riverRequest,
+      scene: {
+        bounds: workpack.bounds,
+        terrain: {
+          enabled: terrain.enabled,
+          size: terrain.size,
+          range: terrain.range,
+          water: terrain.water,
+        },
+      },
+      catalog: [],
+      parameterDetails: [],
+    };
+    return [
+      { role: "system", content: riverConversationInstruction },
+      { role: "user", content: JSON.stringify(data) },
+    ];
+  }
   const text = prompt.toLowerCase();
   const grams = new Set(
     (text.match(/[\p{L}\p{N}]+/gu) || []).flatMap((s) => [
@@ -160,6 +182,8 @@ export class LocalSceneConversation {
     const root = document.getElementById("app"),
       inert = root?.inert;
     if (root) root.inert = true;
+    this.lastFailure = null;
+    const diagnostics = { request: prompt, phase: "context", attempts: [] };
     this.messages.push({ role: "user", text: prompt });
     try {
       progress("加载本地模型并理解需求…首次加载可能需要几分钟");
@@ -180,6 +204,8 @@ export class LocalSceneConversation {
       const context = await w.context(permissions);
       check();
       const authorization = terrainAuthorization(prompt, this.recentTerrain);
+      diagnostics.tool =
+        authorization.riverRequest !== undefined ? "river" : "scene";
       const messages = messagesFor(
         context,
         prompt,
@@ -190,8 +216,13 @@ export class LocalSceneConversation {
       );
       let data;
       for (let attempt = 0; attempt < 2; attempt++) {
+        diagnostics.phase = "model";
         const response = await this.runtime.chat(model, messages, cpuOnly);
         check();
+        diagnostics.phase = "parse";
+        diagnostics.attempts.push({
+          response: String(response).slice(0, 4096),
+        });
         try {
           data = readConversationReply(
             response,
@@ -200,6 +231,7 @@ export class LocalSceneConversation {
           );
           break;
         } catch (e) {
+          diagnostics.attempts.at(-1).error = e.message;
           if (attempt || !(e instanceof ModelToolError)) throw e;
           progress("模型返回的工具指令无效，正在自动纠正一次…场景尚未改变");
           const previous = new TextDecoder().decode(
@@ -212,7 +244,25 @@ export class LocalSceneConversation {
               content:
                 "上一条返回无效：" +
                 e.message.slice(0, 400) +
-                "。请严格按原始request、catalog和工具协议修正，只返回JSON；不要替换为默认场景，不要添加未请求的河流或地形。",
+                (authorization.riverRequest !== undefined
+                  ? "。本轮明确要求新增河流，不能返回空terrain或只说完成。请参考以下完整JSON，明确方向等按request补入，数值必须遵守riverRequest：" +
+                    JSON.stringify({
+                      reply: "生成河道",
+                      operations: [],
+                      terrain: {
+                        rivers: [
+                          {
+                            action: "add",
+                            shape:
+                              authorization.riverRequest.shape ?? "straight",
+                            width: authorization.riverRequest.width ?? 6,
+                            depth: authorization.riverRequest.depth ?? 2,
+                            water: true,
+                          },
+                        ],
+                      },
+                    })
+                  : "。请严格按原始request、catalog和工具协议修正，只返回JSON；不要替换为默认场景，不要添加未请求的河流或地形。"),
             },
           );
           if (
@@ -224,7 +274,7 @@ export class LocalSceneConversation {
             throw e;
         }
       }
-      if (data.unsupported) throw Error(data.unsupported);
+      if (typeof data.unsupported === "string") throw Error(data.unsupported);
       if (!data.operations.length && !data.terrain) {
         const result = {
           text: data.reply || "请进一步描述场景要求。",
@@ -248,6 +298,7 @@ export class LocalSceneConversation {
         operations,
       };
       progress("正在搭建场景…");
+      diagnostics.phase = "prepare";
       const draft = await w.prepare(plan, permissions);
       check();
       const removed = draft.changes.removed.length;
@@ -286,6 +337,7 @@ export class LocalSceneConversation {
       check();
       this.committing = true;
       progress("正在提交修改，请稍候…");
+      diagnostics.phase = "commit";
       const applied = await w.apply({ acceptWarnings: true });
       this.recentIds = [...applied.changes.added, ...applied.changes.modified];
       this.recentTerrain = data.terrain?.rivers?.length
@@ -300,6 +352,20 @@ export class LocalSceneConversation {
       this.messages = this.messages.slice(-20);
       return { text, changed: true, warnings: applied.warnings };
     } catch (e) {
+      this.lastFailure = {
+        ...diagnostics,
+        error: e.message,
+        stack: e.stack?.slice(0, 3000),
+      };
+      if (e instanceof ModelToolError)
+        e = new Error(
+          (diagnostics.tool === "river"
+            ? "本地模型未返回有效河道指令"
+            : "本地模型未返回有效搭景指令") +
+            (diagnostics.attempts.length > 1 ? "，自动纠正后仍无效" : "") +
+            "。本轮没有修改场景，可展开失败诊断查看原因。",
+          { cause: e },
+        );
       if (!w.busy && w.draft) w.discard();
       this.messages.push({ role: "assistant", text: "未完成：" + e.message });
       throw e;

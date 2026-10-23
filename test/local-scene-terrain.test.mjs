@@ -8,6 +8,7 @@ import {
   terrainAuthorization,
   ModelToolError,
 } from "../src/local-scene-tools.js";
+import { singleRiverRequest } from "../src/local-scene-river.js";
 import { generateHeightfield } from "../src/terrain-generation.js";
 import { validateEnvelope } from "../src/ai-scene-format.js";
 const make = () => ({
@@ -284,4 +285,114 @@ assert.doesNotThrow(() =>
 );
 console.log(
   "PASS pure conversational terrain: seeded generation, exact world amplitude, local-only edits, river carving/removal, water default, no live mutation, bounds/lock/cancel rejection; grid and private-vs-v1 envelope. NOT real LLM inference.",
+);
+
+// Reproductions for the screenshot: empty unsupported must never yield missing operations;
+// empty terrain is a repairable model output, not a successful no-op.
+const screenshotRequest = "在中央生成一条约20米宽弯曲的河流，深度5米";
+assert.deepEqual(singleRiverRequest(screenshotRequest), {
+  width: 20,
+  depth: 5,
+  shape: "meander",
+});
+for (const request of [
+  "生成两条河流",
+  "不要生成一条河流",
+  "生成一条河流和一座桥",
+  "如何生成一条河流？",
+  "修改河道宽度",
+])
+  assert.equal(singleRiverRequest(request), null, request);
+const riverAuth = terrainAuthorization(screenshotRequest);
+for (const data of [
+  { unsupported: "" },
+  { reply: "完成", unsupported: "", operations: [] },
+  { reply: "完成", operations: [], terrain: {} },
+  { reply: "完成", operations: [], terrain: null },
+  { reply: "完成", operations: [], terrain: { rivers: {} } },
+  { reply: "完成", operations: [], terrain: { rivers: [null] } },
+])
+  assert.throws(
+    () => readConversationReply(JSON.stringify(data), [], riverAuth),
+    ModelToolError,
+  );
+const highLevel = readConversationReply(
+  JSON.stringify({
+    reply: "生成弯曲河流",
+    unsupported: "",
+    operations: [],
+    terrain: { rivers: [{ action: "add", shape: "meander", water: true }] },
+  }),
+  [],
+  riverAuth,
+);
+assert.deepEqual(highLevel.operations, []);
+assert.equal(highLevel.terrain.rivers[0].width, 20);
+assert.equal(highLevel.terrain.rivers[0].depth, 5);
+const curved = await compileConversationTerrain(t, doc(t), highLevel.terrain),
+  path = curved.document.workflow.rivers[0];
+assert.equal(path.width, 20);
+assert.equal(path.depth, 5);
+assert.equal(path.points.length, 17);
+assert.ok(path.points.some((p) => Math.abs(p[0]) > 5));
+assert.ok(Math.abs(curved.heightAt(0, 0) + 5) < 1e-6);
+assert.equal(curved.document.water, false);
+assert.deepEqual(t.h, before);
+assert.throws(
+  () =>
+    readConversationReply(
+      JSON.stringify({
+        reply: "x",
+        terrain: {
+          rivers: [{ action: "add", shape: "straight", width: 20, depth: 5 }],
+        },
+      }),
+      [],
+      riverAuth,
+    ),
+  /河形/,
+);
+assert.throws(
+  () =>
+    readConversationReply(
+      JSON.stringify({
+        reply: "x",
+        terrain: {
+          rivers: [{ action: "add", shape: "meander", width: 10, depth: 5 }],
+        },
+      }),
+      [],
+      riverAuth,
+    ),
+  /width/,
+);
+await assert.rejects(
+  compileConversationTerrain(t, doc(t), {
+    rivers: [
+      {
+        action: "add",
+        id: "bad-shape",
+        shape: "meander",
+        width: 20,
+        depth: 5,
+        length: 400,
+      },
+    ],
+  }),
+  /空间不足/,
+);
+await assert.rejects(
+  compileConversationTerrain(t, doc(t), highLevel.terrain, {
+    protect: () => {
+      throw Error("locked river footprint");
+    },
+  }),
+  /locked river footprint/,
+);
+assert.deepEqual(
+  readConversationReply('{"unsupported":"无法判断河流位置"}', [], riverAuth),
+  { unsupported: "无法判断河流位置", operations: [] },
+);
+console.log(
+  "PASS screenshot regressions: empty unsupported/terrain never dereference missing operations; literal 20m/5m + curved path compiled on a copy, no global flood, no asset fallback, bounded river-only protocol.",
 );

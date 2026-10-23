@@ -3,6 +3,11 @@ import { exact, finite, vec, cloneData } from "./ai-scene-format.js";
 import { generateHeightfield } from "./terrain-generation.js";
 import { sampleGrid } from "./terrain-import.js";
 import { cleanRiver, carveRiver, riverStrip } from "./terrain-river.js";
+import {
+  checkRiverPath,
+  expandRiverPath,
+  riverPathFields,
+} from "./local-scene-river.js";
 const kinds = [
   "flat",
   "plain",
@@ -83,7 +88,17 @@ export function cleanConversationTerrain(input) {
     for (const r of p.rivers) {
       exact(
         r,
-        ["action", "id", "name", "points", "width", "depth", "bank", "water"],
+        [
+          "action",
+          "id",
+          "name",
+          "points",
+          "width",
+          "depth",
+          "bank",
+          "water",
+          ...riverPathFields,
+        ],
         "河道",
       );
       if (!["add", "edit", "remove"].includes(r.action))
@@ -103,8 +118,13 @@ export function cleanConversationTerrain(input) {
         Object.keys(r).every((k) => ["action", "id"].includes(k))
       )
         throw Error("河道修改不能为空");
-      if (r.action === "add" && !Array.isArray(r.points))
-        throw Error("新增河道需要points");
+      checkRiverPath(r);
+      if (
+        r.action === "add" &&
+        !Array.isArray(r.points) &&
+        r.shape === undefined
+      )
+        throw Error("新增河道需要shape或points");
       if (r.action === "add" && !r.id) throw Error("缺少内部河道ID");
       if (r.points !== undefined) {
         if (
@@ -293,7 +313,14 @@ export async function compileConversationTerrain(
       warnings.push("修改河道为降低式再刻蚀，旧沟槽不自动填回");
     const merged = { ...(index >= 0 ? rivers[index] : {}), ...r };
     delete merged.action;
-    const river = cleanRiver(merged, size);
+    const river = cleanRiver(
+      expandRiverPath(
+        merged,
+        size,
+        (x, z) => sampleGrid(h, n, n, x / size + 0.5, z / size + 0.5) * ex,
+      ),
+      size,
+    );
     riverStrip(river, size);
     if (index >= 0) rivers[index] = river;
     else rivers.push(river);
