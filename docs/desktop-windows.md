@@ -1,20 +1,36 @@
 # Windows 轻量桌面版：Tauri 2 预检工程
 
-## 下载并安装：1.2.1 当前安装包
+## 下载并安装：1.2.2 当前安装包
 
-[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39895580080/artifacts/12476229749)（可能需要登录 GitHub；附件保留至 2027-01-21）。
+[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39898401400/artifacts/12478221320)（可能需要登录 GitHub；附件保留至 2027-01-21）。
 
 1. 升级前将重要工程另存 `.previz` 并备份，退出旧版本。不需要清空缓存或删除本地工程。
-2. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 **`PREVIZ LAB_1.2.1_x64-setup.exe`**，双击安装。不要把同包的 `previz-lab.exe` 误认作安装器。
+2. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 **`PREVIZ LAB_1.2.2_x64-setup.exe`**，双击安装。不要把同包的 `previz-lab.exe` 误认作安装器。
 3. 这是 Windows x64 当前用户安装包；缺少 WebView2 时安装过程需要联网获取微软运行环境。软件不包含 AI 权重，不会自动启动模型服务。
 4. 安装包仍未签名。包内 `.shots/desktop-artifacts.json` 记录实际字节与哈希，可使用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 核对；哈希校验不等于杀毒检测。
 5. 安装后先测试工程打开 / 另存、PNG 与短视频，再用于重要项目。安装启动检查不代表用户 GPU、原生文件权限与完整交互全面验收。
 
-安装器 SHA256：`fffc6eaeb5071719c28c21d00e3295b67d09c5448892d727660ce91f58b9908c`。
+安装器 SHA256：`0b97cd757bddcf813ee8175315cd917d68c22a8dd538902d23d4ebde42a3a430`。
 
-[成功构建与安装启动检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39895580080)。源码与交付文档均推送当前开发分支，没有合并 main 或发布 GitHub Release。
+[成功构建与安装启动检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39898401400)。源码与交付文档均推送当前开发分支，没有合并 main 或发布 GitHub Release。
 
-## 1.2.1 右键菜单冲突修复
+## 1.2.2 主题、模型库与水面修复
+
+- 三个主题圆点恢复顶栏左侧；自定义背景 / 面板 / 强调色可预览、取消、保存并在重启后恢复。主题仅改变工作区，不修改场景或工程。
+- 分组改紧凑下拉框，卡片有独立滚动区，不再被分组栏遮住。1568×842 回归可完整显示两行四张卡片，后续卡片可滚动触达；收起模型库时场景物体列表恢复剩余空间。
+- 新场景水面默认关闭；水面开关连续点击能正确交替，状态文字同步。水位输入和海岛生成不再偷偷开启水面。**旧工程明确保存的开启设置仍会恢复，需要在地形 → 基础 → 水面中关一次并保存；升级不强改已有工程。**
+- 源码 `5ee505923fc1c6d8b93f4303d795bb1d2726a8e7`；Windows run `39898401400` / job `120234061951` 原生编译、NSIS 打包、静默安装及原生窗口启动检查通过。
+- 安装器 **2,266,983 bytes**；应用 exe **4,584,960 bytes**；Actions ZIP **4,777,104 bytes**，附件 `12478221320`。
+- Windows 构建全部前端文件路径、字节数及 SHA256 与本地完成回归的桌面前端逐项一致。开发版、断网离线 HTML、桌面 CSP 前端新回归通过；仍不代表 Windows 完整 UI / GPU 导出 / 原生文件权限已全面验收。
+- 未签名；按用户要求不继续处理浏览器拦截。未在此环境下载二进制做独立第二次哈希校验，摘要来自实际 Windows 构建清单与 GitHub 上传元数据。
+
+应用 exe SHA256：`06b82635b4503f436b603129889364e75ea29a5a8094722d2f06a9af049bd24a`。
+
+ZIP SHA256（GitHub 上传摘要）：`09ad4f271e8ac1418a63900d4e1404282dddc2d6c9dd1572d39b574c076c9a68`。
+
+[使用方式与回归范围](workspace-ui.md)。构建证据：[`desktop-1.2.2-evidence/windows-run.json`](desktop-1.2.2-evidence/windows-run.json)、[`windows-artifacts.json`](desktop-1.2.2-evidence/windows-artifacts.json)、[`artifact-metadata.json`](desktop-1.2.2-evidence/artifact-metadata.json)。
+
+## 1.2.1 右键菜单冲突修复（历史，1.2.2 保留）
 
 - 修复视口饼菜单与 WebView 默认右键菜单同时出现的问题。画布 / 饼菜单及其后代取消默认菜单；其他区域不全局禁用右键。
 - 保留右键拖动平移、Esc 关闭、键盘导航、输入框正常右键菜单，以及 1.2.0 新手指引 / 模型库 / 木构宝塔 / 斜边楼梯与既有时间轴功能。

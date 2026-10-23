@@ -15,3 +15,7 @@
 通过：`npm run test:desktop`、`npm run test:radial-ui`、`npm run test:onboarding`、桌面浏览器预检及 `npm run all` / `npm run build:desktop`。模型库浏览器回归产出通过报告（含导入 / 移动 / 删除 / 恢复 / 工程携带 / 并发保护）；执行工具等待曾超时，随后确认进程已退出且完整报告已写入，不据此声称完整 `npm test` 通过。
 
 均为 Linux Chromium / 模拟 IPC 检查，不是用户 Windows 的 GPU、原生磁盘或完整 UI 实机验收。Windows 构建、安装启动状态及下载链接以 `desktop-windows.md` 后续实际记录为准。
+
+## Windows 交付
+
+1.2.2 原生 Windows 构建、安装与窗口启动检查通过，源码 `5ee505923fc1c6d8b93f4303d795bb1d2726a8e7`。Windows 打包前端与本地回归桌面构建逐项哈希一致。下载链接和安装器哈希见 [Windows 安装说明](desktop-windows.md)。截图 `workspace-ui-evidence/library-theme-fixed.png` 为 Linux 桌面 CSP 前端预检，注入 CJK 字体仅用于截图，不是 Windows 截图，也没有随安装包分发字体。
