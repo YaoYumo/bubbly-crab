@@ -1,0 +1,11 @@
+{
+  "frontendFilesMatchLocal": 15,
+  "helperUnitTests": 10,
+  "nativeBoundaryUnitTests": 4,
+  "installedNativeHelperFixture": true,
+  "realAstrillDllInjected": false,
+  "realUserCrashReproducedInCI": false,
+  "realGGUFInferenceVerified": false,
+  "sourceCommit": "cda4b6404076bf5a38470e45303011d65bf3f9f2",
+  "sandboxSecondDownloadHashVerified": false
+}

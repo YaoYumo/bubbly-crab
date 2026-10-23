@@ -1,0 +1,42 @@
+{
+  "artifactId": 12475121975,
+  "expectedSource": "e9b4e00d2ea4054f6598586082ea77460452af36",
+  "status": "CHECK_FAILED_OR_UNAVAILABLE",
+  "phase": "update Defender signatures",
+  "scanner": "Microsoft Defender on GitHub Windows runner",
+  "archiveDigestVerified": true,
+  "binaryHashesVerified": true,
+  "defender": {
+    "serviceEnabled": true,
+    "signatureDate": "",
+    "productVersion": "4.18.26080.4",
+    "signatures": null,
+    "engineVersion": "1.1.26100.4",
+    "antivirusEnabled": true
+  },
+  "signatureUpdate": "failed; require fresh existing signatures",
+  "scanExitCode": null,
+  "threats": [],
+  "note": "A no-detection result is not a browser reputation verdict or proof of safety. Do not override the browser block based on this report.",
+  "artifact": {
+    "sourceCommit": "e9b4e00d2ea4054f6598586082ea77460452af36",
+    "name": "previz-lab-windows-x64-unsigned",
+    "bytes": 4775704,
+    "githubDigest": "sha256:bcfcf766250b9ea92868795dfdb189e9cc678e571162e6328694455660238176"
+  },
+  "archiveDigest": "sha256:bcfcf766250b9ea92868795dfdb189e9cc678e571162e6328694455660238176",
+  "binaries": [
+    {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.2.0_x64-setup.exe",
+      "sha256": "8850b1b9d5f9cb204e8f0c3c5202dfcdbe4ab14577f001b144647b7f9a4e46c2",
+      "bytes": 2266794
+    },
+    {
+      "path": "src-tauri/target/release/previz-lab.exe",
+      "sha256": "2f2794b340dd64b8967493565a107934ca97992c5b395d16c4234f9a9a324ca1",
+      "bytes": 4584448
+    }
+  ],
+  "error": "System.Management.Automation.RuntimeException",
+  "diagnostic": "Defender signatures are missing or too old"
+}

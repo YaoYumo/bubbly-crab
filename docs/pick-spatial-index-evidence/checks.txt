@@ -1,0 +1,20 @@
+PASS pick-spatial-index.test.mjs | Node: 647 exact result comparisons; unsupported/skinned fallback; invalidation/release
+PASS pick-spatial-index-regression.mjs | DEV and real file, browser offline for file; each four fixtures render 8 warmup + 30 samples, picking 8 warmup batches + 30 alternating batches/path; each 204 semantic comparisons + native pointer select/gizmo
+PASS model-instancing-regression.mjs | DEV original source picking, pixel/draw, archive/edit/release
+PASS performance-regression.mjs | DEV original isolation, four fixtures and lifecycle assertions
+PASS road-diagnostics-regression.mjs | DEV and final file
+PASS window-lights.test.mjs | Node
+PASS window-lights-regression.mjs | DEV and final file; original shader/pixel/draw/archive/UI assertions
+PASS project-resources-regression.mjs | DEV companion OBJ/MTL/PNG, archive, IDs/material policies, undo and durable reload
+PASS terrain-roads-regression.mjs | DEV original terrain/road geometry, edits, undo, planning and vegetation assertions
+PASS road-diagnostics.test.mjs | Node
+PASS junction-surface.test.mjs | Node original area/ray assertions
+PASS lighting-offline.mjs | final file
+PASS road-properties-offline.mjs | final file
+PASS road-planning-offline.mjs | final file
+PASS npm run build | production
+PASS npm run build:single | production
+PASS node --check | five touched source modules and two new test modules
+PASS git diff --check | workspace
+
+Final long-sampling process and final compatibility batch both exited 0. No previous regression threshold/sample/assertion was changed. A separate PICK_SMOKE=1 development run is not included as formal evidence. Early harness attempts were corrected for road wrapper objects lacking worldPos(), normalized imported triangle coordinates, and a development HMR interruption; final complete DEV and offline runs are independent successful runs. Earlier evidence directories remain historical release snapshots. This is not a full historical suite, hardware FPS acceptance, or a claim that cold picks are faster. No LOD, Bloom, collision/avoidance index or triangle-level BVH implemented.

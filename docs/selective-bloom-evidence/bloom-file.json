@@ -1,0 +1,203 @@
+{
+  "entry": "file:",
+  "excluded": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "skyRejected": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "nativeSkyRejected": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "legacySky": {
+    "mean": 2.024411892361111,
+    "max": 32,
+    "changed": 42824
+  },
+  "reflectionRejected": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "reflectionLevel": 234,
+  "positive": {
+    "mean": 151.81196180555557,
+    "max": 255,
+    "changed": 425128
+  },
+  "occlusion": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "cutout": {
+    "mean": 125.88745442708333,
+    "max": 255,
+    "changed": 427110
+  },
+  "fullAfterCutout": {
+    "mean": 151.81196180555557,
+    "max": 255,
+    "changed": 425128
+  },
+  "multiSelected": 1,
+  "shaderRejected": {
+    "mean": 0,
+    "max": 0,
+    "changed": 0
+  },
+  "unsupportedCount": 1,
+  "autoOn": 7,
+  "lit": 13776939,
+  "unlit": 0,
+  "gpuLit": 545574018,
+  "gpuDark": 0,
+  "activeGroups": 71,
+  "combinedLOD": {
+    "near": 0,
+    "medium": 0,
+    "far": 3,
+    "culledMeshes": 6,
+    "simplifiedMeshes": 4,
+    "sourceTriangles": 688,
+    "lodTriangles": 144,
+    "prepareMs": 0.900000000372529,
+    "builds": 0,
+    "pending": 0,
+    "idle": {
+      "slices": 3,
+      "steps": 61,
+      "maxSliceMs": 4,
+      "errors": 0
+    },
+    "cachedGeometries": 4,
+    "geometryBytes": 15712
+  },
+  "exportCheck": {
+    "pngWidth": 480,
+    "pngHeight": 320,
+    "videoFrames": 2,
+    "videoBytes": 11510
+  },
+  "samples": [
+    {
+      "geometries": 466,
+      "textures": 31,
+      "variants": 63,
+      "programs": 62
+    },
+    {
+      "geometries": 466,
+      "textures": 31,
+      "variants": 63,
+      "programs": 62
+    },
+    {
+      "geometries": 466,
+      "textures": 31,
+      "variants": 63,
+      "programs": 62
+    },
+    {
+      "geometries": 466,
+      "textures": 31,
+      "variants": 63,
+      "programs": 62
+    }
+  ],
+  "releasedSamples": [
+    {
+      "geometries": 465,
+      "textures": 19,
+      "programs": 47
+    },
+    {
+      "geometries": 465,
+      "textures": 19,
+      "programs": 47
+    },
+    {
+      "geometries": 465,
+      "textures": 19,
+      "programs": 47
+    },
+    {
+      "geometries": 465,
+      "textures": 19,
+      "programs": 47
+    }
+  ],
+  "selectedSnapshot": {
+    "lod": {
+      "settings": {
+        "enabled": false,
+        "near": 20,
+        "far": 26,
+        "pixels": 1.5
+      },
+      "near": 0,
+      "medium": 0,
+      "far": 0,
+      "culledMeshes": 0,
+      "simplifiedMeshes": 0,
+      "sourceTriangles": 0,
+      "lodTriangles": 0,
+      "geometryBytes": 0,
+      "cachedGeometries": 0,
+      "pending": 0,
+      "idle": {
+        "slices": 3,
+        "steps": 61,
+        "maxSliceMs": 4,
+        "errors": 0
+      }
+    },
+    "bloom": {
+      "enabled": true,
+      "mode": "selective",
+      "windows": true,
+      "strength": 1,
+      "radius": 0.3,
+      "threshold": 1.1,
+      "quality": "medium",
+      "active": true,
+      "selection": {
+        "selectedSlots": 3,
+        "unsupported": 0,
+        "staleParts": 0,
+        "candidateMeshes": 431,
+        "maskDrawCalls": 432,
+        "width": 480,
+        "height": 320,
+        "estimatedTargetBytes": 1843200,
+        "materialVariants": 63
+      },
+      "blockedReason": null,
+      "glowWidth": 120,
+      "glowHeight": 80
+    }
+  },
+  "checks": [
+    "sky + unselected HDR + selected non-emissive reflections rejected",
+    "positive emission and legacy controls",
+    "opaque depth + native alpha cutout occlusion",
+    "multi-material group selection + unsupported ShaderMaterial fail-closed",
+    "object inspector surface/source selection + undo/redo",
+    "auto windows + off + ratio zero + grey mode",
+    "global automatic windows switch",
+    "procedural GPU grid window hooks + ratio zero",
+    "base instancing cache isolation + LOD structural refs + pick/gizmo",
+    "DOF + anamorphic + Basic suspend/restore + letterbox + PNG + two-frame video",
+    "copy + rebuild + serialize + archive stable references",
+    "unmatched surface fails closed + diagnostics",
+    "injected mask failure restoration",
+    "four release/recreate resource plateau",
+    "all/selective/zero-strength mode lifecycle + legacy defaults"
+  ]
+}

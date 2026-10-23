@@ -1,0 +1,353 @@
+{
+  "scope": "Windows-first Tauri preflight scaffold; not an installer/native acceptance",
+  "recordedDate": "2026-10-21",
+  "environment": {
+    "platform": "Linux x86_64",
+    "node": "22.22.3",
+    "rustc": null,
+    "cargo": null,
+    "windows": false
+  },
+  "native": {
+    "compiled": false,
+    "installerProduced": false,
+    "installed": false,
+    "webview2Tested": false,
+    "nativeDiskIOTested": false,
+    "installerBytes": null,
+    "signed": false,
+    "cargoLockGenerated": false
+  },
+  "versions": {
+    "tauriAPI": "2.12.4",
+    "tauriCLI": "2.12.3",
+    "dialog": "2.8.3",
+    "fs": "2.7.1",
+    "rustDirect": {
+      "tauri": "2.12.4",
+      "tauri-build": "2.7.3",
+      "tauri-plugin-dialog": "2.8.3",
+      "tauri-plugin-fs": "2.7.1"
+    },
+    "fflate": "0.8.3",
+    "ajv": "8.20.0"
+  },
+  "frontendBytes": 2309504,
+  "checks": {
+    "desktopUnit": "PASS; schema/allowlist/isolation/chunk exactness/short writes/cancel/failure/close/budgets/serial/recovery; mocks, no Rust",
+    "webBuild": "PASS npm run all",
+    "desktopFrontendBuild": "PASS npm run build:desktop; no native compilation",
+    "desktopBrowser": "PASS Linux Chromium + actual JS SDK against mock IPC. See browser-mock-ipc.json",
+    "referenceUnitContract": "PASS node test/reference.test.mjs; temporary local fixture only, no provider inference",
+    "projectResourcesDev": [
+      "PASS companion OBJ/MTL/PNG; deduplicated embedded assets; fresh-registry archive roundtrip; actual texture image, transform and independent material policies; undo refs; invalid load preserves scene; Share absent 928678",
+      "PASS IndexedDB reload restores model resources and appearance",
+      "PASS library rebuild/performance mode/global reset + actual UI; no page errors"
+    ],
+    "projectResourcesFile": [
+      "PASS companion OBJ/MTL/PNG; deduplicated embedded assets; fresh-registry archive roundtrip; actual texture image, transform and independent material policies; undo refs; invalid load preserves scene; Share absent 928678",
+      "PASS library rebuild/performance mode/global reset + actual UI; no page errors"
+    ],
+    "behaviorUnit": {
+      "status": "PASS",
+      "cases": "schema, finite values, budgets, blocked/stationary, deterministic A*, absolute sampling, immutable persistence, corner clearance",
+      "randomRoutes": {
+        "successes": 40,
+        "failures": 20
+      },
+      "stats": {
+        "checks": 105,
+        "visited": 33,
+        "points": 7,
+        "obstacles": 1
+      }
+    },
+    "behaviorDev": {
+      "mode": "dev",
+      "core": {
+        "status": "PASS",
+        "media": {
+          "video": {
+            "frames": 32,
+            "seconds": 8,
+            "bytes": 39996,
+            "actions": [
+              "walk",
+              "wave",
+              "run"
+            ]
+          },
+          "reference": {
+            "frames": 16,
+            "keyframes": 3,
+            "bytes": 233176,
+            "repeatedFirstLastPixelsEqual": true
+          },
+          "cancellationAndFailureRestore": true
+        },
+        "points": 7,
+        "coverage": {
+          "static": 1,
+          "obstacles": 1,
+          "ground": 0,
+          "aboveBelow": 0,
+          "dynamic": 0,
+          "effects": 0,
+          "hidden": 0
+        },
+        "checks": [
+          "readonly preview",
+          "stale/tamper",
+          "warning/duration confirmation",
+          "no-undo and partial / post-append rollback",
+          "one-step undo/redo",
+          "seek and loop",
+          "hold",
+          "save/load",
+          "invalid load fail closed",
+          "read-only keys / transforms",
+          "duplicate independence",
+          "busy / terrain / unknown guards",
+          "legacy mover",
+          "PNG / multi-frame / failed PNG restore",
+          "32-frame WebCodecs / cancelled / failed video restore",
+          "16-frame reference normal + gray + depth/ID/mask, repeat pixel equality"
+        ]
+      },
+      "ui": "PASS: form, standalone preview, local playback, mandatory confirmation, single undo, responsive 1440/800/390, close cleanup",
+      "errors": []
+    },
+    "behaviorFile": {
+      "mode": "file-offline",
+      "core": {
+        "status": "PASS",
+        "media": {
+          "video": {
+            "frames": 32,
+            "seconds": 8,
+            "bytes": 39996,
+            "actions": [
+              "walk",
+              "wave",
+              "run"
+            ]
+          },
+          "reference": {
+            "frames": 16,
+            "keyframes": 3,
+            "bytes": 233175,
+            "repeatedFirstLastPixelsEqual": true
+          },
+          "cancellationAndFailureRestore": true
+        },
+        "points": 7,
+        "coverage": {
+          "static": 1,
+          "obstacles": 1,
+          "ground": 0,
+          "aboveBelow": 0,
+          "dynamic": 0,
+          "effects": 0,
+          "hidden": 0
+        },
+        "checks": [
+          "readonly preview",
+          "stale/tamper",
+          "warning/duration confirmation",
+          "no-undo and partial / post-append rollback",
+          "one-step undo/redo",
+          "seek and loop",
+          "hold",
+          "save/load",
+          "invalid load fail closed",
+          "read-only keys / transforms",
+          "duplicate independence",
+          "busy / terrain / unknown guards",
+          "legacy mover",
+          "PNG / multi-frame / failed PNG restore",
+          "32-frame WebCodecs / cancelled / failed video restore",
+          "16-frame reference normal + gray + depth/ID/mask, repeat pixel equality"
+        ]
+      },
+      "ui": "PASS: form, standalone preview, local playback, mandatory confirmation, single undo, responsive 1440/800/390, close cleanup",
+      "errors": []
+    },
+    "scopeLimits": "Small Chromium captures only. No external decoder, Windows native execution, long/high-spec or cross-GPU certification."
+  },
+  "security": {
+    "npmAll": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 10,
+      "critical": 0,
+      "total": 11
+    },
+    "npmProduction": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "rustAudit": null,
+    "modelInferencePerformed": false,
+    "modelWeightsDownloaded": false,
+    "localAIConfigExists": false,
+    "note": "No automatic provider/model calls. Remaining npm reports belong to dev tooling; npm production zero does not cover Rust/vendored code/runtime/native outputs."
+  },
+  "sourcesAndOfflineOutput": [
+    {
+      "path": "package.json",
+      "bytes": 3086,
+      "sha256": "451e920bf97e58dfac6226a7856f19258909a244db9fb900bcf4206fe93dba65"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 88674,
+      "sha256": "1c3e0435fd889d2ff72fcb4132994c1837d51310ec82e73fa353dc0ae0d6cd39"
+    },
+    {
+      "path": "vite.desktop.config.js",
+      "bytes": 483,
+      "sha256": "54d64ff25de77012856fdb3007179eb57b5c283af33d85842f2b89435d9ef0da"
+    },
+    {
+      "path": "scripts/build-desktop.mjs",
+      "bytes": 579,
+      "sha256": "0be0c4b1fff91d9d14c427c1bdb1cc1c10ed43f7f08d5a6874379c9c41cdc04c"
+    },
+    {
+      "path": "scripts/desktop-artifacts.mjs",
+      "bytes": 1929,
+      "sha256": "e5f0a2e8db9c8fbdbb588853ef2e1d195ae25390b087820e727ac561dde90bab"
+    },
+    {
+      "path": "scripts/desktop-preview.mjs",
+      "bytes": 1797,
+      "sha256": "07838dc131698dda8a58981afcc7f2c64445a2461933439806acc56a2b8c5000"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "bytes": 457,
+      "sha256": "1fa5d9454576bf87739cdd2b9db47da5107172a99c05a771eb171d0e937cfece"
+    },
+    {
+      "path": "src-tauri/build.rs",
+      "bytes": 39,
+      "sha256": "487059eaf8a947b80f20a9aacac038a5047b2ad69d2401b827376c67d6fe847f"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "bytes": 376,
+      "sha256": "439b2b067aa50a1e6baa7dc9547e32ffb6e8282b5bf2f8c39891a73f23584fe3"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "bytes": 2132,
+      "sha256": "deb8aecc1b581fee28e568641bae5bfe968c438523bafb3aa87e0335f8f9392e"
+    },
+    {
+      "path": "src-tauri/capabilities/main.json",
+      "bytes": 519,
+      "sha256": "303f36144a3de9e5b2abf1093b735cfcce27dec0515853d3d1d6e24418f1be72"
+    },
+    {
+      "path": "src-tauri/icons/icon.ico",
+      "bytes": 9302,
+      "sha256": "22d92baec1c6e1ecd2f95824b3eb95f138158edc2edf362c161b479b04353393"
+    },
+    {
+      "path": "src-tauri/icons/icon.png",
+      "bytes": 3900,
+      "sha256": "6220cab5a7edde5d7e7d96742273d31fe15284ecfcd1e6a9db9a2dac2f2ec767"
+    },
+    {
+      "path": "src-tauri/icons/source.svg",
+      "bytes": 437,
+      "sha256": "147d290dc704f9ee758b267658ce765c0c0adac5c2b620ba87a28097d97aea64"
+    },
+    {
+      "path": "src/desktop-runtime.js",
+      "bytes": 567,
+      "sha256": "a792538c314eba519b71a603122c6e0f092618fcba43ca2775b84347c0cf6a41"
+    },
+    {
+      "path": "src/desktop-save.js",
+      "bytes": 4765,
+      "sha256": "d2de32c87ac6101fd6bb261d6f2eb0500deaa5c2dd45cff4c99927dd9a7e31bc"
+    },
+    {
+      "path": "src/desktop-ui.js",
+      "bytes": 8474,
+      "sha256": "ee9de27a9f56101b6f4d1cfeae2996c0dfd4c73d60cb2c70b5abfbc95363f52f"
+    },
+    {
+      "path": "src/util.js",
+      "bytes": 5161,
+      "sha256": "af9afe6fe89ae141b1f93ec2bb4c89a44af05493aa4265434e23fcadb695e4fa"
+    },
+    {
+      "path": "src/main.js",
+      "bytes": 53018,
+      "sha256": "803552588476d4a2fa3711408a3132149117c68d967a496aa76118f56be8f91e"
+    },
+    {
+      "path": "src/export.js",
+      "bytes": 21712,
+      "sha256": "94265a3715a93ca094a827ec8a880feb531cc8f7a5d6253feac6ecb1d8fd13c5"
+    },
+    {
+      "path": "src/panels.js",
+      "bytes": 135370,
+      "sha256": "c7b5740d1aa8416243f86ed6ed1c51ccaa8cb7457eafe23987162f038e14eb9a"
+    },
+    {
+      "path": "src/sceneio.js",
+      "bytes": 13755,
+      "sha256": "288b91531c0f400325f524c11b51233acb7f46f65dc1980bdea66670447961a7"
+    },
+    {
+      "path": "src/seedance.js",
+      "bytes": 4859,
+      "sha256": "d7de7e84bd20e63f01bf67c08f15568ad4bd1c02aa056681acae93e4b0fd5b73"
+    },
+    {
+      "path": "src/ai-scene-gateway.js",
+      "bytes": 4523,
+      "sha256": "091bbcad28738556f80ddf12778f6fb6d5802df3608db1c3b296075feff1ec06"
+    },
+    {
+      "path": "src/reference-gateway.js",
+      "bytes": 5534,
+      "sha256": "10564be28995c25598510dcd0084d4c3d1a9b95138f7c9381779f07992977f68"
+    },
+    {
+      "path": "test/desktop.test.mjs",
+      "bytes": 6556,
+      "sha256": "c5c00c3b334ca8bd23bbeb9759cf6b2caf18ef52009ef61df0543798622bc95e"
+    },
+    {
+      "path": "test/desktop-regression.mjs",
+      "bytes": 20469,
+      "sha256": "09b5ed66411701955d1d777556bc224092a34dc91be8861117187024b1fca5fd"
+    },
+    {
+      "path": ".github/workflows/desktop-windows.yml",
+      "bytes": 1251,
+      "sha256": "2d319542913c7428fed36123463a076855b7d804ce84d6527e76ecc0a90613b2"
+    },
+    {
+      "path": "docs/desktop-windows.md",
+      "bytes": 11998,
+      "sha256": "8b7922dac405de9bbb8965021e4f1d78a89ca464224c6f4dc731a36876d0f39e"
+    },
+    {
+      "path": "previz-lab.html",
+      "bytes": 2329578,
+      "sha256": "0c7d9ee9cfa88dacdf60ca42d2bd1ba3c4cdcc5690f0ab7f3275a19ca2b4f176"
+    }
+  ],
+  "note": "Historical behavior evidence remains historical; this manifest is scoped to this desktop preflight snapshot. Disk inventory is not proof of a fresh Windows build."
+}

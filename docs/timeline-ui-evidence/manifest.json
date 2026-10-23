@@ -1,0 +1,25 @@
+{
+  "version": "1.1.1",
+  "date": "2026-10-21",
+  "appSourceCommit": "f2f0ad9c86423a3fc549b02924de5cc7a4aa03e6",
+  "nativeBuildRun": 39574424795,
+  "nativeJob": 119136286332,
+  "artifact": 12333712446,
+  "downloadURL": "https://github.com/YaoYumo/bubbly-crab/actions/runs/39574424795/artifacts/12333712446",
+  "artifactBytes": 4087020,
+  "artifactExpires": "2027-01-19T09:06:48Z",
+  "nativeValidation": "INSTALL_AND_WINDOW_LIVENESS_ONLY",
+  "nativeTimelineInteractionValidated": false,
+  "nativeVisualsValidated": false,
+  "nativeDiskSaveValidated": false,
+  "userGPUVideoValidated": false,
+  "browserValidation": "Linux Chromium: web, offline HTML, Tauri-CSP desktop frontend; NOT native WebView2",
+  "measuredAt1440x1000": {
+    "panelHeight": 232,
+    "videoTrackHeight": 111,
+    "clipHeight": 99,
+    "trimHandleWidth": 14,
+    "videoKeyframes": 0
+  },
+  "notes": "After the app source commit, regression assertions for scrolled oversized-clip focus and zoomed trimming were added and passed in all three browser modes. No subsequent app/runtime code changes."
+}

@@ -1,0 +1,1 @@
+PASS window settings / deterministic occupancy / metadata scope / no source mutation / bounded material pairs / unchanged geometry / gray + legacy restore / day-night factor / release

@@ -1,0 +1,3 @@
+PASS companion OBJ/MTL/PNG; deduplicated embedded assets; fresh-registry archive roundtrip; actual texture image, transform and independent material policies; undo refs; invalid load preserves scene; Share absent 928642
+PASS IndexedDB reload restores model resources and appearance
+PASS library rebuild/performance mode/global reset + actual UI; no page errors

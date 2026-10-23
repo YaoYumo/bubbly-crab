@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-17",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "scope": "Road diagnostics first release. Earlier junction and model-instancing work preserved; night windows not implemented.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1866161,
+    "sha256": "0e1e6bd8af80a995cedc8140bb36e9718a66c5b561c0f418824f0d232e4fa438"
+  },
+  "checks": [
+    {
+      "name": "road-diagnostics.test.mjs",
+      "scope": "node",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics-regression.mjs",
+      "scope": "dev and real file with browser offline",
+      "status": "PASS"
+    },
+    {
+      "name": "road-properties-regression.mjs",
+      "scope": "dev",
+      "status": "PASS"
+    },
+    {
+      "name": "terrain-roads-regression.mjs",
+      "scope": "dev",
+      "status": "PASS"
+    },
+    {
+      "name": "road-planning-regression.mjs",
+      "scope": "dev",
+      "status": "PASS"
+    },
+    {
+      "name": "road-performance-regression.mjs",
+      "scope": "dev",
+      "status": "PASS"
+    },
+    {
+      "name": "model-instancing-regression.mjs",
+      "scope": "dev",
+      "status": "PASS"
+    },
+    {
+      "name": "performance-regression.mjs",
+      "scope": "dev assertions and final JSON",
+      "status": "PASS assertions observed"
+    },
+    {
+      "name": "road-properties-offline.mjs",
+      "scope": "file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-planning-offline.mjs",
+      "scope": "file",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-offline.mjs",
+      "scope": "file",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-surface.test.mjs",
+      "scope": "node",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-regression.mjs",
+      "scope": "real file, original 6 angles x 3 distances x 2 tilts x 4 sidewalk corners",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build",
+      "scope": "production",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build:single",
+      "scope": "production",
+      "status": "PASS"
+    }
+  ],
+  "executionNote": "Performance regression continued after the outer serial batch wait timed out. Subsequent process wait confirmed final PASS output and final fixture JSON; original child exit code unavailable. Not re-run while active.",
+  "evidence": {
+    "dev.json": {
+      "bytes": 2850,
+      "sha256": "435719171c25c89236ff709c97b439b32085c16c6647e81485813fccfedf8ac7"
+    },
+    "file.json": {
+      "bytes": 2850,
+      "sha256": "f06ef6604d5d3cc13bac2b8f4767dca5205792e0882dd4b62a44f9b3b653edc0"
+    },
+    "unit.txt": {
+      "bytes": 317,
+      "sha256": "0aacace2e656bc0f9bc07c0a65fab5a74deca7d94558ffc224ff681217e04840"
+    },
+    "performance-dev.json": {
+      "bytes": 41487,
+      "sha256": "3887310300e97fb15d16aae55564b7b7427672a079ee0dc4601b0ad305ee79e4"
+    },
+    "instancing-dev.json": {
+      "bytes": 583,
+      "sha256": "8fa69e061b86629e57718a2de2ceae427fb6d6e445ab1d297b50d543b53bdf46"
+    },
+    "road-performance-dev.json": {
+      "bytes": 1573,
+      "sha256": "8f80656c7a173fb9228992c4d59ef9ff9946995c5ee5885531ad82b0392a1cc5"
+    },
+    "junction-file.txt": {
+      "bytes": 3996,
+      "sha256": "0997f6c6200ea83406bf7def3450fe5dcd03ed1e2e3f076fdd620fa334253885"
+    },
+    "checks.txt": {
+      "bytes": 998,
+      "sha256": "64d3f8bcd377cf7b8b09c8dbbce912aef8c9f37a05441f61103353b9cc43b82c"
+    }
+  },
+  "sourceSha256": {
+    "src/road-diagnostics.js": "27f5d60c8d50f42c71f3c79636c1418e15f315f7df8ee71b9425dca4dbbbd1a1",
+    "src/road-diagnostics-ui.js": "91f69356dec516c473d2704ef6f65d00460876e1ff8f85b3a4ff6869653d7913",
+    "src/road-terrain.js": "433384bfde3d527e198091ea5ab6de1ab22c3ffb78ac8090491c682c68350f23",
+    "src/panels.js": "53df3fbdb071d2a1e71b5dc92bff2db86527c4ea0e68c645b9c9d2505db56bcd",
+    "src/app.js": "71da1d25db49a39ed9df62de2d21def5786d6de5b9711b4155a74827375277bb",
+    "src/styles.css": "11b3536c32c0ab0cb08762c5040d78378622e8e6f12dc7c882f0d47969ff8df1"
+  },
+  "limits": [
+    "Not engineering compliance or full continuous collision analysis.",
+    "1025 stations x 9 lateral points; budgeted triangle index; hidden other roads ignored.",
+    "At least 0.8m reference height difference for overhead road classification; sidewalks included.",
+    "No self-road overpass/building/vehicle/utility clearance; extreme transforms and multilayer self intersections not fully guaranteed.",
+    "Reports in memory only, last 8 roads, 2000 issue ranges; stale positions cannot focus.",
+    "Not full historical suite; not hardware FPS acceptance."
+  ],
+  "earlierEvidence": "ordered-development-evidence remains the earlier two-phase snapshot, including its historical HTML hash, not the current HTML."
+}

@@ -1,0 +1,223 @@
+PASS reference bundle {
+  "manifest": {
+    "schema": "previz-reference/1",
+    "id": "4d569352-45ae-4fc0-8109-ec9581ddba92",
+    "createdAt": "2026-10-20T02:18:30.456Z",
+    "sourceFingerprint": "2d5e5492b9a4be271722fa5948f12f56c4f86abf25265f554904fb440d3c7d20",
+    "shot": {
+      "id": "shot259pw",
+      "name": "Camera 01",
+      "subjectId": "obj17ail"
+    },
+    "settings": {
+      "width": 320,
+      "height": 180,
+      "fps": 5,
+      "duration": 0.6,
+      "frames": 3,
+      "seed": 12345,
+      "channels": true,
+      "subjectId": "obj17ail"
+    },
+    "codec": "vp09.00.10.08",
+    "encodedDuration": 0.6,
+    "lastFrameTime": 0.4,
+    "sampling": "frame starts i/fps; last image is the final encoded frame, NOT mathematical t=duration",
+    "frameFiles": [
+      {
+        "frame": 0,
+        "time": 0,
+        "normal": "frames/00000-normal.png",
+        "gray": "frames/00000-gray.png",
+        "depth": "frames/00000-depth.png",
+        "id": "frames/00000-id.png",
+        "subject": "frames/00000-subject.png"
+      },
+      {
+        "frame": 1,
+        "time": 0.2,
+        "normal": "frames/00001-normal.png",
+        "gray": "frames/00001-gray.png",
+        "depth": "frames/00001-depth.png",
+        "id": "frames/00001-id.png",
+        "subject": "frames/00001-subject.png"
+      },
+      {
+        "frame": 2,
+        "time": 0.4,
+        "normal": "frames/00002-normal.png",
+        "gray": "frames/00002-gray.png",
+        "depth": "frames/00002-depth.png",
+        "id": "frames/00002-id.png",
+        "subject": "frames/00002-subject.png"
+      }
+    ],
+    "channels": {
+      "videos": [
+        "normal",
+        "gray"
+      ],
+      "diagnostics": [
+        "depth16-keyframes",
+        "object-id-keyframes",
+        "subject-mask-keyframes"
+      ],
+      "depth": {
+        "encoding": "PNG grayscale16 big endian; 0=background, 1..65535=near..far",
+        "axis": "positive camera-view Z distance, NOT radial range",
+        "decode": "meters = near + (code-1)/65534*(far-near); per-frame clips in camera/frames.json"
+      },
+      "policy": "Gray/depth/ID omit fx, water, rivers, sky and unsupported ShaderMaterial; alpha-tested cutouts retained, translucency threshold .5; one ID per object/vegetation patch, no per-instance or bone IDs. Diagnostic keyframes only, not full sequences. Gray has fixed neutral lighting, no DOF/Bloom."
+    },
+    "runtime": {
+      "seededCrowd": true,
+      "weather": "frozen particles (no weather stepping)",
+      "lod": false
+    },
+    "files": [
+      {
+        "path": "source/project.previz",
+        "bytes": 2268,
+        "sha256": "38f6cf3d57c7ebbcace4706f6d23e6f961c3b9909c310795e40306351ea5dd6e"
+      },
+      {
+        "path": "source/scene.json",
+        "bytes": 29373,
+        "sha256": "2999e21d2d717229db25f95eda4263f5c693d5f4a5802262cb67665ddf5eacb0"
+      },
+      {
+        "path": "camera/keyframes.json",
+        "bytes": 5662,
+        "sha256": "2e5a7c3094d7096ff772c3371696d1f21fd5ee92ea9ca3c8bb083f2523593113"
+      },
+      {
+        "path": "prompt.txt",
+        "bytes": 1806,
+        "sha256": "c0e1e41a5a6dc75e089e328246ddbb40ea92f4b1bc7c966141cfba173ebf8425"
+      },
+      {
+        "path": "source/character-runtime.json",
+        "bytes": 11972,
+        "sha256": "c80d29640433a2f6c6c1afacd226da3a7f122204a73046176245ff5447f0491b"
+      },
+      {
+        "path": "frames/00000-normal.png",
+        "bytes": 47805,
+        "sha256": "c17455cf24c1322f89b85702c89910fd6701c0ff519c68f5c7587aada2bec482"
+      },
+      {
+        "path": "frames/00000-gray.png",
+        "bytes": 8932,
+        "sha256": "bce2310b7f9555591f8c8b4900b1f33cd874a9c0dab4e07b1d1c41dee22af848"
+      },
+      {
+        "path": "frames/00000-depth.png",
+        "bytes": 9213,
+        "sha256": "29c943ddcf3e8260c0971d5d745d38b4d73dc28108d357dd3637927f9ca71b9b"
+      },
+      {
+        "path": "frames/00000-id.png",
+        "bytes": 3044,
+        "sha256": "e9fcf00dd817ee96a75e15e1fe29d6e8386e68975860d3d522e740641bb05115"
+      },
+      {
+        "path": "frames/00000-subject.png",
+        "bytes": 2643,
+        "sha256": "a6e6887f29b96ca5f671467e41ba8d79d38909924ea32d0caab7ba52fd214e43"
+      },
+      {
+        "path": "frames/00001-normal.png",
+        "bytes": 47447,
+        "sha256": "a09815833073a6504df8d4e977fe7d6530ed35e2fb4a363094e47a63a9b499c2"
+      },
+      {
+        "path": "frames/00001-gray.png",
+        "bytes": 4836,
+        "sha256": "0732ae89f0ea36998e6134194e90e7025182ac668007b61000afe54866d841b5"
+      },
+      {
+        "path": "frames/00001-depth.png",
+        "bytes": 6064,
+        "sha256": "3bea9a957a19833104a41ff2c3741dee012be6addd72b4b47a3077d933c17c85"
+      },
+      {
+        "path": "frames/00001-id.png",
+        "bytes": 2717,
+        "sha256": "76f81ae75ca986862a672f1793ba00d959ed76d29183b15bc7284b6f7717f763"
+      },
+      {
+        "path": "frames/00001-subject.png",
+        "bytes": 2633,
+        "sha256": "3126147b2e0c5a8e53872f3b32ff23686881976108c4f54a4b7f3839bcb86c77"
+      },
+      {
+        "path": "frames/00002-normal.png",
+        "bytes": 50298,
+        "sha256": "3d7ec492cfb243ac8f7b5e5655bd4b1fe55a039498eb47648853ee9934119854"
+      },
+      {
+        "path": "frames/00002-gray.png",
+        "bytes": 5249,
+        "sha256": "63ec9cc4c227705399f6b23a1951508dcc44e81b6be4f2483fb6f9284f251ed8"
+      },
+      {
+        "path": "frames/00002-depth.png",
+        "bytes": 6955,
+        "sha256": "63606f90305fdfe4bf63ef00ae75aad5c97dc4db91e63e363b5e4c6d95c4c024"
+      },
+      {
+        "path": "frames/00002-id.png",
+        "bytes": 2823,
+        "sha256": "5435ba821655ad813f7f8b770012684ff7fc8156e8f8c29bea597f18efb06602"
+      },
+      {
+        "path": "frames/00002-subject.png",
+        "bytes": 2656,
+        "sha256": "018928edadf454259f8c750843fb9ccaf85bcdeac67300374c92eb26d9352869"
+      },
+      {
+        "path": "normal.webm",
+        "bytes": 24358,
+        "sha256": "b0e6faac582ced0a852679a098f00461661a3dd323f73b329b6f6b12b2f88603"
+      },
+      {
+        "path": "gray.webm",
+        "bytes": 18548,
+        "sha256": "80bfe81be70cf7cb36134305aebca494947b99cb0055fe2fb551842e4114f0f4"
+      },
+      {
+        "path": "camera/frames.json",
+        "bytes": 4170,
+        "sha256": "9438e34a76964b63b70fc7c9f55af66dd487693231164de0b99e93bb92b52c75"
+      },
+      {
+        "path": "checks.json",
+        "bytes": 169,
+        "sha256": "026cc17e79b351b3fb4b618c2fcf6eabefa6af39d1004c36a8c28f20b328a632"
+      },
+      {
+        "path": "objects.json",
+        "bytes": 571,
+        "sha256": "afbc41ff33816de112f484901fe40c116db5aca6d0480782c072572123337511"
+      }
+    ]
+  },
+  "checks": {
+    "samples": 3,
+    "issues": [],
+    "method": "Conservative mesh AABB collision and five-point subject ray tests; warnings, not automatic repair or a cinematic score."
+  },
+  "bytes": 311423,
+  "cancel": true,
+  "failure": true,
+  "stale": true,
+  "seededCrowdRepeat": true,
+  "depthMeters": 9.999450666829432,
+  "review": {
+    "persisted": true,
+    "localVideo": true,
+    "synchronized": true
+  },
+  "frames": 3,
+  "errors": []
+}

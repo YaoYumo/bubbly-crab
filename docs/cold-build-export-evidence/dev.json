@@ -1,0 +1,525 @@
+{
+  "entry": "http:",
+  "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.0 Safari/537.36",
+  "renderer": "WebKit WebGL",
+  "target": {
+    "seconds": 30,
+    "width": 1280,
+    "height": 720,
+    "fps": 5
+  },
+  "cold": {
+    "pick": {
+      "pending": 1,
+      "idle": {
+        "slices": 1,
+        "steps": 1,
+        "maxSliceMs": 0,
+        "errors": 0
+      },
+      "indexed": true,
+      "roots": 29,
+      "indexedRoots": 0,
+      "fallbackRoots": 14,
+      "ignoredRoots": 15,
+      "candidates": 14,
+      "boundsTested": 0,
+      "cold": false,
+      "refit": false,
+      "syncMs": 0.09999999962747097,
+      "broadMs": 0,
+      "exactMs": 0,
+      "totalMs": 0.09999999962747097
+    },
+    "warm": {
+      "pending": 0,
+      "idle": {
+        "slices": 32,
+        "steps": 1934,
+        "maxSliceMs": 2.2000000001862645,
+        "errors": 0
+      },
+      "indexed": true,
+      "roots": 29,
+      "indexedRoots": 12,
+      "fallbackRoots": 2,
+      "ignoredRoots": 15,
+      "candidates": 2,
+      "boundsTested": 1,
+      "cold": false,
+      "refit": false,
+      "syncMs": 0,
+      "broadMs": 0,
+      "exactMs": 0,
+      "totalMs": 0
+    },
+    "lodRenderMs": 392.70000000018626,
+    "lodIdle": {
+      "slices": 25,
+      "steps": 1252,
+      "maxSliceMs": 28.399999999441206,
+      "errors": 0
+    },
+    "cachedGeometries": 4,
+    "bytes": 15712
+  },
+  "failures": [
+    {
+      "kind": "capture",
+      "error": "injected capture"
+    },
+    {
+      "kind": "construct",
+      "error": "injected construct"
+    },
+    {
+      "kind": "start",
+      "error": "injected start"
+    },
+    {
+      "kind": "render",
+      "error": "injected render"
+    },
+    {
+      "kind": "progress",
+      "error": "injected progress"
+    },
+    {
+      "kind": "recorder-error",
+      "error": "injected recorder-error"
+    },
+    {
+      "kind": "stop-timeout",
+      "error": "录制器停止超时"
+    },
+    {
+      "kind": "codec-construct",
+      "error": "injected codec construct"
+    },
+    {
+      "kind": "codec-configure",
+      "error": "injected codec configure"
+    },
+    {
+      "kind": "codec-encode",
+      "error": "injected codec encode"
+    },
+    {
+      "kind": "codec-flush",
+      "error": "injected codec flush"
+    },
+    {
+      "kind": "codec-async-error",
+      "error": "injected codec async-error"
+    }
+  ],
+  "cancelled": {
+    "size": 0,
+    "cancelled": true,
+    "frames": 3
+  },
+  "longProgress": {
+    "count": 150,
+    "first": 1,
+    "last": 150
+  },
+  "resourceSamples": [
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    },
+    {
+      "geometries": 344,
+      "textures": 17,
+      "urls": 1,
+      "liveTracks": 0,
+      "lodBytes": 36480
+    }
+  ],
+  "pngSize": {
+    "width": 480,
+    "height": 270
+  },
+  "files": [
+    {
+      "size": 8990002,
+      "name": "未命名场景_Longmovingacceptance_1280x720@5.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 150,
+      "requestedFrames": 150,
+      "seconds": 30,
+      "requestedSeconds": 30,
+      "wallSeconds": 232.93119999999925,
+      "width": 1280,
+      "height": 720,
+      "fps": 5,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "long",
+      "decode": {
+        "frames": 150,
+        "distinctFrames": 150,
+        "firstPts": 0,
+        "lastPts": 29.8,
+        "duration": 30,
+        "dimensions": "#dimensions 0: 1280x720",
+        "firstHash": "2b581cbee3fa230dc7d1beb9dd88a048",
+        "lastHash": "5e712433cda797bfccb97194dd232d2a",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "b26a2083a5045c7417cf8f813700f71a46352f52377c79912cfe1abf00552759"
+      }
+    },
+    {
+      "size": 130688,
+      "name": "未命名场景_Longmovingacceptance_480x270@15.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 15,
+      "requestedFrames": 15,
+      "seconds": 1,
+      "requestedSeconds": 1,
+      "wallSeconds": 2.9895,
+      "width": 480,
+      "height": 270,
+      "fps": 15,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "repeat-0",
+      "decode": {
+        "frames": 15,
+        "distinctFrames": 15,
+        "firstPts": 0,
+        "lastPts": 0.933,
+        "duration": 0.9996666666666667,
+        "dimensions": "#dimensions 0: 480x270",
+        "firstHash": "f5f83509778a2dc1ad18f595a31fb1c4",
+        "lastHash": "f34b11df3a47ad26baee2b71d95bae14",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      }
+    },
+    {
+      "size": 130688,
+      "name": "未命名场景_Longmovingacceptance_480x270@15.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 15,
+      "requestedFrames": 15,
+      "seconds": 1,
+      "requestedSeconds": 1,
+      "wallSeconds": 2.991,
+      "width": 480,
+      "height": 270,
+      "fps": 15,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "repeat-1",
+      "decode": {
+        "frames": 15,
+        "distinctFrames": 15,
+        "firstPts": 0,
+        "lastPts": 0.933,
+        "duration": 0.9996666666666667,
+        "dimensions": "#dimensions 0: 480x270",
+        "firstHash": "f5f83509778a2dc1ad18f595a31fb1c4",
+        "lastHash": "f34b11df3a47ad26baee2b71d95bae14",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      }
+    },
+    {
+      "size": 130688,
+      "name": "未命名场景_Longmovingacceptance_480x270@15.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 15,
+      "requestedFrames": 15,
+      "seconds": 1,
+      "requestedSeconds": 1,
+      "wallSeconds": 2.9705999999996275,
+      "width": 480,
+      "height": 270,
+      "fps": 15,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "repeat-2",
+      "decode": {
+        "frames": 15,
+        "distinctFrames": 15,
+        "firstPts": 0,
+        "lastPts": 0.933,
+        "duration": 0.9996666666666667,
+        "dimensions": "#dimensions 0: 480x270",
+        "firstHash": "f5f83509778a2dc1ad18f595a31fb1c4",
+        "lastHash": "f34b11df3a47ad26baee2b71d95bae14",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      }
+    },
+    {
+      "size": 130688,
+      "name": "未命名场景_Longmovingacceptance_480x270@15.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 15,
+      "requestedFrames": 15,
+      "seconds": 1,
+      "requestedSeconds": 1,
+      "wallSeconds": 2.9565,
+      "width": 480,
+      "height": 270,
+      "fps": 15,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "repeat-3",
+      "decode": {
+        "frames": 15,
+        "distinctFrames": 15,
+        "firstPts": 0,
+        "lastPts": 0.933,
+        "duration": 0.9996666666666667,
+        "dimensions": "#dimensions 0: 480x270",
+        "firstHash": "f5f83509778a2dc1ad18f595a31fb1c4",
+        "lastHash": "f34b11df3a47ad26baee2b71d95bae14",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      }
+    },
+    {
+      "size": 20656,
+      "name": "未命名场景_Longmovingacceptance_320x180@10.webm",
+      "ext": "webm",
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "frames": 2,
+      "requestedFrames": 2,
+      "seconds": 0.2,
+      "requestedSeconds": 0.2,
+      "wallSeconds": 0.23320000000018626,
+      "width": 320,
+      "height": 180,
+      "fps": 10,
+      "maxQueue": 1,
+      "mime": "video/webm",
+      "label": "live-editor",
+      "decode": {
+        "frames": 2,
+        "distinctFrames": 2,
+        "firstPts": 0,
+        "lastPts": 0.1,
+        "duration": 0.2,
+        "dimensions": "#dimensions 0: 320x180",
+        "firstHash": "891142da7df0a5fe0766dc18c325dbc8",
+        "lastHash": "7e6ea4418e38d04abd75fa7d3789fe52",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "c1eb3d61a828cc403a2a9db5c1a166cffc158f509a85d3c009ec9f746936edc7"
+      }
+    }
+  ],
+  "frameDiagnostics": [
+    {
+      "i": 1,
+      "time": 0,
+      "canvas": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "viewport": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rect": {
+        "W": 1280,
+        "H": 720,
+        "k": 1,
+        "m": 0.7438400743840073,
+        "vw": 1280,
+        "vh": 536
+      },
+      "camera": [
+        [
+          -55,
+          36,
+          90
+        ],
+        [
+          -0.1570539293117366,
+          -0.22674174507352282,
+          -0.03707540345101659,
+          0.9604934454683708
+        ],
+        24.306874825982675,
+        2.388059701492537
+      ]
+    },
+    {
+      "i": 76,
+      "time": 15,
+      "canvas": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "viewport": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rect": {
+        "W": 1280,
+        "H": 720,
+        "k": 1,
+        "m": 0.7438400743840073,
+        "vw": 1280,
+        "vh": 536
+      },
+      "camera": [
+        [
+          -2.3919140633666274,
+          36,
+          90
+        ],
+        [
+          -0.1779804608342161,
+          0.04148015386985898,
+          0.007509334153828471,
+          0.9831306944128736
+        ],
+        24.306874825982675,
+        2.388059701492537
+      ]
+    },
+    {
+      "i": 150,
+      "time": 29.8,
+      "canvas": [
+        1280,
+        720
+      ],
+      "size": [
+        1280,
+        720
+      ],
+      "viewport": [
+        0,
+        0,
+        1280,
+        720
+      ],
+      "rect": {
+        "W": 1280,
+        "H": 720,
+        "k": 1,
+        "m": 0.7438400743840073,
+        "vw": 1280,
+        "vh": 536
+      },
+      "camera": [
+        [
+          54.23873706412138,
+          36,
+          90
+        ],
+        [
+          -0.14078405731108043,
+          0.3016616505052616,
+          0.04508953725262248,
+          0.941884829186571
+        ],
+        24.306874825982675,
+        2.388059701492537
+      ]
+    }
+  ],
+  "bloom": {
+    "enabled": true,
+    "strength": 0.35,
+    "radius": 0.25,
+    "threshold": 1.1,
+    "quality": "low",
+    "active": true,
+    "blockedReason": null,
+    "glowWidth": 60,
+    "glowHeight": 38
+  },
+  "encodersClosed": 11,
+  "framesClosed": 220,
+  "checks": [
+    "cold fallback/warm precise hit equality",
+    "transform reuse/deep invalidation/stale-job cancellation",
+    "no LOD geometry build in render",
+    "idle warm/cache retention",
+    "7 recorder + 5 WebCodecs injected failure paths",
+    "PNG failure restoration",
+    "cancel/no retry/no partial download",
+    "same/cross-Exporter + PNG rejection",
+    "prepare cancel",
+    "initially-live restoration",
+    "native batch cancel/failure stops",
+    "full state and original source restoration",
+    "long moving shot",
+    "four consecutive exports/resource plateau",
+    "last-good preservation",
+    "PNG parity/real decode"
+  ],
+  "pixelChecks": [
+    {
+      "frame": 0,
+      "meanAbsolute": 1.3852567997685186,
+      "barsMax": 1,
+      "centerSum": 281229187
+    },
+    {
+      "frame": 75,
+      "meanAbsolute": 1.2482801649305555,
+      "barsMax": 1,
+      "centerSum": 283418838
+    },
+    {
+      "frame": 149,
+      "meanAbsolute": 1.2537087673611111,
+      "barsMax": 1,
+      "centerSum": 263829786
+    }
+  ],
+  "decoder": "ffmpeg version N-47683-g0e8eb07980-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2018 the FFmpeg developers"
+}

@@ -1,0 +1,136 @@
+{
+  "date": "2026-10-20",
+  "scope": "Simplified AI candidate UI, data/safety contract unchanged",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 2258769,
+    "sha256": "2b4d3fcff129ca9f3fd09e3b93be5910a330807842c0b8159bd2007598d526e3"
+  },
+  "defaultFlow": [
+    "choose local template",
+    "one-click prepare independent preview",
+    "review and explicitly apply"
+  ],
+  "progressiveDisclosure": [
+    "blueprint import tab",
+    "optional AI service tab",
+    "settings and exports collapsed",
+    "previs collapsed",
+    "diff and technical explanation collapsed"
+  ],
+  "safety": [
+    "default add mode; replacement authorization remains visible when selected",
+    "warnings require explicit acknowledgement before apply",
+    "changed settings invalidate apply",
+    "no auto API submit or apply",
+    "candidate preparation does not mutate source project"
+  ],
+  "browser": {
+    "dev": {
+      "mode": "dev",
+      "defaultJSONHidden": true,
+      "oneClickLocalPreview": true,
+      "sourceUnchanged": true,
+      "advancedFolded": true,
+      "warningsGateApply": true,
+      "staleCandidateDisabled": true,
+      "explicitReplacePermission": true,
+      "applyUndoRedo": true,
+      "keyboardAndFocus": true,
+      "responsiveViewports": [
+        "1440x980",
+        "800x600",
+        "390x720"
+      ],
+      "errors": []
+    },
+    "offline": {
+      "mode": "file",
+      "defaultJSONHidden": true,
+      "oneClickLocalPreview": true,
+      "sourceUnchanged": true,
+      "advancedFolded": true,
+      "warningsGateApply": true,
+      "staleCandidateDisabled": true,
+      "explicitReplacePermission": true,
+      "applyUndoRedo": true,
+      "keyboardAndFocus": true,
+      "responsiveViewports": [
+        "1440x980",
+        "800x600",
+        "390x720"
+      ],
+      "errors": []
+    }
+  },
+  "compatibility": {
+    "aiBaseDev": {
+      "sourceUnchangedByPreview": true,
+      "staleRefused": true,
+      "injectedRollback": true,
+      "oneUndoRedo": true,
+      "lockedRefused": true,
+      "cameras": 4,
+      "motionSecondsToNormalized": true,
+      "referenceProvenance": true,
+      "cancelled": true,
+      "catalogEntries": 210,
+      "uiPreview": true,
+      "errors": []
+    },
+    "aiBaseOffline": {
+      "sourceUnchangedByPreview": true,
+      "staleRefused": true,
+      "injectedRollback": true,
+      "oneUndoRedo": true,
+      "lockedRefused": true,
+      "cameras": 4,
+      "motionSecondsToNormalized": true,
+      "referenceProvenance": true,
+      "cancelled": true,
+      "catalogEntries": 210,
+      "uiPreview": true,
+      "errors": []
+    },
+    "aiSafetyOffline": {
+      "selectedRebuildStableIdUndoRedo": true,
+      "existingMetadataPreserved": true,
+      "metadataPatchRefused": true,
+      "selectedOnlyEditApplied": true,
+      "unselectedEditRefused": true,
+      "parallelRefused": true,
+      "referencePNGAndTerrainMutex": true,
+      "exactGroundY": 4,
+      "sourceResourcesNotDisposed": true,
+      "fourPrepareDiscardCycles": true,
+      "protectedRoadSegmentRefused": true,
+      "concurrentEditPreserved": true,
+      "importedRollback": true,
+      "personPhaseRestored": true,
+      "importedResourceAndTerrainUndoRedo": true,
+      "errors": []
+    },
+    "apiUIFixture": {
+      "contractOnly": true,
+      "realInference": false,
+      "accessTokenMemoryOnly": true,
+      "posts": 1,
+      "gets": 2,
+      "doubleClickRefused": true,
+      "stopIsLocalOnly": true,
+      "resumeWithoutPOST": true,
+      "doesNotAutoApply": true,
+      "manualPrepareAndConfirm": true,
+      "originAudit": true,
+      "errors": []
+    }
+  },
+  "build": "npm run all passed; existing large chunk warning remains",
+  "screenshots": [
+    ".shots/ai-scene-simple-empty.png",
+    ".shots/ai-scene-simple-candidate.png",
+    ".shots/ai-scene-simple-mobile.png"
+  ],
+  "realModelInference": false,
+  "paidProviderCalls": false
+}

@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-20",
+  "scope": "Local model directory/configuration and optional loopback gateway reservation. No model installation or actual inference.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 2259768,
+    "sha256": "e837228a613ac807333f8f5f9603f3005a6810fe84c7d70378ffe88e66d32b67"
+  },
+  "defaults": {
+    "enabled": false,
+    "runtime": "ollama",
+    "modelSelected": false,
+    "modelsDownloaded": false,
+    "runtimeStarted": false
+  },
+  "paths": [
+    "local-ai/config.example.json",
+    "local-ai/config.local.json (ignored)",
+    "local-ai/models/ (contents ignored)",
+    "local-ai/runtimes/ (contents ignored)",
+    "local-ai/cache/ (contents ignored)",
+    "local-ai/logs/ (contents ignored)"
+  ],
+  "commands": [
+    "npm run local-ai:init",
+    "npm run local-ai:check",
+    "npm run ai:local"
+  ],
+  "tests": {
+    "local-ai.test.mjs": {
+      "pass": true,
+      "initNonDestructive": true,
+      "strictConfigAndGGUFChecks": true,
+      "symlinkEscapeRefused": true,
+      "disabledLocalIgnoresCloudEnv": true,
+      "automaticInferenceCalls": 0,
+      "explicitMockInferenceCalls": 1,
+      "gatewayAuthAndOriginChecks": true,
+      "sameOriginProxyDiscovery": true,
+      "idempotency": true,
+      "viteDeniesDefaultStorageAndConfig": true,
+      "capabilitiesOmitMachinePathsAndSecrets": true
+    },
+    "ai-scene.test.mjs": "PASS",
+    "scene-recipes.test.mjs": "PASS 210 layouts",
+    "spatial-dynamics.test.mjs": "PASS",
+    "singleFileBackendIsolation": "PASS no server config reader or runtime placeholder authorization bundled"
+  },
+  "browser": {
+    "dev": {
+      "mode": "dev",
+      "helpCollapsed": true,
+      "zeroAutomaticRequests": true,
+      "noWeightOrConfigRequests": true,
+      "disabledProfileCannotSubmit": true,
+      "offlineGuard": false,
+      "sourceUnchanged": true,
+      "errors": []
+    },
+    "offline": {
+      "mode": "file",
+      "helpCollapsed": true,
+      "zeroAutomaticRequests": true,
+      "noWeightOrConfigRequests": true,
+      "disabledProfileCannotSubmit": true,
+      "offlineGuard": true,
+      "sourceUnchanged": true,
+      "errors": []
+    }
+  },
+  "compatibility": {
+    "simplifiedUIOffline": {
+      "mode": "file",
+      "defaultJSONHidden": true,
+      "oneClickLocalPreview": true,
+      "sourceUnchanged": true,
+      "advancedFolded": true,
+      "warningsGateApply": true,
+      "staleCandidateDisabled": true,
+      "explicitReplacePermission": true,
+      "applyUndoRedo": true,
+      "keyboardAndFocus": true,
+      "responsiveViewports": [
+        "1440x980",
+        "800x600",
+        "390x720"
+      ],
+      "errors": []
+    },
+    "apiUIContractFixture": {
+      "contractOnly": true,
+      "realInference": false,
+      "accessTokenMemoryOnly": true,
+      "posts": 1,
+      "gets": 2,
+      "doubleClickRefused": true,
+      "stopIsLocalOnly": true,
+      "resumeWithoutPOST": true,
+      "doesNotAutoApply": true,
+      "manualPrepareAndConfirm": true,
+      "originAudit": true,
+      "errors": []
+    }
+  },
+  "build": "npm run all passed; existing large chunk warning remains",
+  "realModelInference": false,
+  "paidProviderCalls": false,
+  "limits": [
+    "No automatic download/installation/execution/probe or model loading.",
+    "ready-to-connect is configuration/file status, not runtime reachability or inference verification.",
+    "Ollama/LM Studio may keep their own model stores. Configured folder paths do not migrate runtime storage.",
+    "Loopback refers to the machine running the Node gateway, not the user browser computer.",
+    "file HTML does not access gateways or disk paths; use local web service plus local gateway for future models.",
+    "Uses existing previz-ai-scene/1 blueprint protocol, not a new semantic IR or generic model generation.",
+    "Only default storage paths are covered by repository Vite deny rules; custom storage should live outside web roots."
+  ]
+}

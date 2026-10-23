@@ -1,0 +1,106 @@
+{
+  "sourceCommit": "5ee505923fc1c6d8b93f4303d795bb1d2726a8e7",
+  "cargoLock": {
+    "path": "src-tauri/Cargo.lock",
+    "bytes": 108060,
+    "sha256": "8627dd2c8be95621e49411167330f68d09e5f1ace8ffadcd3478adc65223bd7c"
+  },
+  "frontendBytes": 2870664,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/core-C_9pz6SR.js",
+      "bytes": 1863,
+      "sha256": "d6413ad0ce3c2963301375b8a177288752115a39958787bfbb1062b99d8267fa"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/FBXLoader-BkAyOwnG.js",
+      "bytes": 47775,
+      "sha256": "3116260e940c6ece59124bdae06fa6741e91ae2caa96b6ba76c42cdb7bc7f5ff"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-DLmH7dKo.js",
+      "bytes": 44891,
+      "sha256": "1fa28ba64fce22b3ebc4f1299d1b72ce4e9931f7be3f8f76a8df744ace7f5534"
+    },
+    {
+      "path": "desktop/dist/assets/index-BOnMnGOC.css",
+      "bytes": 75569,
+      "sha256": "4a085a7362fc5d2c78b4cc96e82005e88a375659bdc8215bc5093b3e6628dee0"
+    },
+    {
+      "path": "desktop/dist/assets/index-Cn5ScL3T.js",
+      "bytes": 7606,
+      "sha256": "efc197f22f3ba315dd4bb835cfffd8770f86768d794aaa6b6b5424b56da201c2"
+    },
+    {
+      "path": "desktop/dist/assets/index-Co6--t0v.js",
+      "bytes": 1247,
+      "sha256": "f3ac9014a9ed329a40f9dc86d27d33af871f98a0b7a627e90211f328ef50a3ba"
+    },
+    {
+      "path": "desktop/dist/assets/index-DlRtmQj1.js",
+      "bytes": 2536136,
+      "sha256": "da42bb8a43ea6b8dd0abd43d93f2c328ac7ed960ee60eb0c04a4cbb0c0957494"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-Bd0WiWVF.js",
+      "bytes": 4112,
+      "sha256": "6d0d6859ae76cb9ee1062a37585af2bc30d007b4c591ad1f01d2b36cb17a7062"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-BmLHp7Rv.js",
+      "bytes": 8741,
+      "sha256": "229d62388674ecc5091ed4043add1530d529192db86a0d06484bf43b0a87ba69"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-BGPaF-6e.js",
+      "bytes": 15413,
+      "sha256": "7d12cdf7845b3408cb470314d3abda3e0103b39dbd37637bfd4c98331987d053"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "ebc1d4dd5e55273432a06a5c07be021557b9a4394f769917ecb03e3ef6e72c35"
+    }
+  ],
+  "installers": [
+    {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.2.2_x64-setup.exe",
+      "bytes": 2266983,
+      "sha256": "0b97cd757bddcf813ee8175315cd917d68c22a8dd538902d23d4ebde42a3a430"
+    }
+  ],
+  "binaries": [
+    {
+      "path": "src-tauri/target/release/previz-lab.exe",
+      "bytes": 4584960,
+      "sha256": "06b82635b4503f436b603129889364e75ea29a5a8094722d2f06a9af049bd24a"
+    }
+  ],
+  "nativeArtifactsPresent": true,
+  "installerIncludesWebView2": false,
+  "missingWebView2Policy": "download-bootstrapper-on-install; internet required only if runtime is absent",
+  "modelWeightsIncluded": false,
+  "signed": false,
+  "note": "Unsigned Windows artifacts found on disk; this inventory alone does not prove a fresh build or native/manual acceptance."
+}

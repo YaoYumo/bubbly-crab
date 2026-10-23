@@ -30,7 +30,24 @@ const CASES = [
   },
   {
     p: '赛博朋克城市里有地铁和摩天大楼，还有行人',
-    unsupported: ['科幻风格', '轨道交通', '高层建筑', '人物角色'],
+    unsupported: ['轨道交通'],
+  },
+  {
+    p: '中轴对称的仿古小镇，棋盘格局',
+    want: { theme: 'chinese', roadTopology: 'axis' },
+    unsupported: [],
+  },
+  {
+    p: '现代住宅区与中式古建混搭，林荫',
+    want: { theme: 'fusion', vegetationDensity: 0.85 },
+  },
+  {
+    p: 'modern city block at dawn, dense',
+    want: { theme: 'modern', density: 0.8 },
+  },
+  {
+    p: '唐风古镇水乡，安静',
+    want: { theme: 'chinese' },
   },
 ];
 
@@ -72,7 +89,7 @@ eq('seeded rng reproducible', [a.rng(), a.rng(), a.rng()], [b.rng(), b.rng(), b.
 const { LIB } = await import('../src/assets.js');
 const known = new Set();
 for (const g of LIB) for (const it of g.items) known.add(`${g.id}:${it.type}`);
-const groupOf = { houses: ['house'], commerce: ['suburban', 'functional'], civic: ['suburban', 'functional'], trees: ['vegetation'], ground: ['vegetation'] };
+const groupOf = { houses: ['house', 'cn'], commerce: ['suburban', 'functional', 'cn'], civic: ['suburban', 'functional', 'cn'], trees: ['vegetation'], ground: ['vegetation'] };
 let bad = [];
 for (const [tid, t] of Object.entries(TOWN_THEMES)) {
   for (const [slot, types] of Object.entries(t)) {

@@ -1,0 +1,23 @@
+PASS render-effects.test.mjs | Node settings/clamps, clustered geometry/source arrays, cache sharing, near/far/selected/dynamic/transparent cases, release
+PASS render-effects-regression.mjs | final DEV and network-offline final file: 12 buildings, 35 LOD warmup renders, each LOD/Bloom path 8 warmup + 30 submission samples; pixels/draw/triangles, shared instancing and failure restoration, orthographic, original geometry/IDs/pick/gizmo, quality/DPR, HDR capability bypass, Basic pause, zero exact bypass, DOF/anamorphic, stable repeated framed targets, decoded nonempty PNG, one-frame video, combined active effects, undo/real archive, legacy defaults/native controls/dispose
+PASS pick-spatial-index.test.mjs | Node original 647 semantic comparisons
+PASS pick-spatial-index-regression.mjs | DEV and final file PICK_SMOKE=1: original exact result/edit/undo/archive/resource/native pointer/gizmo assertions; one dense fixture with 1 render warmup + 1 sample, picking still 8+30 batches; not a current four-fixture long run
+PASS model-instancing-regression.mjs | final DEV, unchanged original pixel/draw/identity/edit/ownership assertions
+PASS performance-regression.mjs | final DEV, unchanged isolation/lifecycle and four fixed fixtures 2 warmup + 3 render samples, effects off
+PASS window-lights.test.mjs | Node
+PASS window-lights-regression.mjs | final DEV and final file, unchanged original assertions
+PASS lighting-regression.mjs | final DEV
+PASS lighting-offline.mjs | final file
+PASS road-diagnostics.test.mjs | Node
+PASS road-diagnostics-regression.mjs | final DEV and final file
+PASS junction-surface.test.mjs | Node original area/ray assertions; not original multi-angle pixel gate
+PASS terrain-roads-regression.mjs | final DEV
+PASS project-resources-regression.mjs | final DEV, source assets/material policies/archive/undo/durable reload
+PASS road-properties-offline.mjs | final file
+PASS road-planning-offline.mjs | final file
+PASS npm run build | production, existing chunk-size warning retained
+PASS npm run build:single | final offline artifact, existing chunk-size warning retained
+PASS node --check | 12 feature/integration/test modules
+PASS git diff --check / bash -n test/runsuite.sh | workspace / runner syntax
+
+Final acceptance batch exited 0 after final source changes and final builds; exact final artifact passed DEV and real network-offline file feature tests plus all listed compatibility gates. No old regression thresholds/assertions/sample counts were reduced. Earlier candidate runs are not used as final release measurements. CPU/driver wall-clock samples are software-renderer observations, not hardware FPS promises. LOD did not improve mean submission consistently across entries; cold preparation can be slower. Bloom adds postprocessing cost. Video is only a nonempty one-frame smoke, not long-form decoded video validation. No full historical suite or original multi-angle junction pixel gate rerun; earlier evidence directories remain historical snapshots.

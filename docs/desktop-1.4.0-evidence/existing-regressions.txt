@@ -1,0 +1,202 @@
+PASS AI safety {
+  selectedRebuildStableIdUndoRedo: true,
+  existingMetadataPreserved: true,
+  metadataPatchRefused: true,
+  selectedOnlyEditApplied: true,
+  unselectedEditRefused: true,
+  parallelRefused: true,
+  referencePNGAndTerrainMutex: true,
+  exactGroundY: 4,
+  sourceResourcesNotDisposed: true,
+  fourPrepareDiscardCycles: true,
+  protectedRoadSegmentRefused: true,
+  concurrentEditPreserved: true,
+  importedRollback: true,
+  personPhaseRestored: true,
+  importedResourceAndTerrainUndoRedo: true
+}
+PASS all 7 seeded heightfields / real slope degrees stable at 33–513 / height snowline / cliffs / climate / actual shore proximity / shared generated samples
+PASS real generation button / empty selection no undo / seed and amplitude survive UI / single-step undo-redo / all 7 actual buttons
+PASS actual automatic-surface and water-level controls / one-step undo-redo
+PIXELS {
+  grass: [ 155, 196, 130 ],
+  snow: [ 227, 233, 237 ],
+  before: [ 145, 109, 88 ],
+  after: [ 145, 109, 88 ],
+  preserved: true,
+  generationPreserves: true,
+  autoChanges: true
+}
+PASS automatic PBR pixel changes / opaque hand paint survives recolor and generation / refinement / erasing reveals base / archive reload / legacy opt-in / follow-road rebuild
+PASS terrain generation and automatic surface, no browser or shader errors
+PASS PNG 8/16-bit five filters/CRC/Adler/precision/orientation/channels/opaque-alpha/cancel; bounded mapping; river validation/self-crossing, finite miter strip, lower-only/world-depth/source immutability/repeat-core/cancel
+PASS terrain import + manual river {
+  "entry": "http:",
+  "imported": {
+    "n": 65,
+    "size": 80,
+    "first": 2.152590274810791,
+    "center": 2.1526055335998535,
+    "last": 3
+  },
+  "overlay": {
+    "before": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "after": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "hidden": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "texturePlateau": [
+      8,
+      8,
+      8,
+      8
+    ]
+  },
+  "river": {
+    "wet": [
+      106,
+      147,
+      166,
+      255
+    ],
+    "dry": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "clickedPoints": 3,
+    "changed": 886,
+    "storedRivers": 1,
+    "preciseRoundtrip": true,
+    "previewPlateau": [
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      }
+    ],
+    "archiveBytes": 13288
+  },
+  "exports": {
+    "width": 480,
+    "height": 320,
+    "exportMutex": true,
+    "videoFrames": 2,
+    "videoBytes": 12342
+  },
+  "checks": [
+    "native file input 16-bit precision + independent mapping fields",
+    "height/overlay/river undo/redo + exact float32 archive roundtrip",
+    "PNG/JPEG overlay real pixels/opacity/global grey/Basic",
+    "viewport clicks + node form + preview/save/carve lower-only",
+    "cancel and stale-source refusal",
+    "export guides + mutex + selective Bloom isolation",
+    "four-cycle overlay texture / river preview resource plateau",
+    "PNG output + two-frame WebM + optional native true decode + clear/dispose"
+  ]
+}
+{
+  "local": {
+    "paint": 0.6499999761581421,
+    "far": 0,
+    "heightSame": true,
+    "refined": 257,
+    "height": 0,
+    "paintRetained": true,
+    "saved": true
+  },
+  "cliffBefore": 1.446441332248135,
+  "cliffAfter": 0.6890171364770395,
+  "slopeFinite": true,
+  "hills": {
+    "center": 4.010477632073795,
+    "terrain": 4,
+    "actual": 4.180477828979492,
+    "finite": true,
+    "verts": 93840
+  },
+  "raised": 6.010477632073795,
+  "undo": 4.011176479003009,
+  "redo": 6.011176479003009,
+  "bridge": {
+    "junctions": 0,
+    "count": 16,
+    "status": {
+      "built": 8,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 54,
+          "point": [
+            0,
+            9,
+            -1
+          ]
+        }
+      ]
+    },
+    "collision": false,
+    "buildingCollision": false,
+    "blocked": 4,
+    "regenerated": true,
+    "lowBuildingCollision": false
+  },
+  "plants": {
+    "deleted": true,
+    "clearRetained": true
+  },
+  "fill": {
+    "crossing": 0,
+    "away": 8.979999542236328,
+    "remote": 0
+  },
+  "archive": {
+    "mode": "fixed",
+    "height": 8.979999542236328,
+    "n": 97
+  }
+}
+Extra checks {
+  holes: 0,
+  buried: 0,
+  minClear: 0.17003919194661393,
+  junctions: 1,
+  initial: true,
+  deleted: true,
+  oneUndo: true,
+  restored: true,
+  redone: true,
+  selfCollision: false,
+  supportCount: 20,
+  editLevel: 8,
+  editMode: 'fixed',
+  overflowHeight: 100
+}
+PASS local splat materials, refinement, steep smoothing, following roads, grade separation, full-volume pier collisions, vegetation clearance, safe embankment, undo/redo and archive
+PASS {"platform":"Linux Chromium, not native Windows","themeControlsTopLeft":true,"customPreviewCancelSaveReload":true,"themeDoesNotChangeProject":true,"library":{"height":322.25,"top":211.75,"bottom":534,"barBottom":211.75,"visible":4,"options":17},"scroll":{"topStable":true,"lastVisible":true,"scrolled":true},"shortWindow":true,"waterDefaultsOff":true,"repeatedWaterToggle":true,"levelDoesNotEnableWater":true,"waterUndoRedoAndSavedSetting":true,"generationRespectsWaterOff":true,"missingLegacyFlagOff":true,"errors":[],"csp":[]}

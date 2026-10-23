@@ -1,362 +1,374 @@
-// 视觉与交互回归：截图 + 拾取/拖放/面板检查
-import puppeteer from 'puppeteer';
+/**
+ * 模型出图台（纯 Node CPU 光栅化，无需浏览器 / WebGL）
+ *
+ * 每个模型渲 4 个正交视图拼成 2×2 一张图：正视(+Z) / 右侧(+X) / 背面(-Z) / 轴测。
+ * 同时输出逐像素构件 ID，据此统计「四个视图都露不了面的构件」—— 白做或被整只包住。
+ *
+ * 用法：node test/shots.mjs [分组] [类型]
+ *   例：node test/shots.mjs house             只渲 house 组
+ *       node test/shots.mjs house cape_cod    只渲一个
+ */
+import * as THREE from 'three';
+import zlib from 'node:zlib';
 import fs from 'node:fs';
+import path from 'node:path';
+import { LIB, defaultsFor, buildAsset } from '../src/assets.js';
 
-const browser = await puppeteer.launch({
-  headless: 'shell',
-  args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
-    '--window-size=1640,980', '--mute-audio', '--autoplay-policy=no-user-gesture-required'],
-});
-const page = await browser.newPage();
-await page.setViewport({ width: 1640, height: 980, deviceScaleFactor: 1 });
-const errors = [];
-page.on('pageerror', (e) => errors.push('PAGEERROR: ' + (e.message || e)));
-page.on('console', (m) => { if (m.type() === 'error') errors.push('CONSOLE: ' + m.text()); });
-await page.evaluateOnNewDocument(() => {
-  window.__tcErr = [];
-  const oe = console.error.bind(console);
-  console.error = (...a) => {
-    if (String(a[0]).includes('scene graph')) {
-      const app = window.app;
-      window.__tcErr.push({ obj: app?.stage?.tc?.object?.name || app?.stage?.tc?.object?.type || 'null', sel: app?.sel ? (app.sel.kind + ':' + (app.sel.so?.name || app.sel.shot?.name || '')) : 'null', st: (new Error().stack || '').split('\n').slice(1, 6).map((x) => x.trim()).join(' < ') });
-    } else oe(...a);
-  };
-});
-const R = { errors, checks: {} };
-const ck = (n, v) => { R.checks[n] = v; };
+const OUT = path.resolve('shots');
+const TILE = 470, PAD = 7;
+const SHEET = TILE * 2 + PAD * 3;
+const BG = [231, 234, 238];
+// [dx, dy, dz, 视图名] = 相机看向物体的方向
+const VIEWS = [[0, 0, 1, '正视 +Z'], [1, 0, 0, '右侧 +X'], [0, 0, -1, '背面 -Z'], [1, 0.66, 1, '轴测']];
 
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 90000 });
-await page.waitForFunction(() => window.app && window.app.objects.length > 3, { timeout: 60000 });
-await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
-
-await new Promise((r) => setTimeout(r, 1200));
-
-// --- UI 结构
-R.checks.ui = await page.evaluate(() => ({
-  cards: document.querySelectorAll('.card').length,
-  secs: document.querySelectorAll('#right .sec').length,
-  tabs: [...document.querySelectorAll('.itab')].map((b) => b.textContent),
-  objs: document.querySelectorAll('.orow').length,
-  ticks: document.querySelectorAll('.tk').length,
-  hud: document.querySelector('.hud-l')?.textContent?.trim(),
-  canvas: !!document.querySelector('#stage canvas'),
-  timeline: !!document.querySelector('.track'),
-}));
-
-// --- 点击 3D 物体 → 选中
-const picked = await page.evaluate(() => {
-  const { app, THREE } = window.__t;
-  const r = app.stage.canvas.getBoundingClientRect();
-  const list = app.objects.map((so) => {
-    const v = new THREE.Box3().setFromObject(so.root).getCenter(new THREE.Vector3()).project(app.stage.view);
-    return { name: so.name, ndc: Math.max(Math.abs(v.x), Math.abs(v.y)), z: v.z, x: r.left + (v.x * 0.5 + 0.5) * r.width, y: r.top + (-v.y * 0.5 + 0.5) * r.height };
-  }).filter((o) => o.ndc < 0.55 && o.z < 1 && Number.isFinite(o.x) && Number.isFinite(o.y)).sort((a, b) => a.ndc - b.ndc);
-  return list[0];
-});
-await page.mouse.click(picked.x, picked.y);
-await new Promise((r) => setTimeout(r, 500));
-R.checks.pick = await page.evaluate((n) => ({ want: n, got: window.app.selObj?.name || null, gizmo: !!window.app.stage.tc.object }), picked.name);
-ck('pickOk', R.checks.pick.got === R.checks.pick.want && R.checks.pick.gizmo);
-
-// --- 拖放卡片到视口
-const drag = await page.evaluate(() => {
-  const { app } = window.__t;
-  const dt = new DataTransfer();
-  dt.setData('text/asset', 'env:tree:行道树');
-  const canvas = app.stage.canvas;
-  const before = app.objects.length;
-  const r = canvas.getBoundingClientRect();
-  const ev = new DragEvent('drop', { dataTransfer: dt, clientX: r.left + r.width * 0.5, clientY: r.top + r.height * 0.62, bubbles: true, cancelable: true });
-  canvas.dispatchEvent(ev);
-  return { before, after: app.objects.length };
-});
-ck('dropAddsObject', drag.after === drag.before + 1);
-R.checks.drop = drag;
-
-// --- 键盘：W/E/R/空格/预览
-await page.keyboard.press('KeyE');
-R.checks.gizmoRotate = await page.evaluate(() => window.app.stage.tc.mode);
-await page.keyboard.press('KeyP');
-await new Promise((r) => setTimeout(r, 700));
-R.checks.preview = await page.evaluate(() => ({ on: window.app.state.preview, mask: document.querySelector('.frame-mask').classList.contains('on') }));
-ck('previewToggle', R.checks.preview.on === true);
-await page.screenshot({ path: 'test/02-preview.png' });
-await page.keyboard.press('KeyP');
-await new Promise((r) => setTimeout(r, 400));
-
-// --- 光影关闭
-await page.keyboard.press('KeyL');
-await new Promise((r) => setTimeout(r, 500));
-R.checks.perf = await page.evaluate(() => ({ enabled: window.app.lighting.enabled, perf: window.app.state.perf, shadow: window.app.stage.renderer.shadowMap.enabled }));
-ck('lightOff', R.checks.perf.enabled === false && R.checks.perf.shadow === false);
-await page.screenshot({ path: 'test/03-perf.png' });
-await page.keyboard.press('KeyL');
-
-// --- 运镜面板：切到运镜 tab，选预设，看关键帧
-R.checks.camTab = await page.evaluate(async () => {
-  const { app } = window.__t;
-  [...document.querySelectorAll('.itab')].find((b) => b.textContent.includes('运镜'))?.click();
-  await new Promise((r) => setTimeout(r, 200));
-  const sel = document.querySelector('#right select');
-  const s = app.addShot({ name: '测试机位', pos: [-8, 3, 18], duration: 7 });
-  s.generateMove('orbitPush');
-  const keysBefore = s.keys.length;
-  const btns = [...document.querySelectorAll('#right .fbtn')].map((b) => b.textContent);
-  return { shots: app.shots.length, keysBefore, hasRegen: btns.some((t) => t.includes('重新生成')), sections: [...document.querySelectorAll('#right .sec-h b')].map((b) => b.textContent), chips: document.querySelectorAll('#right .kchip').length };
-});
-ck('camPanelKeys', R.checks.camTab.chips === 9);
-
-// --- 记录关键帧 + 整段位移 + 删除
-R.checks.keyOps = await page.evaluate(() => {
-  const { app } = window.__t;
-  const s = app.shots.find((x) => x.name === '测试机位');
-  app.state.time = 3.5; app.bus.emit('time');
-  const n0 = s.keys.length;
-  s.addKeyAt(app.timeline.u, app.stage.view);
-  const n1 = s.keys.length;
-  app.selectKey(s, 2);
-  const mk = s.markers.children[2];
-  const t = s.keys[2].t;
-  app.state.showHelpers = true;
-  s.syncAnchor();
-  const p0 = s.keys.map((k) => k.p[0]);
-  s.anchor.position.x += 3;
-  s.applyAnchorDelta();
-  const p1 = s.keys.map((k) => k.p[0]);
-  const shifted = p1.every((v, i) => Math.abs(v - (p0[i] + 3)) < 1e-3);
-  s.removeKeyAt(n1 - 1);
-  return { n0, n1, selT: t, shifted, afterDel: s.keys.length };
-});
-ck('addKey', R.checks.keyOps.n1 === R.checks.keyOps.n0 + 1);
-ck('anchorRigidMove', R.checks.keyOps.shifted === true);
-ck('delKey', R.checks.keyOps.afterDel === R.checks.keyOps.n0);
-
-// --- 人物动作切换 + 路径添加
-R.checks.char = await page.evaluate(() => {
-  const { app } = window.__t;
-  const man = app.objects.find((o) => o.motion?.active && o.isChar);
-  const before = man.root.position.clone();
-  app.state.time = app.state.duration * 0.5; app.step(1 / 30, false);
-  const mid = man.root.position.clone();
-  app.state.time = 0.02; app.step(1 / 30, false);
-  app.state.time = app.state.duration * 0.5; app.step(1 / 30, false);
-  const mid2 = man.root.position.clone();
-  const back = man.root.position.clone();
-  return { anim: man.root.userData.humans[0].anim, moved: +before.distanceTo(mid).toFixed(2), deterministic: +mid2.distanceTo(mid).toFixed(4), phase: +man.root.userData.animPhase.toFixed(2) };
-});
-ck('charPathPoses', R.checks.char.moved > 0.5 && R.checks.char.deterministic < 1e-6 && R.checks.char.phase > 0);
-
-
-// --- 手柄拖拽（走真实 onGizmoChange 路径）
-R.checks.gizmoDrag = await page.evaluate(async () => {
-  const { app, THREE } = window.__t;
-  const st = app.stage;
-  const shot = app.activeShot;
-  const out = {};
-  // 1) 拖动关键帧节点
-  app.editWhole = false;
-  app.selectKey(shot, 1);
-  const mk = shot.markers.children[1];
-  const before = shot.keys[1].p.slice();
-  mk.position.x += 4; mk.position.y += 1.5;
-  st.tc.dispatchEvent({ type: 'objectChange' });
-  await new Promise((r) => setTimeout(r, 30));
-  out.keyMoved = shot.keys[1].p.map((v) => +v.toFixed(2));
-  out.keyDelta = [+((shot.keys[1].p[0] - before[0]).toFixed(2)), +((shot.keys[1].p[1] - before[1]).toFixed(2))];
-  // 2) 整段模式：移动 anchor → 整条路径平移
-  app.editWhole = true;
-  app.select({ kind: 'shot', shot });
-  const p0 = shot.keys.map((k) => k.p[2]);
-  shot.anchor.position.z -= 5;
-  st.tc.dispatchEvent({ type: 'objectChange' });
-  await new Promise((r) => setTimeout(r, 30));
-  out.wholeShift = shot.keys.map((k) => +(k.p[2] - p0[i = shot.keys.indexOf(k)]).toFixed(2));
-  out.rigMoved = +shot.rig.position.z.toFixed(2);
-  // 3) 旋转关键帧节点 → 朝向写入 q
-  app.editWhole = false;
-  app.selectKey(shot, 0);
-  const mk0 = shot.markers.children[0];
-  const q0 = (shot.keys[0].q || [0, 0, 0, 1]).slice();
-  mk0.rotateY(0.6);
-  st.tc.dispatchEvent({ type: 'objectChange' });
-  await new Promise((r) => setTimeout(r, 30));
-  out.qChanged = shot.keys[0].q.some((v, i) => Math.abs(v - q0[i]) > 1e-3);
-  // 4) 物体关键帧拖动
-  const so = app.objects.find((o) => o.motion?.active && o.motion.keys.length > 1);
-  if (so) {
-    app.selectKey(so, 0);
-    const om = so._mgroup.children[0];
-    const b2 = so.motion.keys[0].p.slice();
-    om.position.x += 3;
-    st.tc.dispatchEvent({ type: 'objectChange' });
-    await new Promise((r) => setTimeout(r, 30));
-    out.objKeyDelta = +(so.motion.keys[0].p[0] - b2[0]).toFixed(2);
+// ---------- 把整模展平成世界空间三角形 ----------
+function collect(root) {
+  root.updateMatrixWorld(true);
+  const meshes = [];
+  let nTri = 0;
+  root.traverse((o) => {
+    if (!o.isMesh || o.visible === false || !o.geometry?.attributes?.position) return;
+    const idx = o.geometry.index, pos = o.geometry.attributes.position;
+    const c = idx ? idx.count : pos.count;
+    meshes.push({ o, count: c });
+    nTri += (c / 3) * (o.isInstancedMesh ? o.count : 1);
+  });
+  const P = new Float32Array(nTri * 9);
+  const C = new Uint8Array(nTri * 3);
+  const M = new Int32Array(nTri);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const im = new THREE.Matrix4();
+  let k = 0, meshId = 0;
+  const names = [], objs = [];
+  for (const rec of meshes) {
+    const { o, count } = rec;
+    const geo = o.geometry, idx = geo.index, pos = geo.attributes.position;
+    const mt = (Array.isArray(o.material) ? o.material[0] : o.material) || {};
+    const col = mt.color || { r: 0.75, g: 0.75, b: 0.75 };
+    const cr = Math.round(255 * Math.min(1, col.r ?? 0.75));
+    const cg = Math.round(255 * Math.min(1, col.g ?? 0.75));
+    const cb = Math.round(255 * Math.min(1, col.b ?? 0.75));
+    const inst = o.isInstancedMesh ? o.count : 1;
+    for (let s = 0; s < inst; s++) {
+      if (o.isInstancedMesh) { o.getMatrixAt(s, im); im.premultiply(o.matrixWorld); } else im.copy(o.matrixWorld);
+      names.push({ id: meshId, inst: s, hex: '#' + (col.getHexString?.() ?? '------') });
+      objs.push(o);
+      const myId = meshId++;
+      for (let i = 0; i < count; i += 3) {
+        const i0 = idx ? idx.getX(i) : i, i1 = idx ? idx.getX(i + 1) : i + 1, i2 = idx ? idx.getX(i + 2) : i + 2;
+        a.fromBufferAttribute(pos, i0).applyMatrix4(im);
+        b.fromBufferAttribute(pos, i1).applyMatrix4(im);
+        c.fromBufferAttribute(pos, i2).applyMatrix4(im);
+        const t = k * 9;
+        P[t] = a.x; P[t + 1] = a.y; P[t + 2] = a.z;
+        P[t + 3] = b.x; P[t + 4] = b.y; P[t + 5] = b.z;
+        P[t + 6] = c.x; P[t + 7] = c.y; P[t + 8] = c.z;
+        C[k * 3] = cr; C[k * 3 + 1] = cg; C[k * 3 + 2] = cb;
+        M[k] = myId; k++;
+      }
+    }
   }
-  // 5) 拖动物体本体 → 走位关键帧整体跟随
-  const so2 = app.objects.find((o) => o.motion?.active && o.motion.keys.length > 1);
-  app.editWhole = false;
-  app.select({ kind: 'obj', so: so2 });
-  const y0 = so2.motion.keys.map((k) => k.p[1]);
-  const yPre = +so2.root.position.y.toFixed(2);
-  st.tc.dispatchEvent({ type: 'dragging-changed', value: true });
-  so2.root.position.y += 2;
-  st.tc.dispatchEvent({ type: 'objectChange' });
-  so2.root.position.y += 1;
-  st.tc.dispatchEvent({ type: 'objectChange' });
-  st.tc.dispatchEvent({ type: 'dragging-changed', value: false });
-  await new Promise((r) => setTimeout(r, 30));
-  out.objMovedDelta = +(so2.root.position.y - yPre).toFixed(2);
-  out.objFollow = so2.motion.keys.map((k) => +(k.p[1] - y0[so2.motion.keys.indexOf(k)]).toFixed(2)).slice(0, 3);
-  // 6) 相机路径线是否随关键帧更新
-  out.pathPts = shot.pathLine?.geometry.attributes.position.count || 0;
-  out.pathFinite = (() => { const a = shot.pathLine?.geometry.attributes.position.array || []; for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) return false; return true; })();
-  return out;
-});
-ck('gizmoKeyDrag2', Math.abs((R.checks.gizmoDrag.keyDelta || [])[0] - 4) < 0.01 && Math.abs((R.checks.gizmoDrag.keyDelta || [])[1] - 1.5) < 0.01);
-ck('gizmoWholeShift', R.checks.gizmoDrag.wholeShift.every((v) => Math.abs(v + 5) < 0.01));
-ck('gizmoRotKey', R.checks.gizmoDrag.qChanged === true);
-ck('gizmoObjKey', Math.abs((R.checks.gizmoDrag.objKeyDelta ?? 0) - 3) < 0.01);
-ck('gizmoObjFollow', (R.checks.gizmoDrag.objFollow || []).every((v) => Math.abs(v - 3) < 0.01));
-ck('pathLineFinite', R.checks.gizmoDrag.pathFinite === true && R.checks.gizmoDrag.pathPts > 100);
+  return { P, C, M, n: nTri, nMesh: meshId, names, objs };
+}
 
-// --- 夜间氛围 + 截图
-await page.evaluate(() => {
-  [...document.querySelectorAll('.itab')].find((b) => b.textContent.includes('光影'))?.click();
-});
-await new Promise((r) => setTimeout(r, 300));
-R.checks.lightPanel = await page.evaluate(() => {
-  const cards = [...document.querySelectorAll('.acard')];
-  cards.find((c) => c.textContent.includes('夜景霓虹'))?.click();
-  return { presets: cards.length, sun: window.app.lighting.p.sunInt, glow: window.app.lighting.p.glow };
-});
-ck('atmosCount', R.checks.lightPanel.presets >= 10);
-await new Promise((r) => setTimeout(r, 900));
-await page.evaluate(() => { window.app.state.time = 2.2; window.app.bus.emit('time'); });
-await new Promise((r) => setTimeout(r, 600));
-await page.screenshot({ path: 'test/04-night.png' });
-await page.evaluate(() => { window.app.lighting.applyPreset('golden'); window.app.removeShot(window.app.shots.find((s) => s.name === '测试机位')); });
-await new Promise((r) => setTimeout(r, 800));
-await page.evaluate(() => { window.app.state.time = 2.4; window.app.bus.emit('time'); window.app.state.preview = false; window.app.stage.preview = false; });
-await new Promise((r) => setTimeout(r, 800));
-await page.screenshot({ path: 'test/01-editor.png' });
-await page.evaluate(() => { window.app.state.playing = true; });
+// ---------- 正交光栅化 ----------
+function render(T, box, dir, W, H) {
+  const zA = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+  const xA = new THREE.Vector3().crossVectors(up, zA);
+  if (xA.lengthSq() < 1e-6) xA.set(1, 0, 0);
+  xA.normalize();
+  const yA = new THREE.Vector3().crossVectors(zA, xA).normalize();
+  const ctr = box.getCenter(new THREE.Vector3());
 
-// 导出面板截图
-await page.evaluate(() => { [...document.querySelectorAll('.itab')].find((b) => b.textContent.includes('导出'))?.click(); });
-await new Promise((r) => setTimeout(r, 400));
-R.checks.exportPanel = await page.evaluate(() => ({
-  selects: document.querySelectorAll('#right select').length,
-  prompt: (document.querySelector('textarea.prompt')?.value || '').length,
-  buttons: [...document.querySelectorAll('#right .fbtn')].map((b) => b.textContent.trim()),
-}));
-ck('promptGenerated', R.checks.exportPanel.prompt > 200);
-await page.screenshot({ path: 'test/05-export.png' });
+  const v = new THREE.Vector3();
+  let mx = 1e-4, my = 1e-4;
+  for (let i = 0; i < 8; i++) {
+    v.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z).sub(ctr);
+    mx = Math.max(mx, Math.abs(v.dot(xA))); my = Math.max(my, Math.abs(v.dot(yA)));
+  }
+  const s = 0.90 * Math.min(W / 2 / mx, H / 2 / my);
 
-// 帮助弹层
-await page.evaluate(() => { document.querySelectorAll('#top .tb'); });
-await page.keyboard.press('Slash');
-await page.evaluate(() => { [...document.querySelectorAll('#top .tb')].find((b) => b.textContent.includes('帮助'))?.click(); });
-await new Promise((r) => setTimeout(r, 400));
-await page.screenshot({ path: 'test/06-help.png' });
-R.checks.help = await page.evaluate(() => document.querySelector('#modal').classList.contains('on'));
-await page.evaluate(() => { document.querySelector('.mclose')?.click(); });
+  const rgb = new Uint8Array(W * H * 3), id = new Int32Array(W * H).fill(-1);
+  for (let i = 0; i < W * H; i++) { rgb[i * 3] = BG[0]; rgb[i * 3 + 1] = BG[1]; rgb[i * 3 + 2] = BG[2]; }
+  const zb = new Float32Array(W * H).fill(-Infinity);
 
+  const L = new THREE.Vector3(-0.42, 0.84, 0.34).normalize();
+  const e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), nrm = new THREE.Vector3();
+  const px = new Float64Array(3), py = new Float64Array(3), pz = new Float64Array(3);
+  const P = T.P, C = T.C, M = T.M;
 
-// --- 机位身份：颜色 / 视口名牌 / 预览角标 / [ ] 切换
-R.checks.identity = await page.evaluate(async () => {
-  const { app } = window.__t;
-  app.setActiveShot(app.shots[0]);
-  app.state.preview = false; app.stage.preview = false;
-  app.state.showHelpers = true;
-  await new Promise((r) => setTimeout(r, 200));
-  const shots = app.shots.map((s) => ({
-    name: s.name, hex: s.colorHex, hasLabel: !!s.label, labelVisible: !!s.label?.visible,
-    texW: s.label?.material?.map?.image?.width || 0, pathHex: s.pathLine ? '#' + s.pathLine.material.color.getHexString() : null,
-    bodyHex: s.body ? '#' + s.body.children[2].material.color.getHexString() : null,
-  }));
-  const tag = document.getElementById('shotTag');
-  app.step(1 / 30);
-  return {
-    n: app.shots.length, shots,
-    distinct: new Set(shots.slice(1).map((s) => s.hex)).size >= Math.min(2, shots.length - 1),
-    activeAmber: shots[0].hex === '#ffb547',
-    tagOn: tag.classList.contains('on'), tagText: tag.textContent.slice(0, 60),
-    listDots: [...document.querySelectorAll('.shotlist .dot')].map((d) => (d.getAttribute('style') || '').slice(0, 24)),
-    listEye: [...document.querySelectorAll('.shotlist .eye')].map((x) => x.textContent).join('|'),
-    listLiveRows: document.querySelectorAll('.shotlist .shot.live').length,
-    labelScale: +app.shots[0].label.scale.x.toFixed(3),
-    labelStrokes: app.shots.map((sh) => {
-      const cv = sh.label.material.map.image, g = cv.getContext('2d');
-      for (let x = 0; x < cv.width; x++) {
-        const d = g.getImageData(x, 4, 1, 1).data;
-        if (d[3] > 200 && d[0] + d[1] + d[2] > 150) {
-          return [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+  for (let t = 0; t < T.n; t++) {
+    const o = t * 9;
+    for (let j = 0; j < 3; j++) {
+      const q = o + j * 3;
+      v.set(P[q], P[q + 1], P[q + 2]).sub(ctr);
+      px[j] = W / 2 + v.dot(xA) * s;
+      py[j] = H / 2 - v.dot(yA) * s;
+      pz[j] = v.dot(zA);
+    }
+    const x0 = Math.max(0, Math.floor(Math.min(px[0], px[1], px[2])));
+    const x1 = Math.min(W - 1, Math.ceil(Math.max(px[0], px[1], px[2])));
+    const y0 = Math.max(0, Math.floor(Math.min(py[0], py[1], py[2])));
+    const y1 = Math.min(H - 1, Math.ceil(Math.max(py[0], py[1], py[2])));
+    if (x0 > x1 || y0 > y1) continue;
+
+    e1.set(P[o + 3] - P[o], P[o + 4] - P[o + 1], P[o + 5] - P[o + 2]);
+    e2.set(P[o + 6] - P[o], P[o + 7] - P[o + 1], P[o + 8] - P[o + 2]);
+    nrm.crossVectors(e1, e2);
+    if (nrm.lengthSq() < 1e-18) continue;
+    nrm.normalize();
+
+    const area = (px[1] - px[0]) * (py[2] - py[0]) - (px[2] - px[0]) * (py[1] - py[0]);
+    if (area > -1e-9 && area < 1e-9) continue;
+
+    let sh = 0.30 + 0.56 * Math.abs(nrm.dot(L)) + 0.20 * (0.5 + 0.5 * nrm.y);
+    if (sh < 0.12) sh = 0.12; else if (sh > 1.12) sh = 1.12;
+    const cr = Math.min(255, C[t * 3] * sh), cg = Math.min(255, C[t * 3 + 1] * sh), cb = Math.min(255, C[t * 3 + 2] * sh);
+    const mid = M[t];
+
+    for (let y = y0; y <= y1; y++) {
+      const fy = y + 0.5, row = y * W;
+      for (let x = x0; x <= x1; x++) {
+        const fx = x + 0.5;
+        const w0 = (px[1] - fx) * (py[2] - fy) - (px[2] - fx) * (py[1] - fy);
+        const w1 = (px[2] - fx) * (py[0] - fy) - (px[0] - fx) * (py[2] - fy);
+        const w2 = (px[0] - fx) * (py[1] - fy) - (px[1] - fx) * (py[0] - fy);
+        if (!((w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0))) continue;
+        const z = (w0 * pz[0] + w1 * pz[1] + w2 * pz[2]) / area;
+        const i = row + x;
+        if (z <= zb[i]) continue;
+        zb[i] = z;
+        rgb[i * 3] = cr; rgb[i * 3 + 1] = cg; rgb[i * 3 + 2] = cb;
+        id[i] = mid;
+      }
+    }
+  }
+
+  // 地面参照线：底面四边（判断漂浮）
+  const gy = box.min.y;
+  const cs = [[box.min.x, box.min.z], [box.max.x, box.min.z], [box.max.x, box.max.z], [box.min.x, box.max.z]];
+  const pr = ([X, Z]) => { v.set(X, gy, Z).sub(ctr); return [W / 2 + v.dot(xA) * s, H / 2 - v.dot(yA) * s]; };
+  for (let i = 0; i < 4; i++) line(rgb, W, H, pr(cs[i]), pr(cs[(i + 1) % 4]), [116, 130, 148]);
+  return { rgb, id };
+}
+
+function line(buf, W, H, p, q, col) {
+  const [x0, y0] = p, [x1, y1] = q;
+  const n = Math.max(2, Math.round(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+  for (let i = 0; i <= n; i++) {
+    const x = Math.round(x0 + (x1 - x0) * i / n), y = Math.round(y0 + (y1 - y0) * i / n);
+    for (let d = -1; d <= 1; d++) for (let e = -1; e <= 1; e++) {
+      const xx = x + d, yy = y + e;
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const k = (yy * W + xx) * 3;
+      buf[k] = col[0]; buf[k + 1] = col[1]; buf[k + 2] = col[2];
+    }
+  }
+}
+
+// ---------- PNG ----------
+const crcT = (() => {
+  const t = new Int32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c; }
+  return t;
+})();
+const crc32 = (b) => { let c = -1; for (let i = 0; i < b.length; i++) c = crcT[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; };
+function chunk(type, data) {
+  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+  const td = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
+  return Buffer.concat([len, td, crc]);
+}
+function png(W, H, rgb) {
+  const raw = Buffer.alloc(H * (W * 3 + 1));
+  for (let y = 0; y < H; y++) {
+    raw[y * (W * 3 + 1)] = 0;
+    Buffer.from(rgb.buffer, rgb.byteOffset + y * W * 3, W * 3).copy(raw, y * (W * 3 + 1) + 1);
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw, { level: 6 })), chunk('IEND', Buffer.alloc(0))]);
+}
+
+export { render, collect, VIEWS, TILE };
+
+// 只在直接运行时出图；被 import 时只当光栅化库用
+const isMain = process.argv[1] && /(^|[\\/])shots\.mjs$/.test(process.argv[1]);
+if (isMain) {
+  // ---------- 主流程 ----------
+  const only = process.argv.slice(2);
+  fs.mkdirSync(OUT, { recursive: true });
+  const sheet = new Uint8Array(SHEET * SHEET * 3);
+  const rows = [];
+  let done = 0;
+
+  for (const g of LIB) {
+    if (only[0] && g.id !== only[0]) continue;
+    for (const it of g.items) {
+      if (only[1] && it.type !== only[1]) continue;
+      let root;
+      try { root = buildAsset(it, defaultsFor(it)); }
+      catch (e) { console.log(`· 跳过 ${g.id}:${it.type}（${e.message}）`); continue; }
+      const box = new THREE.Box3().setFromObject(root);
+      if (!isFinite(box.min.x) || !isFinite(box.max.x)) { console.log(`· 跳过 ${g.id}:${it.type}（空模型）`); continue; }
+      const T = collect(root);
+      if (!T.n) continue;
+
+      for (let i = 0; i < SHEET * SHEET; i++) { sheet[i * 3] = 245; sheet[i * 3 + 1] = 246; sheet[i * 3 + 2] = 248; }
+      const seen = new Uint8Array(T.nMesh);
+      let painted = 0;
+      // 另渲俯视/仰视，只用于可见性统计（底面、顶面的构件不该被判成"看不见"）
+      for (const d of [[0, 1, 0], [0, -1, 0]]) {
+        const R = render(T, box, d, TILE >> 1, TILE >> 1);
+        for (let i = 0; i < R.id.length; i++) { const m = R.id[i]; if (m >= 0) seen[m] = 1; }
+      }
+      for (let v = 0; v < 4; v++) {
+        const R = render(T, box, VIEWS[v], TILE, TILE);
+        const ox = PAD + (v % 2) * (TILE + PAD), oy = PAD + ((v / 2) | 0) * (TILE + PAD);
+        for (let y = 0; y < TILE; y++) {
+          const di = y * TILE * 3;
+          sheet.set(R.rgb.subarray(di, di + TILE * 3), ((oy + y) * SHEET + ox) * 3);
+        }
+        for (let i = 0; i < TILE * TILE; i++) { const m = R.id[i]; if (m >= 0) { seen[m] = 1; painted++; } }
+      }
+      process.stdout.write('.');
+      fs.writeFileSync(path.join(OUT, `${g.id}_${it.type}.png`), png(SHEET, SHEET, sheet));
+
+      let blind = 0;
+      const blindInfo = [];
+      for (let i = 0; i < T.nMesh; i++) if (!seen[i]) { blind++;
+        const m = T.objs[i];
+        if (blindInfo.length < 4) blindInfo.push(`${m.geometry.type}@${m.position.toArray().map(v => +v.toFixed(2)).join(',')}#${m.material.color.getHexString()}`);
+      }
+      const sz = box.getSize(new THREE.Vector3());
+      rows.push({
+        k: `${g.id}:${it.type}`, nMesh: T.nMesh, blind, painted, blindInfo,
+        size: [sz.x, sz.y, sz.z].map((x) => x.toFixed(1)).join('×'),
+        y: box.min.y.toFixed(2),
+      });
+      done++;
+    }
+  }
+
+  console.log(`\n出图 ${done} 张 → ${OUT}/`);
+  const bad = rows.filter((r) => r.blind > 0).sort((a, b) => b.blind - a.blind);
+  console.log(`\n四个视图都露不了面的构件（0 像素，多半白做或被整只包住）：`);
+  if (!bad.length) console.log('  （无）');
+  for (const r of bad.slice(0, 25)) console.log(`  ${r.k.padEnd(26)} 构件 ${String(r.nMesh).padStart(4)}，其中 ${String(r.blind).padStart(3)} 个看不见 ${r.blindInfo ? r.blindInfo.join(' ') : ''}`);
+  fs.writeFileSync(path.join(OUT, '_report.json'), JSON.stringify(rows, null, 1));
+  writeGallery(rows);
+
+  function writeGallery(rows) {
+    const groups = [];
+    for (const g of LIB) groups.push({ id: g.id, name: g.name || g.id });
+    const data = rows.map((r) => {
+      const [gid, ty] = r.k.split(':');
+      return { g: gid, t: ty, f: `${gid}_${ty}.png`, n: r.nMesh, b: r.blind, s: r.size };
+    });
+    const html = `<!doctype html><html lang="zh"><head><meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>模型库出图 ${data.length} 张</title>
+  <style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#f4f5f7;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#1c2024}
+  header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #dfe3e8;padding:12px 18px}
+  h1{margin:0 0 10px;font-size:17px;font-weight:600}
+  .bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  button{font:inherit;font-size:13px;padding:5px 11px;border:1px solid #d3d8de;background:#fff;border-radius:6px;cursor:pointer;color:#3d444d}
+  button:hover{border-color:#8a93a0}
+  button.on{background:#2f6fed;border-color:#2f6fed;color:#fff}
+  input{font:inherit;font-size:13px;padding:5px 10px;border:1px solid #d3d8de;border-radius:6px;width:190px}
+  .hint{margin-left:auto;font-size:12px;color:#6b7480}
+  main{padding:14px 18px 60px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(206px,1fr));gap:12px}
+  .card{background:#fff;border:1px solid #e3e7ec;border-radius:8px;overflow:hidden;cursor:zoom-in}
+  .card img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#eef1f4}
+  .cap{padding:7px 9px;display:flex;align-items:baseline;gap:6px}
+  .cap b{font-weight:600;font-size:12.5px}
+  .grp{font-size:11px;color:#8a93a0;margin-left:auto;white-space:nowrap}
+  .badge{font-size:11px;color:#a8590d;background:#fdf1de;border:1px solid #f3ddb8;border-radius:4px;padding:0 4px}
+  #lb{position:fixed;inset:0;background:rgba(16,20,26,.9);display:none;place-items:center;z-index:20;cursor:zoom-out;padding:24px}
+  #lb.on{display:grid}
+  #lb img{max-width:min(96vw,900px);max-height:92vh;border-radius:6px;background:#fff}
+  #lb .t{position:fixed;top:14px;left:0;right:0;text-align:center;color:#e8ecf1;font-size:14px}
+  </style></head><body>
+  <header><h1>模型库出图 — ${data.length} 张（正视 / 右侧 / 背面 / 轴测）</h1>
+  <div class="bar"><span id="g"></span><input id="q" placeholder="搜索类型名…"><span class="hint" id="cnt"></span></div></header>
+  <main><div class="grid" id="grid"></div></main>
+  <div id="lb"><div class="t" id="lbt"></div><img id="lbi" alt=""></div>
+  <script>
+  const DATA=${JSON.stringify(data)}, GROUPS=${JSON.stringify(groups)};
+  let cur='', q='', shown=[], idx=0;
+  const gEl=document.getElementById('g'), grid=document.getElementById('grid'), cnt=document.getElementById('cnt');
+  const lb=document.getElementById('lb'), lbi=document.getElementById('lbi'), lbt=document.getElementById('lbt');
+  function draw(){
+    shown=DATA.filter(d=>(!cur||d.g===cur)&&(!q||(d.g+':'+d.t).includes(q)));
+    grid.innerHTML=shown.map((d,i)=>\`<div class="card" data-i="\${i}">
+      <img src="\${d.f}" loading="lazy" alt="\${d.g}:\${d.t}">
+      <div class="cap"><b>\${d.t}</b>\${d.b?\`<span class="badge" title="四视图+俯仰视都露不了面的构件数">\${d.b} 隐</span>\`:''}<span class="grp">\${d.g} · \${d.s}</span></div></div>\`).join('');
+    cnt.textContent=shown.length+' 张';
+  }
+  function open(i){ if(i<0||i>=shown.length)return; idx=i; const d=shown[i];
+    lbi.src=d.f; lbt.textContent=\`\${d.g}:\${d.t}　\${d.s} m　\${i+1} / \${shown.length}　← → 翻页，Esc 关闭\`; lb.classList.add('on'); }
+  gEl.innerHTML='<button data-g="" class="on">全部</button>'+GROUPS.map(g=>\`<button data-g="\${g.id}">\${g.name}</button>\`).join('');
+  gEl.onclick=e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.g;
+    [...gEl.children].forEach(x=>x.classList.toggle('on',x===b));draw();};
+  document.getElementById('q').oninput=e=>{q=e.target.value.trim();draw();};
+  grid.onclick=e=>{const c=e.target.closest('.card');if(c)open(+c.dataset.i);};
+  lb.onclick=e=>{if(e.target!==lbi)lb.classList.remove('on');};
+  document.onkeydown=e=>{
+    if(!lb.classList.contains('on'))return;
+    if(e.key==='Escape')lb.classList.remove('on');
+    else if(e.key==='ArrowRight'){open(idx+1);e.preventDefault();}
+    else if(e.key==='ArrowLeft'){open(idx-1);e.preventDefault();}
+  };
+  draw();
+  </script></body></html>`;
+    fs.writeFileSync(path.join(OUT, 'index.html'), html);
+    console.log(`画廊 → ${path.join(OUT, 'index.html')}`);
+  }
+
+  // ---------- ASCII 预览（让没有视觉能力的会话也能核对渲染）----------
+  if (process.argv.includes('--ascii')) {
+    const RAMP = ' .:-=+*#%@';
+    const want = only.slice(0, 2);
+    for (const g of LIB) {
+      if (want[0] && g.id !== want[0]) continue;
+      for (const it of g.items) {
+        if (want[1] && it.type !== want[1]) continue;
+        let root; try { root = buildAsset(it, defaultsFor(it)); } catch { continue; }
+        const box = new THREE.Box3().setFromObject(root);
+        const T = collect(root);
+        if (!T.n) continue;
+        const CW = 76, CH = 34;                                  // 字符网格
+        const proj = (dir) => {
+          const R = render(T, box, dir, CW * 4, CH * 8);         // 超采样后按字符块平均
+          const W = CW * 4, H = CH * 8, out = [];
+          for (let cy = 0; cy < CH; cy++) {
+            let s = '';
+            for (let cx = 0; cx < CW; cx++) {
+              let sum = 0, n = 0;
+              for (let y = cy * 8; y < (cy + 1) * 8; y++) for (let x = cx * 4; x < (cx + 1) * 4; x++) {
+                const i = (y * W + x) * 3;
+                sum += (R.rgb[i] * 0.299 + R.rgb[i + 1] * 0.587 + R.rgb[i + 2] * 0.114); n++;
+              }
+              const lum = sum / n;
+              const isBg = Math.abs(lum - (BG[0] * 0.299 + BG[1] * 0.587 + BG[2] * 0.114)) < 3;
+              s += isBg ? ' ' : RAMP[Math.min(9, Math.max(0, Math.round((232 - lum) / 232 * 9)))];
+            }
+            out.push(s);
+          }
+          return out;
+        };
+        for (const v of VIEWS) {
+          console.log(`\n=== ${g.id}:${it.type} — ${v[3]}`);
+          for (const l of proj(v)) console.log('|' + l);
         }
       }
-      return null;
-    }),
-    expectStrokes: app.shots.map((sh) => sh.colorHex.slice(1)),
-    rowTitles: [...document.querySelectorAll('.shotlist .shot')].map((b) => (b.getAttribute('title') || '').slice(0, 18)),
-  };
-});
-ck('shotColorsDistinct', R.checks.identity.distinct && R.checks.identity.activeAmber);
-ck('shotLabels', R.checks.identity.shots.every((s) => s.hasLabel && s.labelVisible && s.texW > 200));
-ck('shotListColored', R.checks.identity.listDots.length >= 3 && R.checks.identity.listEye.includes('当前机位')
-  && R.checks.identity.listLiveRows === 0);
-ck('labelStrokeMatchesIdentityColor',
-  R.checks.identity.labelStrokes.length >= 3
-  && R.checks.identity.labelStrokes.every((hx, i) => {
-    const a = hx, b = R.checks.identity.expectStrokes[i];
-    if (!a || !b) return false;
-    const d = [0, 2, 4].reduce((s, k) => s + Math.abs(parseInt(a.substr(k, 2), 16) - parseInt(b.substr(k, 2), 16)), 0);
-    return d <= 12;
-  }));
-ck('labelScalesWithDistance', R.checks.identity.labelScale > 0.85 && R.checks.identity.labelScale < 13
-  && R.checks.identity.rowTitles.every((t) => t.length > 4));
-ck('identityInEdit', R.checks.identity.tagOn === false);
+    }
+  }
 
-await page.keyboard.press('BracketRight');
-await new Promise((r) => setTimeout(r, 400));
-R.checks.cycle = await page.evaluate(() => ({
-  active: window.app.activeShot?.name, idx: window.app.shots.indexOf(window.app.activeShot),
-  pathFollows: window.app.activeShot.colorHex === '#ffb547',
-  others: window.app.shots.filter((s) => s !== window.app.activeShot).map((s) => s.colorHex),
-}));
-ck('cycleShot', R.checks.cycle.idx === 1 && R.checks.cycle.pathFollows === true);
-
-await page.keyboard.press('KeyP');
-await new Promise((r) => setTimeout(r, 700));
-R.checks.previewTag = await page.evaluate(async () => {
-  const { app } = window.__t;
-  await new Promise((r) => setTimeout(r, 150));
-  app.step(1 / 30); // 无头浏览器里 rAF 会被饿死，手动补一帧再断言可见性
-  const tag = document.getElementById('shotTag');
-  return {
-    on: tag.classList.contains('on'), text: tag.textContent,
-    view: app.stage.view.position.toArray().map((v) => +v.toFixed(2)),
-    labelsHidden: app.shots.every((s) => !s.label.visible),
-    listLive: document.querySelectorAll('.shotlist .shot.live').length,
-    listEye: [...document.querySelectorAll('.shotlist .eye')].map((x) => x.textContent).join('|'),
-    idx: app.shots.indexOf(app.activeShot),
-  };
-});
-ck('previewTagShowsShot', R.checks.previewTag.on === true
-  && R.checks.previewTag.text.includes(`${R.checks.previewTag.idx + 1}/`)
-  && R.checks.previewTag.text.includes(R.checks.cycle.active));
-ck('labelsHiddenInPreview', R.checks.previewTag.labelsHidden === true);
-ck('listMarksLiveShot', R.checks.previewTag.listLive === 1 && R.checks.previewTag.listEye.includes('预览中'));
-await page.screenshot({ path: 'test/12-preview-tag.png' });
-await page.keyboard.press('KeyP');
-await new Promise((r) => setTimeout(r, 400));
-await page.screenshot({ path: 'test/13-identity.png' });
-
-R.tcErrors = await page.evaluate(() => window.__tcErr || []);
-ck('noOrphanGizmo', (await page.evaluate(() => (window.__tcErr || []).length)) === 0);
-R.errors = errors;
-fs.writeFileSync('test/shots-result.json', JSON.stringify(R, null, 1));
-const fails = Object.entries(R.checks).filter(([k, v]) => k.endsWith('Ok') || k.startsWith('atmos') || k.startsWith('char') || k.startsWith('cam') || k.startsWith('add') || k.startsWith('del') || k.startsWith('anchor') || k.startsWith('preview') || k.startsWith('light') || k.startsWith('prompt') || k.startsWith('help'));
-console.log(JSON.stringify({ errorCount: errors.length, errors: errors.slice(0, 6), checks: R.checks }, null, 1));
-await browser.close();
-const all = Object.values(R.checks);
-const boolFails = Object.entries(R.checks).filter(([k, v]) => typeof v === 'boolean' && !v).map(([k]) => k);
-process.exit(errors.length || boolFails.length ? 1 : 0);
+}

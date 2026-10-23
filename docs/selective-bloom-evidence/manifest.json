@@ -1,0 +1,278 @@
+{
+  "dateLocal": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "baseCommit": "d630df175ed756517d319a6c0be7381bdb80787d",
+  "scope": "Phase 2: optional selective emission/color Bloom; legacy fullscreen preserved. Phase 3 terrain import/erosion/rivers not implemented. Phase 1 long-video evidence remains historical, not rerun on this artifact.",
+  "status": "PASS scoped DEV + offline file checks; not entire historical suite or multi-GPU acceptance",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1963723,
+    "sha256": "fec5557d28b39299913a04e5f20a23d7b9320adf82b7dd1cc86650eb22db507a"
+  },
+  "sources": [
+    {
+      "path": "src/selective-bloom.js",
+      "bytes": 12463,
+      "sha256": "7e9f8603788bd972fc0c6e02f0d384b3d71651b3c81e89f16ea39169e9dabe9b"
+    },
+    {
+      "path": "src/selective-bloom-ui.js",
+      "bytes": 4844,
+      "sha256": "a6cec70194896cfa385b24daa51399c3b6500f79cef985647235e72ff3eb153e"
+    },
+    {
+      "path": "src/render-effects.js",
+      "bytes": 5446,
+      "sha256": "27a76bd6b0dfe0d3575226499d384885bf26d019f964e10fafe07313e9b686fb"
+    },
+    {
+      "path": "src/render-effects-ui.js",
+      "bytes": 3823,
+      "sha256": "10f1e13a38cbc705a54b218e6aa78e8200df9297a23db27945e76aabf5d78a93"
+    },
+    {
+      "path": "src/model-instancing.js",
+      "bytes": 15097,
+      "sha256": "0034b339dd9be5372c79b17d0757cdabe8fc72005dd20c17c2f81d8b6df483c0"
+    },
+    {
+      "path": "src/stage.js",
+      "bytes": 32709,
+      "sha256": "9045fc43923f49f0d1cd85aaffc551afba5abbf109985257e5a93ccf69203680"
+    },
+    {
+      "path": "src/panels.js",
+      "bytes": 131285,
+      "sha256": "dbc80e7958db7b81f90509d77978028e3815b5af3e64302713d245dc9b295f90"
+    },
+    {
+      "path": "src/performance-ui.js",
+      "bytes": 14145,
+      "sha256": "75b82731b6e1fb65282c082504130e33f3a8fefba6020f423da79ea5a8df9228"
+    },
+    {
+      "path": "src/material-appearance.js",
+      "bytes": 4500,
+      "sha256": "1e2b15bbac1d4a35199cb91aec441a9e4dd7593c5c7ad1740bec47edf44b12ee"
+    },
+    {
+      "path": "src/window-lights.js",
+      "bytes": 13189,
+      "sha256": "59a89be81281c5c0d20c7fe0499f609d9df819a9c0178db2e479f850cbc0f9a4"
+    },
+    {
+      "path": "src/camera-color.js",
+      "bytes": 2891,
+      "sha256": "767a5ab3b4f9692ace31ed69ae79aaabb7c3d80330882457052125f28e224e0c"
+    },
+    {
+      "path": "src/render-lod.js",
+      "bytes": 17766,
+      "sha256": "9d85120d1b6d567da8cc2228ec41d9470fd25c87444c535efbaa8d8e3ec570b6"
+    },
+    {
+      "path": "src/export.js",
+      "bytes": 20507,
+      "sha256": "d921903b1e92e23d30ca06a70c06b06b127c4c0f5e53cc9c3a484efadbb00640"
+    },
+    {
+      "path": "src/app.js",
+      "bytes": 68995,
+      "sha256": "2c0b5a18525f149eae8486c184399d35547054aed7839a5fda87038be18181c9"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/selective-bloom.test.mjs",
+      "bytes": 4772,
+      "sha256": "ebb00c9d699b42f4aeb8174d19ece683f2b7cbc4dd68037ccf3f7cfe4a2de398"
+    },
+    {
+      "path": "test/selective-bloom-regression.mjs",
+      "bytes": 23146,
+      "sha256": "6a75f2016b0083f305be3458f5e73985520a005a3088fd04137fb8ffc4bb7d66"
+    },
+    {
+      "path": "test/render-effects-regression.mjs",
+      "bytes": 17614,
+      "sha256": "4bfcdcb7b4def2649dd623871ba41bf32c42c4825a6b3c6e71b062ec54dc59b9"
+    },
+    {
+      "path": "test/window-lights-regression.mjs",
+      "bytes": 15100,
+      "sha256": "e3c8a1529393607c5b2fed997fac36a1c7aee631fbdfc7e902fb41ec7135fb17"
+    },
+    {
+      "path": "test/lighting-regression.mjs",
+      "bytes": 15665,
+      "sha256": "bcb12ee5af2a72fb65678f0fb7d1048a7c4279761dd8b0a0313b3c033ed33d81"
+    },
+    {
+      "path": "test/pick-spatial-index-regression.mjs",
+      "bytes": 15629,
+      "sha256": "6ec52c1f1eb2f93e3ebd8f1a6c080393d0f92db2fada60850692c3c65b10b800"
+    },
+    {
+      "path": "test/runsuite.sh",
+      "bytes": 1679,
+      "sha256": "6007522b1ce43a1ea20321c4143d5a1e46bc39bbe71ee88bf53bdd42e3d01dab"
+    }
+  ],
+  "documentation": {
+    "path": "docs/selective-bloom.md",
+    "bytes": 9298,
+    "sha256": "b0a3b0f972cfbd649ba18aae7a4c9c97a25b8a64afb9749269bd3c316af248b5"
+  },
+  "evidence": [
+    {
+      "path": "docs/selective-bloom-evidence/bloom-dev.json",
+      "bytes": 4280,
+      "sha256": "e573f627e68ca2817efb6eba92a1b9356b49d7d78231a591306b53254b0ca5e9"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/bloom-dev.log",
+      "bytes": 4302,
+      "sha256": "fccc18969e978f74107e42fbc37faa96f8b1375ae71fdfb0f216f0852e69631a"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/bloom-file.json",
+      "bytes": 4276,
+      "sha256": "9c24419da733f07583e15277ca3a332bfc2a7cab1c2c3beef2e373a5df7a4e49"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/bloom-file.log",
+      "bytes": 4298,
+      "sha256": "12f0e6fc2990fd728a0864c94cd699eebf3573749cee5181e356fce08c35b687"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/build.log",
+      "bytes": 1559,
+      "sha256": "f4bd07c514d7b257f255eb64688e1a02a1c447bcbc15174164e278b6d820730f"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/decode-dev.json",
+      "bytes": 278,
+      "sha256": "e7319add9095081ada6acd23211d37c9faa728eeaa078015e62be9e5c40a53f1"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/decode-dev.log",
+      "bytes": 952,
+      "sha256": "73f8627c999ffdf682be9fd96b852565a2f75b24f65134ca4e12041ef8be5643"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/decode-file.json",
+      "bytes": 279,
+      "sha256": "35bf3c9066b5f0580bc671570118fd3d3d18b60f5984951e0a7f5341c38d06ad"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/decode-file.log",
+      "bytes": 954,
+      "sha256": "ca4e4871055d81d39eb37fb03c10bd7d960c5892300526f30e25b10d87a47c40"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/legacy-effects-dev.log",
+      "bytes": 4451,
+      "sha256": "d9feb7898050c0c54365d53f0a2665f0b650904f25f515ec427b15e868f1bb0c"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/legacy-effects-file.log",
+      "bytes": 4468,
+      "sha256": "79a517dd8e9fd5ddadb3707d8c04de2cfc10d0a521d6b3405c6bc30ee9261695"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/lighting-dev.log",
+      "bytes": 1717,
+      "sha256": "d01dea5485ff19600d19dde043ae10b31c36a2b228d640db80572baebce2ab62"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/lighting-file.log",
+      "bytes": 1717,
+      "sha256": "d01dea5485ff19600d19dde043ae10b31c36a2b228d640db80572baebce2ab62"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/node-tests.log",
+      "bytes": 1482,
+      "sha256": "b1006f4b46aef75025ba6ffec84770a3368af50b7c0f237b09940d355bbfd88b"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/pick-dev.log",
+      "bytes": 720,
+      "sha256": "b3991c1c72b0c90ca2d10cf2f158fc7ff45426abe0ea1c5aa3dffee162326cbe"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/pick-file.log",
+      "bytes": 722,
+      "sha256": "af6830173cd5f40cf927d424c6934c0bd177b278875d13cd4a75fc2d2de131c5"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/window-dev.log",
+      "bytes": 649,
+      "sha256": "1975fb676d5257f995c1e5576037f3d189b812d87a5bdd647a3251f9d6141db6"
+    },
+    {
+      "path": "docs/selective-bloom-evidence/window-file.log",
+      "bytes": 649,
+      "sha256": "e06fe8bfca985106ce15c6f7d7500f9cbb1c2de97ff6865fda9e3ecffbd97c84"
+    }
+  ],
+  "ignoredMedia": [
+    {
+      "path": ".shots/selective-bloom-dev.png",
+      "bytes": 106875,
+      "sha256": "0870c85eeeb06493129d290bf28857cc4435f764be3cc8217d4cd1408757f1e4"
+    },
+    {
+      "path": ".shots/selective-bloom-dev.webm",
+      "bytes": 11510,
+      "sha256": "1fc2808301368a93b78d116b753cb694836e8aa9947bcf6522b3ccbf21ddca70"
+    },
+    {
+      "path": ".shots/selective-bloom-dev.rgb",
+      "bytes": 921600,
+      "sha256": "405cc1e48ce3e21de470c44595306bba864e0292040c75ae970ea1ccfe7b957c"
+    },
+    {
+      "path": ".shots/selective-bloom-file.png",
+      "bytes": 106875,
+      "sha256": "0870c85eeeb06493129d290bf28857cc4435f764be3cc8217d4cd1408757f1e4"
+    },
+    {
+      "path": ".shots/selective-bloom-file.webm",
+      "bytes": 11510,
+      "sha256": "1fc2808301368a93b78d116b753cb694836e8aa9947bcf6522b3ccbf21ddca70"
+    },
+    {
+      "path": ".shots/selective-bloom-file.rgb",
+      "bytes": 921600,
+      "sha256": "405cc1e48ce3e21de470c44595306bba864e0292040c75ae970ea1ccfe7b957c"
+    }
+  ],
+  "environment": {
+    "platform": "Linux x86_64",
+    "browser": "Chromium 131",
+    "renderer": "ANGLE SwiftShader software",
+    "specializedViewport": [
+      480,
+      320
+    ],
+    "videoSmoke": {
+      "fps": 5,
+      "durationSeconds": 0.4,
+      "decodedFramesPerEntry": 2
+    },
+    "resourceCycles": {
+      "warmup": 2,
+      "measured": 4
+    },
+    "legacyPick": "PICK_SMOKE=1 single dense fixture; not full four-fixture benchmark"
+  },
+  "checks": [
+    "Node settings/policy/structural UUID-free refs/root placement/variant ownership/fog/dynamic radiance/fail-closed shaders",
+    "DEV and offline file selective regression; output logs and JSON included",
+    "DEV and offline file existing render-effects/window-lights/lighting regressions",
+    "DEV and offline file pick spatial index smoke",
+    "FFmpeg true decode both two-frame VP9 WebM files",
+    "Dual build; node --check changed modules; bash -n; git diff --check"
+  ]
+}

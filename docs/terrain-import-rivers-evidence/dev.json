@@ -1,0 +1,95 @@
+{
+  "entry": "http:",
+  "imported": {
+    "n": 65,
+    "size": 80,
+    "first": 2.152590274810791,
+    "center": 2.1526055335998535,
+    "last": 3
+  },
+  "overlay": {
+    "before": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "after": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "hidden": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "texturePlateau": [
+      8,
+      8,
+      8,
+      8
+    ]
+  },
+  "river": {
+    "wet": [
+      106,
+      147,
+      166,
+      255
+    ],
+    "dry": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "clickedPoints": 3,
+    "changed": 886,
+    "storedRivers": 1,
+    "preciseRoundtrip": true,
+    "previewPlateau": [
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      }
+    ],
+    "archiveBytes": 13011
+  },
+  "exports": {
+    "width": 480,
+    "height": 320,
+    "exportMutex": true,
+    "videoFrames": 2,
+    "videoBytes": 12342,
+    "decodedFrames": 2,
+    "meanRGB": [
+      131.12462022569446,
+      131.12398654513888
+    ]
+  },
+  "checks": [
+    "native file input 16-bit precision + independent mapping fields",
+    "height/overlay/river undo/redo + exact float32 archive roundtrip",
+    "PNG/JPEG overlay real pixels/opacity/global grey/Basic",
+    "viewport clicks + node form + preview/save/carve lower-only",
+    "cancel and stale-source refusal",
+    "export guides + mutex + selective Bloom isolation",
+    "four-cycle overlay texture / river preview resource plateau",
+    "PNG output + two-frame WebM + optional native true decode + clear/dispose"
+  ]
+}

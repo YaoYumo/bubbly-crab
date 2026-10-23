@@ -1,0 +1,41 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "realPointerDrag": true,
+  "draggableEnumeratedAttribute": true,
+  "builtin": {
+    "key": "cn:hall:宫殿大殿",
+    "position": [
+      6.468153379109264,
+      0,
+      4.11027957170397
+    ],
+    "onePlacement": true,
+    "undoRedo": true
+  },
+  "label": {
+    "key": "cn:hall2:歇山殿宇",
+    "position": [
+      6.468153379109264,
+      0,
+      4.11027957170397
+    ],
+    "onePlacement": true,
+    "undoRedo": true
+  },
+  "imported": {
+    "key": "userlib:model_37n9i",
+    "position": [
+      6.468153379109264,
+      0,
+      4.11027957170397
+    ],
+    "onePlacement": true,
+    "undoRedo": true
+  },
+  "clickStillPlacesOnce": true,
+  "dropOutsideDoesNotPlace": true,
+  "cancelDoesNotPlace": true,
+  "cardControlsGuarded": true,
+  "errors": [],
+  "csp": []
+}

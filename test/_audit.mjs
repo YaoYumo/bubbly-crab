@@ -3,7 +3,7 @@ const b = await puppeteer.launch({ headless: true, args: ['--enable-unsafe-swift
 const p = await b.newPage();
 const warns = new Set();
 p.on('console', (m) => { const t = m.text(); const k = t.replace(/^\[previz\] /, ''); if (/不认识的参数/.test(t)) warns.add(k); });
-await p.goto('http://localhost:5173/?fresh=1', { waitUntil: 'networkidle2' });
+await p.goto('http://localhost:5174/?fresh=1', { waitUntil: 'networkidle2' });
 await p.waitForFunction(() => window.__previzBooted && window.app && window.__scenes);
 const n = await p.evaluate(async () => {
   const ids = window.__t.SCENES.map((s) => s.id);

@@ -1,0 +1,19 @@
+{
+  "runId": 39557715950,
+  "buildURL": "https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950",
+  "artifactId": 12327145641,
+  "downloadURL": "https://github.com/YaoYumo/bubbly-crab/actions/runs/39557715950/artifacts/12327145641",
+  "artifactZIPBytes": 4084472,
+  "artifactExpiresAt": "2027-01-19T06:48:21Z",
+  "sourceCommit": "d2222bb63aa2c42d110b0fdab885dde6cb0ed2a9",
+  "conclusion": "success",
+  "nativeCompiled": true,
+  "NSISInstalledOnWindowsRunner": true,
+  "nativeWindowObserved": true,
+  "userMachineTested": false,
+  "fullyFunctionalUIValidated": false,
+  "nativeDiskSaveValidated": false,
+  "installerSignature": "unsigned",
+  "localBinaryDownloaded": false,
+  "localBinaryDownloadNote": "Sandbox cannot reach Actions blob storage. User download URL remains available through GitHub. Inventory and smoke results retrieved via GitHub check annotations, not fabricated local exe."
+}

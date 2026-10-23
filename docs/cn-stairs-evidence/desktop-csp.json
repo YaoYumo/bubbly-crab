@@ -1,0 +1,43 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "buildings": [
+    {
+      "key": "cn:hall:宫殿大殿",
+      "profiles": 4
+    },
+    {
+      "key": "cn:hall2:歇山殿宇",
+      "profiles": 2
+    },
+    {
+      "key": "cn:gate:城门楼",
+      "profiles": 2
+    },
+    {
+      "key": "cn:citywall:城墙敌台",
+      "profiles": 2
+    },
+    {
+      "key": "cn:earthterrace:夯土台基",
+      "profiles": 2
+    }
+  ],
+  "parameterExtremes": true,
+  "disableStairs": true,
+  "tierLandings": true,
+  "gateReverseSlope": true,
+  "oldCNEntriesRetained": true,
+  "allCNEntriesConstructed": 19,
+  "terraceExitOpen": true,
+  "duplicateDeleteUndo": true,
+  "jsonAndProject": true,
+  "qualityRebuild": true,
+  "pngBytes": 166406,
+  "video": {
+    "size": 18886,
+    "frames": 2
+  },
+  "errors": [],
+  "outbound": [],
+  "csp": []
+}

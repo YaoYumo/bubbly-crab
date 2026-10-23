@@ -3,7 +3,7 @@
 // 单位：米。朝向：+Z 为前方。
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { M, shade } from './assets.js';
+import { M, shade } from './mat.js';   // 不从 assets.js 导入：assets→city→character 成环会触发 TDZ
 import { clamp, lerp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
 
@@ -541,4 +541,19 @@ export function updateChar(root, dt, dist = 0, speedMul = 1) {
 export function setCharAnim(root, anim) {
   if (!root.userData.humans) return;
   for (const h of root.userData.humans) h.anim = anim;
+}
+
+// Additive absolute-time pose sampler for compiled behavior sequences only.
+// Existing characters/crowds keep updateChar's incremental phase semantics.
+export function applyAbsoluteCharPose(root, anim, phase) {
+  root.userData.animPhase = phase;
+  for (const h of root.userData.humans || []) {
+    h.anim = anim;
+    h.ph = undefined;
+    h.dist = 0;
+    const p = poseFor(anim, phase * (h.rate ?? 1) + (h.off ?? 0), 1);
+    applyPose(h.rig, p);
+    const inner = h.inner || h.rig.hips?.parent;
+    if (inner) { inner.position.y = p.rootY || 0; inner.rotation.x = p.rootX || 0; }
+  }
 }

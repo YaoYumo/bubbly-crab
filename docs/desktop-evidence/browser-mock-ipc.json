@@ -1,0 +1,46 @@
+{
+  "platform": "Linux Chromium (NOT Windows native)",
+  "nativeValidated": false,
+  "browserPreflight": {
+    "nativeShell": false,
+    "secureContext": true,
+    "webgl": true,
+    "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "webCodecs": true,
+    "mediaRecorder": true,
+    "indexedDB": true,
+    "fileInput": true,
+    "cryptoDigest": true,
+    "gateway": "disabled (no bundled BFF)",
+    "closeGuard": "未注册（浏览器预检不等于原生验收）",
+    "pendingSaves": 0
+  },
+  "browserPreflightRefusesNativeSave": true,
+  "project": {
+    "objects": 3,
+    "shots": 1,
+    "projectBytes": 2961,
+    "localGltfBinTextureImport": true,
+    "textureRestored": true,
+    "pngBytes": 17574,
+    "webmBytes": 9749,
+    "frames": 2,
+    "videoStateRestored": true,
+    "mockDiskFailurePreservesVideo": true,
+    "mockCancelPreservesVideo": true,
+    "handlesClosed": true
+  },
+  "projectMenuUsesNativeWriter": true,
+  "exportPageNativeCancelStopsBatchAndRetryReusesBlob": true,
+  "gatewayBlockedBeforeFetch": true,
+  "offlineFrontendExport": {
+    "bytes": 9749,
+    "frames": 2,
+    "saved": "saved"
+  },
+  "errors": [],
+  "cspViolations": [],
+  "outboundRequests": [],
+  "nativeIPC": "mock only: dialog/create/partial-write/close, cancel/error, close guard",
+  "status": "PASS"
+}

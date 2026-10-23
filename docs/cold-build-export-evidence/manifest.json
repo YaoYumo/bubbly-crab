@@ -1,0 +1,496 @@
+{
+  "dateLocal": "2026-10-18",
+  "timezone": "Asia/Shanghai",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "baseCommit": "d630df175ed756517d319a6c0be7381bdb80787d",
+  "scope": "Phase 1: cooperative cold preparation and scoped long-video acceptance. Selective Bloom and external terrain workflows remain phases 2/3.",
+  "status": "PASS scoped checks; not the entire historical suite",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1950865,
+    "sha256": "bd9dfdcc88b994d281e31f89256dc33127baf29e84df29935951058416dcf52f"
+  },
+  "sources": [
+    {
+      "path": "src/idle-work.js",
+      "bytes": 2319,
+      "sha256": "c40383cb19c4d645803c10ccb4941313211754a3252cef4ef0887eba283ae49d"
+    },
+    {
+      "path": "src/render-lod.js",
+      "bytes": 17766,
+      "sha256": "9d85120d1b6d567da8cc2228ec41d9470fd25c87444c535efbaa8d8e3ec570b6"
+    },
+    {
+      "path": "src/pick-spatial-index.js",
+      "bytes": 13277,
+      "sha256": "ce7c1deeffb03fcc2287acb6e67687a81bbeedb88996c6cead61f7e65ee376bc"
+    },
+    {
+      "path": "src/export.js",
+      "bytes": 20507,
+      "sha256": "d921903b1e92e23d30ca06a70c06b06b127c4c0f5e53cc9c3a484efadbb00640"
+    },
+    {
+      "path": "src/webm-duration.js",
+      "bytes": 1804,
+      "sha256": "5452748866ff32d5fffa0687039b194e62ffc7ab31b873052264200ec1dc045f"
+    },
+    {
+      "path": "src/panels.js",
+      "bytes": 131158,
+      "sha256": "19abcf7fadc0a21e5cf6e41a4ede9f3e882ed1a4766eeddbb022e871e7c60fe3"
+    },
+    {
+      "path": "src/performance-ui.js",
+      "bytes": 13634,
+      "sha256": "ba84510f35126f547d4cae715cdbe074c2765c8681442550a154e5609eb1c39a"
+    },
+    {
+      "path": "src/render-effects.js",
+      "bytes": 4265,
+      "sha256": "516e01937dd7903ec0caba24af025fbe477c599ab8c8c7ae1cd6283c2063150f"
+    },
+    {
+      "path": "package.json",
+      "bytes": 650,
+      "sha256": "fc78caa13ce34e35a533e4bb6fc522a2891a7de07136b9cdeb1951d794d9929c"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 78109,
+      "sha256": "e58ced3de22d7562822f2a97a1f5a05317e058df70b1e062dc1c998a957e5f61"
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/cold-work.test.mjs",
+      "bytes": 4797,
+      "sha256": "90c710add09eea6fab29103fb02f27eab99bffbd9d898b02251f0636af57b1a1"
+    },
+    {
+      "path": "test/cold-export-regression.mjs",
+      "bytes": 24083,
+      "sha256": "6e34999b9cb7756f975daeb27d2ef6fa4de30e209d52768adf695d310f3b1ec9"
+    },
+    {
+      "path": "test/export-compat-regression.mjs",
+      "bytes": 5170,
+      "sha256": "3a56fa5a496db2b59e074f32469469e77c92861cbf3c8f09f0bdcc4d30df6296"
+    },
+    {
+      "path": "test/render-effects.test.mjs",
+      "bytes": 4349,
+      "sha256": "d4d7a079eb12a9c6d1f3508be9867c15c921a2cbe7dbd9692a0742d09899a9f0"
+    },
+    {
+      "path": "test/render-effects-regression.mjs",
+      "bytes": 17614,
+      "sha256": "4bfcdcb7b4def2649dd623871ba41bf32c42c4825a6b3c6e71b062ec54dc59b9"
+    },
+    {
+      "path": "test/pick-spatial-index-regression.mjs",
+      "bytes": 15629,
+      "sha256": "6ec52c1f1eb2f93e3ebd8f1a6c080393d0f92db2fada60850692c3c65b10b800"
+    },
+    {
+      "path": "test/runsuite.sh",
+      "bytes": 1631,
+      "sha256": "71bca0f7e8d452eee6746ffd0cadd10a193f2a60d2a1da1a36ba456e68de3c65"
+    }
+  ],
+  "acceptance": {
+    "dev": {
+      "target": {
+        "seconds": 30,
+        "width": 1280,
+        "height": 720,
+        "fps": 5
+      },
+      "actual": {
+        "frames": 150,
+        "distinctFrames": 150,
+        "firstPts": 0,
+        "lastPts": 29.8,
+        "duration": 30,
+        "dimensions": "#dimensions 0: 1280x720",
+        "firstHash": "2b581cbee3fa230dc7d1beb9dd88a048",
+        "lastHash": "5e712433cda797bfccb97194dd232d2a",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "b26a2083a5045c7417cf8f813700f71a46352f52377c79912cfe1abf00552759"
+      },
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "maxEncodeQueue": 1,
+      "wallSeconds": 232.93119999999925,
+      "pixelChecks": [
+        {
+          "frame": 0,
+          "meanAbsolute": 1.3852567997685186,
+          "barsMax": 1,
+          "centerSum": 281229187
+        },
+        {
+          "frame": 75,
+          "meanAbsolute": 1.2482801649305555,
+          "barsMax": 1,
+          "centerSum": 283418838
+        },
+        {
+          "frame": 149,
+          "meanAbsolute": 1.2537087673611111,
+          "barsMax": 1,
+          "centerSum": 263829786
+        }
+      ],
+      "resourceSamples": [
+        {
+          "geometries": 344,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 344,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 344,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 344,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        }
+      ],
+      "trackedEncodersClosed": 11,
+      "trackedFramesClosed": 220,
+      "checks": [
+        "cold fallback/warm precise hit equality",
+        "transform reuse/deep invalidation/stale-job cancellation",
+        "no LOD geometry build in render",
+        "idle warm/cache retention",
+        "7 recorder + 5 WebCodecs injected failure paths",
+        "PNG failure restoration",
+        "cancel/no retry/no partial download",
+        "same/cross-Exporter + PNG rejection",
+        "prepare cancel",
+        "initially-live restoration",
+        "native batch cancel/failure stops",
+        "full state and original source restoration",
+        "long moving shot",
+        "four consecutive exports/resource plateau",
+        "last-good preservation",
+        "PNG parity/real decode"
+      ]
+    },
+    "file": {
+      "target": {
+        "seconds": 30,
+        "width": 480,
+        "height": 270,
+        "fps": 15
+      },
+      "actual": {
+        "frames": 450,
+        "distinctFrames": 450,
+        "firstPts": 0,
+        "lastPts": 29.933,
+        "duration": 29.999666666666666,
+        "dimensions": "#dimensions 0: 480x270",
+        "firstHash": "f5f83509778a2dc1ad18f595a31fb1c4",
+        "lastHash": "351250cb00fd825df2c61ad73ad0639f",
+        "monotonic": true,
+        "errors": "",
+        "sha256": "c01d5ce560a169b2ae9e11799f945eca65ffe91eff7e229cf46b3a0f5f87fd7a"
+      },
+      "mode": "webcodecs",
+      "codec": "vp09.00.10.08",
+      "maxEncodeQueue": 1,
+      "wallSeconds": 162.82330000000076,
+      "pixelChecks": [
+        {
+          "frame": 0,
+          "meanAbsolute": 1.6619933127572017,
+          "barsMax": 1,
+          "centerSum": 39544374
+        },
+        {
+          "frame": 225,
+          "meanAbsolute": 1.4511831275720164,
+          "barsMax": 1,
+          "centerSum": 39876406
+        },
+        {
+          "frame": 449,
+          "meanAbsolute": 1.3934902263374485,
+          "barsMax": 1,
+          "centerSum": 37090993
+        }
+      ],
+      "resourceSamples": [
+        {
+          "geometries": 340,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 340,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 340,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        },
+        {
+          "geometries": 340,
+          "textures": 17,
+          "urls": 1,
+          "liveTracks": 0,
+          "lodBytes": 36480
+        }
+      ],
+      "trackedEncodersClosed": 11,
+      "trackedFramesClosed": 520,
+      "checks": [
+        "cold fallback/warm precise hit equality",
+        "transform reuse/deep invalidation/stale-job cancellation",
+        "no LOD geometry build in render",
+        "idle warm/cache retention",
+        "7 recorder + 5 WebCodecs injected failure paths",
+        "PNG failure restoration",
+        "cancel/no retry/no partial download",
+        "same/cross-Exporter + PNG rejection",
+        "prepare cancel",
+        "initially-live restoration",
+        "native batch cancel/failure stops",
+        "full state and original source restoration",
+        "long moving shot",
+        "four consecutive exports/resource plateau",
+        "last-good preservation",
+        "PNG parity/real decode"
+      ]
+    }
+  },
+  "nativeCompatibility": "DEV and network-offline file: native manual WebM + automatic recapture without requestFrame, 5 decoded frames each; empty retry once with all tracks stopped and last-good retained.",
+  "verification": [
+    "npm run all (Vite + standalone); only existing large-chunk warning",
+    "Node cold-work / render-effects / pick-spatial-index (647) / window-lights / road-diagnostics / junction-surface",
+    "DEV + network-offline file cold-export-regression: exact decode / 12 failure injections / cancellation / concurrency / PNG parity / batch stopping / four consecutive exports",
+    "DEV + network-offline file render-effects-regression (original assertions, explicit asynchronous warmup and retained-live-cache semantics)",
+    "DEV + network-offline file PICK_SMOKE=1 pick-spatial-index-regression: dense render 1+1, hot pick 8+30 A/B; editing/undo/rebuild/archive checks",
+    "DEV lighting-regression + shipped network-offline lighting-offline",
+    "DEV + network-offline file export-compat-regression with native FFmpeg",
+    "14 node --check; bash -n runner; git diff --check; exact pre-test runtime SHA rechecked afterwards"
+  ],
+  "notClaimed": [
+    "No 120-second / 1080p / 2K / 30-60fps full acceptance",
+    "No actual GPU FPS improvement or hard 4ms maximum; concurrent SwiftShader tests yielded up to 28.4ms wall-clock slices",
+    "No cross-device/OS/Safari guarantees, audio export, general absolute-time character animation, resizing/layout changes during export, or every editor-to-preview implicit-effect configuration",
+    "Automatic anamorphic effect still follows existing preview state: enter shot preview first when that effect is wanted",
+    "No selective Bloom or terrain import/erosion/river network implementation in phase 1",
+    "No complete historical test suite or new four-fixture full render benchmark"
+  ],
+  "media": {
+    "trackedInGit": false,
+    "note": "Generated decode inputs remain in ignored .shots/cold-export-final for this workspace; reproduce with documented tests. Reports/hashes persist here, not binary video datasets.",
+    "files": [
+      {
+        "path": ".shots/cold-export-final/dev-long.webm",
+        "bytes": 8990002,
+        "sha256": "b26a2083a5045c7417cf8f813700f71a46352f52377c79912cfe1abf00552759"
+      },
+      {
+        "path": ".shots/cold-export-final/dev-repeat-0.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/dev-repeat-1.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/dev-repeat-2.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/dev-repeat-3.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/dev-live-editor.webm",
+        "bytes": 20656,
+        "sha256": "c1eb3d61a828cc403a2a9db5c1a166cffc158f509a85d3c009ec9f746936edc7"
+      },
+      {
+        "path": ".shots/cold-export-final/file-long.webm",
+        "bytes": 7202714,
+        "sha256": "c01d5ce560a169b2ae9e11799f945eca65ffe91eff7e229cf46b3a0f5f87fd7a"
+      },
+      {
+        "path": ".shots/cold-export-final/file-repeat-0.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/file-repeat-1.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/file-repeat-2.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/file-repeat-3.webm",
+        "bytes": 130688,
+        "sha256": "dd16ed596ca648cca332cf053e489794cf2f3313d8e1565fce7fd8c905d2f414"
+      },
+      {
+        "path": ".shots/cold-export-final/file-live-editor.webm",
+        "bytes": 20656,
+        "sha256": "c1eb3d61a828cc403a2a9db5c1a166cffc158f509a85d3c009ec9f746936edc7"
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "path": "docs/cold-build-export-evidence/build.txt",
+      "bytes": 1559,
+      "sha256": "e8a2063ef2eb394dae87f74fbcc8dcaaa584606a7f2638dfae5352bbc9578447"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-effects-dev.txt",
+      "bytes": 4350,
+      "sha256": "93c4c4b3a32243d3083838116da792abd4037ab682da60515111de3b72d8a8df"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-effects-file.txt",
+      "bytes": 4309,
+      "sha256": "c3e1e5ec7720a0cd7fee764047f56062159015ddbb62aa50ca71e359b2c8e54d"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-lighting-dev.txt",
+      "bytes": 1717,
+      "sha256": "d01dea5485ff19600d19dde043ae10b31c36a2b228d640db80572baebce2ab62"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-lighting-file.txt",
+      "bytes": 261,
+      "sha256": "6e96b0d1a3f174698e8b245a11ba9b8f6e627174528bde4e56b4d886fe5c77b9"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-pick-dev.txt",
+      "bytes": 719,
+      "sha256": "3a833dff3b713ac059cefa469028b75fde9e59716499f851ccccc4aa5089ba43"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/compat-pick-file.txt",
+      "bytes": 723,
+      "sha256": "cd7f528c79a98668ec6f794c8dc349b582dc65372fd1af29fe008ca82f05d0e5"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/dev.json",
+      "bytes": 12108,
+      "sha256": "1775abcf747f5eb38cea36a4878a5a0bd943503cf7078c1fe2c6e7755dac8684"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/effects-dev.json",
+      "bytes": 4332,
+      "sha256": "ecd8754b24f1511b8e7299ff64954a643dbf5048ed4039e28f3c6327a8e87c2e"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/effects-file.json",
+      "bytes": 4291,
+      "sha256": "980034cb83e536a777e2d3bcda124796896832ac0055748bd102673bc57e78bb"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/environment.txt",
+      "bytes": 1179,
+      "sha256": "62191edfadce657ed08cf50e16da54459e7bd9b597c42b2312c139b2d839eb25"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/export-dev.txt",
+      "bytes": 5752,
+      "sha256": "04bfadc2ea4ca7e57c9e4dccde142f7e0eb9509e04247330a2f30efcc917ff7f"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/export-file.txt",
+      "bytes": 5784,
+      "sha256": "d28851269567b3dac9e27c0bb672a59ed29fb2b79f065ab44c549dff1781ff2c"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/file.json",
+      "bytes": 12161,
+      "sha256": "34ec1bd050996212c9cca9e32ed90d425d279398f03ab5ab2bdfd30e15fcd358"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/native-dev.json",
+      "bytes": 1198,
+      "sha256": "921c0bb9b215efc9cd3d63807beb460f06dd0b7ca361b5d1a492edcca1ba5011"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/native-dev.txt",
+      "bytes": 1253,
+      "sha256": "1a5b907fa9af3da59e12d44dee05a75b941b92ee82a8002c59eae79648fbbcb8"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/native-file.json",
+      "bytes": 1198,
+      "sha256": "ef90cbec3dc37074a9f413194ae1519601dc847168c2b9ae667d2d960885ac18"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/native-file.txt",
+      "bytes": 1253,
+      "sha256": "842f31947642ec8e1843409a78d7784de1ce48891d0c32d4107f2a6545aa91d3"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/node-checks.txt",
+      "bytes": 1241,
+      "sha256": "cf77fb88724a989af53f6ae61788c659d086b4c568c2813b8c70f9144bb4b137"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/pick-dev-smoke.json",
+      "bytes": 25282,
+      "sha256": "83f2e6cdf547ea458aa1d11d7e9daa2740e700433736dd25922218916985b2ba"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/pick-file-smoke.json",
+      "bytes": 25508,
+      "sha256": "3f299fbccba9143adbccdfc3a4fa6985426090a31f737143f94eb12d94bbae20"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/runtime.sha256",
+      "bytes": 764,
+      "sha256": "96742ee05955750f0135dfd3d62b45be0c36add17f574beff160422f6cbee65c"
+    },
+    {
+      "path": "docs/cold-build-export-evidence/static-checks.txt",
+      "bytes": 271,
+      "sha256": "4180d2a7d85f74f79eba4b006d4a2ad0999ab4d62a5edd4e33ca404142c85845"
+    }
+  ]
+}

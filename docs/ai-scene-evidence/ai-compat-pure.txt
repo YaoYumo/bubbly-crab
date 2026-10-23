@@ -1,0 +1,55 @@
+PASS reference settings / frame convention / exact PNG16 / depth units / diagnostics / capability fail-closed / local BFF first-last multipart / status / credential isolation / origin refusal. Contract fixture only, NOT real vendor inference.
+PASS idle scheduling/dedupe/cancel/error/drain, cold precise fallback, warm/refit/deep invalidation/stale/moving roots, deferred LOD/revision/cache retention/release/ownership, EBML duration
+PASS legacy defaults/mode clamps, scope normalization/limits, structural references, auto/custom/exclude, immutable emission/color variants, fog attenuation, runtime radiance updates, unsupported shader fail-closed, release/source ownership
+{
+  "pass": true,
+  "thermal": {
+    "affected": 1482,
+    "maxDelta": 3,
+    "erodedVolume": 874.791822251922,
+    "depositedVolume": 874.7918217963306,
+    "terrainVolumeDelta": -0.00003814697265625,
+    "unplacedSedimentVolume": 0,
+    "returnedSedimentVolume": 0,
+    "floatRoundingVolume": -0.00003814697267401357,
+    "cellSize": 1
+  },
+  "hydraulic": {
+    "affected": 1520,
+    "maxDelta": 0.7000007629394531,
+    "erodedVolume": 1212.7710360006895,
+    "depositedVolume": 1212.7710411427543,
+    "terrainVolumeDelta": -0.00007152557373046875,
+    "unplacedSedimentVolume": 6.838977897449111e-13,
+    "returnedSedimentVolume": 759.9846339512903,
+    "floatRoundingVolume": -0.00007152557642342572,
+    "cellSize": 1
+  },
+  "sediment": {
+    "affected": 1504,
+    "maxDelta": 0.7752351760864258,
+    "erodedVolume": 912.9182076556608,
+    "depositedVolume": 912.9182059776504,
+    "terrainVolumeDelta": 0.0000667572021484375,
+    "unplacedSedimentVolume": 0,
+    "returnedSedimentVolume": 0,
+    "floatRoundingVolume": 0.00006675720224791348,
+    "cellSize": 1
+  },
+  "masked": {
+    "affected": 472,
+    "maxDelta": 0.6999998092651367,
+    "erodedVolume": 151.38865685663768,
+    "depositedVolume": 151.388657234731,
+    "terrainVolumeDelta": -0.00000286102294921875,
+    "unplacedSedimentVolume": 1.681971619274525e-14,
+    "returnedSedimentVolume": 88.6211406892835,
+    "floatRoundingVolume": -0.0000028610229563241774,
+    "cellSize": 1
+  },
+  "grid513": {
+    "ms": 429,
+    "checkpoints": 189
+  }
+}
+PASS: open/T=0, closed=1, split=2/4, interior road holes, whole-footprint containment, rotation, stable IDs, coincident geometry

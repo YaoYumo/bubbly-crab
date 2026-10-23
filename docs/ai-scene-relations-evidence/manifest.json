@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-20",
+  "stage": "第二阶段受控关系接入首版；不是任意自然语言质量验收",
+  "features": [
+    "optional relations extension to previz-ai-scene/1",
+    "world/local offset, facing by stable ID, exact 3D pivot distance check, final planar AABB clearance",
+    "lowering before candidate geometry checks",
+    "read-only locked references; explicit editing permission for existing writers",
+    "offline two-crate UI example, difference list, confirmation, application audit and undo"
+  ],
+  "realInference": false,
+  "chargedServiceCalls": 0,
+  "providerFixtureOnly": true,
+  "sources": {
+    "src/ai-scene-relations.js": "78e39f42554486bcde84ea5f79c6b327a84ac6bfd602a276fdd1872bf3a1ee31",
+    "src/ai-scene-format.js": "afbf58ddae739ad130a5e32f6b03539ca74414b07776e6ff81fdc4224177ce06",
+    "src/ai-scene-schema.js": "ec16dfbe6a9fc76e3ef91bf8fa9d09fb2a5dc3b2b5fa8120d951fb1203842974",
+    "docs/ai-scene.schema.json": "558e4f57d380c27e9567465c27d539b28bd398226cee011a7a70d36d85d2f4b2",
+    "src/ai-scene-workflow.js": "b4b954ebc0a3f2a808065d6ecbcfddbaeab3b7a21a4a1c86adf6229c9c952550",
+    "src/ai-scene-ui.js": "2892c5dc033ef3475e645ad27d7a0e36628b03588f8fb3d9752e4236ebc16a7e",
+    "scripts/ai-scene-provider.mjs": "c9d8910bed061d0871ae9af59a9740d038d33a887329c2487ec93a554e60f1cf"
+  },
+  "single": {
+    "path": "previz-lab.html",
+    "bytes": 2270170,
+    "sha256": "37fbbd088bb7d0508d243bb0be9a51a5f06048c50115d6b69f5ffcad4d90b4e1"
+  },
+  "browserReports": {
+    "dev": "dev.json",
+    "fileOffline": "file.json"
+  },
+  "tests": [
+    {
+      "command": "node test/ai-scene-relations.test.mjs",
+      "result": "PASS",
+      "type": "data and authenticated provider fixture; no real inference"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-relations-regression.mjs",
+      "result": "PASS",
+      "type": "DEV real candidate/UI"
+    },
+    {
+      "command": "TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome.sh node test/ai-scene-relations-regression.mjs",
+      "result": "PASS",
+      "type": "file offline candidate/UI"
+    },
+    {
+      "command": "node test/ai-scene.test.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run test:local-ai-verify",
+      "result": "PASS",
+      "type": "fixture only; unrequested relation rejected by fixed-intent oracle"
+    },
+    {
+      "command": "npm run test:local-ai",
+      "result": "PASS"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-regression.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-safety-regression.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-api-ui-regression.mjs",
+      "result": "PASS",
+      "type": "mock API; not real inference"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-simple-ui-regression.mjs",
+      "result": "PASS",
+      "modes": [
+        "DEV",
+        "file-offline"
+      ]
+    },
+    {
+      "command": "node test/scene-recipes.test.mjs",
+      "result": "PASS",
+      "layouts": 210
+    },
+    {
+      "command": "node test/spatial-dynamics.test.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "npm run all",
+      "result": "PASS",
+      "warnings": [
+        "existing large chunk warning"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "limitations": [
+    "Live model quality not verified",
+    "No arbitrary natural-language parser or semantic door anchor",
+    "No persistent parent-child rig or edit-time relation maintenance",
+    "No navigation, auto placement or global optimization",
+    "Only static library assets; no active paths or tilted local reference frames",
+    "No full historical or cross-GPU regression suite"
+  ],
+  "verificationNotes": [
+    "An initial browser test audit assertion used blueprint instead of plan; fixed test path, not application behavior",
+    "A browser test stalled on an unhandled confirmation dialog; test now explicitly accepts it. Re-runs passed; no performance inference from test timing"
+  ]
+}

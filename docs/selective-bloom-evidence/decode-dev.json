@@ -1,0 +1,14 @@
+{
+  "entry": "dev",
+  "width": 480,
+  "height": 320,
+  "fps": 5,
+  "seconds": 0.4,
+  "decodedFrames": 2,
+  "rawBytes": 921600,
+  "meanRGB": [
+    168.7710308159722,
+    168.77277777777778
+  ],
+  "webmSha256": "1fc2808301368a93b78d116b753cb694836e8aa9947bcf6522b3ccbf21ddca70"
+}

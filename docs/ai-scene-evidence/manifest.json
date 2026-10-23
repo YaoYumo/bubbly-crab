@@ -1,0 +1,318 @@
+{
+  "schema": "previz-ai-scene-evidence/1",
+  "date": "2026-10-20",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "scope": "Three-batch FIRST VERSION. Local rules and protocol fixtures, NOT actual model quality or billing verification.",
+  "realModelInference": false,
+  "paidProviderCalls": false,
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 2125043,
+    "sha256": "09bc31bd0f3799347ff4d1930e4f5e91bf49fa5154469b6af3ce51bc26b92baa"
+  },
+  "verification": {
+    "dev": {
+      "status": "passed",
+      "suite": "npm run test:ai-scene",
+      "includes": [
+        "data protocol + 203 dynamic catalog defaults",
+        "local OpenAI-compatible HTTP fixture + auth/idempotency/recovery/failure no retries",
+        "source-safe preview, stale refusal, rollback, one undo/redo",
+        "templates and nonempty town with native road diagnostics",
+        "imported resources/terrain/person runtime/selected-only transform + rebuild",
+        "AI/reference/PNG/terrain mutex",
+        "API UI contract: double click, local stop, resume, explicit apply; access token memory only",
+        "AI-linked reference ZIP audit, source fingerprint and file hashes"
+      ]
+    },
+    "file": {
+      "status": "passed",
+      "entry": "file:///home/user/bubbly-crab/previz-lab.html",
+      "network": "Puppeteer setOfflineMode(true)",
+      "suites": [
+        "ai-scene-regression",
+        "ai-scene-recipes-regression",
+        "ai-scene-safety-regression"
+      ],
+      "api": "disabled by design; not tested as inference"
+    },
+    "compatibility": {
+      "status": "passed",
+      "pure": [
+        "reference.test",
+        "cold-work.test",
+        "selective-bloom.test",
+        "terrain-erosion.test",
+        "road-parcels.test"
+      ],
+      "browser": [
+        "reference-workflow DEV + offline file",
+        "reference-ui-export DEV",
+        "selective-bloom-regression",
+        "terrain-erosion-regression",
+        "project-resources-regression"
+      ],
+      "note": "Targeted regressions, not every historical suite. No new FFmpeg decoding run in this AI delivery."
+    },
+    "build": {
+      "status": "passed",
+      "command": "npm run all",
+      "warning": "Existing large-chunk warning remains; not a failure."
+    },
+    "defaultGateway": {
+      "configured": false,
+      "requiresAuth": true,
+      "submissionStatus": 503
+    }
+  },
+  "sourceFiles": [
+    {
+      "path": "src/ai-scene-catalog.js",
+      "sha256": "39189554adcc560454033dcc4a958cdf359b4b7a70e11a56fea319ebc57cf5a5"
+    },
+    {
+      "path": "src/ai-scene-format.js",
+      "sha256": "c2072dc376dee910891fff60f777374279939741db52db361e400d62d14a1fc8"
+    },
+    {
+      "path": "src/ai-scene-gateway.js",
+      "sha256": "5c42aa73583f12ce0533bb1c14ae80d2f4f075bbd28833cd478fafa5b66cf48b"
+    },
+    {
+      "path": "src/ai-scene-preview.js",
+      "sha256": "d4bef1adb3e78e843376e56b42fd0e8029b2a7f14c1406e2ad80df73f40d01fe"
+    },
+    {
+      "path": "src/ai-scene-recipes.js",
+      "sha256": "bf2db8cae2f97c424dfa9475476edec5770fddd3d5c16074f41e17453143d778"
+    },
+    {
+      "path": "src/ai-scene-schema.js",
+      "sha256": "11c20fd80cb60b86effc583ece005c650db8ee3c9edd88df7f710ef252201673"
+    },
+    {
+      "path": "src/ai-scene-ui.js",
+      "sha256": "0e1a61ef0c74aa3e772657cf7fc49c98237d05d38101b6b5c495d83bfb8fb664"
+    },
+    {
+      "path": "src/ai-scene-workflow.js",
+      "sha256": "1cdf5b7538f675081d8f6fec8a3e77b6df825dd8731379f74c6db25348f82ef9"
+    },
+    {
+      "path": "scripts/ai-scene-gateway.mjs",
+      "sha256": "13ca1242449765c42ea06f6835cb42a54c7a2ccd38cd439c80b125b22170c5d9"
+    },
+    {
+      "path": "src/app.js",
+      "sha256": "e92cc4e23c7a261ae583a7d8b75d9160ddd2675c1dee73aec714d64c8e35b34d"
+    },
+    {
+      "path": "src/main.js",
+      "sha256": "423aee98649abf68d4cf8d50ea5081a167c2e47823d50b735ac086a365553925"
+    },
+    {
+      "path": "src/panels.js",
+      "sha256": "f586229e01226bf4b1c7e30ae0f0d69dba4513a5f519cbebae8652aab2cacf48"
+    },
+    {
+      "path": "src/templates.js",
+      "sha256": "cec0d92956cc01b9847df4718f0061c355ac860a9e1b5025e2b185ad7ffdc0b6"
+    },
+    {
+      "path": "src/reference-workflow.js",
+      "sha256": "9111e231c9ec44fc4d570b50fd705d65505ddca9db02936b00d6e9ac8b1bfc9c"
+    },
+    {
+      "path": "src/terrain-workflow.js",
+      "sha256": "163854de2ec21761d8a9507ee0a2f199b8fb2919d99c49bb84968d26570bd160"
+    },
+    {
+      "path": "src/export.js",
+      "sha256": "c834152c17010b311104e7c4e61f3c1ef6664ff9c2fd2d2b41662623d91b38c8"
+    },
+    {
+      "path": "src/styles.css",
+      "sha256": "25a629583618307d3481db59904aa6a96f86b70bb0265ffeff2fd5c3dd132dee"
+    },
+    {
+      "path": "vite.config.js",
+      "sha256": "7a4ae29292ea41d0a859b99880b0a967646c3d7223f24c0b2bbde41bf2d7f791"
+    },
+    {
+      "path": "package.json",
+      "sha256": "e0173b2185e2c46da7b79cf0a123519cf2f4188745c86d8fc6c2ee7010810138"
+    },
+    {
+      "path": "docs/ai-scene.schema.json",
+      "sha256": "747ceeb884471544a58d76d476ce111aea9e6ab5f1689b4ad40fe7627889effc"
+    },
+    {
+      "path": "test/ai-scene-api-ui-regression.mjs",
+      "sha256": "2510205379890c702fe9f8f87f4e8d33556713ff9a968a04c84258d63694bb6f"
+    },
+    {
+      "path": "test/ai-scene-recipes-regression.mjs",
+      "sha256": "0a5bf79fe4d56e28f2e31dbc949645afac00a21418a7b854109cae27825764db"
+    },
+    {
+      "path": "test/ai-scene-regression.mjs",
+      "sha256": "abf305d78d649705c5a9d767d87b21948b0d134406567040c98c15275e507445"
+    },
+    {
+      "path": "test/ai-scene-safety-regression.mjs",
+      "sha256": "b629fc46a3ac5d7dfa566dd939d8b4fd9c3c960bd4aeb66870f99b93577fa61f"
+    },
+    {
+      "path": "test/ai-scene.test.mjs",
+      "sha256": "692006f87d945906560cb955db6a6424bedd32d07bac82134ac901e7ff73bc2a"
+    }
+  ],
+  "files": [
+    {
+      "path": "ai-browser-file.txt",
+      "bytes": 263,
+      "sha256": "cff0f24a675eee5fd752e868b3fff90b4ba5ef4f8349816df52f49408a4d2810"
+    },
+    {
+      "path": "ai-build.txt",
+      "bytes": 1559,
+      "sha256": "9b00fef20c0c06e7bac58f330974629553ac906ab096e778f3ef2032b8b519f7"
+    },
+    {
+      "path": "ai-compat-bloom.txt",
+      "bytes": 4299,
+      "sha256": "82a0e22232dd82951105a48742fd80489a471a324c1832c470c550420ad57239"
+    },
+    {
+      "path": "ai-compat-imports.txt",
+      "bytes": 361,
+      "sha256": "a6c76035b3c0d079794809d56675e7d9aa79efafad15879d6a3b71cb7efca6e6"
+    },
+    {
+      "path": "ai-compat-pure.txt",
+      "bytes": 2317,
+      "sha256": "f725a0dbb59e1b881a20869bd3442b33a2b0eda321938a531e231e2c14bd530c"
+    },
+    {
+      "path": "ai-compat-reference-file.txt",
+      "bytes": 7111,
+      "sha256": "aa89203419b04792266be01b9f16689bbe7d8ebd17ada0111ef78bda5026097b"
+    },
+    {
+      "path": "ai-compat-reference-ui.txt",
+      "bytes": 243,
+      "sha256": "aa2a3434066557e8100e31997779535a269eec6b559e5c5d31224f9a6376902f"
+    },
+    {
+      "path": "ai-compat-reference.txt",
+      "bytes": 7256,
+      "sha256": "2a56145b3898c95d9704c375987f3e52caf1aa2ab5f4dce50c494fd44edaff01"
+    },
+    {
+      "path": "ai-compat-terrain.txt",
+      "bytes": 2835,
+      "sha256": "e6a6aca421743229281fd2d78459f2661e56d701a9347c0a60518ea75fbdfeb6"
+    },
+    {
+      "path": "ai-pure.txt",
+      "bytes": 320,
+      "sha256": "99bde87c6d0c609ce4067a080c07bad74e2957ae88554da5ed8587e7ffa93232"
+    },
+    {
+      "path": "ai-recipes-file.txt",
+      "bytes": 517,
+      "sha256": "7f4e2a4449831b3f7ca98f444d0e95eec9e89ddb1086632e023fa59da229b916"
+    },
+    {
+      "path": "ai-safety-file.txt",
+      "bytes": 508,
+      "sha256": "535db78e06d4f089909ae57b74b4b3bdaac446edef94200127422ca887843084"
+    },
+    {
+      "path": "ai-scene-api-ui.json",
+      "bytes": 300,
+      "sha256": "4ff0f40b36abaccc175627db2e33675147095229e859d9108530579f62e07179"
+    },
+    {
+      "path": "ai-scene-dev.json",
+      "bytes": 305,
+      "sha256": "490b366ca06a9075a52df33cff2e4f76354a8eff0952d70a9075043ca4425c1b"
+    },
+    {
+      "path": "ai-scene-dev.png",
+      "bytes": 55786,
+      "sha256": "81ba0d258e66ca11cef2c8497c6e39d56e5a26a339ce57088e67ef6182800a1f"
+    },
+    {
+      "path": "ai-scene-file.json",
+      "bytes": 305,
+      "sha256": "490b366ca06a9075a52df33cff2e4f76354a8eff0952d70a9075043ca4425c1b"
+    },
+    {
+      "path": "ai-scene-file.png",
+      "bytes": 55809,
+      "sha256": "a670103057e9de02ef3904e9c998c68dbcee7589a32f89fa4607bb5f9a4f72bc"
+    },
+    {
+      "path": "ai-scene-live-capabilities.json",
+      "bytes": 643,
+      "sha256": "2761e8edebd1257cee6c28b091c37e74d747b52041c4786acab60b428061270f"
+    },
+    {
+      "path": "ai-scene-recipes-dev.json",
+      "bytes": 1312,
+      "sha256": "3d85b71429dfde1ea8e2c59fb013673f5a58480b4d5ec1ee59bf00625b8528cc"
+    },
+    {
+      "path": "ai-scene-recipes-file.json",
+      "bytes": 1312,
+      "sha256": "3d85b71429dfde1ea8e2c59fb013673f5a58480b4d5ec1ee59bf00625b8528cc"
+    },
+    {
+      "path": "ai-scene-reference-dev.zip",
+      "bytes": 120852,
+      "sha256": "b3522ad7dbbaf6c5dda5ec26dc352f99b0d82113f2039f09bc942a824fc63724"
+    },
+    {
+      "path": "ai-scene-reference-file.zip",
+      "bytes": 120853,
+      "sha256": "6338d76ea4aa353d3778aa24966b222f94496b7463417096cfbc3da8af0b98b7"
+    },
+    {
+      "path": "ai-scene-safety-dev.json",
+      "bytes": 538,
+      "sha256": "91f79425acacd4204e55ad3830668e357ce61811dd7a78dea61cb70e16715c53"
+    },
+    {
+      "path": "ai-scene-safety-file.json",
+      "bytes": 538,
+      "sha256": "91f79425acacd4204e55ad3830668e357ce61811dd7a78dea61cb70e16715c53"
+    },
+    {
+      "path": "ai-suite.txt",
+      "bytes": 2240,
+      "sha256": "5e85914dc15aabd6c2ddeeb66d6d31c801f9c1c4349057fb8c78b24fdf7456ba"
+    }
+  ],
+  "bytesTotal": 388382,
+  "limitations": [
+    "Shared-token single-user BFF; no per-user production auth/ownership/durable job or idempotency store.",
+    "Jobs retained in process about 1h; restart loses jobs and idempotency. Local waiting cancellation is not remote cancellation.",
+    "Data-only blueprint. No arbitrary JS, URL resources, invented assets or automatic silent default-town fallback.",
+    "Conservative AABB/terrain checks; not precise collision, navigation, semantic entrance anchors or arbitrary relationship solver.",
+    "Preview uses source AABB proxies, road center lines, simplified lighting; does not render complete terrain/junction meshes.",
+    "Local edit is selected library transform/rebuild/remove only; no road/patch/imported mesh editing.",
+    "Reassembly preserves IDs/data, not original JS object references. Oversized undo snapshots refused.",
+    "Audit is session memory plus optional download/reference ZIP, not durable complete project history."
+  ],
+  "uiSimplification": {
+    "date": "2026-10-20",
+    "artifact": {
+      "path": "previz-lab.html",
+      "bytes": 2258769,
+      "sha256": "2b4d3fcff129ca9f3fd09e3b93be5910a330807842c0b8159bd2007598d526e3"
+    },
+    "evidence": "ui-simplification.json",
+    "note": "Historical top-level artifact and verification preserved. Latest UI verification has its own build hash."
+  }
+}

@@ -16,18 +16,49 @@
 <body>
 <div id="boot"><span id="boot-t">LOADING 3D DIRECTOR STUDIO…</span></div>
 <script>
-  window.__bootWatch = setTimeout(function () {
-    if (window.__previzBooted) return;
-    var box = document.getElementById('boot'); if (!box) return;
-    var file = location.protocol === 'file:';
-    document.getElementById('boot-t').innerHTML = '加载未完成'
-      + '<div class="hint">'
-      + (file
-        ? '浏览器不允许以 <code>file://</code> 方式加载 <b>ES 模块</b>（这就是画面停在这里的原因）。两个办法：<br>① 直接打开同目录的 <b>previz-lab.html</b>（单文件版，无需任何服务器）；<br>② 在本目录执行 <code>npm install</code> 后 <code>npm run dev</code>，访问 <code>http://localhost:5173</code>。'
-        : '如果长时间停在这里，通常是 dev 服务器已停止：在 <code>cameraref/</code> 里重新运行 <code>npm run dev</code>；'
-          + '也可以改用仓库根目录的 <b>previz-lab.html</b> 单文件版（双击即可用）。')
-      + '</div>';
-  }, 3500);
+  (function () {
+    var failure = '';
+    function showHint() {
+      if (window.__previzBooted) return;
+      var title = document.getElementById('boot-t');
+      if (!title) return;
+      title.textContent = failure ? '启动遇到问题' : '仍在加载…';
+      var hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = location.protocol === 'file:'
+        ? '此入口需要模块服务器。离线使用请打开同目录的 previz-lab.html。'
+        : '首次恢复依赖和初始化 3D 可能较慢；此提示不表示服务已停止。可以继续等待，或重新加载当前工程。';
+      title.appendChild(hint);
+      if (failure) {
+        var detail = document.createElement('div'); detail.className = 'hint';
+        detail.textContent = failure;
+        title.appendChild(detail);
+      }
+      var retry = document.createElement('button');
+      retry.id = 'boot-retry'; retry.type = 'button'; retry.textContent = '重新加载';
+      retry.style.cssText = 'margin-top:14px;padding:8px 18px;border:1px solid #D5CFC5;border-radius:6px;background:#fff;color:#4A4FB0;cursor:pointer';
+      retry.onclick = function () {
+        var url = new URL(location.href);
+        // Bust a stale HTML/module entry without ?fresh=1 (which skips project restore).
+        url.searchParams.set('_reload', String(Date.now()));
+        location.replace(url.href);
+      };
+      title.appendChild(retry);
+    }
+    window.addEventListener('error', function (event) {
+      if (window.__previzBooted) return;
+      if (event.message) failure = event.message;
+      else if (event.target && event.target.tagName === 'SCRIPT') failure = '入口模块未能加载，请重新加载后重试。';
+      else return;
+      showHint();
+    }, true);
+    window.addEventListener('unhandledrejection', function (event) {
+      if (window.__previzBooted) return;
+      failure = event.reason && event.reason.message || String(event.reason || '初始化失败');
+      showHint();
+    });
+    window.__bootWatch = setTimeout(showHint, 12000);
+  })();
 </script>
 <div id="app">
   <header id="top"></header>
@@ -49,7 +80,9 @@
   <!-- S2 Scene Builder Page -->
   <div class="page" id="page-scene">
     <aside id="left-scene">
-      <div class="ph"><b>Assets</b></div>
+      <button class="ph libph" id="lib-toggle" type="button" title="展开 / 收起模型库（次级入口）">
+        <b>模型库</b><span class="mini" id="lib-toggle-state">展开 ▸</span>
+      </button>
       <div id="library-scene"></div>
       <div id="objlist-scene"></div>
     </aside>

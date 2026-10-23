@@ -1,0 +1,23 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "unifiedActual3DThumbnails": true,
+  "customGroup": true,
+  "importOBJMTLTexture": true,
+  "importDoesNotChangeSceneOrUndo": true,
+  "clickAndDragPlacement": true,
+  "originalMaterialsRetained": true,
+  "moveBetweenGroups": true,
+  "reloadPersistence": true,
+  "deleteUserEntry": true,
+  "deleteDoesNotBreakSceneOrUndo": true,
+  "portableProjectAfterDeletion": true,
+  "hideAndRestoreBuiltins": true,
+  "projectImportBlocked": true,
+  "cancelDelete": true,
+  "concurrentWriteGuard": true,
+  "importGLBAndExternalGLTF": true,
+  "deduplicatedResourceDeletionSafe": true,
+  "readOnlyGuard": true,
+  "errors": [],
+  "csp": []
+}

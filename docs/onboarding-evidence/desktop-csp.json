@@ -1,0 +1,29 @@
+{
+  "platform": "Linux Chromium (not native Windows UI)",
+  "autoFirstVisit": true,
+  "skipPersists": true,
+  "reopenFromTools": true,
+  "steps": [
+    "先搭场景",
+    "自己的模型，放进自己的分组",
+    "右键是你的操作中心",
+    "建立机位与运镜",
+    "把多个镜头剪成一段",
+    "准备给 AI 的参考资料",
+    "导出画面与视频",
+    "别忘了保存完整工程",
+    "可以开始创作了"
+  ],
+  "backAndNext": true,
+  "keyboardTrap": true,
+  "escape": true,
+  "narrowWindow": true,
+  "noSceneChanges": true,
+  "noUndoOrSelectionChanges": true,
+  "restoresPageLibraryAndView": true,
+  "blockedStorageSafe": true,
+  "exportGuard": true,
+  "topStillSevenButtons": true,
+  "errors": [],
+  "csp": []
+}

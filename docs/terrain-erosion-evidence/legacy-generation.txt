@@ -1,0 +1,14 @@
+PASS all 7 seeded heightfields / real slope degrees stable at 33–513 / height snowline / cliffs / climate / actual shore proximity / shared generated samples
+PASS real generation button / empty selection no undo / seed and amplitude survive UI / single-step undo-redo / all 7 actual buttons
+PASS actual automatic-surface and water-level controls / one-step undo-redo
+PIXELS {
+  grass: [ 154, 194, 129 ],
+  snow: [ 228, 234, 237 ],
+  before: [ 144, 109, 88 ],
+  after: [ 144, 109, 88 ],
+  preserved: true,
+  generationPreserves: true,
+  autoChanges: true
+}
+PASS automatic PBR pixel changes / opaque hand paint survives recolor and generation / refinement / erasing reveals base / archive reload / legacy opt-in / follow-road rebuild
+PASS terrain generation and automatic surface, no browser or shader errors

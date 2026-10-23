@@ -1,0 +1,272 @@
+{
+  "date": "2026-10-20",
+  "build": {
+    "path": "previz-lab.html",
+    "bytes": 2219433,
+    "sha256": "274d9567fae7461ccc218d72e664f05c783d5120c7b31baac23d237f39ed1f39"
+  },
+  "showcases": {
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "id": "cyber-rain",
+          "report": {
+            "id": "cyber-rain",
+            "models": 91,
+            "shots": 3,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 91,
+          "shots": 3,
+          "moving": 29,
+          "routeSamples": 6989,
+          "roundtrip": true
+        },
+        {
+          "id": "lantern-river",
+          "report": {
+            "id": "lantern-river",
+            "models": 162,
+            "shots": 4,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 168,
+          "shots": 4,
+          "moving": 31,
+          "routeSamples": 7471,
+          "roundtrip": true
+        }
+      ],
+      "undo": true,
+      "errors": []
+    },
+    "file": {
+      "mode": "offline",
+      "results": [
+        {
+          "id": "cyber-rain",
+          "report": {
+            "id": "cyber-rain",
+            "models": 91,
+            "shots": 3,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 91,
+          "shots": 3,
+          "moving": 29,
+          "routeSamples": 6989,
+          "roundtrip": true
+        },
+        {
+          "id": "lantern-river",
+          "report": {
+            "id": "lantern-river",
+            "models": 162,
+            "shots": 4,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 168,
+          "shots": 4,
+          "moving": 31,
+          "routeSamples": 7471,
+          "roundtrip": true
+        }
+      ],
+      "undo": true,
+      "errors": []
+    }
+  },
+  "additionalChecks": {
+    "pureShowcaseDataAndWeather": true,
+    "realGalleryCardsAndEmbeddedThumbnails": true,
+    "grayAndUnlitModeToAuthoredScene": true,
+    "aiScenePureAndGatewayFixtures": true,
+    "aiSceneCandidateRegression": true,
+    "aiSceneSafetyRegression": true,
+    "referenceNativeZIPUIRegressionDev": true,
+    "referenceWorkflowOffline": true,
+    "staticAndSingleBuild": true,
+    "gitDiffCheck": true
+  },
+  "boundaries": [
+    "No real model inference or external service fee.",
+    "Flight check uses sampled conservative tower AABBs, not a general collision or navigation solver.",
+    "Weather phases are not persisted; reference capture keeps the pre-existing frozen-weather policy.",
+    "No new long-video or full-scene performance benchmark.",
+    "Large screenshots and rendered test media stay in ignored .shots/; small actual-render thumbnails only are retained."
+  ],
+  "regressionAfterSceneRecipes": {
+    "date": "2026-10-20",
+    "build": {
+      "path": "previz-lab.html",
+      "bytes": 2240529,
+      "sha256": "e3f555c060b0f60b2c39a679026078c8d61fe47add60ac944ca445fa3d3307e6"
+    },
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "id": "cyber-rain",
+          "report": {
+            "id": "cyber-rain",
+            "models": 91,
+            "shots": 3,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 91,
+          "shots": 3,
+          "moving": 29,
+          "routeSamples": 6989,
+          "roundtrip": true
+        },
+        {
+          "id": "lantern-river",
+          "report": {
+            "id": "lantern-river",
+            "models": 162,
+            "shots": 4,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 168,
+          "shots": 4,
+          "moving": 31,
+          "routeSamples": 7471,
+          "roundtrip": true
+        }
+      ],
+      "undo": true,
+      "errors": []
+    },
+    "offline": {
+      "mode": "offline",
+      "results": [
+        {
+          "id": "cyber-rain",
+          "report": {
+            "id": "cyber-rain",
+            "models": 91,
+            "shots": 3,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 91,
+          "shots": 3,
+          "moving": 29,
+          "routeSamples": 6989,
+          "roundtrip": true
+        },
+        {
+          "id": "lantern-river",
+          "report": {
+            "id": "lantern-river",
+            "models": 162,
+            "shots": 4,
+            "missing": 0,
+            "targetMiss": 0
+          },
+          "objects": 168,
+          "shots": 4,
+          "moving": 31,
+          "routeSamples": 7471,
+          "roundtrip": true
+        }
+      ],
+      "undo": true,
+      "errors": []
+    },
+    "note": "原顶层build及其证据保留为历史记录；此节为第一批配方合入后重建版本的复验。"
+  },
+  "regressionAfterSpatialDynamics": {
+    "date": "2026-10-20",
+    "build": {
+      "path": "previz-lab.html",
+      "bytes": 2250848,
+      "sha256": "3ba2d84c7253cdc179f6f57889b7c11082f3a8ddb7478f8932415851101c1bd1"
+    },
+    "browser": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      },
+      "offline": {
+        "mode": "offline",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      }
+    },
+    "evidence": "../spatial-dynamics-evidence/manifest.json",
+    "note": "顶层历史build与记录保留，此节为第二批复验"
+  }
+}

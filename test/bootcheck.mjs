@@ -3,7 +3,7 @@ const b = await puppeteer.launch({ headless:'shell', args:['--no-sandbox','--use
 // 1) dev server
 const p1 = await b.newPage(); await p1.setViewport({width:1500,height:880});
 const e1=[]; p1.on('pageerror',e=>e1.push(String(e.message).slice(0,160))); p1.on('console',m=>{if(m.type()==='error')e1.push(m.text().slice(0,160))});
-await p1.goto('http://localhost:5173/', { waitUntil:'networkidle2', timeout:90000 });
+await p1.goto('http://localhost:5174/', { waitUntil:'networkidle2', timeout:90000 });
 let devOk=false; try{ await p1.waitForFunction(()=>window.app&&window.app.objects.length>3,{timeout:45000}); devOk=true; }catch(e){}
 await new Promise(r=>setTimeout(r,1200));
 const devInfo = await p1.evaluate(()=>({objs:window.app.objects.length, shots:window.app.shots.length, boot:!!document.getElementById('boot'), canvas:!!document.querySelector('#stage canvas')}));

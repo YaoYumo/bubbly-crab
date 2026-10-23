@@ -73,7 +73,7 @@ function wallRun(p, mat, opt = {}) {
       g.add(box(o.w + 0.16, 0.05, T + 0.13, mat, o.x, Math.max(0.01, o.b - 0.006), 0));     // 窗台板外挑（门洞处即门槛石）
       if (!o.door && glaze) {
         const gl = opt.glass || M.glassy(0x2f4a5c, 0.12, 0.5, 0.44);
-        g.add(box(Math.max(0.06, o.w - 0.1), Math.max(0.06, oh - 0.1), 0.018, gl, o.x, oy, -T * 0.16));
+        g.add(box(Math.max(0.06, o.w - 0.04), Math.max(0.06, oh - 0.04), 0.018, gl, o.x, oy, -T * 0.16));   // 玻璃嵌进洞口内壁（原来四周各空 2cm，玻璃悬在洞中间）
       }
     }
     cur = Math.max(cur, x1);
@@ -234,7 +234,9 @@ function buildDoorSingle(p) {
   open.position.set(-w / 2, 0, 0);
   open.rotation.y = -(clamp(p.open, 0, 110) * Math.PI) / 180;
   const lf = leaf(w, h - 0.06, t * 0.9, dm, p.color);
-  lf.children.push(box(0.05, 0.24, 0.16, M.metal(0xc9b26a, 0.3, 0.8), w - 0.12, h * 0.46, t * 0.8));
+  // 执手必须 add 进门扇组（children.push 不设 parent，世界矩阵不跟随开合 → 悬空）
+  // z 中心 t*0.6、厚 0.2：与门扇（半厚 t*0.45）实体相交，不贴图皮
+  lf.add(box(0.05, 0.24, 0.2, M.metal(0xc9b26a, 0.3, 0.8), w - 0.12, h * 0.46, t * 0.45));
   open.add(lf);
   g.add(open);
   if (p.transom) g.add(box(w, 0.06, t, fr, 0, h * 0.78, 0));
@@ -255,7 +257,9 @@ function buildDoorDouble(p) {
     // leaf() 的几何本来就从「门轴原点」向 +x 铺开；再位移一个门宽就会跨过中线压到另一扇上
     lf.position.x = 0;
     lf.rotation.y = sgn < 0 ? 0 : Math.PI;
-    for (const sz of [1, -1]) pivot.add(box(0.05, 0.24, 0.13, M.metal(0xb9c0c7, 0.35, 0.85), -sgn * (half - 0.17), h * 0.46, sz * (t * 0.45 + 0.07)));
+    pivot.add(lf);                                    // 旧版漏了这行：门扇没进场景图，只剩框和悬空的拉手
+    // 拉手 z 中心 ±(t*0.45+0.02)、厚 0.13 → 与门扇面（半厚 t*0.45）相交 4.5cm，不再离缝
+    for (const sz of [1, -1]) pivot.add(box(0.05, 0.24, 0.13, M.metal(0xb9c0c7, 0.35, 0.85), -sgn * (half - 0.17), h * 0.46, sz * (t * 0.45 + 0.02)));
     g.add(pivot);
   }
   g.add(box(w + 0.3, 0.05, t + 0.3, fr, 0, 0.025, 0));                                      // 门槛
@@ -277,8 +281,9 @@ function buildDoorRoll(p) {
   g.add(drum);
   if (show > 0.06) {
     const n = Math.max(2, Math.round(show / 0.16));
-    const slats = row((i) => box(w, 0.15, 0.05, i % 2 ? M.metal(0x9aa2ab, 0.45, 0.6) : steel, 0, 0, 0), n, 0.001, 'x');
-    slats.children.forEach((c, i) => { c.position.set(0, h - 0.07 - (i * show) / n, 0.02); });
+    const sh = show / n + 0.012;                                        // 片高 = 片距 + 12mm 搭接（原来固定 0.15 < 片距 0.16，整条帘子缝成虚线）
+    const slats = row((i) => box(w, sh, 0.05, i % 2 ? M.metal(0x9aa2ab, 0.45, 0.6) : steel, 0, 0, 0), n, 0.001, 'x');
+    slats.children.forEach((c, i) => { c.position.set(0, h - sh / 2 - (i * show) / n, 0.02); });
     g.add(slats);
     g.add(box(w + 0.06, 0.07, 0.1, M.metal(0x6e757d, 0.5, 0.6), 0, bottom + 0.03, 0.05));    // 帘板下沿拉手
     for (const sx of [-1, 1]) g.add(box(0.05, 0.5, 0.05, M.metal(0x6e757d, 0.5, 0.6), sx * (w / 2 - 0.2), bottom - 0.2, 0.05));   // 拉手指扣
@@ -492,12 +497,19 @@ function flight(p, mat, rng) {
       g.add(bar);
     }
   }
-  // 梯梁（两侧斜板）
+  // 梯梁（两侧斜板）：上端竖直切、下端水平落在地面上。
+  // 旧版是一整块旋转矩形，两端斜角会戳到地板下 1m，整挂楼梯被「底面贴地」抬起来悬在空中。
+  const bh = Math.max(0.14, H * 0.55);
+  const zA = Math.min(depth * 0.92, (bh / H) * depth);
+  const sp = new THREE.Shape();
+  sp.moveTo(0, 0); sp.lineTo(zA, 0); sp.lineTo(depth, H - bh); sp.lineTo(depth, H); sp.closePath();
+  const sg = new THREE.ExtrudeGeometry(sp, { depth: 0.1, bevelEnabled: false });
+  sg.translate(0, 0, -0.05);
   for (const sx of [-1, 1]) {
-    const s = box(0.1, H * 0.55, Math.hypot(depth, H) * 1.02, mat, sx * (W / 2 + 0.06), H / 2 - 0.06, depth / 2);
-    s.rotation.x = Math.atan2(H, depth);
-    s.rotation.z = 0;
-    g.add(s);
+    const m = new THREE.Mesh(sg, mat);
+    m.rotation.y = -Math.PI / 2;
+    m.position.set(sx * (W / 2 + 0.06), 0, 0);
+    g.add(m);
   }
   return { g, depth, top: { y: H, z: depth } };
 }
@@ -528,7 +540,7 @@ function buildStairSwitch(p) {
   const p1 = { ...p, rise: half, rail: false };
   const A = flight(p1, mat);
   const W = Math.max(0.5, p.w);
-  const land = box(W + 0.3, 0.12, W + 0.3, mat, 0, half, A.depth + (W + 0.3) / 2);
+  const land = box((W + 0.3) * 2, 0.12, W + 0.3, mat, (W + 0.3) / 2, half, A.depth + (W + 0.3) / 2);   // 平台跨两跑（与 stairOpen 洞口同宽同轴；原来只盖第一跑，第二跑整段悬空）
   g.add(A.g, land);
   const B = flight(p1, mat);
   const bgrp = new THREE.Group();
@@ -536,7 +548,10 @@ function buildStairSwitch(p) {
   bgrp.rotation.y = Math.PI;
   bgrp.position.set(W + 0.3, half + 0.06, A.depth + (W + 0.3));
   g.add(bgrp);
-  if (p.rail) for (let i = 0; i < 4; i++) g.add(box(0.05, 0.9, 0.05, M.metal(0x8f979f, 0.4, 0.7), -W / 2 - 0.06 + i * 0.02, half * 0.5 + 0.45 + i * half * 0.12, i * 0.4));
+  if (p.rail) for (let i = 0; i < 4; i++) {
+    const pz = i * 0.4;                                                          // 立柱脚踩斜梁顶边（原公式 half*0.5 让整排立柱悬空 ~0.73m）
+    g.add(box(0.05, 0.9, 0.05, M.metal(0x8f979f, 0.4, 0.7), -W / 2 - 0.06 + i * 0.02, pz * half / A.depth + 0.087 + 0.45, pz));
+  }
   const depth = A.depth * 2 + (W + 0.3);
   const hl2 = n0(p.holeLen, 2.4, 0, 20);
   const end2 = W + 0.3;                                              // 上跑梯顶（走下来进二层的那条边）
@@ -568,12 +583,26 @@ function buildStairSpiral(p) {
     holder.add(step);
     g.add(holder);
     if (p.rail) {
-      const bal = box(0.04, 0.85, 0.04, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
+      const bal = box(0.04, 0.88, 0.04, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
       const bh = new THREE.Group();
       bh.rotation.y = -a;
-      bal.position.set(R + 0.02, y + 0.42, 0);
+      bal.position.set(R + 0.02, y + 0.41, 0);        // 底端插进踏步 3cm
       bh.add(bal);
       g.add(bh);
+      // 扶手：相邻立柱顶之间的螺旋段（旧版只有立柱、扶手整圈缺失）
+      if (i < n - 1) {
+        const a2 = ((i + 2) / n) * turn, y2 = ((i + 2) / n) * H;
+        const da = a2 - a, rr = R + 0.02;
+        const chord = 2 * rr * Math.sin(da / 2), dy = y2 - y;
+        const len = Math.hypot(chord, dy) + 0.06;
+        const rail = box(0.05, 0.06, len, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
+        const rh = new THREE.Group();
+        rh.rotation.y = -(a + da / 2);
+        rail.position.set(rr, (y + y2) / 2 + 0.82, 0);
+        rail.rotation.x = Math.atan2(dy, chord);
+        rh.add(rail);
+        g.add(rh);
+      }
     }
   }
   g.add(box(0.5, 0.05, 0.5, mat, 0, H + 0.03, 0));                                          // 顶部小平台

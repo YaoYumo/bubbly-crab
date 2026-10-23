@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-17",
+  "orderedPlan": [
+    {
+      "step": "旧远景路口门禁",
+      "status": "完成"
+    },
+    {
+      "step": "重复建筑实例化",
+      "status": "首版完成"
+    },
+    {
+      "step": "道路坡度/净空检查器",
+      "status": "下一阶段，尚未开始"
+    },
+    {
+      "step": "夜景窗灯",
+      "status": "排在检查器之后，尚未开始"
+    }
+  ],
+  "build": {
+    "bytes": 1847442,
+    "sha256": "9c284808803d2b2cf841c4b6ff464d6721c6e9dfe3571f7e9a1a325f6a5d326b"
+  },
+  "measurement": {
+    "warmup": 2,
+    "samples": 3,
+    "environment": "Chromium131/Linux/ANGLE SwiftShader; not hardware GPU FPS"
+  },
+  "devPassed": [
+    "junction-surface.test",
+    "junction-regression",
+    "t-junction-regression",
+    "junction-material-regression",
+    "terrain-roads-regression",
+    "model-instancing-regression",
+    "performance-regression",
+    "road-performance-regression"
+  ],
+  "finalFilePassed": [
+    "model-instancing-regression",
+    "performance-regression",
+    "lighting-offline",
+    "road-properties-offline",
+    "road-planning-offline",
+    "junction-regression"
+  ],
+  "fullLegacySuite": false,
+  "default8Plus30": false
+}

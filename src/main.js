@@ -2,7 +2,13 @@
 // 入口：装配工作台、工具条、快捷键、渲染循环、示例场景
 // ---------------------------------------------------------------------------
 import './styles.css';
+import { installThemeControls } from './theme-ui.js';
+import { installOnboarding } from './onboarding.js';
+import { ModelLibrary } from './model-library.js';
+import { installRadialMenu } from './radial-menu.js';
+import { installDesktopTools } from './desktop-ui.js';
 import * as THREE from 'three';
+import { installPerformanceUI } from './performance-ui.js';
 import { App } from './app.js';
 import { ASPECTS } from './stage.js';
 import { LEVELS, setDetailLevel, detailLevel, detailMaps, textureStats, pruneTextureCache, texOn } from './detail.js';
@@ -10,6 +16,9 @@ import { buildLibrary, buildObjectList, buildShotList, buildInspector, buildDire
 import { buildTimeline } from './timeline.js';
 import { buildCurveEditor } from './curveeditor.js';
 import { SCENES, applyScene } from './scenes.js';
+import cyberPreview from './showcase-previews/cyber-rain.webp';
+import riverPreview from './showcase-previews/lantern-river.webp';
+const SHOWCASE_PREVIEWS = { 'cyber-rain': cyberPreview, 'lantern-river': riverPreview };
 import { buildDemo } from './demo.js';
 import { LIB, LIB_INDEX, buildAsset, defaultsFor } from './assets.js';
 import { MOVES, MOVE_BY_ID } from './camera.js';
@@ -17,12 +26,22 @@ import { ANIMS } from './character.js';
 import { ATMOS } from './lighting.js';
 import { WEATHER } from './weather.js';
 import { Mover } from './mover.js';
+import { AISceneWorkflow } from './ai-scene-workflow.js';
+import { openAISceneDialog } from './ai-scene-ui.js';
 import { openTownDialog } from './townui.js';
+import { autoCamera } from './autocam.js';
+import { pickSceneFile, openApiDialog } from './sceneio.js';
 import { el, clear, clamp, fmt, copy, downloadBlob, snap } from './util.js';
 
 const host = document.getElementById('stage');
+const constructionStartedAt = performance.now();
 const app = new App(host);
+app.performance.startup.constructionMs = performance.now() - constructionStartedAt;
 window.app = app;
+app.modelLibrary = new ModelLibrary(app, LIB);
+app.aiScene = new AISceneWorkflow(app);
+app.benchmarkMode = new URLSearchParams(location.search).get('benchmark') === '1';
+if (app.benchmarkMode) app._suspendUndo = true;
 app.projectName = '未命名场景';
 
 /* ------------------------------- 顶栏 ------------------------------------ */
@@ -32,33 +51,8 @@ const tbtn = (label, { icon, title, onClick, on, cls } = {}) => el('button', {
   onclick: (e) => onClick && onClick(e.currentTarget, e),
 }, [icon ? el('span', { class: 'i', html: icon }) : null, label ? el('span', { class: 't', text: label }) : null]);
 
-/* 品牌 / 皮肤切换：三个实心圆点 */
-const skinWrap = el('div', { class: 'skin-wrap' });
-const SKINS = [
-  { id: 'light', color: '#F4EFE7', border: '#c8c0b4', label: '浅色模式' },
-  { id: 'dark', color: '#282940', border: '#454668', label: '深色模式' },
-  { id: 'custom', color: 'linear-gradient(135deg,#ff6b6b,#4ecdc4,#45b7d1)', border: 'transparent', label: '自定义色彩（开发中）' },
-];
-const skinDots = [];
-function applySkin(id) {
-  if (id === 'custom') { toast('自定义主题开发中'); return; }
-  app.state.skin = id;
-  document.documentElement.dataset.skin = id;
-  skinDots.forEach(d => d.el.classList.toggle('on', d.id === id));
-}
-for (const s of SKINS) {
-  const dot = el('button', {
-    class: 'skin-dot' + (app.state.skin === s.id ? ' on' : ''),
-    type: 'button',
-    title: s.label,
-    style: s.color.startsWith('linear') ? `background:${s.color}` : `background:${s.color};border-color:${s.border}`,
-  });
-  dot.onclick = () => applySkin(s.id);
-  skinDots.push({ id: s.id, el: dot });
-  skinWrap.appendChild(dot);
-}
-app.state.skin = 'light';
-top.appendChild(skinWrap);
+/* 主题切换恢复到顶栏左侧，自定义配色独立保存。 */
+installThemeControls(app,top);
 
 /* 胶囊页签 */
 const capsules = el('div', { class: 'capsules' });
@@ -113,11 +107,7 @@ for (const p of pages) {
 top.appendChild(capsules);
 
 /* 右侧按钮 */
-const shareBtn = el('button', {
-  class: 'share-btn', type: 'button', title: '分享场景',
-  onclick: () => toast('分享功能开发中'),
-}, [el('span', { html: '↗' }), ' Share']);
-top.appendChild(shareBtn);
+// 分享服务未启用：不渲染占位入口。
 
 /* 工具按钮组（精简：保留核心操作，其余收入下拉菜单） */
 const toolRow = el('div', { class: 'tool-row' });
@@ -125,7 +115,7 @@ const toolRow = el('div', { class: 'tool-row' });
 /* 一句话生成街区：本地关键词解析 → 程序化造镇（Scene 页专属，随工具条显隐） */
 toolRow.appendChild(tbtn('一句话生成', {
   icon: '✦', cls: 'pri', title: '一句话生成街区（本地解析，不联网、不消耗积分）',
-  onClick: () => openTownDialog(app),
+  onClick: () => {app.closeViewportTools?.();openCreate();},
 }));
 
 const gizmoBtns = [];
@@ -171,10 +161,14 @@ const detailSel = el('select', {
   onchange: (e) => { const ms = app.setDetail(e.target.value, { silent: true }); toast(`模型精度 → ${e.target.selectedOptions[0].text}（重建 ${ms}ms）`); } });
 for (const [k, v] of Object.entries(LEVELS)) detailSel.appendChild(el('option', { value: k, selected: k === app.state.detail, text: '精度·' + v.name }));
 
-const fileIn = el('input', { type: 'file', multiple: true, accept: '.glb,.gltf,.fbx,.obj,.mtl,.json', style: 'display:none', onchange: (e) => onFiles(e.target.files) });
+const fileIn = el('input', { type: 'file', multiple: true, accept: '.previz,.zip,.glb,.gltf,.fbx,.obj,.mtl,.bin,.png,.jpg,.jpeg,.webp,.gif,.bmp,.json', style: 'display:none', onchange: (e) => onFiles(e.target.files) });
 document.body.appendChild(fileIn);
+const folderIn = el('input', { type: 'file', multiple: true, webkitdirectory: true, style: 'display:none',
+  onchange: e => onFiles(Array.from(e.target.files).filter(f => /\.(glb|gltf|fbx|obj|mtl|bin|png|jpe?g|webp|gif|bmp)$/i.test(f.name))),
+});
+document.body.appendChild(folderIn);
 
-/** 顶栏「清空」：两段式确认 */
+/** 顶栏撤销/重做 + 「一键清空」：单击立即清空（一步 Ctrl+Z 可撤销） */
 const undoBtn = tbtn('撤销', { icon: '↶', title: '撤销上一步（Ctrl+Z）', onClick: () => { if (!app.undo()) toast('没有可撤销的操作'); } });
 const redoBtn = tbtn('重做', { icon: '↷', title: '重做（Ctrl+Shift+Z）', onClick: () => { if (!app.redo()) toast('没有可重做的操作'); } });
 const syncUndoBtns = () => {
@@ -186,24 +180,13 @@ const syncUndoBtns = () => {
 app.bus.on('undoable', syncUndoBtns);
 syncUndoBtns();
 const clearBtn = el('button', {
-  class: 'tb', type: 'button', title: '一键清空场景 (Ctrl+Shift+Backspace)',
+  class: 'tb', type: 'button', title: '一键清空场景：模型/机位/地形全清（Ctrl+Shift+Backspace · Ctrl+Z 可撤销）',
+  onclick: () => {
+    const objs = app.objects.length, shots = app.shots.length;
+    if (!objs && !shots) { toast('场景已经是空的'); return; }
+    app.clearScene({ blank: true });
+  },
 }, [el('span', { class: 'i', html: '⌫' }), el('span', { class: 't', text: '清空' })]);
-{
-  const lab = clearBtn.querySelector('.t');
-  let timer = 0;
-  clearBtn.addEventListener('click', () => {
-    if (clearBtn.dataset.armed === '1') {
-      clearTimeout(timer); clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空';
-      const objs = app.objects.length, shots = app.shots.length;
-      app.clearScene({ blank: true });
-      toast(`已清空场景（${objs} 个模型 · ${shots} 个机位）· Ctrl+Z 可撤销`);
-      return;
-    }
-    clearBtn.dataset.armed = '1'; clearBtn.classList.add('warn'); lab.textContent = '确认清空?';
-    clearTimeout(timer);
-    timer = setTimeout(() => { clearBtn.dataset.armed = ''; clearBtn.classList.remove('warn'); lab.textContent = '清空'; }, 3200);
-  });
-}
 
 /* ---- 下拉菜单辅助 ---- */
 function makeDropdown(label, icon, items) {
@@ -227,14 +210,17 @@ function makeDropdown(label, icon, items) {
       item.icon ? el('span', { class: 'dd-ico', html: item.icon }) : null,
       el('span', { text: item.text }),
     ]);
-    mi.onclick = (e) => { e.stopPropagation(); item.onClick?.(mi); if (!item.keepOpen) wrap.classList.remove('open'); };
+    mi.onclick = (e) => { e.stopPropagation(); if(!item.keepOpen)app.closeViewportTools?.(); item.onClick?.(mi); if (!item.keepOpen) wrap.classList.remove('open'); };
     if (item.ref) item.ref.el = mi;
     menu.appendChild(mi);
   });
   wrap.append(btn, menu);
   return wrap;
 }
-document.addEventListener('pointerdown', () => {
+document.addEventListener('pointerdown', (e) => {
+  // 菜单内部（开合按钮 / 菜单项）的按下不关菜单：否则菜单在 click 抬起前消失，
+  // 点击永远落不到条目上（菜单项集体失效 + 开合按钮关不上）
+  if (e.target && e.target.closest && e.target.closest('.tb-dropdown')) return;
   document.querySelectorAll('.tb-dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
@@ -251,7 +237,24 @@ const lightBtn = tbtn('光影', { icon: '☀', title: '开/关光影 (L)', on: t
 } });
 lightBtn.classList.add('on');
 const gridBtn = tbtn('网格', { icon: '#', title: '网格 (G)', onClick: (b) => { app.state.grid = !app.state.grid; app.stage.setGridVisible(app.state.grid); b.classList.toggle('on', app.state.grid && !app.stage.gridBlocked?.()); } });
-gridBtn.classList.add('on');
+gridBtn.classList.toggle('on', app.state.grid);
+app.bus.on('road-planning', () => gridBtn.classList.toggle('on', app.state.grid));
+// Scene 视口的快捷开关与道路面板使用同一份状态；两个开关默认均关闭。
+const sceneGridToggle = document.getElementById('scene-grid-toggle');
+const sceneSnapToggle = document.getElementById('scene-snap-toggle');
+sceneGridToggle?.addEventListener('click', () => gridBtn.click());
+sceneSnapToggle?.addEventListener('click', () => app.roadPlanning.setSnap(!app.state.roadSnap));
+const syncDrawingToggles = () => {
+  for (const [button, on, label] of [[sceneGridToggle, app.state.grid, '地面网格'], [sceneSnapToggle, app.state.roadSnap, '道路笔刷网格捕捉']]) {
+    if (!button) continue;
+    button.classList.toggle('on', !!on);
+    button.setAttribute('aria-pressed', String(!!on));
+    button.title = `${label}：${on ? '开' : '关'}（间距 ${app.roadPlanning.gridSize()}m）`;
+  }
+};
+app.bus.on('road-planning', syncDrawingToggles);
+syncDrawingToggles();
+
 const guideBtn = tbtn('辅助', { icon: '◎', title: '机位/路径显示 (H)', onClick: (b) => { app.state.showHelpers = !app.state.showHelpers; b.classList.toggle('on', app.state.showHelpers); } });
 guideBtn.classList.add('on');
 
@@ -294,6 +297,7 @@ const weatherSel = el('select', { class: 'nsl', style: 'margin:2px 8px 4px;width
 weatherSel.appendChild(el('option', { value: '', text: '无' }));
 for (const w of WEATHER) weatherSel.appendChild(el('option', { value: w.id, text: w.name }));
 weatherSel.appendChild(el('option', { value: 'fog', text: '雾 Fog' }));
+app.bus.on('weather',()=>{weatherSel.value=app.weather.type||'';});
 viewMenu.querySelector('.dd-menu').appendChild(weatherSel);
 
 // 添加其余菜单项
@@ -302,7 +306,7 @@ viewMenu.querySelector('.dd-menu').appendChild(weatherSel);
   { text: '三分线/安全框', icon: '⊞', onClick: (mi) => { thirdsBtn.click(); mi.classList.toggle('on', app.state.thirds); }, on: true, keepOpen: true },
   '---',
   { text: '光影开关', icon: '☀', onClick: (mi) => { lightBtn.click(); mi.classList.toggle('on', app.lighting.enabled); }, on: true, keepOpen: true },
-  { text: '网格', icon: '#', onClick: (mi) => { gridBtn.click(); mi.classList.toggle('on', app.state.grid); }, on: true, keepOpen: true },
+  { text: '网格', icon: '#', onClick: (mi) => { gridBtn.click(); mi.classList.toggle('on', app.state.grid); }, on: false, keepOpen: true },
   { text: '辅助显示', icon: '◎', onClick: (mi) => { guideBtn.click(); mi.classList.toggle('on', app.state.showHelpers); }, on: true, keepOpen: true },
   '---',
   { label: '模型精度' },
@@ -313,7 +317,7 @@ viewMenu.querySelector('.dd-menu').appendChild(weatherSel);
     item.icon ? el('span', { class: 'dd-ico', html: item.icon }) : null,
     el('span', { text: item.text }),
   ]);
-  mi.onclick = (e) => { e.stopPropagation(); item.onClick?.(mi); if (!item.keepOpen) viewMenu.classList.remove('open'); };
+  mi.onclick = (e) => { e.stopPropagation(); if(!item.keepOpen)app.closeViewportTools?.(); item.onClick?.(mi); if (!item.keepOpen) viewMenu.classList.remove('open'); };
   viewMenu.querySelector('.dd-menu').appendChild(mi);
 });
 
@@ -329,10 +333,23 @@ const scenePickerBtn = scenePicker();
 const sceneMenu = makeDropdown('场景', '☰', [
   { text: '新建机位', icon: '⎈', onClick: () => { app.shotFromView(); toast('已创建机位，可在右侧选运镜预设'); } },
   { text: '导入模型', icon: '', onClick: () => fileIn.click() },
+  { text: '导入模型文件夹（含贴图）', icon: '', onClick: () => folderIn.click() },
   '---',
   { text: '示例场景', icon: '◫', onClick: () => scenePickerBtn.click() },
+  { text: '自动生成运镜', icon: '🎬', onClick: () => {
+      if (!app.objects.length) { toast('场景是空的：先用 ✦ 一句话生成或模板搭建', 'warn'); return; }
+      const before = app.shots.length;
+      app.batchOp('自动运镜', () => { autoCamera(app, {}); app.select(null); });
+      toast(`已生成 ${app.shots.length - before} 个机位：全景交代 → 环绕主体 → 跟拍/横移 → 推镜收尾（Ctrl+Z 一步撤销）`);
+    } },
+  { text: '导入 Scene 文件…', icon: '⇥', onClick: () => pickSceneFile(app) },
+  { text: 'AI 场景搭建（蓝图 / 预览）…', icon: '✦', onClick: () => openAISceneDialog(app) },
+  { text: '旧版 API 整体替换场景…', icon: '☁', onClick: () => openApiDialog(app) },
   '---',
-  { text: '保存工程', icon: '⬇', onClick: () => { downloadBlob(new Blob([JSON.stringify(app.serialize(), null, 1)], { type: 'application/json' }), `${app.projectName}.json`); toast('已导出工程 JSON'); } },
+  { text: '保存工程', icon: '⬇', onClick: async () => {
+    try { const data = await app.saveProject(); const saved = await downloadBlob(new Blob([data], { type: 'application/zip' }), `${app.projectName || '场景'}.previz`); if (saved?.status === 'error') throw Error(saved.error); toast(saved?.status === 'cancelled' ? '已取消磁盘保存，工程仍在当前工作台' : '已保存完整工程包（含导入模型与贴图）'); }
+    catch (e) { toast('保存失败：' + e.message, 'err'); }
+  } },
   { text: '打开工程', icon: '⬆', onClick: () => fileIn.click() },
   '---',
   { text: '清空场景', icon: '⌫', onClick: () => clearBtn.click() },
@@ -342,10 +359,43 @@ const sceneMenu = makeDropdown('场景', '☰', [
 toolRow.append(
   viewMenu,
   sceneMenu,
+  clearBtn,               // 一键清空：挂在最顺手的位置，单击即清
 );
-top.appendChild(toolRow);
-toolRow.style.display = currentPage === 'scene' ? '' : 'none';
-app.bus.on('page-change', (id) => { toolRow.style.display = id === 'scene' ? '' : 'none'; });
+// Preserve engineering/import/view commands in a secondary dialog, never discard them.
+function openViewportTools() {
+  if(document.querySelector('.viewport-tools-mask'))return;
+  const previous=document.activeElement;
+  [snapSel,snapSelInline].forEach(n=>n.value=String(app.state.snap));
+  [aspectSel,aspectSelInline].forEach(n=>n.value=app.state.aspect);
+  [detailSel,detailSelInline].forEach(n=>n.value=app.state.detail);
+  const mask=el('div',{class:'viewport-tools-mask'}),panel=el('section',{class:'viewport-tools-panel',role:'dialog','aria-modal':'true','aria-label':'视口工具与工程',tabindex:'-1'});
+  const dismiss=()=>{panel.querySelectorAll('.tb-dropdown.open').forEach(n=>n.classList.remove('open'));mask.remove();app.closeViewportTools=null;previous?.isConnected&&previous.focus({preventScroll:true});};
+  app.closeViewportTools=dismiss;
+  const close=el('button',{class:'fbtn',type:'button',text:'关闭',onclick:dismiss});
+  panel.append(el('header',{},[el('b',{text:'视口工具与工程'}),close]),toolRow,
+    el('div',{class:'viewport-settings'},[el('label',{},['变换吸附',snapSel]),el('label',{},['画幅',aspectSel]),el('label',{},['模型精度',detailSel]),el('div',{class:'btnrow'},[undoBtn,redoBtn,el('button',{class:'fbtn',type:'button',text:'新手指引',dataset:{onboardingOpen:'1'},onclick:()=>{app.closeViewportTools?.();app.onboarding?.start();}})])]));
+  mask.append(panel);document.body.append(mask);close.focus();
+  mask.addEventListener('pointerdown',e=>{if(e.target===mask)dismiss();});
+  mask.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();dismiss();}if(e.key==='Tab'){const nodes=[...panel.querySelectorAll('button,input,select,[tabindex="0"]')].filter(n=>!n.disabled&&n.getClientRects().length),i=nodes.indexOf(document.activeElement);if(e.shiftKey&&i<=0){e.preventDefault();nodes.at(-1)?.focus();}else if(!e.shiftKey&&i===nodes.length-1){e.preventDefault();nodes[0]?.focus();}}});
+}
+app.openViewportTools=openViewportTools;
+const openCreate=()=>{switchPage('scene');openTownDialog(app);};
+const openLibrary=()=>{switchPage('scene');const box=document.getElementById('library-scene');if(box?.style.display==='none')document.getElementById('lib-toggle')?.click();box?.querySelector('input.search')?.focus();};
+app.radialMenu=installRadialMenu(app,{actions:ctx=>{
+  const item=(id,label,run,extra={})=>({id,label,run,...extra});
+  const undo=item('undo','撤销',()=>undoBtn.click(),{disabled:undoBtn.disabled});
+  const more=item('more','工具 / 工程',openViewportTools);
+  if(ctx.kind==='obj'){
+    const locked=!!(ctx.so.motion?.behavior||ctx.so.motion?.behaviorError);
+    return [item('move','移动',()=>setGizmo('translate'),{disabled:locked}),item('rotate','旋转',()=>setGizmo('rotate'),{disabled:locked}),item('scale','缩放',()=>setGizmo('scale'),{disabled:locked}),item('focus','聚焦',()=>app.focusSelected()),item('copy','复制',()=>app.duplicateSelected()),item('delete','删除',()=>app.removeObject(ctx.so),{danger:true}),undo,more];
+  }
+  if(ctx.kind==='shot')return [item('move','移动',()=>setGizmo('translate')),item('rotate','旋转',()=>setGizmo('rotate')),item('focus','聚焦机位',()=>app.focusSelected()),item('preview','取景预览',()=>togglePreview()),item('key','记录关键帧',()=>{app.beginOp('记录机位关键帧');ctx.shot.addKeyAt(app.timeline.u,app.stage.view);}),item('delete','删除机位',()=>app.removeShot(ctx.shot),{danger:true}),undo,more];
+  return [item('add','添加模型',openLibrary),item('camera','新建机位',()=>app.shotFromView()),item('generate','一句话生成',openCreate),item('grid',app.state.grid?'关闭网格':'显示网格',()=>gridBtn.click()),item('snap',app.stage.snapStep?'自由移动':'吸附 0.25m',()=>{app.state.snap=app.stage.snapStep?0:.25;snapSel.value=String(app.state.snap);app.stage.setSnap(app.state.snap);}),undo,item('redo','重做',()=>redoBtn.click(),{disabled:redoBtn.disabled}),more];
+}});
+const createEntry=el('button',{class:'viewport-create',type:'button',text:'✦ 一句话生成',title:'描述场景，在视口中央生成',onclick:openCreate});
+const radialEntry=el('button',{class:'viewport-operations',type:'button',text:'操作 · 右键',title:'右键单击打开操作菜单；右键拖动保持平移',onclick:()=>{const r=app.stage.canvas.getBoundingClientRect();app.radialMenu.open(r.left+r.width/2,r.top+r.height/2,{selection:true});}});
+host.append(createEntry,radialEntry);
+app.bus.on('page-change',id=>{createEntry.hidden=id!=='scene';radialEntry.hidden=!['scene','direct','camera'].includes(id);app.radialMenu.close(false);app.closeViewportTools?.();});
 
 /* ------------------------------ 面板装配 --------------------------------- */
 const left = document.getElementById('left');
@@ -364,7 +414,7 @@ const resizeHandle = el('div', { class: 'tl-resize' });
 bottomEl.insertBefore(resizeHandle, bottomEl.firstChild);
 {
   let startY = 0, startH = 0, dragging = false;
-  const MIN_H = 48, MAX_H = 320;
+  const MIN_H = 200, MAX_H = 480;
   resizeHandle.addEventListener('pointerdown', (e) => {
     dragging = true; startY = e.clientY; startH = bottomEl.offsetHeight;
     resizeHandle.setPointerCapture(e.pointerId);
@@ -396,8 +446,7 @@ buildShotBar();
 /* 时间线位置变化时更新相机预览（主控页面） */
 app.bus.on('time', () => {
   if (currentPage === 'direct' && app.activeShot && !app.state.preview) {
-    const fa = app.stage.framingAspect(app.stage.aspect || 0);
-    app.activeShot.applyTo(app.stage.view, app.timeline.u, app.state.time, fa.canvasAspect, fa.eff);
+    app.applyCameraSample();
   }
 });
 
@@ -408,6 +457,25 @@ app.bus.on('time', () => {
 buildSceneAssets(app, document.getElementById('library-scene'));
 buildObjectList(app, document.getElementById('objlist-scene'));
 buildSceneInspector(app, document.getElementById('inspector-scene'));
+
+/* 模型库收进二级入口：默认收起，点头部展开（主入口是顶栏 ✦ 一句话生成） */
+{
+  const libBtn = document.getElementById('lib-toggle');
+  const libBox = document.getElementById('library-scene');
+  const libState = document.getElementById('lib-toggle-state');
+  if (libBtn && libBox) {
+    const setLib = (open) => {
+      libBox.style.display = open ? '' : 'none';
+      libBox.parentElement.classList.toggle('library-open',open);
+      libBtn.setAttribute('aria-expanded',String(open));
+      if (libState) libState.textContent = open ? '收起 ▾' : '展开 ▸';
+      libBtn.classList.toggle('on', open);
+      libBtn.title = open ? '收起模型库' : `展开模型库（${libBox.querySelectorAll('.card').length} 个模型）`;
+    };
+    libBtn.addEventListener('click', () => setLib(libBox.style.display === 'none'));
+    setLib(false);
+  }
+}
 
 /* ---- S3 Camera Path 面板 ---- */
 buildKeyframesList(app, document.getElementById('keyframes-list'));
@@ -450,7 +518,7 @@ setCamView('persp');
     clear(camList);
     app.shots.forEach((s, i) => {
       const row = el('div', { class: 'orow' + (s === app.activeShot ? ' on' : ''), title: s.name }, [
-        el('span', { class: 'odot', html: '📷' }),
+        el('span', { class: 'odot', 'aria-hidden': 'true', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/></svg>' }),
         el('span', { class: 'onm', text: s.name || `Camera ${String(i + 1).padStart(2, '0')}` }),
       ]);
       row.onclick = () => { app.setActiveShot(s); app.select({ kind: 'shot', shot: s }); };
@@ -548,6 +616,7 @@ function scenePicker() {
         class: 'scard', type: 'button', title: `载入「${sc.name}」`,
         onclick: () => { close(); applyScene(app, sc.id); },
       }, [
+        ...(SHOWCASE_PREVIEWS[sc.id] ? [el('img', { class:'sc-preview', src:SHOWCASE_PREVIEWS[sc.id], alt:sc.name+' · 场景实拍预览', loading:'lazy' })] : []),
         el('span', { class: 'sc-tag', text: sc.cat }),
         el('b', { class: 'sc-nm', text: sc.name }),
         el('span', { class: 'sc-desc', text: sc.desc }),
@@ -568,7 +637,10 @@ function scenePicker() {
     pop.classList.add('on');
     setTimeout(() => document.addEventListener('pointerdown', outside, true), 0);
   });
-  btn.appendChild(pop);
+  // The trigger is controlled by the Scene dropdown, not mounted as a toolbar button.
+  // Portal the panel itself so that opening it never targets detached DOM.
+  document.body.appendChild(pop);
+  document.addEventListener('keydown', (e) => { if(e.key==='Escape') close(); });
   return btn;
 }
 function buildShotBar() {
@@ -581,7 +653,7 @@ function buildShotBar() {
     mk('⏮', '上一关键帧 ( , )', () => stepKey(-1)),
     mk('⏭', '下一关键帧 ( . )', () => stepKey(1)),
     mk('＋', '在当前时间记录关键帧 (K)：选中物体=走位，否则=机位', () => {
-      if (app.selObj) { app.addObjectKey(app.selObj); toast('已记录走位关键帧'); }
+      if (app.selObj) { if (app.addObjectKey(app.selObj)) toast('已记录走位关键帧'); }
       else { const s = app.activeShot || app.shotFromView(); s.addKeyAt(app.timeline.u, app.stage.view); toast('已记录机位关键帧'); }
     }),
     mk('⌖', '对准选中物体', () => { if (!app.selObj) return toast('先选中一个物体'); const s = app.activeShot || app.shots[0]; if (!s) return toast('先建机位'); s.setTarget(app.selObj); s.aim = 'target'; app.bus.emit('shot-change'); toast('机位已锁定主体'); }),
@@ -605,7 +677,7 @@ const hudL = el('div', { class: 'hud-l' });
 const hudR = el('div', { class: 'hud-r' });
 hud.append(hudL, hudR);
 function syncHud() {
-  const s = app.activeShot;
+  const s = app.state.preview ? app.cameraSample()?.shot : app.activeShot;
   const st = app.state;
   const ar = ASPECTS[st.aspect];
   hudL.innerHTML = s
@@ -617,16 +689,23 @@ function syncHud() {
     if (s) {
       const mv = s.move ? (MOVE_BY_ID[s.move]?.name || s.move) : '手工关键帧';
       const idx = app.shots.indexOf(s) + 1;
-      shotTag.innerHTML = `<i style="background:${s.colorHex}"></i><b>${idx}/${app.shots.length} · ${s.name}</b><span>${mv} ｜ ${fmt(s.focal, 0)}mm ｜ ${s.keys.length} 关键帧 ｜ ${ar ? ar.l.replace(/\s/g, '') : ''}</span>`;
+      shotTag.replaceChildren(el('i', { style: `background:${s.colorHex}` }), el('b', { text: `${idx}/${app.shots.length} · ${s.name}` }), el('span', { text: `${mv} ｜ ${fmt(s.focal, 0)}mm ｜ ${s.keys.length} 关键帧 ｜ ${ar ? ar.l.replace(/\s/g, '') : ''}` }));
     }
   }
 }
-let stats = { fps: 60, acc: 0, n: 0, t: 0 };
-function loop() {
+installPerformanceUI(app, top, tbtn);
+let stats = { fps: 0, acc: 0, n: 0, t: 0 };
+function loop(timestamp = performance.now()) {
   const dt = Math.min(0.06, app._clock.getDelta());
-  stats.acc += dt; stats.n++;
-  if (stats.acc > 0.5) { stats.fps = Math.round(stats.n / stats.acc); stats.acc = 0; stats.n = 0; }
-  if (!app.suspended) { app.step(dt); app.weather?.update(dt, app.stage.view?.position); app.stage.render(); }
+  if (!app.suspended) {
+    // FPS uses real elapsed time; the animation timestep remains independently capped.
+    if (stats.t) { stats.acc += (timestamp - stats.t) / 1000; stats.n++; }
+    stats.t = timestamp;
+    if (stats.acc > .5) { stats.fps = Math.round(stats.n / stats.acc); stats.acc = 0; stats.n = 0; }
+    const monitor=app.performance; monitor.beginFrame(timestamp);let step=0,render=0;
+    try { let start=performance.now();app.step(dt);app.weather?.update(dt,app.stage.view?.position);step=performance.now()-start;start=performance.now();app.stage.render();render=performance.now()-start; }
+    finally { monitor.endFrame(step,render); }
+  } else { if(!app._benchmarkRunning)app.performance.pauseFrames();stats.t=0;stats.acc=0;stats.n=0; }
   requestAnimationFrame(loop);
 }
 
@@ -641,7 +720,8 @@ app.bus.on('select', () => {
 app.bus.on('objects', syncHud);
 app.bus.on('shots', syncHud);
 app.bus.on('shot-change', () => { syncHud(); tl.drawTicks(); });
-app.bus.on('time', () => { tl.redraw(); tl.drawTicks(); });
+app.bus.on('time', () => { tl.redraw(); tl.drawTicks(); syncHud(); });
+app.bus.on('camera-edit', syncHud);
 app.bus.on('tick', () => {
   if (!app.state.playing) return;
   syncHudThrottled();
@@ -653,6 +733,7 @@ function syncHudThrottled() {
 }
 
 function togglePreview() {
+  if (!app.state.preview && (app.terrain?.workflow?.busy || app.terrain?.workflow?.erosionPreview)) { toast('请先完成 / 取消地形任务，或应用 / 放弃侵蚀预览'); return; }
   if (!app.activeShot && !app.shots.length) { app.shotFromView(); }
   const on = !app.state.preview;
   app.state.preview = on;
@@ -701,8 +782,9 @@ app.bus.on('preview', () => {
 });
 
 window.addEventListener('keydown', (e) => {
+  if (app.reference?.busy || app.aiScene?.busy || app.localScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const k = e.key.toLowerCase();
   if (k === ' ') { e.preventDefault(); }
   else if (k === 'w') setGizmo('translate');
@@ -716,7 +798,7 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'g') gridBtn.click();
   else if (k === 'l') lightBtn.click();
   else if (k === 'h') guideBtn.click();
-  else if (k === 'k') { if (app.selObj) app.addObjectKey(app.selObj); else { const s = app.activeShot || app.shotFromView(); s.addKeyAt(app.timeline.u, app.stage.view); } toast('已记录关键帧'); }
+  else if (k === 'k') { if (app.selObj) { if (app.addObjectKey(app.selObj)) toast('已记录走位关键帧'); } else { const s = app.activeShot || app.shotFromView(); s.addKeyAt(app.timeline.u, app.stage.view); toast('已记录机位关键帧'); } }
   else if (k === '[' || k === ']') {
     const s2 = app.cycleShot(k === '[' ? -1 : 1);
     if (s2) toast(`预览机位：${app.shots.indexOf(s2) + 1}/${app.shots.length} · ${s2.name}${app.state.preview ? '' : '（按 P 进入取景）'}`);
@@ -728,7 +810,7 @@ window.addEventListener('keydown', (e) => {
     if (app.roadBrush.points.length < 2) { toast('至少需要 2 个控制点'); return; }
     app.roadBrush.finish(); app.bus.emit('objects'); app.markDirty?.(); toast('道路已生成');
   }
-  else if (k === 't') { const t = app.state.terrainTool ? null : 'raise'; app.state.terrainTool = t; app.terrain?.refreshUI(); toast(t ? '地形笔刷：抬起（左键拖动绘制，Shift 压低，再按 T 退出）' : '已退出地形绘制'); }
+  else if (k === 't') { const t = app.state.terrainTool ? null : 'raise'; app.terrain?.activateTool(t); app.terrain?.refreshUI(); toast(t ? '地形笔刷：抬起（左键拖动绘制，Shift 压低，再按 T 退出）' : '已退出地形绘制'); }
   else if ((e.ctrlKey || e.metaKey) && k === 'z' && e.shiftKey) { e.preventDefault(); app.redo(); }
   else if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); app.redo(); }
   else if ((e.ctrlKey || e.metaKey) && k === 'z') {
@@ -738,7 +820,13 @@ window.addEventListener('keydown', (e) => {
   }
   else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'backspace' || k === 'delete')) { e.preventDefault(); app.clearScene({ blank: true }); }
   else if (k === 'escape') {
-    if (app.roadBrush?.active) { app.roadBrush.stop(); toast('已取消道路绘制'); return; }
+    if (app.vegetationBrush?.active) { app.vegetationBrush.stop(); toast('已退出植被笔刷'); return; }
+    if (app.roadPlanning?.picking) { app.roadPlanning.setPicking(false); toast('已退出区域选择'); return; }
+    if (app.roadBrush?.active) {
+      if (app.roadBrush._editBackup) { app.roadBrush.cancelEdit(); toast('已放弃编辑，原道路已恢复'); }
+      else { app.roadBrush.stop(); toast('已取消道路绘制'); }
+      return;
+    }
     const open = document.querySelectorAll('.menu.on');
     if (open.length) { open.forEach((m) => m.classList.remove('on')); return; }
     if (app.state.dofPickMode) { app.state.dofPickMode = false; app.state.dofPickShot = null; toast('已取消对焦主体选择'); return; }
@@ -789,14 +877,18 @@ async function onFiles(files) {
   const at = app.stage.orbit.target.clone(); at.y = 0;
   if (json.length) {
     try {
+      app.beginOp('打开工程');
       app.loadJson(JSON.parse(await json[0].text()));
+      await app.projectAssets.ready();
+      await app.saveLocal();
       toast('工程已载入');
     } catch (err) { app.notify('工程文件解析失败：' + err.message, 'err'); }
   }
   if (models.length) {
     try {
       const r = await app.importFiles(models, at);
-      toast(`已导入 ${r.length} 个模型`);
+      if (r.projectLoaded) toast('完整工程包已载入（含导入模型与贴图）');
+      else if (r.length) toast(`已导入 ${r.length} 个模型`);
     } catch (err) { console.error(err); app.notify('模型导入失败：' + err.message, 'err'); }
   }
   insp.render();
@@ -832,6 +924,7 @@ function showHelp(on) {
     el('button', { class: 'mclose', text: '关闭 ✕', onclick: () => showHelp(false) }),
     el('h2', { text: 'PREVIZ LAB — 给 AI 视频做运镜 & 动作参考' }),
     el('p', { text: '低模 + 强光影 + 真实镜头语言的Previz工作台。目标不是出成片，而是让 AI 明白「镜头怎么走、人物怎么动、光从哪来」。' }),
+    el('button',{class:'fbtn pri',type:'button',text:'启动新手指引',onclick:()=>{showHelp(false);app.onboarding.start();}}),
     el('h3', { text: '标准工作流' }), flow,
     el('h3', { text: '快捷键' }),
     el('div', { class: 'cols' }, keys.map(([a, b]) => el('p', {}, [a ? el('span', { class: 'kbd', text: a }) : el('span', {}), ' ' + (b || '')]))),
@@ -846,10 +939,13 @@ function showHelp(on) {
 }
 document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') showHelp(false); });
 
+app.onboarding=installOnboarding(app,{switchPage,openTools:openViewportTools});
+
 /* 数字键快速放置 */
 window.addEventListener('keydown', (e) => {
+  if (app.reference?.busy || app.aiScene?.busy || app.localScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const n = parseInt(e.key, 10);
   if (!n || e.metaKey || e.ctrlKey || e.altKey) return;
   const flat = [];
@@ -863,22 +959,36 @@ setInterval(() => { app.saveLocal(); }, 25000);
 window.addEventListener('beforeunload', () => app.saveLocal());
 app.bus.on('gizmo', () => { });
 app.bus.on('toast', (d) => toast(typeof d === 'string' ? d : d?.msg, typeof d === 'object' && d?.kind ? d.kind : 'info'));
-const FRESH = /[?&]fresh/.test(location.search);
-if (!FRESH && !app.maybeRestore()) {
-  // Demo disabled - start with empty scene
-}
+async function bootApp() {
+await app.modelLibrary.ready;
+const FRESH = app.benchmarkMode || /[?&]fresh/.test(location.search);
+if (!FRESH) await app.storageReady;
+const didRestore = !FRESH && app.maybeRestore();
+if (didRestore) await app.projectAssets.ready();
+/* 恢复提示：自动存档是【几何点位】原样回放——旧版大环路会跟着回魂，必须让用户知道
+   这是上次的场景而不是新生成的（开新场：一键清空 或 ?fresh=1） */
+const restored = didRestore && (app.objects.length > 0 || app.shots.length > 0);
 if (FRESH) {
   const pick = new URLSearchParams(location.search).get('scene');
-  if (pick && SCENES.some((s) => s.id === pick)) applyScene(app, pick);
+  if (!app.benchmarkMode && pick && SCENES.some((s) => s.id === pick)) applyScene(app, pick);
 }
 app.updateAspectOverlay();
 syncHud();
+/* 落地即「一句话生成」：启动直接进 Scene 页（boot 遮罩尚未撤下，无闪跳） */
+switchPage('scene');
+// First-run onboarding replaces the old automatic scene-generation popup.
+app.performance.startup.readyAtMs = performance.now();
+installDesktopTools(app);
 window.__previzBooted = true;
 if (window.__bootWatch) clearTimeout(window.__bootWatch);
 document.getElementById('boot')?.remove();
+app.onboarding.maybeStart();
 setInterval(syncHud, 1000);
 loop();
-setTimeout(() => toast('试试：拖动蓝色关键帧节点 → 按 P 预览 → 右侧导出视频'), 900);
+setTimeout(() => {
+  if (restored) toast('已恢复上次自动保存的工程 · 开新场：右键 → 工具 / 工程 → 场景 → 清空场景', 'info', 7000);
+  else if (!app.objects.length) toast('场景空着？点视口下方「一句话生成」，或右键添加模型');
+}, 900);
 
 if (import.meta.env.DEV) {
   window.__t = {
@@ -888,7 +998,7 @@ if (import.meta.env.DEV) {
   window.__scenes = { SCENES, applyScene };
   // 外部浏览器 HMR websocket 可能不通：失焦回来时探测关键文件 ETag，版本不一致自动刷新
   window.__bootAt = Date.now();
-  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css'];
+  const PROBES = ['/', '/src/main.js', '/src/assets.js', '/src/panels.js', '/src/styles.css', '/src/road-brush.js'];
   const etagOf = async (u) => {
     const r = await fetch(u, { method: 'HEAD', cache: 'no-store' });
     return r.headers.get('etag') || r.headers.get('last-modified') || '';
@@ -906,3 +1016,6 @@ if (import.meta.env.DEV) {
   fingerprint().then((fp) => { bootFp = fp; }).catch(() => {});
   if (import.meta.hot) import.meta.hot.on('vite:serverRestart', () => location.reload());
 }
+
+}
+bootApp().catch(e => { console.error(e); toast("启动恢复失败：" + e.message, "err"); document.getElementById("boot")?.remove(); });

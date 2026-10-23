@@ -1,0 +1,14 @@
+PASS AI recipes {
+  rows: [
+    { recipe: [Object], added: 28, triangles: 172574, warnings: 7 },
+    { recipe: [Object], added: 53, triangles: 228398, warnings: 47 },
+    { recipe: [Object], added: 61, triangles: 114286, warnings: 48 },
+    { recipe: [Object], added: 20, triangles: 746596, warnings: 1 },
+    { recipe: [Object], added: 20, triangles: 54796, warnings: 1 },
+    { recipe: [Object], added: 20, triangles: 49212, warnings: 1 }
+  ],
+  appliedRoads: 8,
+  objects: 36,
+  undoRedo: true,
+  roadPlan: true
+}

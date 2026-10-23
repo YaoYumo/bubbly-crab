@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-21",
+  "stage": "第四阶段：多步骤行为与平面静态导航首版",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "realModelInference": false,
+  "chargedServiceCalls": 0,
+  "backgroundInference": false,
+  "naturalLanguageBehaviorParsing": false,
+  "dynamicAvoidance": false,
+  "articulatedContact": false,
+  "features": [
+    "manual 1–16 data-only steps; explicit world XZ and seconds; walk/run and idle/wave/point/talk/look/phone",
+    "independent freshly built 3D actor preview, local candidate playback and scrub; no scene application on preview",
+    "bounded deterministic 4-neighbor A*, inflated static AABB segment checks, exact polyline runtime (no Catmull corner cutting)",
+    "absolute-time root and joint sampling, seek/loop/hold, project persistence, read-only generated keys and transforms",
+    "fingerprint stale guard, immutable issued candidates, fresh recompile comparison, mandatory limitations and duration-extension confirmation",
+    "single undo/redo; partial write / unavailable undo / post-append undo rollback; duplicate loses source world program",
+    "PNG/video runtime snapshots restore actual root transforms and joint/phase state on success/cancel/failure",
+    "reference source project, timed-behavior motion JSON and prompt summary integrated without calling a model"
+  ],
+  "single": {
+    "path": "previz-lab.html",
+    "bytes": 2325694,
+    "sha256": "14d540939081483ee777a906fd94bdf84b39aa5dd0708cbae7bbb608b41e92d8"
+  },
+  "sources": {
+    "src/behavior-navigation.js": "670ea6b09280a67b0c3ef5590f967b21a79d207bec9944559251a6996192b260",
+    "src/behavior-program.js": "42e484127b7b521754058ff4fe08610c6d3fc11f823ec60ca4eaa20e81491d86",
+    "src/behavior-workflow.js": "a57363b6de7df2fa2a1f908cbdccd011b99975041708dc43305ff1da55dc1842",
+    "src/behavior-preview.js": "02f6320f960741a1a92c503f09733f77c84cca1cfe9eac31d23f68e5c1bf94bb",
+    "src/behavior-ui.js": "d730c3470c786fb2fec9e4262d8176d4ec6084f5d592124929bcbe026cd75113",
+    "src/app.js": "c0bd77ded27e4fc33e0d89b816223978e3d170e6fbc65b58463ec5ec5dd6620f",
+    "src/character.js": "90a1268f29e350190e14b9a947bfa8d87240f083107b3fdd5e5bba978c64e8d8",
+    "src/panels.js": "e6551f92a911f93f9de76673e040c10a28ff07d9488b5f16424a72da180f704b",
+    "src/stage.js": "a104adf8c778dc80a4352f852cd17fb77b3a1ce0dde5bde12ab91aba6cf4cc6e",
+    "src/main.js": "e4f87f501b2e6ad453559e125dc188b118bdfd3d4e29a24dba7a971a1fd1c86e",
+    "src/export.js": "12ced78d0be82dd18d0d6612271c1e7738d75df440cd5d144430be55b587de87",
+    "src/scene-runtime.js": "c4b012cfce237cd5b4021281e5c20a338239799646fcf353c620e3747102592a",
+    "src/prompts.js": "09d29edcf0d733fc7eb39737798cfc6d6910b71f73ca14046f73e4a4b41e9691",
+    "src/reference-workflow.js": "5d493c6ee67192467eb094a55efddcb0ae5c7ed26e430c0919ce8fe146d43ae6",
+    "src/ai-scene-workflow.js": "934b0284e68cbc5ccdc34fd7ff69a7092258557c2b01322873924b0a578deb12",
+    "src/layout-maintenance.js": "00db36b51aab2f62b6a92b5ad31a6bf2414891aa3956796c46a17d1c4f88c307",
+    "test/behavior.test.mjs": "0d4f898f05a76dcaa265c72728545a8ad3af41a9dd9abb8f574fd9adc997268a",
+    "test/behavior-regression.mjs": "f6d4b0184719b1b8b67b3f1389718388ae86b69daac358fa47f0c23ddc92e897",
+    "package.json": "e2d060ad64ff88b6e346f482de5bde83e9b5d580c9335fbb8a339bf8221aa596"
+  },
+  "reports": {
+    "dev": "dev.json",
+    "fileOffline": "file.json"
+  },
+  "media": {
+    "video": {
+      "width": 320,
+      "height": 180,
+      "fps": 4,
+      "seconds": 8,
+      "reportedEncodedFrames": 32,
+      "externalDecodeFrameCountVerified": false,
+      "actions": [
+        "walk",
+        "wave",
+        "run"
+      ],
+      "sourceRestoredOn": [
+        "success",
+        "cancel",
+        "failure"
+      ]
+    },
+    "reference": {
+      "width": 320,
+      "height": 180,
+      "fps": 2,
+      "seconds": 8,
+      "reportedFrames": 16,
+      "diagnosticKeyframeGroups": 3,
+      "channels": [
+        "normal",
+        "gray",
+        "depth16-keyframes",
+        "id-keyframes",
+        "subject-mask-keyframes"
+      ],
+      "fixedCameraRepeatedFirstLastPngBytesEqual": true,
+      "projectAndMotionJsonAndPromptVerified": true,
+      "devFileFirstLastPngComparison": {
+        "frames/00000-normal.png": {
+          "dev": "a537d645f1731b1fbc12d9d614d8f7a88a33760964cb9d6e00f7897bb7be5f3a",
+          "file": "a537d645f1731b1fbc12d9d614d8f7a88a33760964cb9d6e00f7897bb7be5f3a",
+          "equal": true
+        },
+        "frames/00015-normal.png": {
+          "dev": "cb6cd4893ba4cd6ad58ac34b456100a6e71f621fbef2d6d7961077bc2238421a",
+          "file": "cb6cd4893ba4cd6ad58ac34b456100a6e71f621fbef2d6d7961077bc2238421a",
+          "equal": true
+        }
+      }
+    }
+  },
+  "passedCommands": [
+    "node test/behavior.test.mjs (40 successful and 20 conservatively rejected deterministic random obstacle routes, plus schema/budget/time tests)",
+    "bash test/withchrome.sh node test/behavior-regression.mjs (final DEV)",
+    "TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome.sh node test/behavior-regression.mjs (final offline file)",
+    "node test/layout-maintenance.test.mjs",
+    "node test/ai-scene-relations.test.mjs",
+    "node test/reference.test.mjs",
+    "node test/ai-scene.test.mjs",
+    "node test/spatial-dynamics.test.mjs",
+    "node test/local-ai-verify.test.mjs",
+    "bash test/withchrome.sh node test/layout-maintenance-regression.mjs (DEV and final offline file)",
+    "bash test/withchrome.sh node test/ai-scene-safety-regression.mjs (DEV)",
+    "bash test/withchrome.sh node test/ai-scene-relations-regression.mjs (final DEV)",
+    "bash test/withchrome.sh node test/ai-scene-simple-ui-regression.mjs (final DEV)",
+    "bash test/withchrome.sh node test/reference-workflow-regression.mjs (final DEV with temporary explicitly unconfigured loopback gateway; offline file without gateway)",
+    "npm run all",
+    "git diff --check",
+    "node --check src/app.js && node --check src/panels.js && node --check src/prompts.js"
+  ],
+  "boundariesAndExploration": [
+    "Scope is confirmation-time static AABB clearance for the user-entered radius/height proxy on world y=0; not NavMesh, exact mesh contact, foot planting, ground support, stairs, water or traffic coordination.",
+    "Scene edits after application do not automatically replan or certify the saved route. Load structurally validates, but does not re-run current geometry clearance.",
+    "Frame counts are encoder/muxer/sample reports. No independent external decoder frame count, high-resolution long-video, cross-GPU or Safari acceptance is claimed.",
+    "New sequence pixel-repeat evidence is fixed-camera only. A smoothing/target-following exploration did not consistently yield identical first/last PNG bytes; this phase does not claim to fix all prior camera height cache / smoothing timing.",
+    "The old DEV reference workflow initially waited for the unconfigured-gateway message with no gateway listening. It passed after a lifecycle-bounded explicitly unconfigured fixture was provided on loopback 5176; the fixture then closed. No provider configured or called.",
+    "The historical test/motion.mjs was attempted but timed out at its startup precondition requiring an automatically seeded camera in the now-blank fresh startup. It is NOT counted as a passed full legacy-camera gate. The new behavior regression separately verifies the legacy Mover runtime path.",
+    "errors=[] in new browser reports means captured unhandled page errors, not a claim that all console warnings were collected.",
+    "No full historical test-suite pass is claimed; historical stage-three evidence remains tied to its original dated build."
+  ],
+  "screenshots": {
+    "dev": {
+      "path": ".shots/behavior-dev.png",
+      "sha256": "37a9b963c5f72b6e7bbd5b185f6c6e603d0e3d47651b6e40aa045c16b9bce91c"
+    },
+    "file": {
+      "path": ".shots/behavior-file.png",
+      "sha256": "14cf5397c70ead445465fad63c3525babaaf707256646a7295865ceb93e4d049"
+    }
+  },
+  "scratchMediaPolicy": "ZIPs/PNGs remain ignored in .shots; only small JSON reports and hashes are persisted here. Existing required offline HTML is rebuilt."
+}

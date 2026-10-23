@@ -5,6 +5,7 @@ import { MOVE_BY_ID, SENSORS } from './camera.js';
 import { ATMOS_BY_ID } from './lighting.js';
 import { BIOMES } from './terrain.js';
 import { deg, fmt } from './util.js';
+import { readBehaviorProgram } from './behavior-program.js';
 
 const MOVE_WORDS = {
   static: ['固定机位', 'locked-off tripod shot'],
@@ -79,6 +80,11 @@ export function buildPrompt(app) {
   const [zh, en] = MOVE_WORDS[sum.move?.id] || ['自定义关键帧路径', 'custom keyframed camera path'];
   const chars = app.objects.filter((o) => o.isChar).length;
   const props = app.objects.length;
+  const sequences = app.objects.filter(o => o.motion?.active && o.motion.behavior).slice(0, 8);
+  const behaviorLines = sequences.map(o => {
+    const p = readBehaviorProgram(o.motion.behavior);
+    return `${o.name}: ` + p.clips.map(c => `${fmt(c.start, 2)}–${fmt(c.end, 2)}s ${c.anim}${c.type === 'move' ? ' → XZ(' + c.points.at(-1).filter((_, i) => i !== 1).map(v => fmt(v, 2)).join(', ') + ')' : ' at rest'}`).join(' → ');
+  });
   const atmos = ATMOS_BY_ID[app.lighting.preset];
   const aspect = app.state.aspect === 'fit' ? '16:9' : app.state.aspect;
   const speed = sum.travel > 0.5 ? (sum.travel / sum.dur > 4 ? '较快' : sum.travel / sum.dur > 1.2 ? '中速' : '缓慢') : '几乎静止';
@@ -132,6 +138,7 @@ export function buildPrompt(app) {
     `路径：${sum.keys} 个关键帧，位移 ≈${fmt(sum.travel, 1)}m，累计转向 ${sum.turn}°，高差 ${sum.lift}m。`,
     `画面：${props} 个场景元素，${chars} 个人物动作参考；光影：${atmos.name}（${atmos.en}）。`,
     ...(terrainLine ? [terrainLine] : []),
+    ...(behaviorLines.length ? ['人物行为 / Timed behaviors（绝对秒数，末态保持；文本最多列8人，完整方案见运镜JSON）：', ...behaviorLines] : []),
     ...(rhythm ? [`节奏：${rhythm}。`] : []),
     '',
     '▶ 可直接粘贴的中文提示词：',
@@ -141,7 +148,7 @@ export function buildPrompt(app) {
     `cinematic ${aspect} shot, ${atmos.en.toLowerCase()} lighting, ${sum.move?.en || 'custom camera path'}, ${speedEn} ${speed === '几乎静止' ? 'camera' : 'camera move'} over ${sum.dur}s, `
     + `${sum.fov1 ? `dolly zoom from ${sum.fov0} to ${sum.fov1} degrees horizontal FOV` : `single ${sum.fov0}\u00b0 field of view`}, `
     + `${sum.keys} keyframed positions, ${sum.turn}° of pan/roll, ${Math.abs(sum.lift)}m vertical change, `
-    + `${chars ? 'low-poly blocking characters performing a walk cycle as action reference, ' : ''}simple massing architecture as set dressing, `
+    + `${chars ? (sequences.length ? 'blocking characters following the explicit timed behaviors above, ' : 'low-poly blocking characters performing a walk cycle as action reference, ') : ''}simple massing architecture as set dressing, `
     + `no text or logos, camera-ready reference footage, natural motion blur, 24fps filmic shutter.`,
     '',
     '▶ 结构化提示词（8.3 行结构，逐行可替换）：',
@@ -207,7 +214,13 @@ export function motionJson(app) {
     }),
     subjects: app.objects
       .filter((o) => o.motion?.active && (o.motion.keys?.length || 0) > 1)
-      .map((o) => ({
+      .map((o) => o.motion.behavior ? {
+        id: o.id, name: o.name, type: o.type,
+        time_basis: 'absolute seconds; global timeline loop; final pose held; hard action/turn transitions',
+        interpolation: 'piecewise-linear, constant arc speed per move step; NOT Catmull-Rom',
+        follows_terrain: false, behavior: readBehaviorProgram(o.motion.behavior),
+        navigation_scope: 'confirmation-time static AABB snapshot with input radius/height proxy; no dynamic avoidance, support or articulated contact',
+      } : ({
         name: o.name, type: o.type, anim: o.motion.anim || null, auto_face: !!o.motion.autoFace, loop: o.motion.loop !== false,
         speed: o.motion.speed ?? 1, easing: o.motion.easing || 'linear', scope: o.motion.scope || 'global',
         follows_terrain: o.followTerrain !== false && !!app.terrain?.enabled,

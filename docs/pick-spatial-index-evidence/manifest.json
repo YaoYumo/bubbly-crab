@@ -1,0 +1,194 @@
+{
+  "date": "2026-10-17",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "scope": "CPU root-AABB BVH picking broad-phase, original precise recursive raycast and selection identities retained. Runtime diagnostic toggle; no project schema/model-library/rendering changes, LOD or Bloom.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1884811,
+    "sha256": "f81098608ccbf844f32f251d1ca62e8675885b86de17b8943606ab748f6dbf15"
+  },
+  "checks": [
+    {
+      "name": "pick-spatial-index.test.mjs",
+      "scope": "Node: 647 exact result comparisons; unsupported/skinned fallback; invalidation/release",
+      "status": "PASS"
+    },
+    {
+      "name": "pick-spatial-index-regression.mjs",
+      "scope": "DEV and real file, browser offline for file; each four fixtures render 8 warmup + 30 samples, picking 8 warmup batches + 30 alternating batches/path; each 204 semantic comparisons + native pointer select/gizmo",
+      "status": "PASS"
+    },
+    {
+      "name": "model-instancing-regression.mjs",
+      "scope": "DEV original source picking, pixel/draw, archive/edit/release",
+      "status": "PASS"
+    },
+    {
+      "name": "performance-regression.mjs",
+      "scope": "DEV original isolation, four fixtures and lifecycle assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics-regression.mjs",
+      "scope": "DEV and final file",
+      "status": "PASS"
+    },
+    {
+      "name": "window-lights.test.mjs",
+      "scope": "Node",
+      "status": "PASS"
+    },
+    {
+      "name": "window-lights-regression.mjs",
+      "scope": "DEV and final file; original shader/pixel/draw/archive/UI assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "project-resources-regression.mjs",
+      "scope": "DEV companion OBJ/MTL/PNG, archive, IDs/material policies, undo and durable reload",
+      "status": "PASS"
+    },
+    {
+      "name": "terrain-roads-regression.mjs",
+      "scope": "DEV original terrain/road geometry, edits, undo, planning and vegetation assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics.test.mjs",
+      "scope": "Node",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-surface.test.mjs",
+      "scope": "Node original area/ray assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-properties-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-planning-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build",
+      "scope": "production",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build:single",
+      "scope": "production",
+      "status": "PASS"
+    },
+    {
+      "name": "node --check",
+      "scope": "five touched source modules and two new test modules",
+      "status": "PASS"
+    },
+    {
+      "name": "git diff --check",
+      "scope": "workspace",
+      "status": "PASS"
+    }
+  ],
+  "executionNote": "Final long-sampling process and final compatibility batch both exited 0. No previous regression threshold/sample/assertion was changed. A separate PICK_SMOKE=1 development run is not included as formal evidence. Early harness attempts were corrected for road wrapper objects lacking worldPos(), normalized imported triangle coordinates, and a development HMR interruption; final complete DEV and offline runs are independent successful runs. Earlier evidence directories remain historical release snapshots. This is not a full historical suite, hardware FPS acceptance, or a claim that cold picks are faster. No LOD, Bloom, collision/avoidance index or triangle-level BVH implemented.",
+  "measurementNotes": [
+    "CPU wall-clock time, not GPU or FPS. Chromium 131 ANGLE SwiftShader.",
+    "Four fixtures, 35 screen rays + up to 14 projected object rays. Reported hot mean/p50/p95 are statistics of 30 batch means per path, not individual-click tail latency.",
+    "Cold first query is separate and may be a miss; rebuilding after edits can be slower than original picking. No idle prebuild. Engine caches are shared across paths.",
+    "Both DEV and actual network-offline file ran full render 8+30 and picking 8 warmup batches + 30 alternating A/B batches/path; smoke is excluded.",
+    "Root counts include helper roots, not just SceneObj objects or Meshes. Root sync remains O(number of roots); no arbitrary deep-edit observer. External deep edits must invalidate explicitly."
+  ],
+  "evidence": {
+    "checks.txt": {
+      "bytes": 2110,
+      "sha256": "c8bb70425763780ea243ad824b20f07b90d6b3accfa297ac53fc87fdb2cea072"
+    },
+    "compatibility-log.txt": {
+      "bytes": 13800,
+      "sha256": "b0b5a011d354ddd5be9a5f8fd01a72870f77db9491ef60ed44e8b2d0a650642d"
+    },
+    "dev-log.txt": {
+      "bytes": 2350,
+      "sha256": "cb1a995d636fe50a2182e5552077d3a4c4bf73a057c8fcbaf469d167006162e7"
+    },
+    "dev.json": {
+      "bytes": 57453,
+      "sha256": "89fb594fd47f65ff0df0581b28ae7c248aae6f5442d564d4b86d68159d0f208f"
+    },
+    "file-log.txt": {
+      "bytes": 2338,
+      "sha256": "c4369a4a661ffb1550b99bc332466db9f89faca45ec59d064c2992d6c243aee3"
+    },
+    "file.json": {
+      "bytes": 57076,
+      "sha256": "2f5f5efe78e1881facf13cc9a300d4ce310b5cff80b2b124f3bf8ce317651ccd"
+    },
+    "instancing-dev.json": {
+      "bytes": 583,
+      "sha256": "8fa69e061b86629e57718a2de2ceae427fb6d6e445ab1d297b50d543b53bdf46"
+    },
+    "performance-dev.json": {
+      "bytes": 42032,
+      "sha256": "c0cb4ef9e8c9a7be75e2e8cb8936ec22bb84530652d24f2c453631edd7a1a4a0"
+    },
+    "roads-dev.json": {
+      "bytes": 2850,
+      "sha256": "435719171c25c89236ff709c97b439b32085c16c6647e81485813fccfedf8ac7"
+    },
+    "roads-file.json": {
+      "bytes": 2850,
+      "sha256": "f06ef6604d5d3cc13bac2b8f4767dca5205792e0882dd4b62a44f9b3b653edc0"
+    },
+    "windows-dev.json": {
+      "bytes": 450,
+      "sha256": "2ddb7e69ccbfc00f2625c57953d383a7efeda4ebddfe87027e1a4f5119c79e1f"
+    },
+    "windows-file.json": {
+      "bytes": 450,
+      "sha256": "98b30e32707e1f46f6c753c5c0bf923c6a99578e5e84fcced8fa8b36b6ac0a70"
+    }
+  },
+  "sources": {
+    "src/pick-spatial-index.js": {
+      "bytes": 10724,
+      "sha256": "549208ecd5cfc4d7569d8b2ae5fcbf6d83ccfed81f5101a4b452ec3bbbedd871"
+    },
+    "src/stage.js": {
+      "bytes": 30238,
+      "sha256": "b285286bda394827dafb538f854174c581e58f15474d0b1985e0cc7037f9c994"
+    },
+    "src/app.js": {
+      "bytes": 68780,
+      "sha256": "63890eeb1855883a6eb21d79a39accc8020019a867c2f6928176c378c60b9e35"
+    },
+    "src/performance-monitor.js": {
+      "bytes": 12829,
+      "sha256": "de861f67324f5895a2f78996757d5ad90a2a6849b61928ef301b378c44d78bac"
+    },
+    "src/performance-ui.js": {
+      "bytes": 12802,
+      "sha256": "3a4a304b92892c8cd11fc27258077d513ff4abbab7ec38664302a00f98cb4819"
+    },
+    "test/pick-spatial-index.test.mjs": {
+      "bytes": 9415,
+      "sha256": "eae9d5fb642a31494f082774eba41e567a75cef890e77a01ba5bedd1af1829a9"
+    },
+    "test/pick-spatial-index-regression.mjs": {
+      "bytes": 15376,
+      "sha256": "61c9867cdd41fbd068156b7ff6d51fa176e2b1df0aaff2c58395d3a0b268b09e"
+    },
+    "test/runsuite.sh": {
+      "bytes": 1570,
+      "sha256": "417d7090382f4e1bdb02ec44ad464573ceebb5842166e12ddb8ce4f5b7393228"
+    }
+  }
+}
