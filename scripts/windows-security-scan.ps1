@@ -95,6 +95,16 @@ try {
   if (!(Test-Path -LiteralPath $scannerPath)) { throw 'Defender scan executable unavailable' }
   $report.phase = 'check scan location is not excluded'
   $prefs = Get-MpPreference
+  $report.originalRunnerPolicy = @{ paths = @($prefs.ExclusionPath); archiveScanningDisabled = $prefs.DisableArchiveScanning }
+  # Hosted CI excludes entire drives and disables archive scanning by default.
+  # Strengthen protection only in this disposable job; never copy these defaults
+  # to a user machine or label an excluded scan as clean.
+  $excludedPaths = @($prefs.ExclusionPath | Where-Object { $_ })
+  if ($excludedPaths.Count -gt 0) { Remove-MpPreference -ExclusionPath $excludedPaths }
+  Set-MpPreference -DisableArchiveScanning $false
+  $prefs = Get-MpPreference
+  if ($prefs.DisableArchiveScanning) { throw 'Archive scanning could not be enabled; no scan pass claimed' }
+  $report.runnerPolicyStrengthened = $true
   $report.exclusions = @{ paths = @($prefs.ExclusionPath); extensions = @($prefs.ExclusionExtension); processes = @($prefs.ExclusionProcess); archiveScanningDisabled = $prefs.DisableArchiveScanning }
   foreach ($excluded in @($prefs.ExclusionPath)) {
     if (!$excluded) { continue }
