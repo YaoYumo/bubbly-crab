@@ -1,14 +1,17 @@
 //! Application-owned local inference only. No arbitrary URL, command or model path.
 use serde::{Deserialize, Serialize};
-use std::{fs, io::Read, net::TcpListener, path::PathBuf, process::{Child, Command, Stdio}, sync::Mutex, time::Duration};
+use std::{fs, io::Read, path::PathBuf, process::{Child, Command, Stdio}, sync::{Arc, Mutex}, time::{Duration, Instant}};
 use tauri::Manager;
 use crate::local_ai_limits::{safe_name, shard_names};
+#[path = "local_ai_transport.rs"]
+mod transport;
 
 #[derive(Default)]
-struct Engine { child: Option<Child>, port: u16, key: String, model: String, cpu: bool, loading: bool, busy: bool, epoch: u64 }
+struct Engine { helper: Option<Arc<Mutex<Child>>>, child: Option<Child>, port: u16, key: String, model: String, cpu: bool, loading: bool, busy: bool, epoch: u64 }
 impl Engine {
     fn stop(&mut self) {
         self.epoch += 1;
+        if let Some(helper) = self.helper.take() { if let Ok(mut child) = helper.lock() { let _ = child.kill(); let _ = child.wait(); } }
         if let Some(mut child) = self.child.take() { let _ = child.kill(); let _ = child.wait(); }
         self.loading = false; self.busy = false; self.model.clear(); self.key.clear();
     }
@@ -65,9 +68,6 @@ fn engine_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     if !path.is_file() { return Err("安装包缺少本地推理引擎，请重新安装完整版本".into()); }
     Ok(path)
 }
-fn http() -> Result<reqwest::Client, String> {
-    reqwest::Client::builder().no_proxy().redirect(reqwest::redirect::Policy::none()).timeout(Duration::from_secs(300)).build().map_err(|_| "无法创建本机连接".into())
-}
 fn lock(ai: &LocalAI) -> Result<std::sync::MutexGuard<'_, Engine>, String> { ai.0.lock().map_err(|_| "本地引擎状态异常".into()) }
 
 #[tauri::command]
@@ -102,15 +102,17 @@ pub fn local_ai_stop(window: tauri::WebviewWindow, ai: tauri::State<'_, LocalAI>
 async fn ensure_loaded(app: &tauri::AppHandle, ai: &LocalAI, name: &str, cpu: bool) -> Result<(u16, String, u64), String> {
     let path = resolve_model(name)?;
     check_shards(name)?;
-    let (port, key, epoch) = {
+    let epoch = {
         let mut e = lock(ai)?;
         if e.busy || e.loading { return Err("模型正在处理上一条请求，请等待或停止".into()); }
         if e.child.as_mut().and_then(|c| c.try_wait().ok().flatten()).is_some() { e.stop(); }
         if e.child.is_some() && e.model == name && e.cpu == cpu { return Ok((e.port, e.key.clone(), e.epoch)); }
-        e.stop();
+        e.stop(); e.loading = true; e.epoch
+    };
+    let result: Result<(u16, String, u64), String> = async {
+        // Even port allocation runs outside the GUI's address space: no Winsock initialization here.
+        let port = transport::probe(app, epoch).await?;
         let binary = engine_path(app)?;
-        let listener = TcpListener::bind("127.0.0.1:0").map_err(|_| "无法分配本机推理端口")?;
-        let port = listener.local_addr().map_err(|_| "无法读取本机端口")?.port();
         let mut random = [0u8; 32];
         getrandom::fill(&mut random).map_err(|_| "无法生成本机访问口令")?;
         let key: String = random.iter().map(|b| format!("{b:02x}")).collect();
@@ -120,32 +122,40 @@ async fn ensure_loaded(app: &tauri::AppHandle, ai: &LocalAI, name: &str, cpu: bo
         let mut command = Command::new(&binary);
         command.current_dir(binary.parent().ok_or("引擎路径无效")?).args(["--host", "127.0.0.1", "--port", &port.to_string(), "--alias", "previz-local", "--ctx-size", "16384", "--parallel", "1", "--n-gpu-layers", if cpu { "0" } else { "99" }, "--api-key", &key, "--jinja", "--model"]).arg(path).stdin(Stdio::null()).stdout(Stdio::from(log.try_clone().map_err(|_| "无法写入日志")?)).stderr(Stdio::from(log));
         #[cfg(windows)] { use std::os::windows::process::CommandExt; command.creation_flags(0x08000000); }
-        drop(listener);
-        e.child = Some(command.spawn().map_err(|_| "引擎启动失败；请重新安装完整版本并检查显卡驱动")?);
-        e.port = port; e.key = key.clone(); e.model = name.into(); e.cpu = cpu; e.loading = true;
-        (port, key, e.epoch)
-    };
-    let client = http()?;
-    for _ in 0..360 {
         {
             let mut e = lock(ai)?;
             if e.epoch != epoch { return Err("模型加载已停止".into()); }
-            if e.child.as_mut().and_then(|c| c.try_wait().ok().flatten()).is_some() {
-                e.stop(); return Err("模型进程退出。请确认 GGUF 文件完整；显存不足或驱动不兼容时可勾选 CPU 模式重试，详细信息见应用日志 local-model.log".into());
-            }
+            e.child = Some(command.spawn().map_err(|_| "引擎启动失败；请重新安装完整版本并检查显卡驱动")?);
+            e.port = port; e.key = key.clone(); e.model = name.into(); e.cpu = cpu;
         }
-        if let Ok(response) = client.get(format!("http://127.0.0.1:{port}/health")).bearer_auth(&key).timeout(Duration::from_secs(1)).send().await {
-            if response.status().is_success() {
+        let deadline = Instant::now() + Duration::from_secs(180);
+        while Instant::now() < deadline {
+            {
                 let mut e = lock(ai)?;
                 if e.epoch != epoch { return Err("模型加载已停止".into()); }
-                e.loading = false;
-                return Ok((port,key,epoch));
+                if e.child.as_mut().and_then(|c| c.try_wait().ok().flatten()).is_some() {
+                    return Err("模型进程退出。请确认 GGUF 文件完整；显存不足或驱动不兼容时可勾选 CPU 模式重试，详细信息见应用日志 local-model.log".into());
+                }
             }
+            match transport::request(app, epoch, "health", port, &key, Vec::new(), 1000).await {
+                Ok(reply) if reply.status == 200 => {
+                    let mut e = lock(ai)?;
+                    if e.epoch != epoch { return Err("模型加载已停止".into()); }
+                    e.loading = false;
+                    return Ok((port, key, epoch));
+                }
+                Ok(reply) if reply.status == 503 => {},
+                Ok(reply) => return Err(format!("本机模型健康检查返回 HTTP {}，引擎已停止", reply.status)),
+                // Ordinary refusal during model load is expected; never retry a native crash.
+                Err(e) if e.contains("0x00000002") => {},
+                Err(e) => return Err(e),
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
         }
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-    if let Ok(mut e) = ai.0.lock() { if e.epoch == epoch { e.stop(); } }
-    Err("首次模型加载超时，已停止本次引擎；可检查日志或使用较小模型 / CPU 模式重试".into())
+        Err("首次模型加载超时，已停止本次引擎；可检查日志或使用较小模型 / CPU 模式重试".into())
+    }.await;
+    if result.is_err() { if let Ok(mut e) = ai.0.lock() { if e.epoch == epoch { e.stop(); } } }
+    result
 }
 fn validate_messages(messages: &[Message]) -> Result<(), String> {
     crate::local_ai_limits::validate_messages(messages.iter().map(|m| (m.role.as_str(), m.content.as_str())))
@@ -156,11 +166,10 @@ pub async fn local_ai_chat(app: tauri::AppHandle, window: tauri::WebviewWindow, 
     let (port,key,epoch) = ensure_loaded(&app, &ai, &model, cpu_only).await?;
     { let mut e = lock(&ai)?; if e.epoch != epoch || e.busy { return Err("本地模型忙或请求已取消".into()); } e.busy = true; }
     let result: Result<String,String> = async {
-        let mut response = http()?.post(format!("http://127.0.0.1:{port}/v1/chat/completions")).bearer_auth(key).json(&serde_json::json!({"model":"previz-local","messages":messages,"temperature":0.2,"max_tokens":3072,"stream":false,"response_format":{"type":"json_object"}})).send().await.map_err(|_| "本地推理连接失败或超时；可停止后重试，不会自动重复生成")?;
-        if !response.status().is_success() { return Err(format!("本地模型返回 HTTP {}，可能是上下文过长或模型不兼容",response.status().as_u16())); }
-        let mut bytes = Vec::new();
-        while let Some(chunk) = response.chunk().await.map_err(|_| "读取模型回复失败")? { if bytes.len()+chunk.len() > 1024*1024 { return Err("模型回复过大，未应用".into()); } bytes.extend_from_slice(&chunk); }
-        let json: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| "模型接口返回无效 JSON")?;
+        let body = serde_json::to_vec(&serde_json::json!({"model":"previz-local","messages":messages,"temperature":0.2,"max_tokens":3072,"stream":false,"response_format":{"type":"json_object"}})).map_err(|_| "无法编码本机请求")?;
+        let reply = transport::request(&app, epoch, "chat", port, &key, body, 300000).await?;
+        if !(200..300).contains(&reply.status) { return Err(format!("本地模型返回 HTTP {}，可能是上下文过长或模型不兼容", reply.status)); }
+        let json: serde_json::Value = serde_json::from_slice(&reply.body).map_err(|_| "模型接口返回无效 JSON")?;
         let content = json["choices"][0]["message"]["content"].as_str().ok_or("模型没有返回文本")?;
         if lock(&ai)?.epoch != epoch { return Err("本次对话已停止，结果不应用".into()); }
         Ok(content.into())

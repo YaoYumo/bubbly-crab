@@ -44,6 +44,7 @@ const manifest = {
   missingWebView2Policy: "download-bootstrapper-on-install; internet required only if runtime is absent",
   modelWeightsIncluded: false,
   localInferenceEngine: existsSync(resolve(root,"src-tauri/resources/llama/engine-source.json")) ? JSON.parse(readFileSync(resolve(root,"src-tauri/resources/llama/engine-source.json"),"utf8").replace(/^\uFEFF/,"")) : null,
+  isolatedLoopbackHelper: list(resolve(root,"src-tauri/resources/loopback")).map(entry),
   inferenceRuntime: list(resolve(root,"src-tauri/resources/llama")).map(entry),
   signed: false,
   note: installers.length

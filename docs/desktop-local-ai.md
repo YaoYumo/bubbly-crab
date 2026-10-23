@@ -1,10 +1,10 @@
-# Windows 1.3.0：本地模型一句话搭景与对话修改
+# Windows 1.3.1：本地模型一句话搭景与对话修改
 
 [下载 Windows 1.3.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089/artifacts/12483458580) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 
-1. 安装完整的 1.3.0 Windows 版。程序附带 **llama.cpp b11829 Vulkan x64** 推理引擎，不附带模型权重；无需安装 Node.js、CUDA 工具链或另开模型服务。
+1. 安装完整的 1.3.1 Windows 版。程序附带 **llama.cpp b11829 Vulkan x64** 推理引擎，不附带模型权重；无需安装 Node.js、CUDA 工具链或另开模型服务。
 2. RTX 4070 Ti / 12GB 显存建议先使用 **Qwen2.5-7B-Instruct 的 Q4_K_M GGUF**。模型来源建议：[Qwen 官方 GGUF 仓库](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/tree/main)。本环境未访问或下载该仓库文件，具体文件名、大小、许可证与完整性以发布者页面为准，避免下载来路不明的 GGUF。
 3. 打开桌面“一句话生成”→“打开模型文件夹”，把 GGUF 放进去。这个 `models` 在安装后的应用 EXE 旁边，**不是放安装器 EXE 的下载目录**，也不是 `runtime/llama`。分片模型应完整下载所有分片，选择第一片。程序不会搬动、下载、删除你的权重。
 4. 点击“刷新”。只有一个模型会自动选中；有多个可选择。输入“建一个中式院落，中间留出空地”，发送。程序首次发送时自动加载模型，后台校验后直接搭建。
@@ -23,7 +23,7 @@
 
 Rust 只执行随包固定的 `runtime/llama/llama-server.exe`，只从安装目录 `models` 选 GGUF，拒绝路径穿越、目录外符号链接与不完整分片；不会执行模型文件。GGUF 仍由复杂原生解析器读取，并非无风险，请使用可信来源。
 
-本机服务绑定 127.0.0.1 动态端口，每次启动生成256位随机口令；HTTP 客户端不使用系统代理、不跟随重定向。前端不接触端口或口令，也不能提交任意 URL、启动参数或磁盘路径。只允许本地 `main` 窗口调用这些原生命令。请求64KB上限、回复1MiB上限、推理300秒超时。程序不上传对话；引擎日志在应用日志目录 `local-model.log`，可能含本机路径等诊断资料，不会自动上传。
+本机服务绑定 127.0.0.1 动态端口，每次启动生成256位随机口令；1.3.1 将端口分配、健康检查和推理 HTTP 全部移入固定随包的 `runtime/loopback/previz-loopback.exe`。主程序只通过有界标准输入/输出交换数据，不再为本地模型创建 Tokio/reqwest 或普通 TCP 套接字。辅助进程只允许 127.0.0.1 上 `/health` 与 `/v1/chat/completions`，使用阻塞 I/O，不读取代理配置、不跟随重定向。进程自身发生访问冲突会作为退出码返回，主窗口可显示错误；超时、停止和正常退出会终止辅助进程。前端不接触端口或口令，也不能提交任意 URL、启动参数或磁盘路径。只允许本地 `main` 窗口调用这些原生命令。请求64KB上限、回复1MiB上限、推理300秒超时。程序不上传对话；引擎日志在应用日志目录 `local-model.log`，可能含本机路径等诊断资料，不会自动上传。
 
 引擎发布包固定为：
 - `https://github.com/ggml-org/llama.cpp/releases/download/b11829/llama-b11829-bin-win-vulkan-x64.zip`
@@ -32,6 +32,14 @@ Rust 只执行随包固定的 `runtime/llama/llama-server.exe`，只从安装目
 
 ## 开发与验收说明
 
-Windows 源码打包前运行 `powershell -NoProfile -File scripts/prepare-desktop-engine.ps1`，再运行 `npm run desktop:build`。推理二进制只由脚本/CI准备，不提交到 Git，不把模型权重打包。
+Windows 源码打包前运行 `powershell -NoProfile -File scripts/prepare-desktop-engine.ps1` 和 `powershell -NoProfile -File scripts/prepare-desktop-loopback.ps1`，再运行 `npm run desktop:build`。推理二进制只由脚本/CI准备，不提交到 Git，不把模型权重打包。
 
 `test/local-scene-chat-regression.mjs` 在实际桌面构建+CSP预览中使用 **模拟原生推理 IPC**，覆盖直接搭建、混合增改、一次撤销、非法/越权/不支持拒绝、大删确认、取消、文件夹按钮。它不代表真实 GGUF 推理成功。Windows CI另执行引擎 `--version`、Rust边界单元测试、原生编译、安装与窗口启动。**上述测试都不等于 4070 Ti 上 Qwen 的速度、显存占用或语义理解已实测。** 这些需要用户机器上的完整权重和实际场景验证。
+
+## 1.3.1：ASProxy64.dll 崩溃兼容性修订
+
+用户的 Windows 1.3.0 事件记录指向 `ASProxy64.dll 2.3.6.3 / 0xC0000005 / +0xC274`；引擎日志已到 `model loaded` 和 `listening`。这不是“没有放模型”的错误。记录定位到了网络拦截 DLL 内的故障点，但不是完整调用栈，也不能代表其他机器都具有相同根因。
+
+1.3.1 不修改或卸载第三方软件，不删除 DLL、不重置 Winsock、不写代理排除注册表，不自动切换 CPU 或改变模型量化。修订的目标是移除 GUI 中本地模型网络 I/O 的触发路径，并隔离辅助进程的原生崩溃。即使辅助进程仍被不兼容 DLL 影响，也应返回错误而非因该进程的访问冲突带走 GUI。
+
+编译/安装检查不会在 CI 中注入 Astrill DLL，也不会加载用户的 Qwen 权重，不能宣称用户故障已实机复现或消失。升级后仍需用户在原环境重试。

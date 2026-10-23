@@ -50,3 +50,5 @@ model-exports/
 # Bundled inference binaries are pinned/fetched in CI, not committed.
 src-tauri/resources/llama/
 **/models/*.gguf
+
+src-tauri/resources/loopback/

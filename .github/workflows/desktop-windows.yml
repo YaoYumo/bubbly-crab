@@ -27,6 +27,18 @@ jobs:
       - name: Prepare pinned local inference engine (no model weights)
         shell: pwsh
         run: ./scripts/prepare-desktop-engine.ps1
+      - name: Build and test isolated blocking loopback helper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path '.shots' -Force | Out-Null
+          ./scripts/prepare-desktop-loopback.ps1 2>&1 | Tee-Object -FilePath .shots/loopback-build.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $detail = (Get-Content .shots/loopback-build.log -Tail 40) -join "`n"
+            $detail = $detail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host "::error title=Isolated loopback build diagnostic::$detail"
+            exit $code
+          }
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - name: Build unsigned x64 installer (downloads WebView2 on user install only if missing)
@@ -80,6 +92,8 @@ jobs:
             .shots/desktop-artifacts.json
             .shots/windows-install-smoke.json
             .shots/windows-native-build.log
+            .shots/loopback-build.log
+            .shots/loopback-installed.json
             .shots/windows-ui-fixed.json
             .shots/windows-ui-baseline.json
             docs/windows-install-quickstart.md

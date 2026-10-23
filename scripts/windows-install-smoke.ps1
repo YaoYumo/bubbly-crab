@@ -37,6 +37,13 @@ try {
   if (!(Test-Path (Join-Path $target 'models/README.txt'))) { throw 'Installed model folder instructions missing' }
   & $engine --version
   if ($LASTEXITCODE -ne 0) { throw 'Installed engine cannot execute' }
+  $helper = Join-Path $target 'runtime/loopback/previz-loopback.exe'
+  if (!(Test-Path $helper)) { throw 'Installed isolated loopback helper missing' }
+  & $helper --version
+  if ($LASTEXITCODE -ne 0) { throw 'Installed loopback helper cannot execute' }
+  node test/loopback-installed.mjs $helper
+  if ($LASTEXITCODE -ne 0) { throw 'Installed loopback transport fixture failed' }
+  $report.installedLoopbackHelperValidated = $true
   $report.installedEngineValidated = $true
   $report.realGGUFInferenceValidated = $false
   # User-owned files in models must survive a silent reinstall/upgrade.
