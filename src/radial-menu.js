@@ -10,6 +10,13 @@ function sector(index,count){const a=-Math.PI/2+(index-.5)*2*Math.PI/count+.004,
 
 export function installRadialMenu(app,{actions}) {
   const canvas=app.stage.canvas,menu=el('div',{class:'radial-menu',role:'menu','aria-label':'视口右键操作',hidden:true});document.body.append(menu);
+  // Windows/WebView2 can emit contextmenu after pointerup has opened/focused
+  // the pie, retargeting it to the overlay instead of the canvas. Catch both
+  // surfaces in capture phase; leave text fields and other UI menus untouched.
+  document.addEventListener('contextmenu',e=>{
+    const path=e.composedPath();
+    if(path.includes(canvas)||path.includes(menu))e.preventDefault();
+  },true);
   let down=null,previous=null,context=null,buttons=[];
   const blocked=()=>app.state.playing||app.stage.dragging||app.stage.exporting||app.stage.exportOwner||app.exporter?.running||app.reference?.busy||app.aiScene?.busy||app.behaviors?.busy||app.roadBrush?.active||app.vegetationBrush?.active||app.state.terrainTool||app.state.dofPickMode||app.sceneRecipeBusy||app.terrain?.workflow?.busy||app.terrain?.workflow?.erosionPreview||app.terrain?.workflow?.drawing||app.roadPlanning?.picking;
   function close(restore=true){if(menu.hidden)return;menu.hidden=true;menu.replaceChildren();if(restore&&previous?.isConnected)previous.focus({preventScroll:true});}

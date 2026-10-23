@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';import fs from 'node:fs';import puppetee
 const b=await puppeteer.launch({headless:'shell',args:['--no-sandbox','--disable-dev-shm-usage'],protocolTimeout:180000});
 try{
  const p=await b.newPage(),errors=[],csp=[];p.on('pageerror',e=>errors.push(e.message));await p.setViewport({width:1440,height:1000});
- await p.evaluateOnNewDocument(()=>{window.__radialCSP=[];document.addEventListener('securitypolicyviolation',e=>__radialCSP.push(e.violatedDirective));});
+ await p.evaluateOnNewDocument(()=>{window.__radialNativeMenus=[];window.addEventListener('contextmenu',e=>{if(e.isTrusted&&e.composedPath().some(n=>n===window.app?.stage.canvas||n.classList?.contains('radial-menu')))window.__radialNativeMenus.push(e.defaultPrevented);});window.__radialCSP=[];document.addEventListener('securitypolicyviolation',e=>__radialCSP.push(e.violatedDirective));});
  if(process.env.TEST_FILE_URL)await p.setOfflineMode(true);
  await p.goto(process.env.TEST_FILE_URL||process.env.TEST_URL||'http://localhost:5174/',{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>window.__previzBooted&&window.app?.radialMenu,{timeout:90000});
  await p.evaluate(()=>{app.suspended=true;app.state.playing=false;app.clearAll();app.terrain.setEnabled(false);app.state.showHelpers=false;app.step(0,true);app.stage.render();});
@@ -12,6 +12,23 @@ try{
  const right=async(x,y)=>{await p.mouse.click(x,y,{button:'right'});await p.waitForSelector('.radial-menu:not([hidden])',{timeout:5000}).catch(async e=>{console.error('RIGHT DEBUG',await p.evaluate(({x,y})=>({x,y,w:innerWidth,hit:document.elementFromPoint(x,y)?.outerHTML.slice(0,200),playing:app.state.playing,dragging:app.stage.dragging,exporting:app.stage.exporting,owner:!!app.stage.exportOwner,busy:app.exporter.running}),{x,y}));throw e;});};
  const choose=async id=>{await p.click(`[data-radial-action="${id}"] .radial-label`);};
  let r=await rect();await right(r.x+25,r.y+75);assert.equal(await p.$$eval('.radial-item',ns=>ns.length),8);
+ // Windows/WebView2 may deliver contextmenu AFTER pointerup opens/focuses the pie.
+ // Its target can then be any overlay descendant, not the original canvas.
+ const contextMenus=await p.evaluate(()=>{
+  const cancel=n=>{const e=new MouseEvent('contextmenu',{bubbles:true,cancelable:true,composed:true,button:2});n.dispatchEvent(e);return e.defaultPrevented;};
+  const suppressed=[app.stage.canvas,document.querySelector('.radial-menu'),...document.querySelectorAll('.radial-menu button,.radial-label,.radial-label svg,.radial-label path')].map(cancel);
+  const preserved=['input','textarea','div'].map(tag=>{const n=document.createElement(tag);if(tag==='div')n.contentEditable='true';document.body.append(n);const allowed=!cancel(n);n.remove();return allowed;});
+  preserved.push(!cancel(document.querySelector('#top')));
+  return {suppressed,preserved};
+ });
+ assert.ok(contextMenus.suppressed.every(Boolean),'Canvas and every pie descendant must cancel the native context menu');
+ assert.ok(contextMenus.preserved.every(Boolean),'Editable fields and unrelated UI must retain native context menus');
+ const beforeRightOnPie=await p.evaluate(()=>({grid:app.state.grid,objects:app.objects.length}));
+ await p.click('.radial-center',{button:'right'});
+ assert.equal(await p.evaluate(()=>app.radialMenu.isOpen),true);
+ assert.deepEqual(await p.evaluate(()=>({grid:app.state.grid,objects:app.objects.length})),beforeRightOnPie);
+ const nativeMenus=await p.evaluate(()=>__radialNativeMenus);
+ assert.ok(nativeMenus.length>=2&&nativeMenus.every(Boolean),'Real right-click events on both canvas and overlay must cancel the native menu');
  const fits=await p.$eval('.radial-menu',n=>{const a=n.getBoundingClientRect(),r=app.stage.canvas.getBoundingClientRect();return a.left>=r.left&&a.top>=r.top&&a.right<=r.right&&a.bottom<=r.bottom;});assert.ok(fits);
  const grid=await p.evaluate(()=>app.state.grid);await choose('grid');assert.equal(await p.evaluate(()=>app.state.grid),!grid);
  await right(r.x+30,r.y+80);await choose('more');await p.waitForSelector('.viewport-tools-panel');
@@ -56,6 +73,6 @@ try{
  // Edge placement and narrow viewport fallback must remain on screen.
  for(const width of [1024,800]){await p.setViewport({width,height:800});await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));await p.waitForFunction(()=>app.stage.canvas.getBoundingClientRect().width>0);r=await rect();await right(r.x+r.w-5,r.y+r.h-5);assert.ok(await p.$eval('.radial-menu',n=>{const m=n.getBoundingClientRect();return m.left>=0&&m.right<=innerWidth&&m.top>=0&&m.bottom<=innerHeight;}));await p.keyboard.press('Escape');}
  assert.deepEqual(errors,[]);assert.deepEqual(await p.evaluate(()=>__radialCSP),[]);
- const report={platform:'Linux Chromium, not native Windows',top,objectPickAndActions:true,duplicateDeleteUndo:true,cancelPreservesSelection:true,rightDragPreserved:true,edgePlacement:true,narrowWindows:true,keyboard:true,exportGuard:true,compactViewportDialog:dialog,advancedOptIn:true,cancelDoesNotGenerate:true,cameraBodyPickAndActivation:true,recordKeyUndo:true,selectionAwareLauncher:true,compactGenerationAndUndo:true,settingsAndTemplatesReachable:true,inputDoesNotTriggerSceneHotkeys:true,errors,csp:await p.evaluate(()=>__radialCSP)};
+ const report={nativeContextMenuSuppressed:true,trustedRightClickEventsVerified:true,overlayRetargetingCovered:true,editableContextMenusPreserved:true,rightClickOnPieDoesNotActivate:true,platform:'Linux Chromium, not native Windows',top,objectPickAndActions:true,duplicateDeleteUndo:true,cancelPreservesSelection:true,rightDragPreserved:true,edgePlacement:true,narrowWindows:true,keyboard:true,exportGuard:true,compactViewportDialog:dialog,advancedOptIn:true,cancelDoesNotGenerate:true,cameraBodyPickAndActivation:true,recordKeyUndo:true,selectionAwareLauncher:true,compactGenerationAndUndo:true,settingsAndTemplatesReachable:true,inputDoesNotTriggerSceneHotkeys:true,errors,csp:await p.evaluate(()=>__radialCSP)};
  fs.writeFileSync(`docs/radial-ui-evidence/${mode}.json`,JSON.stringify(report,null,2));console.log('PASS',JSON.stringify(report));
 }finally{await b.close();}

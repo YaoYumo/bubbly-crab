@@ -45,3 +45,13 @@ TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome
 范围说明：没有运行完整 `npm test`。另尝试直接执行旧的 `test/scene-recipes.test.mjs` 和 `test/towngen.mjs`，受到现有用户模型静态 PNG import 的 Node 原生加载限制而失败（`ERR_UNKNOWN_FILE_EXTENSION`）；本次没有为此改变模型资源导入方式。对应生成逻辑的真实浏览器回归通过，不能据此宣称这些直接 Node 命令已通过。
 
 以上为 Linux Chromium 和模拟 IPC 检查，不是原生 Windows / WebView2 验收。本次没有新建 Windows 安装器、签名或发布版本。
+
+## 右键菜单叠加修复
+
+用户 Windows 桌面截图显示饼菜单与 WebView 默认菜单（返回 / 刷新 / 另存为等）同时出现。此前只在 canvas 上取消 `contextmenu`；Windows / WebView2 的事件时序可能在 pointerup 打开并聚焦饼菜单后，才将 `contextmenu` 派发给覆盖层。
+
+现在在 document 捕获阶段按事件路径，仅对画布与饼菜单（含中心、扇区及 SVG 后代）取消默认菜单，不全局禁用右键、不阻断指针事件或右拖平移。菜单之外的输入框、textarea、contenteditable 和无关 UI 仍保留原生菜单。
+
+回归测试先在旧实现上失败（覆盖层默认菜单未取消），修复后开发版、断网 file:// 离线版、桌面 CSP 前端预检均通过。包含浏览器实际右键事件的 `defaultPrevented` 检查、模拟 Windows 松键后重定向到覆盖层的事件、在饼菜单内右击不误执行、原有复制 / 删除 / 撤销 / 机位 / 键盘 / 右拖与回拖验证。三份 JSON 报告已更新；原截图继续作为布局参考。
+
+`npm run all`、`npm run build:desktop`、`npm run test:desktop` 均通过。本次没有原生 Windows / WebView2 实机验收，没有新建安装包、签名或发布版本；旧安装包不会自动获得源码修复。此前 Chrome 下载拦截排查仍是独立的未解决事项，不因本次 UI 修复而改变结论。

@@ -1,4 +1,9 @@
 {
+  "nativeContextMenuSuppressed": true,
+  "trustedRightClickEventsVerified": true,
+  "overlayRetargetingCovered": true,
+  "editableContextMenusPreserved": true,
+  "rightClickOnPieDoesNotActivate": true,
   "platform": "Linux Chromium, not native Windows",
   "top": [
     "Direct",
