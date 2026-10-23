@@ -10,9 +10,12 @@ const MAX_HEADERS: usize = 32768;
 
 fn line<R: BufRead>(r: &mut R, limit: usize) -> Result<String, String> {
     let mut bytes = Vec::new();
-    r.take((limit + 1) as u64).read_until(b'\n', &mut bytes).map_err(|e| e.to_string())?;
-    if bytes.len() > limit || !bytes.ends_with(b"\n") { return Err("invalid or oversized header".into()); }
-    String::from_utf8(bytes).map(|s| s.trim_end_matches(['\r', '\n']).into()).map_err(|_| "invalid header encoding".into())
+    r.take((limit + 3) as u64).read_until(b'\n', &mut bytes).map_err(|e| e.to_string())?;
+    if !bytes.ends_with(b"\n") { return Err("invalid or oversized header".into()); }
+    bytes.pop();
+    if bytes.ends_with(b"\r") { bytes.pop(); }
+    if bytes.len() > limit { return Err("invalid or oversized header".into()); }
+    String::from_utf8(bytes).map_err(|_| "invalid header encoding".into())
 }
 fn remaining(deadline: Instant) -> Result<Duration, String> {
     deadline.checked_duration_since(Instant::now()).filter(|d| !d.is_zero()).ok_or_else(|| "loopback request timed out".into())
@@ -130,6 +133,8 @@ mod tests {
     }
     fn fetch(data: &[u8]) -> Result<(u16, Vec<u8>), String> { let (port, thread) = serve(data.to_vec()); let result = request(port,"health", &"a".repeat(64), &[], Duration::from_secs(3)); let _ = thread.join(); result }
     #[test] fn content_length_and_authorization() { let (port, thread) = serve(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}".to_vec()); assert_eq!(request(port,"health", &"a".repeat(64), &[], Duration::from_secs(3)).unwrap(),(200,b"{}".to_vec())); let text = String::from_utf8(thread.join().unwrap()).unwrap(); assert!(text.starts_with("GET /health HTTP/1.1\r\n")); assert!(text.contains(&format!("Authorization: Bearer {}", "a".repeat(64)))); }
+    #[test] fn complete_wire_protocol_accepts_64_byte_key() { let (port, thread)=serve(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}".to_vec()); let input=format!("PREVIZ-LOOPBACK/1\nhealth\n{port}\n2000\n{}\n0\n", "a".repeat(64)); let mut out=Vec::new();run(&mut input.as_bytes(), &mut out).unwrap(); assert_eq!(out,b"STATUS 200\n{}");thread.join().unwrap(); }
+    #[test] fn line_limit_excludes_line_terminator() { for ending in ["\n","\r\n"] { assert_eq!(line(&mut format!("{}{}", "a".repeat(64),ending).as_bytes(),64).unwrap().len(),64); } assert!(line(&mut format!("{}\n", "a".repeat(65)).as_bytes(),64).is_err()); assert!(line(&mut "a".repeat(64).as_bytes(),64).is_err()); }
     #[test] fn chunked() { assert_eq!(fetch(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n2\r\n{}\r\n0\r\n\r\n").unwrap().1, b"{}"); }
     #[test] fn close_delimited() { assert_eq!(fetch(b"HTTP/1.0 200 OK\r\n\r\n{}").unwrap().1, b"{}"); }
     #[test] fn redirects_not_followed() { assert_eq!(fetch(b"HTTP/1.1 302 Found\r\nLocation: https://example.invalid/\r\nContent-Length: 0\r\n\r\n").unwrap().0, 302); }
