@@ -1,0 +1,54 @@
+{
+  "artifactId": 12475121975,
+  "expectedSource": "e9b4e00d2ea4054f6598586082ea77460452af36",
+  "status": "CHECK_FAILED_OR_UNAVAILABLE",
+  "phase": "check scan location is not excluded",
+  "scanner": "Microsoft Defender on GitHub Windows runner",
+  "archiveDigestVerified": true,
+  "binaryHashesVerified": true,
+  "defender": {
+    "productVersion": "4.18.26090.9",
+    "antivirusEnabled": true,
+    "serviceEnabled": true,
+    "signatureDate": "10/22/2026 20:19:07",
+    "signatures": "1.461.158.0",
+    "engineVersion": "1.1.26090.9"
+  },
+  "signatureUpdate": "success",
+  "scanExitCode": null,
+  "threats": [],
+  "note": "A no-detection result is not a browser reputation verdict or proof of safety. Do not override the browser block based on this report.",
+  "artifact": {
+    "name": "previz-lab-windows-x64-unsigned",
+    "sourceCommit": "e9b4e00d2ea4054f6598586082ea77460452af36",
+    "bytes": 4775704,
+    "githubDigest": "sha256:bcfcf766250b9ea92868795dfdb189e9cc678e571162e6328694455660238176"
+  },
+  "archiveDigest": "sha256:bcfcf766250b9ea92868795dfdb189e9cc678e571162e6328694455660238176",
+  "binaries": [
+    {
+      "bytes": 2266794,
+      "sha256": "8850b1b9d5f9cb204e8f0c3c5202dfcdbe4ab14577f001b144647b7f9a4e46c2",
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.2.0_x64-setup.exe"
+    },
+    {
+      "bytes": 4584448,
+      "sha256": "2f2794b340dd64b8967493565a107934ca97992c5b395d16c4234f9a9a324ca1",
+      "path": "src-tauri/target/release/previz-lab.exe"
+    }
+  ],
+  "exclusions": {
+    "archiveScanningDisabled": true,
+    "paths": [
+      "C:\\",
+      "D:\\"
+    ],
+    "extensions": [
+      null
+    ],
+    "processes": [
+      null
+    ]
+  },
+  "error": "System.Management.Automation.RuntimeException"
+}
