@@ -9,7 +9,7 @@ try{
   window.isTauri=true;window.__TAURI_INTERNALS__={invoke:async(command,args)=>{__calls.push(command);
    if(command==='local_ai_status')return{models:[{name:'fixture.gguf',bytes:5000000}],folder:'C:/PREVIZ LAB/models',enginePresent:true,loadedModel:'',loading:false,busy:false};
    if(command==='local_ai_open_folder'){__folderOpened++;return;}
-   if(command==='local_ai_stop'){window.__rejectChat?.(Error('已停止'));window.__rejectChat=null;return;}
+   if(command==='local_ai_stop'){window.__rejectChat?.('已停止');window.__rejectChat=null;return;}
    if(command!=='local_ai_chat')throw Error('Unexpected IPC: '+command);
    const data=JSON.parse(args.messages[1].content);window.__lastChat=data;
    const key=data.catalog.find(a=>a.key.startsWith('cn:hall:')).key;
@@ -41,6 +41,11 @@ try{
  await p.evaluate(()=>{app.objects[0].locked=false;});await send('清空这些建筑','delete');assert.equal(await p.evaluate(()=>app.objects.length),3);
  confirmDelete=true;await send('确认清空这些建筑','delete');assert.equal(await p.evaluate(()=>app.objects.length),0);await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.length),3);
  await p.evaluate(()=>window.__chatMode='wait');await p.type('[data-local-chat-input]','再添加一个');await p.click('[data-local-chat-send]');await p.waitForFunction(()=>!!window.__rejectChat);await p.click('[data-local-chat-stop]');await p.waitForFunction(()=>!app.localScene.busy);assert.equal(await p.evaluate(()=>app.objects.length),3);
+ // Closing during an outstanding native request must not leave the entire app inert.
+ await p.evaluate(()=>window.__chatMode='wait');await p.type('[data-local-chat-input]','再试一次');await p.click('[data-local-chat-send]');await p.waitForFunction(()=>!!window.__rejectChat);await p.evaluate(()=>[...document.querySelectorAll('.local-chat-panel button')].find(n=>n.textContent==='关闭').click());await p.waitForSelector('.local-chat-overlay',{hidden:true});assert.equal(await p.$eval('#app',n=>n.inert),false);assert.equal(await p.evaluate(()=>app.objects.length),3);
+ await p.click('.viewport-create');await p.waitForSelector('[data-local-chat-send]:not([disabled])');
+ // Existing v1 edit mode has NOT acquired the private conversational add permission.
+ const legacyRefused=await p.evaluate(async()=>{const w=app.aiScene,permissions={mode:'edit',editableIds:[app.objects[0].id],preserveTerrain:true},c=await w.context(permissions);try{await w.prepare({schema:'previz-ai-scene/1',id:'legacy',name:'legacy',baseFingerprint:c.baseFingerprint,mode:'edit',bounds:c.bounds,seed:12345,terrain:'preserve',durationSeconds:c.durationSeconds,operations:[{op:'add',id:'unauthorized-add',key:app.objects[0].key,pos:[-80,0,80],placement:'ground'}]},permissions);return false;}catch(e){return /不允许新增/.test(e.message);}});assert.equal(legacyRefused,true);
  assert.equal(await p.evaluate(()=>__folderOpened),1);assert.ok((await p.evaluate(()=>__calls)).includes('local_ai_stop'));
  const snapshot=await p.evaluate(()=>({objects:app.objects.length,messages:app.localScene.messages.map(m=>({role:m.role,text:m.text})),ipc:__calls,csp:__chatCSP}));assert.deepEqual(snapshot.csp,[]);assert.deepEqual(errors,[]);
  fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,errors,realGGUF:false},null,2));

@@ -38,7 +38,7 @@ try{
  const imported=await drag(customKey,'library-thumbnail');
  // Clicking still places once after returning from a drag, and control dragstart
  // cannot leak a model payload (delete/move remain buttons rather than sources).
- const count=await p.evaluate(()=>app.objects.length);await p.click(`[data-asset-key="${customKey}"] .library-place`);assert.equal(await p.evaluate(()=>app.objects.length),count+1);
+ const count=await p.evaluate(()=>app.objects.length);await p.click(`[data-asset-key="${customKey}"] .library-place`);await p.waitForFunction(n=>app.objects.length===n+1,{},count);assert.equal(await p.evaluate(()=>app.objects.length),count+1);
  const outside=await p.$eval('#top',n=>{const r=n.getBoundingClientRect();return{x:Math.round(r.left+25),y:Math.round(r.top+15)};});
  const source=await p.$eval(`[data-asset-key="${customKey}"] .library-thumbnail`,n=>{const r=n.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};});
  const cancelCount=await p.evaluate(()=>app.objects.length);

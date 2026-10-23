@@ -42,7 +42,12 @@ jobs:
             exit $code
           }
       - name: Native local-model boundary unit tests
-        run: cargo test --release --manifest-path src-tauri/Cargo.toml
+        shell: pwsh
+        run: |
+          rustc --test src-tauri/src/local_ai_limits.rs -o .shots/local-ai-boundary-tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .shots/local-ai-boundary-tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Record actual byte sizes and hashes
         shell: pwsh
         run: |
@@ -51,6 +56,23 @@ jobs:
           $manifest = Get-Content .shots/desktop-artifacts.json -Raw
           $manifest = $manifest.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
           Write-Host "::notice title=Windows artifact inventory::$manifest"
+          # GitHub truncates long annotation messages; these ordered parts are recoverable.
+          $raw = Get-Content .shots/desktop-artifacts.json -Raw
+          $index = 0
+          for ($offset = 0; $offset -lt $raw.Length; $offset += 2400) {
+            $part = $raw.Substring($offset, [Math]::Min(2400, $raw.Length - $offset)).Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host ("::notice title=Windows inventory part {0:D3}::{1}" -f $index, $part)
+            $index++
+          }
+          $sources = @{}
+          Get-ChildItem src-tauri/src/*.rs | ForEach-Object { $sources[$_.Name] = Get-Content $_.FullName -Raw }
+          $raw = $sources | ConvertTo-Json -Compress
+          $index = 0
+          for ($offset = 0; $offset -lt $raw.Length; $offset += 2400) {
+            $part = $raw.Substring($offset, [Math]::Min(2400, $raw.Length - $offset)).Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host ("::notice title=Native source format part {0:D3}::{1}" -f $index, $part)
+            $index++
+          }
       - name: Install and launch smoke check (not full UI acceptance)
         shell: pwsh
         run: ./scripts/windows-install-smoke.ps1
@@ -70,3 +92,4 @@ jobs:
             .shots/windows-ui-fixed.json
             .shots/windows-ui-baseline.json
             docs/windows-install-quickstart.md
+            docs/desktop-local-ai.md

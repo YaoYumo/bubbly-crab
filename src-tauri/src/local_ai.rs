@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 use std::{fs, io::Read, net::TcpListener, path::PathBuf, process::{Child, Command, Stdio}, sync::Mutex, time::Duration};
 use tauri::Manager;
+use crate::local_ai_limits::{safe_name, shard_names};
 
 #[derive(Default)]
 struct Engine { child: Option<Child>, port: u16, key: String, model: String, cpu: bool, loading: bool, busy: bool, epoch: u64 }
@@ -39,9 +40,6 @@ fn model_folder() -> Result<PathBuf, String> {
     fs::create_dir_all(&folder).map_err(|_| "无法创建模型文件夹，请检查安装目录权限")?;
     folder.canonicalize().map_err(|_| "无法读取模型文件夹".into())
 }
-fn safe_name(name: &str) -> bool {
-    !name.is_empty() && name.len() < 240 && name.to_ascii_lowercase().ends_with(".gguf") && !name.chars().any(|c| matches!(c, '/' | '\\' | ':')) && !name.starts_with('.')
-}
 fn resolve_model(name: &str) -> Result<PathBuf, String> {
     if !safe_name(name) { return Err("请选择 models 文件夹里的 GGUF 模型，不接受任意路径".into()); }
     let folder = model_folder()?;
@@ -56,10 +54,8 @@ fn resolve_model(name: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 fn check_shards(name: &str) -> Result<(), String> {
-    if let Some((prefix, suffix)) = name.rsplit_once("-00001-of-") {
-        let total: u32 = suffix.to_ascii_lowercase().strip_suffix(".gguf").ok_or("分片文件名无效")?.parse().map_err(|_| "分片数量无效")?;
-        if !(1..=64).contains(&total) { return Err("模型分片数量超出限制".into()); }
-        for n in 1..=total { resolve_model(&format!("{prefix}-{n:05}-of-{total:05}.gguf")).map_err(|_| "模型分片缺失或链接到了 models 文件夹之外，请将所有分片完整放在一起")?; }
+    for shard in shard_names(name)? {
+        resolve_model(&shard).map_err(|_| "模型分片缺失或链接到了 models 文件夹之外，请将所有分片完整放在一起")?;
     }
     Ok(())
 }
@@ -152,11 +148,7 @@ async fn ensure_loaded(app: &tauri::AppHandle, ai: &LocalAI, name: &str, cpu: bo
     Err("首次模型加载超时，已停止本次引擎；可检查日志或使用较小模型 / CPU 模式重试".into())
 }
 fn validate_messages(messages: &[Message]) -> Result<(), String> {
-    if messages.is_empty() || messages.len() > 12 { return Err("对话消息数量超出限制".into()); }
-    let mut bytes = 0;
-    for m in messages { if !["system", "user", "assistant"].contains(&m.role.as_str()) { return Err("消息角色无效".into()); } bytes += m.content.len(); }
-    if bytes > 64000 { return Err("场景或对话过长，请缩小场景后再试".into()); }
-    Ok(())
+    crate::local_ai_limits::validate_messages(messages.iter().map(|m| (m.role.as_str(), m.content.as_str())))
 }
 #[tauri::command]
 pub async fn local_ai_chat(app: tauri::AppHandle, window: tauri::WebviewWindow, ai: tauri::State<'_, LocalAI>, model: String, messages: Vec<Message>, cpu_only: bool) -> Result<String, String> {
@@ -175,19 +167,4 @@ pub async fn local_ai_chat(app: tauri::AppHandle, window: tauri::WebviewWindow, 
     }.await;
     if let Ok(mut e) = ai.0.lock() { if e.epoch == epoch { e.busy = false; } }
     result
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test] fn model_names_are_not_paths() {
-        assert!(safe_name("Qwen2.5-7B-Instruct-Q4_K_M.gguf"));
-        for n in ["../model.gguf", "C:\\x.gguf", "x.exe", ".hidden.gguf", "x/y.gguf", ""] { assert!(!safe_name(n)); }
-    }
-    #[test] fn messages_are_bounded_data() {
-        assert!(validate_messages(&[Message{role:"user".into(),content:"搭建庭院".into()}]).is_ok());
-        assert!(validate_messages(&[Message{role:"tool".into(),content:"x".into()}]).is_err());
-        assert!(validate_messages(&[Message{role:"user".into(),content:"x".repeat(64001)}]).is_err());
-        assert!(validate_messages(&[]).is_err());
-    }
 }

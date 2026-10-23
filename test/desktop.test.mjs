@@ -51,7 +51,7 @@ assert.ok(nativeModel.includes('127.0.0.1:0') && nativeModel.includes('.no_proxy
 assert.ok(nativeModel.includes('authorize(&window)') && nativeModel.includes('path.parent() != Some(folder.as_path())'));
 assert.ok(nativeModel.includes('getrandom::fill') && nativeModel.includes('response.chunk().await'));
 assert.ok(!nativeModel.includes('cmd.exe') && !nativeModel.includes('powershell.exe'));
-assert.ok(nativeModel.includes('tauri.localhost') && nativeModel.includes('64000'));
+assert.ok(nativeModel.includes('tauri.localhost') && readFileSync('src-tauri/src/local_ai_limits.rs','utf8').includes('64000'));
 assert.deepEqual(cfg.bundle.resources, {'resources/llama/':'runtime/llama/','resources/model-folder/':'models/'});
 const ico = readFileSync("src-tauri/icons/icon.ico");
 assert.equal(ico.readUInt16LE(2), 1);

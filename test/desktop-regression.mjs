@@ -552,7 +552,7 @@ try {
   await page.waitForFunction(() =>
     document
       .querySelector("[data-reference-review]")
-      .textContent.includes("轻量桌面版未内置"),
+      .textContent.includes("此网关入口仅用于网页版"),
   );
   assert.equal(
     await page.$(".reference-legacy"),
@@ -568,7 +568,7 @@ try {
   await page.waitForFunction(() =>
     document
       .querySelector("[data-reference-review]")
-      .textContent.includes("轻量桌面版未内置"),
+      .textContent.includes("此网关入口仅用于网页版"),
   );
   report.gatewayBlockedBeforeFetch = true;
   const offline = await page.evaluate(async () => {

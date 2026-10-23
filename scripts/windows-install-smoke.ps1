@@ -31,6 +31,24 @@ try {
   if ($install.ExitCode -ne 0) { throw "Installer returned $($install.ExitCode)" }
   $exe = Join-Path $target 'previz-lab.exe'
   if (!(Test-Path $exe)) { throw "Installed executable missing: $exe" }
+  $engine = Join-Path $target 'runtime/llama/llama-server.exe'
+  if (!(Test-Path $engine)) { throw 'Installed local inference engine missing from fixed resource path' }
+  if (!(Test-Path (Join-Path $target 'runtime/llama/LICENSE-llama.cpp.txt'))) { throw 'Installed engine license missing' }
+  if (!(Test-Path (Join-Path $target 'models/README.txt'))) { throw 'Installed model folder instructions missing' }
+  & $engine --version
+  if ($LASTEXITCODE -ne 0) { throw 'Installed engine cannot execute' }
+  $report.installedEngineValidated = $true
+  $report.realGGUFInferenceValidated = $false
+  # User-owned files in models must survive a silent reinstall/upgrade.
+  $sentinel = Join-Path $target 'models/user-preservation.fixture'
+  [System.IO.File]::WriteAllText($sentinel,'User-owned model folder sentinel, not a model weight.')
+  $sentinelHash = (Get-FileHash $sentinel -Algorithm SHA256).Hash
+  $reinstall = Start-Process -FilePath $installer.FullName -ArgumentList "/S /D=$target" -PassThru
+  if (!$reinstall.WaitForExit(180000)) { $reinstall.Kill(); throw 'Reinstall timed out' }
+  if ($reinstall.ExitCode -ne 0 -or !(Test-Path $sentinel)) { throw 'Reinstall did not preserve user model folder content' }
+  if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $sentinelHash) { throw 'Reinstall changed user model folder content' }
+  Remove-Item $sentinel
+  $report.userModelFolderPreservedOnReinstall = $true
   $report.installed = $true
   Start-Sleep -Seconds 2
   $app = Start-Process -FilePath $exe -PassThru

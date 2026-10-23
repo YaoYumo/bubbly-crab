@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod local_ai;
+mod local_ai_limits;
 
 fn main() {
     // Local-only commands own a fixed bundled llama.cpp process; no arbitrary URL or shell.
