@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [arena/3f9ececc-bubbly-crab]
-    paths: [src-tauri/Cargo.toml]
+    paths: ['src-tauri/**', 'scripts/prepare-desktop*.ps1', '.github/workflows/desktop-windows.yml']
 permissions:
   contents: read
 jobs:
@@ -26,7 +26,13 @@ jobs:
       - run: node test/camera-edit.test.mjs
       - name: Prepare pinned local inference engine (no model weights)
         shell: pwsh
-        run: ./scripts/prepare-desktop-engine.ps1
+        run: |
+          try { ./scripts/prepare-desktop-engine.ps1 }
+          catch {
+            $detail = $_.Exception.Message.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host "::error title=Pinned engine preparation diagnostic::$detail"
+            exit 1
+          }
       - name: Build and test isolated blocking loopback helper
         shell: pwsh
         run: |
