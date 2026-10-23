@@ -588,7 +588,8 @@ export class Terrain {
     } else if (d.h64) this.unpack(d.h64);
     else this.refresh();
     this.workflow?.restore(d.workflow);
-    this.app.bus.emit('terrain');
+    // A restored snapshot already contains authored transforms/heights; don't refit them again.
+    this.app.bus.emit('terrain', { restored: true });
   }
 
   // ================= UI 同步 =================

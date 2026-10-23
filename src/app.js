@@ -973,7 +973,7 @@ export class App {
       this.bus.emit('select');
     });
     st.bus.on('perf', () => this.lighting.update());
-    st.bus.on('terrain', () => this.refitAll());           // 地形被改过 → 贴面/散件/地基全部重算
+    st.bus.on('terrain', event => { if (!event?.restored) this.refitAll(); });           // 地形被改过 → 贴面/散件/地基全部重算
   }
 
   onGizmoChange(obj) {

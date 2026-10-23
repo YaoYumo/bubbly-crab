@@ -1,3 +1,4 @@
+import { compileConversationTerrain } from "./local-scene-terrain.js";
 import {
   lowerAISceneRelations,
   checkAIRelationClearance,
@@ -260,7 +261,11 @@ export class AISceneWorkflow {
   }
   async prepare(input, permissions, onProgress = () => {}) {
     this.checkIdle();
-    const p = validateEnvelope(cloneData(input)),
+    const p = validateEnvelope(cloneData(input), {
+        allowEmptyOperations:
+          permissions?.conversational === true &&
+          !!permissions?.conversationTerrain,
+      }),
       a = this.app;
     if (!permissions || p.mode !== permissions.mode)
       throw Error("蓝图模式与用户授权不一致");
@@ -306,7 +311,118 @@ export class AISceneWorkflow {
       for (const o of a.objects)
         if (o.root.visible && o.type !== "road_intersection")
           sourceBoxes.set(o.id, new THREE.Box3().setFromObject(o.root));
+      const protectionBoxes = new Map();
+      for (const id of protectedIds) {
+        const root = a.byId(id)?.root;
+        if (root)
+          protectionBoxes.set(
+            id,
+            sourceBoxes.get(id) || new THREE.Box3().setFromObject(root),
+          );
+      }
       const doc = cloneData(before);
+      let terrainChange = null;
+      if (permissions.conversationTerrain !== undefined) {
+        if (permissions.conversational !== true || p.terrain !== "preserve")
+          throw Error("仅对话内部事务可编辑地形");
+        terrainChange = await compileConversationTerrain(
+          a.terrain,
+          before.terrain,
+          permissions.conversationTerrain,
+          {
+            checkpoint: async () => {
+              signal.throwIfAborted();
+              await pause();
+              signal.throwIfAborted();
+            },
+            protect: (region) => {
+              for (const id of protectedIds) {
+                const box = protectionBoxes.get(id);
+                if (
+                  !region ||
+                  (box &&
+                    box.max.x >= region.minX &&
+                    box.min.x <= region.maxX &&
+                    box.max.z >= region.minZ &&
+                    box.min.z <= region.maxZ)
+                )
+                  throw Error("地形修改范围触及锁定 / 保护对象：" + id);
+              }
+            },
+          },
+        );
+        doc.terrain = terrainChange.document;
+        warnings.push(...terrainChange.warnings);
+        changes.terrain = {
+          actions: terrainChange.actions,
+          overwrite: terrainChange.overwrite,
+        };
+        if (
+          terrainChange.heightChanged &&
+          !terrainChange.groundObjects &&
+          before.objects.some((o) => o.key)
+        )
+          warnings.push(
+            "原有静态模型保留世界高度；如需跟随新地形，可继续说让原有建筑贴地",
+          );
+        if (terrainChange.groundObjects)
+          for (const o of doc.objects) {
+            if (
+              !o.key ||
+              protectedIds.has(o.id) ||
+              !permissions.editableIds?.includes(o.id)
+            )
+              continue;
+            if (
+              o.motion?.active ||
+              p.operations?.some((op) => op.objectId === o.id)
+            )
+              continue;
+            const dy = terrainChange.heightAt(o.pos[0], o.pos[2]) - o.pos[1];
+            const box = sourceBoxes
+              .get(o.id)
+              ?.clone()
+              .translate(new THREE.Vector3(0, dy, 0));
+            if (box)
+              for (const [id, other] of protectionBoxes)
+                if (box.intersectsBox(other))
+                  throw Error("贴地进入保护对象：" + id);
+            if (Math.abs(dy) > 1e-6) {
+              o.pos[1] += dy;
+              changes.modified.push(o.id);
+              sourceBoxes.get(o.id)?.translate(new THREE.Vector3(0, dy, 0));
+            }
+          }
+      }
+      const terrainEnabled = terrainChange
+        ? doc.terrain.enabled
+        : a.terrain.enabled;
+      const heightAt = terrainChange
+        ? terrainChange.heightAt
+        : (x, z) => a.terrain.heightAt(x, z);
+      const roadPermission = (id) => {
+        ident(id);
+        const road = doc.objects.find(
+          (o) => o.id === id && o.type === "road_brush",
+        );
+        if (
+          !permissions.conversational ||
+          p.mode !== "edit" ||
+          !road ||
+          protectedIds.has(id) ||
+          !permissions.editableIds?.includes(id)
+        )
+          throw Error("无权修改道路：" + id);
+        if (
+          a.objects.some(
+            (o) =>
+              protectedIds.has(o.id) &&
+              ["road_brush", "road_intersection"].includes(o.type),
+          )
+        )
+          throw Error("修改道路不能重算锁定 / 保护路网");
+        return road;
+      };
       if (p.mode === "replace") {
         changes.removed = before.objects
           .filter((o) => o.type !== "road_intersection")
@@ -326,9 +442,7 @@ export class AISceneWorkflow {
         );
       }
       const expanded = p.recipe
-        ? expandRecipe(p, (x, z) =>
-            a.terrain.enabled ? a.terrain.heightAt(x, z) : 0,
-          )
+        ? expandRecipe(p, (x, z) => (terrainEnabled ? heightAt(x, z) : 0))
         : { operations: p.operations, warnings: [] };
       const lowered = lowerAISceneRelations({
         plan: p,
@@ -337,9 +451,7 @@ export class AISceneWorkflow {
         permissions,
         protectedIds,
         heightAt: (x, z) =>
-          p.terrain !== "flat" && a.terrain.enabled
-            ? a.terrain.heightAt(x, z)
-            : 0,
+          p.terrain !== "flat" && terrainEnabled ? heightAt(x, z) : 0,
       });
       expanded.operations = lowered.operations;
       if (p.relations) {
@@ -382,23 +494,68 @@ export class AISceneWorkflow {
             op.name.length > 120)
         )
           throw Error("对象名称需1–120字符");
-        if (op.op === "add" || op.op === "road") {
+        if (op.op === "removeRoad") {
+          exact(op, ["op", "objectId"], "删除道路");
+          roadPermission(op.objectId);
+          if (touched.has(op.objectId)) throw Error("同一道路重复修改");
+          touched.add(op.objectId);
+          doc.objects = doc.objects.filter((o) => o.id !== op.objectId);
+          changes.removed.push(op.objectId);
+          for (const shot of doc.shots)
+            if (shot.targetId === op.objectId) {
+              shot.targetId = null;
+              warnings.push("删除道路将清除机位的主体引用");
+            }
+          continue;
+        }
+        if (op.op === "add" || op.op === "road" || op.op === "roadEdit") {
           if (p.mode === "edit" && permissions.conversational !== true)
             throw Error(
               "局部模式只允许变换/重建/删除授权对象，不允许新增对象或道路",
             );
-          ident(op.id);
-          if (ids.has(op.id)) throw Error("对象ID重复：" + op.id);
-          ids.add(op.id);
-          if (op.op === "road") {
+          const editRoad = op.op === "roadEdit";
+          let oldRoad;
+          if (editRoad) {
             exact(
               op,
+              ["op", "objectId", "name", "points", "width", "roadType"],
+              "修改道路",
+            );
+            oldRoad = roadPermission(op.objectId);
+            if (touched.has(op.objectId)) throw Error("同一道路重复修改");
+            touched.add(op.objectId);
+            if (
+              !["points", "width", "roadType", "name"].some(
+                (k) => op[k] !== undefined,
+              )
+            )
+              throw Error("道路修改不能为空");
+          } else {
+            ident(op.id);
+            if (ids.has(op.id)) throw Error("对象ID重复：" + op.id);
+            ids.add(op.id);
+          }
+          if (op.op === "road" || editRoad) {
+            const roadOp = editRoad
+              ? {
+                  op: "road",
+                  id: oldRoad.id,
+                  name: op.name ?? oldRoad.name,
+                  points: op.points ?? oldRoad.points,
+                  width: op.width ?? oldRoad.width,
+                  roadType: op.roadType ?? oldRoad.roadType,
+                }
+              : op;
+            exact(
+              roadOp,
               ["op", "id", "name", "points", "width", "roadType"],
               "道路",
             );
-            finite(op.width, 2, 20, "路宽");
+            finite(roadOp.width, 2, 20, "路宽");
             if (
-              !["asphalt", "concrete", "gravel", "garden"].includes(op.roadType)
+              !["asphalt", "concrete", "gravel", "garden"].includes(
+                roadOp.roadType,
+              )
             )
               throw Error("道路类型无效");
             if (
@@ -410,43 +567,43 @@ export class AISceneWorkflow {
             )
               throw Error("新增道路会重算路口，不能触及锁定 / 保护路网");
             if (
-              !Array.isArray(op.points) ||
-              op.points.length < 2 ||
-              op.points.length > 128
+              !Array.isArray(roadOp.points) ||
+              roadOp.points.length < 2 ||
+              roadOp.points.length > 128
             )
               throw Error("道路需2–128点");
             let distance = 0;
-            op.points.forEach((v, n) => {
+            roadOp.points.forEach((v, n) => {
               vec(v, 3, -600, 600, "道路点");
               if (!inBounds(v, p.bounds)) throw Error("道路点超出范围");
               if (n)
                 distance += new THREE.Vector3(...v).distanceTo(
-                  new THREE.Vector3(...op.points[n - 1]),
+                  new THREE.Vector3(...roadOp.points[n - 1]),
                 );
             });
             if (distance < 1) throw Error("道路长度不足");
             const road = {
-              id: op.id,
-              name: String(op.name || "AI道路").slice(0, 120),
+              id: roadOp.id,
+              name: String(roadOp.name || "AI道路").slice(0, 120),
               type: "road_brush",
-              points: op.points,
-              width: op.width,
-              roadType: op.roadType,
-              fillet: false,
-              visible: true,
+              points: roadOp.points,
+              width: roadOp.width,
+              roadType: roadOp.roadType,
+              fillet: oldRoad?.fillet ?? false,
+              visible: oldRoad?.visible ?? true,
               locked: false,
-              terrainMode: "follow",
-              terrainOffset: 0.02,
+              terrainMode: oldRoad?.terrainMode ?? "follow",
+              terrainOffset: oldRoad?.terrainOffset ?? 0.02,
             };
             // Check a conservative corridor against protected objects before touching the live road registry.
             for (const [id, box] of sourceBoxes)
               if (protectedIds.has(id)) {
-                const corridor = box.clone().expandByScalar(op.width / 2);
+                const corridor = box.clone().expandByScalar(roadOp.width / 2);
                 corridor.min.y = -10000;
                 corridor.max.y = 10000;
-                for (let j = 1; j < op.points.length; j++) {
-                  const start = new THREE.Vector3(...op.points[j - 1]),
-                    end = new THREE.Vector3(...op.points[j]),
+                for (let j = 1; j < roadOp.points.length; j++) {
+                  const start = new THREE.Vector3(...roadOp.points[j - 1]),
+                    end = new THREE.Vector3(...roadOp.points[j]),
                     delta = end.clone().sub(start),
                     hit = new THREE.Ray(
                       start,
@@ -459,8 +616,14 @@ export class AISceneWorkflow {
                     throw Error("新道路进入保护对象：" + id);
                 }
               }
-            doc.objects.push(road);
-            changes.added.push(op.id);
+            if (editRoad) {
+              const index = doc.objects.findIndex((o) => o.id === oldRoad.id);
+              doc.objects[index] = { ...oldRoad, ...road };
+              changes.modified.push(oldRoad.id);
+            } else {
+              doc.objects.push(road);
+              changes.added.push(roadOp.id);
+            }
             continue;
           }
           exact(
@@ -500,8 +663,8 @@ export class AISceneWorkflow {
               op.pos[1] +
                 (op.placement === "ground" &&
                 p.terrain !== "flat" &&
-                a.terrain.enabled
-                  ? a.terrain.heightAt(op.pos[0], op.pos[2])
+                terrainEnabled
+                  ? heightAt(op.pos[0], op.pos[2])
                   : 0),
               op.pos[2],
             ],
@@ -584,19 +747,19 @@ export class AISceneWorkflow {
         if (box.isEmpty()) throw Error("资产几何为空");
         if (
           p.terrain !== "flat" &&
-          a.terrain.enabled &&
-          Math.abs(o.pos[1] - a.terrain.heightAt(o.pos[0], o.pos[2])) > 0.25
+          terrainEnabled &&
+          Math.abs(o.pos[1] - heightAt(o.pos[0], o.pos[2])) > 0.25
         )
           warnings.push(
             `${o.name}离中心地表较远：请检查absolute位置 / 悬空，或使用placement:ground`,
           );
-        if (p.terrain !== "flat" && a.terrain.enabled) {
+        if (p.terrain !== "flat" && terrainEnabled) {
           const hs = [
             [box.min.x, box.min.z],
             [box.min.x, box.max.z],
             [box.max.x, box.min.z],
             [box.max.x, box.max.z],
-          ].map(([x, z]) => a.terrain.heightAt(x, z));
+          ].map(([x, z]) => heightAt(x, z));
           if (Math.max(...hs) - Math.min(...hs) > 0.5)
             warnings.push(
               `${o.name}占地地表起伏较大：可能悬空/穿坡，未自动找平`,
@@ -632,7 +795,10 @@ export class AISceneWorkflow {
                 3) *
               (n.isInstancedMesh ? n.count : 1);
         });
-        if (triangles > 2000000) throw Error("候选资产超过200万三角形预算");
+        if (triangles > 2000000)
+          throw Error(
+            "候选资产超过200万三角形预算；请减少高细节建筑数量或分轮搭建，场景未改变",
+          );
         onProgress({ i: i + 1, total: expanded.operations.length });
         if (i % 3 === 0) await pause();
       }
@@ -679,6 +845,7 @@ export class AISceneWorkflow {
       if ((await fingerprint(a)) !== base)
         throw Error("准备期间工程已变化，候选未发布");
       signal.throwIfAborted();
+      changes.modified = [...new Set(changes.modified)];
       changes.camerasAdded = doc.shots
         .filter((s) => !before.shots.some((o) => o.id === s.id))
         .map((s) => s.id);
@@ -839,6 +1006,7 @@ export class AISceneWorkflow {
     try {
       a.loadJson(cloneData(current.document));
       await a.projectAssets.ready();
+      await a.terrain.workflow.ready();
       Object.assign(a.state, state, {
         duration: current.document.state.duration,
       });
@@ -872,6 +1040,7 @@ export class AISceneWorkflow {
       try {
         a.loadJson(before);
         await a.projectAssets.ready();
+        await a.terrain.workflow.ready();
         Object.assign(a.state, state);
         restoreSubjects(a, runtime);
         a.stage.view.fov = before.view.fov;
@@ -897,7 +1066,7 @@ export class AISceneWorkflow {
     }
     this.discard();
     for (const ev of ["objects", "shots", "terrain", "undoable", "select"])
-      a.bus.emit(ev);
+      a.bus.emit(ev, ev === "terrain" ? { restored: true } : undefined);
     await a.saveLocal();
     return this.lastApplied;
   }

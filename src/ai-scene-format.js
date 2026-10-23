@@ -49,7 +49,7 @@ export function parseAIPlan(text) {
   safeData(plan);
   return record(plan, "蓝图");
 }
-export function validateEnvelope(p) {
+export function validateEnvelope(p, { allowEmptyOperations = false } = {}) {
   safeData(p);
   if (new TextEncoder().encode(JSON.stringify(p)).length > MAX_PLAN_BYTES)
     throw Error("蓝图最多512KiB");
@@ -100,7 +100,7 @@ export function validateEnvelope(p) {
     p.operations &&
     (!Array.isArray(p.operations) ||
       p.operations.length > MAX_OPS ||
-      !p.operations.length)
+      (!p.operations.length && !allowEmptyOperations))
   )
     throw Error("操作数需1–180");
   if (p.recipe) {

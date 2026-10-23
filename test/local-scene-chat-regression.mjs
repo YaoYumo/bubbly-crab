@@ -14,6 +14,21 @@ try{
    const data=JSON.parse(args.messages[1].content);window.__lastChat=data;
    const key=data.catalog.find(a=>a.key.startsWith('cn:hall:')).key;
    if(__chatMode==='wait')return await new Promise((resolve,reject)=>{window.__resolveChat=resolve;window.__rejectChat=reject;});
+   if(__chatMode==='terrain-mixed')return JSON.stringify({reply:'已生成丘陵、大殿与道路',terrain:{generate:{kind:'hills',amp:10,seed:42,size:160}},operations:[{op:'add',key,pos:[20,0,-30],placement:'ground'},{op:'road',points:[[-60,0,-55],[60,0,-55]],width:6,roadType:'concrete',name:'测试道路'}]});
+   if(__chatMode==='terrain-local')return JSON.stringify({reply:'已局部抬高',terrain:{edits:[{tool:'raise',center:[30,30],radius:12,amount:4}]},operations:[]});
+   if(__chatMode==='river')return JSON.stringify({reply:'已开挖河道',terrain:{rivers:[{action:'add',points:[[-50,0,35],[50,0,35]],width:8,depth:3,bank:5,water:true}]},operations:[]});
+   if(__chatMode==='water')return JSON.stringify({reply:'开启水面',terrain:{water:{enabled:true,level:1}},operations:[]});
+   if(__chatMode==='ground')return JSON.stringify({reply:'物体贴地',terrain:{groundObjects:true},operations:[]});
+   if(__chatMode==='road-edit')return JSON.stringify({reply:'道路加宽',operations:[{op:'roadEdit',objectId:data.scene.objects.find(o=>o.type==='road_brush').id,width:9}]});
+   if(__chatMode==='road-remove')return JSON.stringify({reply:'移除道路',operations:[{op:'removeRoad',objectId:data.scene.objects.find(o=>o.type==='road_brush').id}]});
+   if(__chatMode==='terrain-reset')return JSON.stringify({reply:'地形已填平并关闭水面',terrain:{generate:{kind:'flat',height:0},water:{enabled:false},rivers:data.scene.terrain.rivers.map(r=>({action:'remove',id:r.id}))},operations:[]});
+   if(__chatMode==='city'){
+    window.__cityCalls=(window.__cityCalls||0)+1;
+    if(args.messages.length===2)return JSON.stringify({reply:'错误模型输出',operations:[{op:'add',key:'env:river:河流',pos:[0,0,0]}]});
+    window.__cityBefore=app.objects.length;
+    const key=data.catalog.find(a=>a.key.startsWith('cn:folkhouse:')).key;
+    return JSON.stringify({reply:'30座中式古城与中轴道路',operations:[{op:'grid',key,count:30,columns:6,center:[0,0,0],spacing:[24,28]},{op:'road',points:[[0,0,-75],[0,0,75]],width:4,roadType:'concrete',name:'中轴路'},{op:'road',points:[[-75,0,-42],[75,0,-42]],width:4,roadType:'concrete'},{op:'road',points:[[-75,0,42],[75,0,42]],width:4,roadType:'concrete'}]});
+   }
    let operations=[];
    if(__chatMode==='add')operations=[{op:'add',key,pos:[-50,0,-50],placement:'ground'},{op:'add',key,pos:[0,0,0],placement:'ground'},{op:'add',key,pos:[50,0,50],placement:'ground'}];
    if(__chatMode==='mixed'){const o=data.scene.objects.find(o=>data.scene.recentIds.includes(o.id));operations=[{op:'transform',objectId:o.id,pos:[o.position[0]+5,o.position[1],o.position[2]]},{op:'add',key,pos:[50,0,-50],placement:'ground'}];}
@@ -46,8 +61,56 @@ try{
  await p.click('.viewport-create');await p.waitForSelector('[data-local-chat-send]:not([disabled])');
  // Existing v1 edit mode has NOT acquired the private conversational add permission.
  const legacyRefused=await p.evaluate(async()=>{const w=app.aiScene,permissions={mode:'edit',editableIds:[app.objects[0].id],preserveTerrain:true},c=await w.context(permissions);try{await w.prepare({schema:'previz-ai-scene/1',id:'legacy',name:'legacy',baseFingerprint:c.baseFingerprint,mode:'edit',bounds:c.bounds,seed:12345,terrain:'preserve',durationSeconds:c.durationSeconds,operations:[{op:'add',id:'unauthorized-add',key:app.objects[0].key,pos:[-80,0,80],placement:'ground'}]},permissions);return false;}catch(e){return /不允许新增/.test(e.message);}});assert.equal(legacyRefused,true);
+
+ // Private conversational terrain/road transactions use the actual frontend/workflow and mocked native JSON only.
+ await p.evaluate(()=>{app.clearAll();app.terrain.setEnabled(true);app.terrain.h.fill(0);app.terrain.state.water=false;app.terrain.refresh();app.localScene.recentIds=[];});
+ const terrainUndo=await undo();
+ await send('生成丘陵，放置一座大殿，再修一条道路','terrain-mixed');
+ assert.match(await p.$eval('.local-chat-status',n=>n.textContent),/已完成|场景已更新/);
+ assert.equal(await undo(),terrainUndo+1);
+ assert.ok(await p.evaluate(()=>{const o=app.objects.find(o=>o.key?.startsWith('cn:hall:'));return Math.abs(o.root.position.y-app.terrain.heightAt(20,-30))<1e-6&&!app.terrain.state.water&&app.objects.some(o=>o.type==='road_brush');}));
+ const terrainState=await p.evaluate(()=>({center:app.terrain.heightAt(30,30),outside:app.terrain.heightAt(-70,-70),h:Array.from(app.terrain.h)}));
+ await send('把东南角30,30附近半径12米的地形抬高4米','terrain-local');assert.equal(await undo(),terrainUndo+2);
+ assert.ok(await p.evaluate(state=>Math.abs(app.terrain.heightAt(30,30)-state.center-4)<.1&&app.terrain.heightAt(-70,-70)===state.outside,terrainState));
+ await p.click('[data-local-chat-undo]');assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),terrainState.h);
+ await p.evaluate(()=>app.redo());await p.evaluate(()=>app.terrain.workflow.ready());assert.ok(await p.evaluate(state=>app.terrain.heightAt(30,30)>state.center+3.9,terrainState));
+ await send('沿z=35米制造一条河流，不开全局水面','river');
+ assert.ok(await p.evaluate(()=>app.terrain.workflow.rivers.length===1&&app.terrain.heightAt(0,35)<-.5&&!app.terrain.state.water));
+ await send('开启湖水面到世界高度1米','water');assert.equal(await p.evaluate(()=>app.terrain.state.water),true);
+ await p.evaluate(()=>{app.objects.find(o=>o.key?.startsWith('cn:hall:')).root.position.y=40;});
+ await send('将原有建筑贴地','ground');assert.ok(await p.evaluate(()=>{const o=app.objects.find(o=>o.key?.startsWith('cn:hall:'));return Math.abs(o.root.position.y-app.terrain.heightAt(o.root.position.x,o.root.position.z))<1e-6;}));
+ await send('把道路加宽到9米','road-edit');assert.equal(await p.evaluate(()=>app.objects.find(o=>o.type==='road_brush').serialize().width),9);
+ await send('移除这条道路','road-remove');assert.equal(await p.evaluate(()=>app.objects.filter(o=>o.type==='road_brush').length),0);
+ await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.find(o=>o.type==='road_brush').serialize().width),9);
+ const preserved=await p.evaluate(()=>({h:Array.from(app.terrain.h),rivers:JSON.stringify(app.terrain.workflow.rivers),water:app.terrain.state.water,undo:app._undo.length}));
+ confirmDelete=false;await send('填平所有地形，移除河道，关闭水面','terrain-reset');
+ assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),preserved.h);assert.equal(await undo(),preserved.undo);
+ await p.evaluate(()=>{const o=app.objects.find(o=>o.key);o.locked=true;o.root.visible=false;});
+ confirmDelete=true;await send('填平所有地形，移除河道，关闭水面','terrain-reset');assert.match(await p.$eval('.local-chat-status',n=>n.textContent),/锁定|保护/);assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),preserved.h);assert.equal(await undo(),preserved.undo);
+ await p.evaluate(()=>{const o=app.objects.find(o=>o.key);o.locked=false;o.root.visible=true;});
+ await send('填平所有地形，移除河道，关闭水面','terrain-reset');assert.ok(await p.evaluate(()=>app.terrain.h.every(v=>v===0)&&!app.terrain.state.water&&!app.terrain.workflow.rivers.length));
+ await p.click('[data-local-chat-undo]');assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),preserved.h);assert.equal(await p.evaluate(()=>JSON.stringify(app.terrain.workflow.rivers)),preserved.rivers);assert.equal(await p.evaluate(()=>app.terrain.state.water),preserved.water);
+ // Candidate tampering and stale snapshots do not commit even a terrain-only edit.
+ const terrainSafety=await p.evaluate(async()=>{
+  const w=app.aiScene,p={mode:'add',conversational:true,conversationTerrain:{edits:[{tool:'raise',center:[0,0],radius:10,amount:1}]},bounds:{center:[0,0],size:[600,600]},preserveTerrain:true},c=await w.context(p),plan={schema:'previz-ai-scene/1',id:'terrain-safety',name:'terrain-safety',baseFingerprint:c.baseFingerprint,mode:'add',bounds:c.bounds,seed:1,terrain:'preserve',durationSeconds:c.durationSeconds,operations:[]};
+  const saved=Array.from(app.terrain.h),steps=app._undo.length;let tamper=false,stale=false,legacy=false,rollback=false,cancelled=false,roadPrivate=false;
+  await w.prepare(plan,p);w.draft.document.terrain.water=!w.draft.document.terrain.water;try{await w.apply({acceptWarnings:true});}catch(e){tamper=/被修改/.test(e.message);}w.discard();
+  await w.prepare(plan,p);app.terrain.h[0]+=.25;app.terrain.refresh();try{await w.apply({acceptWarnings:true});}catch(e){stale=/变化/.test(e.message);}w.discard();app.terrain.h.set(saved);app.terrain.refresh();
+  try{await w.prepare(plan,{...p,conversational:false});}catch(e){legacy=/操作数/.test(e.message);}
+  await w.prepare(plan,p);const load=app.loadJson;let failOnce=true;app.loadJson=function(doc){load.call(this,doc);if(failOnce){failOnce=false;throw Error('fixture commit failure');}};
+  try{await w.apply({acceptWarnings:true});}catch(e){rollback=/fixture commit failure/.test(e.message)&&saved.every((v,i)=>v===app.terrain.h[i])&&steps===app._undo.length;}finally{app.loadJson=load;w.discard();}
+  const preparing=w.prepare(plan,p);setTimeout(()=>w.cancel(),0);try{await preparing;}catch(e){cancelled=e.name==='AbortError';}w.discard();
+  const road=app.objects.find(o=>o.type==='road_brush'),privateP={...p,mode:'edit',editableIds:[road.id],conversational:false};delete privateP.conversationTerrain;
+  const roadContext=await w.context(privateP);try{await w.prepare({...plan,baseFingerprint:roadContext.baseFingerprint,mode:'edit',operations:[{op:'roadEdit',objectId:road.id,width:10}]},privateP);}catch(e){roadPrivate=/无权|不允许新增/.test(e.message);}w.discard();
+  return{tamper,stale,legacy,rollback,cancelled,roadPrivate,atomic:steps===app._undo.length&&saved.every((v,i)=>v===app.terrain.h[i])};
+ });assert.deepEqual(terrainSafety,{tamper:true,stale:true,legacy:true,rollback:true,cancelled:true,roadPrivate:true,atomic:true});
+ await p.evaluate(()=>{app.clearAll();app.terrain.workflow.rivers=[];app.terrain.h.fill(0);app.terrain.state.water=false;app.terrain.workflow.rebuildRivers();app.terrain.refresh();});
+ const cityUndo=await undo();await send('30座中式建筑组成古城，中轴对称路网，不要河流','city');
+ const city=await p.evaluate(()=>({buildings:app.objects.filter(o=>o.key?.startsWith('cn:folkhouse:')).length,roads:app.objects.filter(o=>o.type==='road_brush').length,rivers:app.terrain.workflow.rivers.length,calls:__cityCalls,uncommittedAtRepair:__cityBefore===0,undo:app._undo.length,water:app.terrain.state.water}));
+ assert.deepEqual(city,{buildings:30,roads:3,rivers:0,calls:2,uncommittedAtRepair:true,undo:cityUndo+1,water:false});
+ await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.length),0);
  assert.equal(await p.evaluate(()=>__folderOpened),1);assert.ok((await p.evaluate(()=>__calls)).includes('local_ai_stop'));
  const snapshot=await p.evaluate(()=>({objects:app.objects.length,messages:app.localScene.messages.map(m=>({role:m.role,text:m.text})),ipc:__calls,csp:__chatCSP}));assert.deepEqual(snapshot.csp,[]);assert.deepEqual(errors,[]);
- fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,errors,realGGUF:false},null,2));
- console.log('PASS desktop conversation with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.');
+ fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,terrainSafety,city,errors,realGGUF:false},null,2));
+ console.log('PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.');
 }finally{await b.close();}
