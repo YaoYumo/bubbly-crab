@@ -24,6 +24,10 @@ jobs:
       - run: npm ci
       - run: npm run test:desktop
       - run: node test/camera-edit.test.mjs
+      - name: Prepare pinned local inference engine (no model weights)
+        shell: pwsh
+        run: ./scripts/prepare-desktop-engine.ps1
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
       - name: Build unsigned x64 installer (downloads WebView2 on user install only if missing)
         shell: pwsh
@@ -37,6 +41,8 @@ jobs:
             Write-Host "::error title=Windows build diagnostic::$detail"
             exit $code
           }
+      - name: Native local-model boundary unit tests
+        run: cargo test --release --manifest-path src-tauri/Cargo.toml
       - name: Record actual byte sizes and hashes
         shell: pwsh
         run: |

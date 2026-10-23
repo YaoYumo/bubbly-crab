@@ -43,6 +43,8 @@ const manifest = {
   installerIncludesWebView2: false,
   missingWebView2Policy: "download-bootstrapper-on-install; internet required only if runtime is absent",
   modelWeightsIncluded: false,
+  localInferenceEngine: existsSync(resolve(root,"src-tauri/resources/llama/engine-source.json")) ? JSON.parse(readFileSync(resolve(root,"src-tauri/resources/llama/engine-source.json"),"utf8").replace(/^\uFEFF/,"")) : null,
+  inferenceRuntime: list(resolve(root,"src-tauri/resources/llama")).map(entry),
   signed: false,
   note: installers.length
     ? "Unsigned Windows artifacts found on disk; this inventory alone does not prove a fresh build or native/manual acceptance."

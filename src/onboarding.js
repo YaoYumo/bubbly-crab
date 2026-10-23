@@ -1,3 +1,4 @@
+import { DESKTOP_BUILD } from './desktop-runtime.js';
 import { el } from './util.js';
 
 const STORAGE_KEY = 'previz.onboarding.v1';
@@ -7,12 +8,12 @@ export function installOnboarding(app, { switchPage, openTools }) {
   const remember = result => { try { localStorage.setItem(STORAGE_KEY, result); } catch { /* Private/storage-disabled mode still works. */ } };
   const page = id => switchPage(id);
   const steps = [
-    { title: '先搭场景', target: '.viewport-create', setup: () => page('scene'), text: '点击「一句话生成」，用中文描述场景。默认界面很简洁，配方和模板都收在「更多选项」。生成会替换当前场景，可撤销；本导览不会替你生成或覆盖工程。' },
+    { title: '先搭场景', target: '.viewport-create', setup: () => page('scene'), text: DESKTOP_BUILD ? '将 GGUF 模型放到安装目录的 models 文件夹，在「一句话生成」用中文描述场景。程序会自动启动随包本地引擎，直接搭建；继续对话即可修改，普通增改不用蓝图或候选预览。大范围删除会确认，每轮可撤销。首次加载可能需要几分钟。' : '点击「一句话生成」，用中文描述场景。默认界面很简洁，配方和模板都收在「更多选项」。生成会替换当前场景，可撤销；本导览不会替你生成或覆盖工程。' },
     { title: '自己的模型，放进自己的分组', target: '#library-scene', setup: () => { page('scene'); if (document.getElementById('library-scene').style.display === 'none') document.getElementById('lib-toggle').click(); }, text: '展开模型库，点击「导入至分组」或「新建分组」。支持 GLB / GLTF / FBX / OBJ；贴图、BIN、MTL 需要一起选择。入库不自动放进场景，之后可点击或拖放。用户模型可移动分组和删除，内置模型移除后可恢复。' },
     { title: '右键是你的操作中心', target: '.viewport-operations', setup: () => page('scene'), text: '在视口短按右键，按物体、机位、空白显示不同饼菜单。右键拖动仍然平移视角。W / E / R 切换移动、旋转、缩放，F 聚焦，Ctrl+Z 撤销；也可以点击这个「操作 · 右键」入口。' },
     { title: '建立机位与运镜', target: '#cam-add-btn', setup: () => page('camera'), text: '先摆好视口，再点击「＋」新建机位，或按 C。从右侧选择运镜预设、调整路径和关键帧。取景预览只检查画面，不会导出视频。已有机位和路径不会因本导览而改变。' },
     { title: '把多个镜头剪成一段', target: '#bottom', setup: () => page('direct'), text: '在 Direct 时间轴使用「＋当前机位」或「顺序拼接」。拖动镜头片段调整顺序、拖两端修剪，也能在播放头处分割。镜头轨道不堆叠所有关键帧；需要时再打开关键帧或曲线。' },
-    { title: '准备给 AI 的参考资料', target: '#generate-content', setup: () => page('generate'), text: 'Generate 用于整理提示词与 3D 参考资料。轻量桌面版不内置 AI 模型，也不会自动调用模型；可先导出参考包供其他工具使用。这里不会替你发起付费生成。' },
+    { title: '准备给 AI 的参考资料', target: '#generate-content', setup: () => page('generate'), text: 'Generate 用于整理提示词与 3D 参考资料。本页不直接生成图片或视频，可先导出参考包供其他工具使用；桌面本地场景搭建请使用「一句话生成」。这里不会替你发起付费生成。' },
     { title: '导出画面与视频', target: '#export-content', setup: () => page('export'), text: 'Export 中设置画幅、分辨率、时长与格式，再导出 PNG 或视频。建议先用小尺寸短片验证镜头切换，再输出完整版本。桌面版保存时请选择磁盘位置，等待写入成功提示。' },
     { title: '别忘了保存完整工程', target: '.viewport-tools-panel', setup: () => { page('scene'); openTools(); }, text: '从「操作 · 右键 → 工具 / 工程 → 场景」保存或打开 .previz 完整工程包，里面会带上已放入场景的用户模型与贴图。主题、吸附、画幅、精度也在这里；本地模型库分组不会随工程包同步。这里也能重新打开「新手指引」。' },
     { title: '可以开始创作了', text: '推荐顺序：搭场景 → 定机位 → 排镜头 → 保存工程 → 导出参考。点击「开始创作」后会返回导览前的页面与视角，不生成示例、不添加模型、不改变你的工程。以后可在「工具 / 工程 → 新手指引」重新查看。' },
@@ -93,7 +94,7 @@ export function installOnboarding(app, { switchPage, openTools }) {
   function start() {
     if(root)return;
     if(blocked()){app.notify('请先停止播放、预览、笔刷或导出，再打开新手指引','warn');return;}
-    if(document.querySelector('.tg-mask,.library-mask,.ai-scene-mask,dialog[open],#modal.on')){app.notify('请先关闭当前对话框，再打开新手指引','warn');return;}
+    if(document.querySelector('.local-chat-overlay,.tg-mask,.library-mask,.ai-scene-mask,dialog[open],#modal.on')){app.notify('请先关闭当前对话框，再打开新手指引','warn');return;}
     app.radialMenu?.close(false);app.closeViewportTools?.();
     previous=document.activeElement;saveView();index=-1;
     spotlight=el('div',{class:'tour-spotlight',hidden:true,'aria-hidden':'true'});

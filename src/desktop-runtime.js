@@ -10,6 +10,6 @@ export function isDesktopShell() {
 export function requireWebGateway() {
   if (DESKTOP_BUILD)
     throw Error(
-      "轻量桌面版未内置AI／参考生成网关。请使用本地配方、手动蓝图或导出参考ZIP；不会直连模型或扫描本机端口。",
+      "此网关入口仅用于网页版；桌面本地模型请使用“一句话生成”。参考生成网关仍未启用，不扫描本机端口。",
     );
 }

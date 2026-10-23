@@ -782,7 +782,7 @@ app.bus.on('preview', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-  if (app.reference?.busy || app.aiScene?.busy) return; // Export sampling is read-only, including global shortcuts.
+  if (app.reference?.busy || app.aiScene?.busy || app.localScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const k = e.key.toLowerCase();
@@ -943,7 +943,7 @@ app.onboarding=installOnboarding(app,{switchPage,openTools:openViewportTools});
 
 /* 数字键快速放置 */
 window.addEventListener('keydown', (e) => {
-  if (app.reference?.busy || app.aiScene?.busy) return; // Export sampling is read-only, including global shortcuts.
+  if (app.reference?.busy || app.aiScene?.busy || app.localScene?.busy) return; // Export sampling is read-only, including global shortcuts.
   const tag = (e.target.tagName || '').toLowerCase();
   if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.closest?.('[role=dialog],[contenteditable=true]')) return;
   const n = parseInt(e.key, 10);

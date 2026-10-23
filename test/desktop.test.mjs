@@ -45,7 +45,14 @@ assert.ok(
   rust.includes("tauri_plugin_fs::init()") &&
     rust.includes("tauri_plugin_dialog::init()"),
 );
-assert.ok(!rust.includes("Command::new"));
+assert.ok(rust.includes('local_ai::LocalAI::default()'));
+const nativeModel = readFileSync('src-tauri/src/local_ai.rs','utf8');
+assert.ok(nativeModel.includes('127.0.0.1:0') && nativeModel.includes('.no_proxy()'));
+assert.ok(nativeModel.includes('authorize(&window)') && nativeModel.includes('path.parent() != Some(folder.as_path())'));
+assert.ok(nativeModel.includes('getrandom::fill') && nativeModel.includes('response.chunk().await'));
+assert.ok(!nativeModel.includes('cmd.exe') && !nativeModel.includes('powershell.exe'));
+assert.ok(nativeModel.includes('tauri.localhost') && nativeModel.includes('64000'));
+assert.deepEqual(cfg.bundle.resources, {'resources/llama/':'runtime/llama/','resources/model-folder/':'models/'});
 const ico = readFileSync("src-tauri/icons/icon.ico");
 assert.equal(ico.readUInt16LE(2), 1);
 assert.ok(ico.readUInt16LE(4) >= 2);

@@ -383,7 +383,7 @@ export class AISceneWorkflow {
         )
           throw Error("对象名称需1–120字符");
         if (op.op === "add" || op.op === "road") {
-          if (p.mode === "edit")
+          if (p.mode === "edit" && permissions.conversational !== true)
             throw Error(
               "局部模式只允许变换/重建/删除授权对象，不允许新增对象或道路",
             );

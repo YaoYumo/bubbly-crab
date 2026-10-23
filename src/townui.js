@@ -3,6 +3,8 @@
 // 纯本地解析 → 实时预览参数 chips → 一次生成（一步撤销）
 // ---------------------------------------------------------------------------
 
+import { DESKTOP_BUILD } from "./desktop-runtime.js";
+import { openLocalSceneChat } from "./local-scene-chat-ui.js";
 import { el, clear } from "./util.js";
 import { parsePromptLocally, describeSchema, randomSeed } from "./towngen.js";
 import { generateTown } from "./townbuild.js";
@@ -31,6 +33,7 @@ const EXAMPLES = [
 
 /** 打开对话框；返回关闭函数 */
 export function openTownDialog(app) {
+  if (DESKTOP_BUILD) return openLocalSceneChat(app);
   if (document.querySelector(".tg-mask")) return () => {};
 
   let recipePick = null,

@@ -46,3 +46,7 @@ desktop/dist/
 
 # Reproducible, user-facing model exports (not source-controlled assets)
 model-exports/
+
+# Bundled inference binaries are pinned/fetched in CI, not committed.
+src-tauri/resources/llama/
+**/models/*.gguf
