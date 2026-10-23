@@ -2,17 +2,35 @@
 
 ## 下载并安装（给使用者）
 
-[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39574424795/artifacts/12333712446)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-19，建议下载后本地保留）。
+[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400/artifacts/12475121975)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-21，建议下载后本地保留）。
 
-1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.1.1_x64-setup.exe`。
+1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.2.0_x64-setup.exe`。
 2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
 3. 首次安装若缺少 WebView2，需要联网获取微软运行环境；安装器不含 AI 模型，软件不自动连接模型。
 4. 此为未签名预检版，可能显示未知发布者／SmartScreen提示；不要为此关闭安全软件。可先用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 校验下方哈希。
 5. 安装后先测试打开／另存工程、PNG和短视频，确认你电脑的GPU、路径权限和编码能力，再用于重要项目；重要工程请另存新文件并备份。
 
-安装器SHA256：`681c7381dd33bd3ddf376a2b5333f8856e1cb57cf7991398636ac800459ac7ab`。
+安装器SHA256：`8850b1b9d5f9cb204e8f0c3c5202dfcdbe4ab14577f001b144647b7f9a4e46c2`。
 
-[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39574424795)。此次没有合并主分支，也没有公开发布 Release。
+[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400)。此次没有合并主分支，也没有公开发布 Release。
+
+## 1.2.0 新手指引、精简工作区与用户模型库（当前安装包）
+
+- 首次启动有九步新手指引：可跳过、前进 / 后退、Esc 关闭；从「操作 · 右键 → 工具 / 工程 → 新手指引」重开。导览不生成、不覆盖工程，结束恢复原页面、视角与选择。旧的首次自动弹出生成框改为欢迎导览。
+- 顶栏仅五页面、性能、桌面检查；物体 / 机位 / 空白右键饼菜单保留右拖平移，工程与主题等工具收入二级面板。一句话生成位于中间视口，预设和参数默认折叠。
+- 统一实际模型缩略图，用户模型可导入至分组、移动与删除；内置移除可恢复。分组库本地持久化；场景中的用户模型与贴图随完整工程携带。
+- 本包同时包含上传灰模宝塔、木构变体与中式古建斜边楼梯；保留 1.1.1 的镜头剪辑与时间轴改善。
+- 源码：`e9b4e00d2ea4054f6598586082ea77460452af36`。Windows job `120211102767` 在 2026-10-23 成功完成原生编译、NSIS 打包、安装及窗口存活检查；不是只生成网页构建。
+- 安装器 **2,266,794 bytes**；应用 exe **4,584,448 bytes**。Actions ZIP **4,775,704 bytes**，artifact `12475121975`，保留至 2027-01-21。包内包含安装器、应用 exe、Cargo.lock、实际字节 / 哈希清单及安装冒烟报告。请运行 `bundle/nsis/` 下的安装器，而不是把应用 exe 当安装器。
+- Windows 构建的每个前端文件路径与 SHA256 均与本地完成回归的桌面前端一致。新手指引在 DEV、断网单 HTML、桌面 CSP 三平台通过；模型库、右键菜单、机位剪辑与时间轴等回归通过。
+- 实际 Windows runner 上的安装和原生窗口启动已通过；**尚不代表用户电脑上的 Windows 指引交互、磁盘权限及 GPU 导出已全面验收**。没有签名、合并 main 或发布 GitHub Release。
+- 沙箱下载附件时被 GitHub 的 Azure 存储连接限制（EOF）阻断，因此没有在沙箱保存一份安装器或做独立下载后的第二次哈希校验。上方附件已由 Windows job 正式上传，可在浏览器登录 GitHub 下载；下列哈希来自 Windows runner 的实际产物清单，而非猜测。
+
+应用 exe SHA256：`2f2794b340dd64b8967493565a107934ca97992c5b395d16c4234f9a9a324ca1`。
+
+证据：[`desktop-1.2.0-evidence/windows-run.json`](desktop-1.2.0-evidence/windows-run.json)、[`windows-artifacts.json`](desktop-1.2.0-evidence/windows-artifacts.json)、[`artifact-metadata.json`](desktop-1.2.0-evidence/artifact-metadata.json)。
+
+使用说明：[新手指引](onboarding.md)、[模型库](model-library.md)、[右键与生成框](radial-ui.md)。
 
 ## 1.1.1 剪辑轨道操作优化
 
