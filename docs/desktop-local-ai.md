@@ -1,6 +1,6 @@
 # Windows 1.4.0：对话控制地形、河道、路网与模型
 
-[Windows 最新安装包与构建记录](desktop-windows.md) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.4.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/39927759909/artifacts/12491075283) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 

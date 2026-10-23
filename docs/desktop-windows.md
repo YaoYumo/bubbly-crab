@@ -1,15 +1,23 @@
-> **1.3.0 更新**：桌面“一句话生成”现使用安装目录 `models` 内的 GGUF 与随包 llama.cpp 引擎，自动应用增改、持续对话、一次撤销；无需手动蓝图或候选预览。见 [桌面本地 AI](desktop-local-ai.md)。以下历史版本“没有模型进程”的说明只描述当时版本；Generate 图片/视频网关依然没有启用。
+> **1.4.0 更新**：桌面“一句话生成”使用安装目录 `models` 内的 GGUF，现可直接控制地形、河道、水面、道路及模型增改，持续对话、整轮撤销；无需手动蓝图或候选预览。见 [桌面本地 AI](desktop-local-ai.md)。以下历史版本“没有模型进程”的说明只描述当时版本；Generate 图片/视频网关依然没有启用。
 
 # Windows 轻量桌面版：Tauri 2 预检工程
 
 ## 下载并安装：1.4.0 地形 / 河道 / 路网对话版
 
-构建中：工作流成功后补充本版安装器附件链接和实际哈希；**旧1.3.1不具备这些聊天工具**。
+[下载 Windows 1.4.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39927759909/artifacts/12491075283)（可能需要登录GitHub，附件保留至2027-01-21）。**旧1.3.1不具备这些聊天工具**。
+
+先另存备份重要工程并退出旧版，再解压并运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.4.0_x64-setup.exe`，覆盖安装到原目录。不要运行ZIP里的裸应用EXE；原有两个GGUF分片不动，无需重新下载、合并或改名。
 
 - 一句话生成与对话修改现在可直接调用已有地形、局部地形、河道、水面和道路工具，仍保留模型布局和整轮撤销。不需要蓝图或候选预览；仅大删/覆盖现有非平地形时确认。
 - 针对虚构 `env:river:河流`，模型协议明确区分目录素材与环境工具，有限纠正一次无效JSON/key，不删除目录/锁/预算校验。30建筑可使用有界阵列，避免每个对象重复输出耗尽本地模型回复长度；保留200万三角预算，高细节资产不静默降级。
 - 水面仍默认关闭，海岛预设不自动开水面；修改锁定地物下的地形保守拒绝。保留1.3.1隔离通信及1.2.3模型拖拽修复，模型权重不随包分发，已放好的两个GGUF无需重下。
-- 已通过纯函数测试和真实桌面前端+模拟推理IPC的地形/路网/批量/撤销/取消/回滚测试；**没有真实GGUF语义质量、4070Ti显存/速度或用户DLL注入测试**。实际Windows构建/安装结果以本节后续记录为准。
+- 已通过纯函数测试和真实桌面前端+模拟推理IPC的地形/路网/批量/撤销/取消/回滚测试；**没有真实GGUF语义质量、4070Ti显存/速度或用户DLL注入测试**。Windows构建/安装检查通过，但不是用户电脑上完整原生UI和模型语义验收。
+
+- [Windows run 39927759909](https://github.com/YaoYumo/bubbly-crab/actions/runs/39927759909) / job `120328250934` 全部成功，构建源码 `8bfb30d6e54d5cd12cae7e34d5e066193ff64633`。10项通信辅助进程与4项模型消息边界Rust测试、纯地形单测、原生编译/NSIS、安装窗口存活、实际安装后通信fixture、引擎启动与重装保留用户模型目录通过。15个前端文件路径/字节/SHA256逐项与本地回归构建一致（跨平台排序后比对）。
+- 安装器 **20,964,810 bytes**，SHA256 `4a62a6a7eb2e759f17c144785e9b690344952468d9f5479cfb741f45364a3ac8`。
+- ZIP **23,533,427 bytes**，GitHub上传摘要 `ef7158a8f6c8d35c3d5174c8dded9e79d0a0ba8129a7343e411abc1656cce150`。仍未签名、不含模型权重；未另行下载二进制进行第二次独立哈希核验。
+
+证据：[Windows步骤](desktop-1.4.0-evidence/windows-run.json)、[文件与哈希](desktop-1.4.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.4.0-evidence/windows-install-smoke.json)、[安装后通信](desktop-1.4.0-evidence/loopback-installed.json)、[地形/路网模拟推理回归](desktop-1.4.0-evidence/conversation-mocked-ipc.json)、[验收边界](desktop-1.4.0-evidence/verification.json)。已推当前开发分支，未合并main或发布Release。
 
 使用例句和详细边界见[桌面本地AI](desktop-local-ai.md)。
 

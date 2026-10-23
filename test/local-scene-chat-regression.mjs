@@ -90,6 +90,12 @@ try{
  await p.evaluate(()=>{const o=app.objects.find(o=>o.key);o.locked=false;o.root.visible=true;});
  await send('填平所有地形，移除河道，关闭水面','terrain-reset');assert.ok(await p.evaluate(()=>app.terrain.h.every(v=>v===0)&&!app.terrain.state.water&&!app.terrain.workflow.rivers.length));
  await p.click('[data-local-chat-undo]');assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),preserved.h);assert.equal(await p.evaluate(()=>JSON.stringify(app.terrain.workflow.rivers)),preserved.rivers);assert.equal(await p.evaluate(()=>app.terrain.state.water),preserved.water);
+ // A restored terrain notification is not another brush stroke: saved/locked small props stay put.
+ const restoredLockedTransform=await p.evaluate(async()=>{
+  const saved=JSON.parse(JSON.stringify(app.serialize({assets:false}))),heights=Array.from(app.terrain.h),c=await app.aiScene.context({mode:'add'}),item=c.catalog.find(a=>a.type==='street_lamp'),y=app.terrain.heightAt(-60,-60)+4;
+  const scene=JSON.parse(JSON.stringify(saved));scene.objects.push({id:'locked-lamp-fixture',key:item.key,type:item.type,name:'locked lamp',params:item.defaultParameters,pos:[-60,y,-60],rot:[0,0,0],scale:[1,1,1],visible:true,locked:true,followTerrain:true});
+  app.loadJson(scene);await app.terrain.workflow.ready();const same=app.byId('locked-lamp-fixture').root.position.y===y&&heights.every((v,i)=>v===app.terrain.h[i]);app.loadJson(saved);await app.terrain.workflow.ready();return same;
+ });assert.equal(restoredLockedTransform,true);
  // Candidate tampering and stale snapshots do not commit even a terrain-only edit.
  const terrainSafety=await p.evaluate(async()=>{
   const w=app.aiScene,p={mode:'add',conversational:true,conversationTerrain:{edits:[{tool:'raise',center:[0,0],radius:10,amount:1}]},bounds:{center:[0,0],size:[600,600]},preserveTerrain:true},c=await w.context(p),plan={schema:'previz-ai-scene/1',id:'terrain-safety',name:'terrain-safety',baseFingerprint:c.baseFingerprint,mode:'add',bounds:c.bounds,seed:1,terrain:'preserve',durationSeconds:c.durationSeconds,operations:[]};
@@ -111,6 +117,6 @@ try{
  await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.length),0);
  assert.equal(await p.evaluate(()=>__folderOpened),1);assert.ok((await p.evaluate(()=>__calls)).includes('local_ai_stop'));
  const snapshot=await p.evaluate(()=>({objects:app.objects.length,messages:app.localScene.messages.map(m=>({role:m.role,text:m.text})),ipc:__calls,csp:__chatCSP}));assert.deepEqual(snapshot.csp,[]);assert.deepEqual(errors,[]);
- fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,terrainSafety,city,errors,realGGUF:false},null,2));
+ fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,restoredLockedTransform,terrainSafety,city,errors,realGGUF:false},null,2));
  console.log('PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.');
 }finally{await b.close();}

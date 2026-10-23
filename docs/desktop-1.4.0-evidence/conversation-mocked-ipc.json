@@ -59,7 +59,7 @@
     },
     {
       "role": "assistant",
-      "text": "未完成：地形修改范围触及锁定 / 保护对象：chat_obj_adgy9"
+      "text": "未完成：地形修改范围触及锁定 / 保护对象：chat_obj_axi2z"
     },
     {
       "role": "user",
@@ -116,6 +116,7 @@
     "local_ai_chat"
   ],
   "csp": [],
+  "restoredLockedTransform": true,
   "terrainSafety": {
     "tamper": true,
     "stale": true,
