@@ -1,8 +1,14 @@
 # Windows 轻量桌面版：Tauri 2 预检工程
 
+## 下载安全状态：暂不推荐安装
+
+2026-10-23 用户报告浏览器对 `previz-lab-windows-x64-unsigned.zip` 显示 **Dangerous download blocked**。该提示的具体检测类别仍未知，不能仅凭未签名就认定为误报。**先不要保留或运行该包，不关闭安全防护，不通过改名、加密压缩或重新托管来绕过拦截。**
+
+历史构建 / 安装成功和哈希一致只证明来源与可运行性，不证明没有恶意软件，也不代表浏览器信誉通过。正在对**原始已发布 ZIP 和其中的原始二进制**做哈希复核与 Windows Defender 检查；扫描不可用、失败或有检出均不会标为安全。即使单一引擎无检出，也不据此建议绕过浏览器阻止。后续检查记录见 `windows-package-security.md`。
+
 ## 下载并安装（给使用者）
 
-[下载安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400/artifacts/12475121975)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-21，建议下载后本地保留）。
+[原始安装包 ZIP（排查中，暂不建议下载运行）](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400/artifacts/12475121975)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-21，建议下载后本地保留）。
 
 1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.2.0_x64-setup.exe`。
 2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
