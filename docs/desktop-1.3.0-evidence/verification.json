@@ -1,0 +1,9 @@
+{
+  "frontendFileHashesMatch": true,
+  "frontendFiles": 15,
+  "realGGUFInferenceVerified": false,
+  "windowsCheckRun": 120278321752,
+  "sourceCommit": "0dcc3fa155068d19b4ef5d95cb60e8f6f9c611bc",
+  "nativeBoundaryTests": 4,
+  "artifactDownloadRehashedInSandbox": false
+}

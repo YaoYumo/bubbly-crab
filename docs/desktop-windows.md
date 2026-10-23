@@ -2,7 +2,24 @@
 
 # Windows 轻量桌面版：Tauri 2 预检工程
 
-## 下载并安装：1.2.3 当前安装包
+## 下载并安装：1.3.0 本地模型对话版
+
+[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089/artifacts/12483458580)（可能需要登录 GitHub；附件保留至 2027-01-21）。
+
+解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.3.0_x64-setup.exe`；**不要直接运行 ZIP 里的裸 `previz-lab.exe`，推理引擎由安装器部署到安装目录。** 升级前先备份 `.previz` 工程并退出旧版。
+
+- 桌面“一句话生成”首次发送时自动加载安装目录 `models` 下的 GGUF；无需手动启动服务、填端口或操作蓝图/候选。支持连续对话、混合增改、整轮撤销；大范围删除确认。
+- RTX 4070 Ti 12GB 推荐 Qwen2.5-7B-Instruct Q4_K_M GGUF，权重由用户下载。点击“打开模型文件夹”即可找到正确位置。见 [使用说明与能力边界](desktop-local-ai.md)。
+- 随包 llama.cpp b11829 Vulkan x64 引擎；安装器 **20,781,503 bytes**，应用 EXE **4,952,576 bytes**。不包含模型权重或 Node.js，仍未签名。
+- 安装器 SHA256：`cb1480138135f7734b2a7826ebd05d713bda6f23f2244268024f8f2ea99571a9`。
+- ZIP **23,495,580 bytes**，GitHub 上传摘要：`a80bb34ad75e69dca2b4619bb45ca1843d11193787b3882765a1a9b7e87f1d6f`。本沙箱未另行下载二进制进行第二次哈希校验。
+- 构建源码 `0dcc3fa155068d19b4ef5d95cb60e8f6f9c611bc`；[Windows run 39912456089](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089) / job `120278321752` 全部成功：官方引擎 ZIP 校验与执行、原生编译/NSIS、4项 Rust 纯边界单元测试、实际安装/窗口启动、安装后引擎执行及模型目录用户文件重装保留。
+- 15个前端文件的路径/字节数/SHA256 全部与本地桌面回归构建一致。对话交互用模拟推理 IPC 验证；原生保存/视频前端回归也仍使用模拟磁盘 IPC。模型拖拽在开发版、离线 HTML、桌面 CSP 下通过；主题/库布局/水面/新手指引回归通过。
+- **未在 RTX 4070 Ti 上加载真实 Qwen 权重，不宣称已验证语义理解、速度、显存或完整 Windows 原生交互。** Windows 安装窗口检查不是这些能力的替代。现有 Node 版 `ai-scene.test.mjs` 因 PNG 导入缺少 Node 资源 loader 未通过；浏览器 AI safety 回归及新对话的旧 v1 编辑权限回归已通过。
+
+证据：[Windows 构建](desktop-1.3.0-evidence/windows-run.json)、[文件清单](desktop-1.3.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.3.0-evidence/windows-install-smoke.json)、[附件元数据](desktop-1.3.0-evidence/artifact-metadata.json)、[模拟对话回归](desktop-1.3.0-evidence/conversation-mocked-ipc.json)。所有改动已推当前开发分支；未合并 main 或发布 Release。
+
+## 1.2.3 历史安装包（不包含本地模型对话）
 
 [下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39907231929/artifacts/12481985251)（可能需要登录 GitHub；附件保留至 2027-01-21）。
 

@@ -1,5 +1,7 @@
 # Windows 1.3.0：本地模型一句话搭景与对话修改
 
+[下载 Windows 1.3.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/39912456089/artifacts/12483458580) · [构建检查与摘要](desktop-windows.md)
+
 ## 用户使用
 
 1. 安装完整的 1.3.0 Windows 版。程序附带 **llama.cpp b11829 Vulkan x64** 推理引擎，不附带模型权重；无需安装 Node.js、CUDA 工具链或另开模型服务。
