@@ -1,0 +1,46 @@
+{
+  "sourceCommit": "bdb4ea9eba7fd11666582a56381a9609ec52e56d",
+  "run": 39931943730,
+  "job": 120342105784,
+  "artifact": 12491289998,
+  "windowsBuildAndInstallCheck": true,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathBytesSHA256": true
+  },
+  "screenshotRequest": "在中央生成一条约20米宽弯曲的河流，深度5米",
+  "screenshotFixtureResult": {
+    "width": 20,
+    "depth": 5,
+    "curved": true,
+    "bed": -5,
+    "globalWater": false,
+    "objects": 0,
+    "calls": 2,
+    "promptBytes": 1670,
+    "catalog": 0,
+    "undo": 8
+  },
+  "emptyUnsupportedAtomicFailure": true,
+  "emptyTerrainCorrectedAtMostOnce": true,
+  "simpleRiverDefaultsOneNativeCall": true,
+  "oneUndoRedo": true,
+  "lockedRiverRefusedWithoutRetry": true,
+  "collapsedInMemoryDiagnostics": true,
+  "noGlobalWaterActivation": true,
+  "noCatalogAssetFallback": true,
+  "tests": [
+    "pure terrain and screenshot shape/field regressions",
+    "actual desktop frontend + mocked native inference IPC",
+    "manual height import/overlay/river/export regression",
+    "web and offline legacy AI safety",
+    "desktop CSP real pointer model dragging",
+    "Windows installed helper loopback fixture"
+  ],
+  "diagnosisLimit": "The screenshot has no raw model JSON. An empty unsupported field is a code-reproduced cause of the same missing-operations length error, not a claim that the exact user response was captured.",
+  "realGGUFInference": false,
+  "rtx4070TiVerified": false,
+  "realAstrillDLLInjected": false,
+  "fullyFunctionalWindowsUIValidated": false,
+  "installerIndependentlyRedownloadedAndHashed": false
+}

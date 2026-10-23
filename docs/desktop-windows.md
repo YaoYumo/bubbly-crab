@@ -4,11 +4,19 @@
 
 ## 下载并安装：1.4.1 河流请求修订
 
-构建中，完成后补充本版安装包链接及哈希。旧1.4.0中空结果的错误分支仍存在，请勿将旧包当作此修订。
+[下载 Windows 1.4.1 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39931943730/artifacts/12491289998)（可能需要登录GitHub；附件保留至2027-01-21）。旧1.4.0中空结果的错误分支仍存在，请勿将旧包当作此修订。
+
+先备份重要工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.4.1_x64-setup.exe`，覆盖安装到原目录；不要运行ZIP中的裸应用EXE。两个GGUF分片无需重新下载、移动、合并或改名。
 
 - 修复空unsupported导致缺失operations的可复现错误，空terrain不再被误判为成功；最多一次明确纠正，仍无效则不修改场景，并提供默认折叠的本机失败诊断。
 - 为简单新增单河提供短协议和确定性直/弯路径生成，保留用户明确的宽深约束。混合场景和河道修改保留原协议与全部保护校验，不用默认模型代替河流，不自动开启全局水面。
 - 针对截图原话验证20米宽、5米深、17点弯曲河道、单步撤销/重做、格式修正失败原子拒绝、锁定拒绝不重试。**测试使用模拟推理返回，尚未验证用户本机Qwen实际语义输出。**
+
+- [Windows run 39931943730](https://github.com/YaoYumo/bubbly-crab/actions/runs/39931943730) / job `120342105784` 全部成功，构建源码 `bdb4ea9eba7fd11666582a56381a9609ec52e56d`。纯地形与截图用例单测、10项通信辅助进程Rust测试、4项消息/模型边界Rust测试、原生编译/NSIS、实际安装后通信fixture、安装窗口存活、引擎启动与重装保留用户模型目录检查通过。15个前端文件路径/字节/SHA256与本地回归构建逐项一致。
+- 安装器 **20,955,897 bytes**；SHA256 `b1ac4b1f39d41b4def23c0ee2de02bbe956f6d45a876d9bfab111e603aa23e44`。
+- ZIP **23,528,612 bytes**；GitHub上传摘要 `806f9a2f097285e7409fc9a481a5d274725a6a1b6fefdbf5afe22b7f43c98c7b`。仍未签名、不含权重；未另行下载做第二次独立二进制哈希核验。
+
+证据：[Windows步骤](desktop-1.4.1-evidence/windows-run.json)、[文件与哈希](desktop-1.4.1-evidence/windows-artifacts.json)、[安装](desktop-1.4.1-evidence/windows-install-smoke.json)、[通信fixture](desktop-1.4.1-evidence/loopback-installed.json)、[模拟推理截图用例](desktop-1.4.1-evidence/conversation-mocked-ipc.json)、[验收边界](desktop-1.4.1-evidence/verification.json)。这些不等于在用户4070Ti/Qwen上验证语义质量，也不是完整Windows UI专项验收。已推当前分支，未合并main。
 
 ## 1.4.0 历史：地形 / 河道 / 路网对话版
 
