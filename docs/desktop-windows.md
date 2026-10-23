@@ -1,20 +1,36 @@
 # Windows 轻量桌面版：Tauri 2 预检工程
 
-## 下载并安装：1.2.2 当前安装包
+## 下载并安装：1.2.3 当前安装包
 
-[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39898401400/artifacts/12478221320)（可能需要登录 GitHub；附件保留至 2027-01-21）。
+[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39907231929/artifacts/12481985251)（可能需要登录 GitHub；附件保留至 2027-01-21）。
 
 1. 升级前将重要工程另存 `.previz` 并备份，退出旧版本。不需要清空缓存或删除本地工程。
-2. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 **`PREVIZ LAB_1.2.2_x64-setup.exe`**，双击安装。不要把同包的 `previz-lab.exe` 误认作安装器。
+2. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 **`PREVIZ LAB_1.2.3_x64-setup.exe`**，双击安装。不要把同包的 `previz-lab.exe` 误认作安装器。
 3. 这是 Windows x64 当前用户安装包；缺少 WebView2 时安装过程需要联网获取微软运行环境。软件不包含 AI 权重，不会自动启动模型服务。
 4. 安装包仍未签名。包内 `.shots/desktop-artifacts.json` 记录实际字节与哈希，可使用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 核对；哈希校验不等于杀毒检测。
 5. 安装后先测试工程打开 / 另存、PNG 与短视频，再用于重要项目。安装启动检查不代表用户 GPU、原生文件权限与完整交互全面验收。
 
-安装器 SHA256：`0b97cd757bddcf813ee8175315cd917d68c22a8dd538902d23d4ebde42a3a430`。
+安装器 SHA256：`f4e861d128de03b46de901cfb41a4165e1a5d452a8d76dd1f16a45dbdd0571c6`。
 
-[成功构建与安装启动检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39898401400)。源码与交付文档均推送当前开发分支，没有合并 main 或发布 GitHub Release。
+[成功构建与安装启动检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39907231929)。源码与交付文档均推送当前开发分支，没有合并 main 或发布 GitHub Release。
 
-## 1.2.2 主题、模型库与水面修复
+## 1.2.3 恢复模型拖入场景
+
+- 修复 1.2.0 统一模型库卡片中的 `draggable` 枚举属性：原来的布尔值被 DOM 工具转成空字符串，使浏览器未真正启用起拖。现在显式使用 `draggable="true"`。
+- 从缩略图或名称按住鼠标左键拖入视口并松开，按鼠标对应的地形 / 地面位置放置。内置与用户导入模型均支持，一次拖放只添加一个实例并增加一个撤销操作；保留点击放置。
+- 取消或拖到视口外不放置；卡片删除 / 移动分组控件不作为拖拽来源。保留 1.2.2 主题、模型库布局及水面修复。
+- 源码 `5b8be31c0115c9fdb121ec511ae08a7e8e3f4ec9`；Windows run `39907231929` / job `120261864889` 原生编译、NSIS 打包、静默安装及原生窗口启动检查通过。
+- 安装器 **2,267,360 bytes**；应用 exe **4,584,960 bytes**；Actions ZIP **4,777,590 bytes**，附件 `12481985251`。
+- 开发版、断网单 HTML、桌面 CSP 前端均通过真实鼠标起拖 / 载荷 / 放下回归；不是仅构造 drop 事件。桌面 CSP 下重跑主题、模型库布局及水面回归通过。Windows 构建全部前端文件路径、字节数、SHA256 与本地回归构建逐项一致。
+- 未做 Windows / WebView2 的完整拖拽实机验收；原生安装 / 窗口启动检查不是完整 UI / GPU / 磁盘验收。未签名，未在沙箱另行下载 Windows 二进制做独立第二次哈希校验；摘要来自实际 Windows 清单与 GitHub metadata。
+
+应用 exe SHA256：`aee7e0c4e40729cb08417194963ff1e01ae386e13987245fdd9025b643ad6e05`。
+
+ZIP SHA256（GitHub 上传摘要）：`5912bef350deb51ea0dd1c543d9c3a5693106c6b03f1e5172dd098c868b715fe`。
+
+[原因与真实拖放回归](model-drag.md)。构建证据：[`desktop-1.2.3-evidence/windows-run.json`](desktop-1.2.3-evidence/windows-run.json)、[`windows-artifacts.json`](desktop-1.2.3-evidence/windows-artifacts.json)、[`artifact-metadata.json`](desktop-1.2.3-evidence/artifact-metadata.json)。
+
+## 1.2.2 主题、模型库与水面修复（历史，1.2.3 保留）
 
 - 三个主题圆点恢复顶栏左侧；自定义背景 / 面板 / 强调色可预览、取消、保存并在重启后恢复。主题仅改变工作区，不修改场景或工程。
 - 分组改紧凑下拉框，卡片有独立滚动区，不再被分组栏遮住。1568×842 回归可完整显示两行四张卡片，后续卡片可滚动触达；收起模型库时场景物体列表恢复剩余空间。

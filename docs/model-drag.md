@@ -18,3 +18,7 @@
 - `npm run test:desktop`、`npm run all`、`npm run build:desktop` 通过；桌面 CSP 下重跑 1.2.2 的主题 / 模型库滚动 / 水面回归也通过。
 
 这些是 Linux Chromium 前端检查，不是 Windows / WebView2 的完整拖拽实机验收。安装器另由 Windows job 构建并检查安装 / 窗口启动，实际下载链接与哈希见 `desktop-windows.md`。
+
+## Windows 交付
+
+1.2.3 原生 Windows 构建、安装与窗口启动检查通过，源提交 `5b8be31c0115c9fdb121ec511ae08a7e8e3f4ec9`，run `39907231929`。Windows 打包前端与本地回归构建逐项哈希一致。下载和 SHA256 见 [Windows 安装说明](desktop-windows.md)。没有因此声称原生 WebView2 完整拖拽交互已经实机验证。
