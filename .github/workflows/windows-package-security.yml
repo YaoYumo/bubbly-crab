@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify exact artifact hashes and scan with Microsoft Defender
-        shell: pwsh
+        shell: powershell
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./scripts/windows-security-scan.ps1

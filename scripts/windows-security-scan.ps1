@@ -5,6 +5,23 @@ param(
 # Scan the EXACT already-published artifact. Do not rebuild, execute the binaries,
 # disable protection, add exclusions, rename payloads or publish replacement files.
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# Defender's native module targets Windows PowerShell. Avoid PS7 compatibility
+# remoting, and tolerate a bounded service restart during definition updates.
+function Read-DefenderStatus {
+  for ($attempt = 0; $attempt -lt 6; $attempt++) {
+    try { return Get-MpComputerStatus -ErrorAction Stop }
+    catch { if ($attempt -eq 5) { throw }; Start-Sleep -Seconds 5 }
+  }
+}
+function Read-DefenderPreferences {
+  for ($attempt = 0; $attempt -lt 6; $attempt++) {
+    try { return Get-MpPreference -ErrorAction Stop }
+    catch { if ($attempt -eq 5) { throw }; Start-Sleep -Seconds 5 }
+  }
+}
 $report = [ordered]@{
   artifactId = $ArtifactId
   expectedSource = $ExpectedSource
@@ -36,7 +53,7 @@ try {
   $report.artifact = @{ name = $meta.name; sourceCommit = $meta.workflow_run.head_sha; githubDigest = $meta.digest; bytes = $meta.size_in_bytes }
   $zip = Join-Path $scanRoot 'previz-lab-windows-x64-unsigned.zip'
   $report.phase = 'download original archive'
-  Invoke-WebRequest -Uri "$api/zip" -Headers $headers -OutFile $zip
+  Invoke-WebRequest -Uri "$api/zip" -Headers $headers -OutFile $zip -UseBasicParsing
   $digest = 'sha256:' + (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
   if ($digest -ne $meta.digest) { throw 'Downloaded archive does not match the published GitHub digest' }
   $report.archiveDigestVerified = $true
@@ -70,7 +87,7 @@ try {
   $report.binaryHashesVerified = $true
 
   $report.phase = 'Defender availability'
-  $status = Get-MpComputerStatus
+  $status = Read-DefenderStatus
   $report.defender = @{
     serviceEnabled = $status.AMServiceEnabled
     antivirusEnabled = $status.AntivirusEnabled
@@ -86,7 +103,7 @@ try {
   $report.phase = 'update Defender signatures'
   try { Update-MpSignature; $report.signatureUpdate = 'success' }
   catch { $report.signatureUpdate = 'failed; require fresh existing signatures' }
-  $status = Get-MpComputerStatus
+  $status = Read-DefenderStatus
   $report.defender.signatures = $status.AntivirusSignatureVersion
   $report.defender.signatureDate = [string]$status.AntivirusSignatureLastUpdated
   if (!$status.AntivirusSignatureLastUpdated -or $status.AntivirusSignatureLastUpdated -lt (Get-Date).AddDays(-7)) { throw 'Defender signatures are missing or too old' }
@@ -94,7 +111,7 @@ try {
   $scannerPath = if ($scanner) { $scanner.FullName } else { "$env:ProgramFiles/Windows Defender/MpCmdRun.exe" }
   if (!(Test-Path -LiteralPath $scannerPath)) { throw 'Defender scan executable unavailable' }
   $report.phase = 'check scan location is not excluded'
-  $prefs = Get-MpPreference
+  $prefs = Read-DefenderPreferences
   $report.originalRunnerPolicy = @{ paths = @($prefs.ExclusionPath); archiveScanningDisabled = $prefs.DisableArchiveScanning }
   # Hosted CI excludes entire drives and disables archive scanning by default.
   # Strengthen protection only in this disposable job; never copy these defaults
@@ -102,7 +119,7 @@ try {
   $excludedPaths = @($prefs.ExclusionPath | Where-Object { $_ })
   if ($excludedPaths.Count -gt 0) { Remove-MpPreference -ExclusionPath $excludedPaths }
   Set-MpPreference -DisableArchiveScanning $false
-  $prefs = Get-MpPreference
+  $prefs = Read-DefenderPreferences
   if ($prefs.DisableArchiveScanning) { throw 'Archive scanning could not be enabled; no scan pass claimed' }
   $report.runnerPolicyStrengthened = $true
   $report.exclusions = @{ paths = @($prefs.ExclusionPath); extensions = @($prefs.ExclusionExtension); processes = @($prefs.ExclusionProcess); archiveScanningDisabled = $prefs.DisableArchiveScanning }
@@ -143,6 +160,7 @@ try {
   if ($report.status -eq 'NOT_VALIDATED') { $report.status = 'CHECK_FAILED_OR_UNAVAILABLE' }
   # Do not print redirect URLs, signed artifact URLs or authorization headers.
   $report.error = $_.Exception.GetType().FullName
+  if ($report.phase -match 'Defender|scan location|scan archive') { $report.diagnostic = $_.Exception.Message }
   Write-Host 'Security verification did not complete cleanly. No safety pass is claimed.'
 } finally {
   $json = $report | ConvertTo-Json -Depth 12
