@@ -1,26 +1,39 @@
 # Windows 轻量桌面版：Tauri 2 预检工程
 
-## 下载安全状态：暂不推荐安装
+## 下载并安装：1.2.1 当前安装包
 
-2026-10-23 用户报告浏览器对 `previz-lab-windows-x64-unsigned.zip` 显示 **Dangerous download blocked**。该提示的具体检测类别仍未知，不能仅凭未签名就认定为误报。**先不要保留或运行该包，不关闭安全防护，不通过改名、加密压缩或重新托管来绕过拦截。**
+[下载 Windows x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/39895580080/artifacts/12476229749)（可能需要登录 GitHub；附件保留至 2027-01-21）。
 
-历史构建 / 安装成功和哈希一致只证明来源与可运行性，不证明没有恶意软件，也不代表浏览器信誉通过。已核对**原始已发布 ZIP 和其中的原始二进制**哈希一致，但有效 Windows Defender 验证因 CI 环境排除设置 / 签名更新问题未完成；扫描不可用、失败或有检出均不会标为安全。即使单一引擎无检出，也不据此建议绕过浏览器阻止。后续检查记录见 `windows-package-security.md`。
+1. 升级前将重要工程另存 `.previz` 并备份，退出旧版本。不需要清空缓存或删除本地工程。
+2. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 **`PREVIZ LAB_1.2.1_x64-setup.exe`**，双击安装。不要把同包的 `previz-lab.exe` 误认作安装器。
+3. 这是 Windows x64 当前用户安装包；缺少 WebView2 时安装过程需要联网获取微软运行环境。软件不包含 AI 权重，不会自动启动模型服务。
+4. 安装包仍未签名。包内 `.shots/desktop-artifacts.json` 记录实际字节与哈希，可使用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 核对；哈希校验不等于杀毒检测。
+5. 安装后先测试工程打开 / 另存、PNG 与短视频，再用于重要项目。安装启动检查不代表用户 GPU、原生文件权限与完整交互全面验收。
 
-## 下载并安装（给使用者）
+安装器 SHA256：`fffc6eaeb5071719c28c21d00e3295b67d09c5448892d727660ce91f58b9908c`。
 
-[原始安装包 ZIP（排查中，暂不建议下载运行）](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400/artifacts/12475121975)（可能需要登录 GitHub；本次 Actions 产物保留至2027-01-21，建议下载后本地保留）。
+[成功构建与安装启动检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39895580080)。源码与交付文档均推送当前开发分支，没有合并 main 或发布 GitHub Release。
 
-1. 解压 ZIP，在 `src-tauri/target/release/bundle/nsis/` 找到 `PREVIZ LAB_1.2.0_x64-setup.exe`。
-2. 在 Windows x64 电脑双击安装器，使用当前用户安装。不要把同包的 `previz-lab.exe` 误认作安装器。
-3. 首次安装若缺少 WebView2，需要联网获取微软运行环境；安装器不含 AI 模型，软件不自动连接模型。
-4. 此为未签名预检版，可能显示未知发布者／SmartScreen提示；不要为此关闭安全软件。可先用 PowerShell `Get-FileHash -Algorithm SHA256 '安装器完整路径'` 校验下方哈希。
-5. 安装后先测试打开／另存工程、PNG和短视频，确认你电脑的GPU、路径权限和编码能力，再用于重要项目；重要工程请另存新文件并备份。
+## 1.2.1 右键菜单冲突修复
 
-安装器SHA256：`8850b1b9d5f9cb204e8f0c3c5202dfcdbe4ab14577f001b144647b7f9a4e46c2`。
+- 修复视口饼菜单与 WebView 默认右键菜单同时出现的问题。画布 / 饼菜单及其后代取消默认菜单；其他区域不全局禁用右键。
+- 保留右键拖动平移、Esc 关闭、键盘导航、输入框正常右键菜单，以及 1.2.0 新手指引 / 模型库 / 木构宝塔 / 斜边楼梯与既有时间轴功能。
+- 构建源码：`aba60ace2dbdfab66d28f698549b14e4710c48f1`；包含右键修复 `3e7603e`。Windows run `39895580080` / job `120225152848` 成功完成原生编译、NSIS 打包、静默安装及原生窗口存活检查。
+- 安装器 **2,266,297 bytes**；应用 exe **4,584,448 bytes**；Actions ZIP **4,775,528 bytes**。附件 `12476229749`。
+- Windows 前端全部文件的路径、字节数、SHA256 与本地通过右键回归的桌面构建逐项一致；开发版、断网 file://、桌面 CSP 前端回归通过，包含真实右键事件与覆盖层重定向模拟。没有原生 Windows / WebView2 右键交互实机验收。
+- 此环境未下载 Windows 二进制做独立第二次哈希校验；以上哈希取自实际 Windows runner 清单，ZIP 摘要取自 GitHub artifact metadata。
 
-[成功构建与检查记录](https://github.com/YaoYumo/bubbly-crab/actions/runs/39891196400)。此次没有合并主分支，也没有公开发布 Release。
+应用 exe SHA256：`61bf4f82edf0f6d764dcb3cccacae4a2059b4138826943e5bfbcbae2cd3db5da`。
 
-## 1.2.0 新手指引、精简工作区与用户模型库（当前安装包）
+ZIP SHA256（GitHub 上传摘要）：`dd1e7f70c1ab0095493fae57dac7ac04c51ece8f47771598cfb395a65133cc51`。
+
+证据：[`desktop-1.2.1-evidence/windows-run.json`](desktop-1.2.1-evidence/windows-run.json)、[`windows-artifacts.json`](desktop-1.2.1-evidence/windows-artifacts.json)、[`artifact-metadata.json`](desktop-1.2.1-evidence/artifact-metadata.json)。
+
+### 浏览器排查范围
+
+用户反馈本机安全软件扫描安全，并明确要求本次不再处理浏览器拦截、继续打包。本次按此范围构建 1.2.1，没有更改安全设置，没有签名或浏览器信誉变更；用户的扫描结果未在此独立核验，构建 / 安装成功不是安全扫描通过。原始 1.2.0 附件的历史调查保存在 [下载阻止排查记录](windows-package-security.md)，不将其未完成的 CI 扫描改写为通过。
+
+## 1.2.0 新手指引、精简工作区与用户模型库（历史，1.2.1 保留）
 
 - 首次启动有九步新手指引：可跳过、前进 / 后退、Esc 关闭；从「操作 · 右键 → 工具 / 工程 → 新手指引」重开。导览不生成、不覆盖工程，结束恢复原页面、视角与选择。旧的首次自动弹出生成框改为欢迎导览。
 - 顶栏仅五页面、性能、桌面检查；物体 / 机位 / 空白右键饼菜单保留右拖平移，工程与主题等工具收入二级面板。一句话生成位于中间视口，预设和参数默认折叠。

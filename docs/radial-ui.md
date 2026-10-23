@@ -55,3 +55,7 @@ TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome
 回归测试先在旧实现上失败（覆盖层默认菜单未取消），修复后开发版、断网 file:// 离线版、桌面 CSP 前端预检均通过。包含浏览器实际右键事件的 `defaultPrevented` 检查、模拟 Windows 松键后重定向到覆盖层的事件、在饼菜单内右击不误执行、原有复制 / 删除 / 撤销 / 机位 / 键盘 / 右拖与回拖验证。三份 JSON 报告已更新；原截图继续作为布局参考。
 
 `npm run all`、`npm run build:desktop`、`npm run test:desktop` 均通过。本次没有原生 Windows / WebView2 实机验收，没有新建安装包、签名或发布版本；旧安装包不会自动获得源码修复。此前 Chrome 下载拦截排查仍是独立的未解决事项，不因本次 UI 修复而改变结论。
+
+### Windows 1.2.1 后续打包
+
+用户随后明确要求重新打包 Windows 安装包。本修复已包含在 1.2.1 原生构建 `39895580080` 中，构建、安装与窗口启动检查通过；旧版本不会自动更新，需要安装新版。下载和源提交 / 哈希见 [Windows 安装说明](desktop-windows.md)。上述「没有新建安装包」描述仅对应修复开发当轮；本次打包仍没有原生 Windows 右键交互的完整实机验收。
