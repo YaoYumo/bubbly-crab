@@ -23,7 +23,7 @@ $exitCode = 1
 New-Item -ItemType Directory -Force '.shots' | Out-Null
 # CI workspaces may be excluded by runner antivirus policy. Scan elsewhere and
 # verify the selected location is NOT excluded; do not weaken that policy.
-$scanRoot = Join-Path $env:TEMP ('previz-security-' + [guid]::NewGuid().ToString())
+$scanRoot = Join-Path ($env:SystemDrive + '\') ('previz-security-' + [guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Force $scanRoot | Out-Null
 try {
   if (!$env:GITHUB_TOKEN -or !$env:GITHUB_REPOSITORY) { throw 'GitHub Actions environment is required' }
@@ -102,6 +102,7 @@ try {
     if ($scanRoot -like $pattern -or $scanRoot -like ($pattern + '\*')) { throw 'Scan folder is excluded by Defender policy; no scan pass claimed' }
   }
   foreach ($ext in @($prefs.ExclusionExtension)) {
+    if (!$ext) { continue }
     if ($ext.TrimStart('.') -in @('*', 'exe', 'zip')) { throw 'Relevant file types are excluded by Defender policy; no scan pass claimed' }
   }
   $check = & $scannerPath -CheckExclusion -Path $scanRoot 2>&1
