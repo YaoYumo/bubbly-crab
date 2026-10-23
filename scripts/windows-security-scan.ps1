@@ -20,7 +20,11 @@ $report = [ordered]@{
   note = 'A no-detection result is not a browser reputation verdict or proof of safety. Do not override the browser block based on this report.'
 }
 $exitCode = 1
-New-Item -ItemType Directory -Force '.shots/security-scan' | Out-Null
+New-Item -ItemType Directory -Force '.shots' | Out-Null
+# CI workspaces may be excluded by runner antivirus policy. Scan elsewhere and
+# verify the selected location is NOT excluded; do not weaken that policy.
+$scanRoot = Join-Path $env:TEMP ('previz-security-' + [guid]::NewGuid().ToString())
+New-Item -ItemType Directory -Force $scanRoot | Out-Null
 try {
   if (!$env:GITHUB_TOKEN -or !$env:GITHUB_REPOSITORY) { throw 'GitHub Actions environment is required' }
   $headers = @{ Authorization = "Bearer $env:GITHUB_TOKEN"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
@@ -30,7 +34,7 @@ try {
   if ($meta.expired -or $meta.workflow_run.head_sha -ne $ExpectedSource) { throw 'Expired artifact or unexpected source commit' }
   if ($meta.name -ne 'previz-lab-windows-x64-unsigned' -or $meta.size_in_bytes -gt 32MB) { throw 'Unexpected artifact identity or size' }
   $report.artifact = @{ name = $meta.name; sourceCommit = $meta.workflow_run.head_sha; githubDigest = $meta.digest; bytes = $meta.size_in_bytes }
-  $zip = Join-Path (Resolve-Path '.shots/security-scan') 'previz-lab-windows-x64-unsigned.zip'
+  $zip = Join-Path $scanRoot 'previz-lab-windows-x64-unsigned.zip'
   $report.phase = 'download original archive'
   Invoke-WebRequest -Uri "$api/zip" -Headers $headers -OutFile $zip
   $digest = 'sha256:' + (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
@@ -39,7 +43,7 @@ try {
   $report.archiveDigest = $digest
 
   $report.phase = 'validate archive entries'
-  $dest = Join-Path (Resolve-Path '.shots/security-scan') 'original-contents'
+  $dest = Join-Path $scanRoot 'original-contents'
   $prefix = [System.IO.Path]::GetFullPath($dest) + [System.IO.Path]::DirectorySeparatorChar
   $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
   try {
@@ -89,16 +93,38 @@ try {
   $scanner = Get-ChildItem "$env:ProgramData/Microsoft/Windows Defender/Platform/*/MpCmdRun.exe" -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1
   $scannerPath = if ($scanner) { $scanner.FullName } else { "$env:ProgramFiles/Windows Defender/MpCmdRun.exe" }
   if (!(Test-Path -LiteralPath $scannerPath)) { throw 'Defender scan executable unavailable' }
+  $report.phase = 'check scan location is not excluded'
+  $prefs = Get-MpPreference
+  $report.exclusions = @{ paths = @($prefs.ExclusionPath); extensions = @($prefs.ExclusionExtension); processes = @($prefs.ExclusionProcess); archiveScanningDisabled = $prefs.DisableArchiveScanning }
+  foreach ($excluded in @($prefs.ExclusionPath)) {
+    if (!$excluded) { continue }
+    $pattern = [Environment]::ExpandEnvironmentVariables($excluded).Replace('/', '\').TrimEnd('\')
+    if ($scanRoot -like $pattern -or $scanRoot -like ($pattern + '\*')) { throw 'Scan folder is excluded by Defender policy; no scan pass claimed' }
+  }
+  foreach ($ext in @($prefs.ExclusionExtension)) {
+    if ($ext.TrimStart('.') -in @('*', 'exe', 'zip')) { throw 'Relevant file types are excluded by Defender policy; no scan pass claimed' }
+  }
+  $check = & $scannerPath -CheckExclusion -Path $scanRoot 2>&1
+  $report.exclusionCheck = ($check | Out-String).Trim()
+  if ($report.exclusionCheck -notmatch '(?i)not excluded') { throw 'Defender did not confirm that the scan path is unexcluded' }
+  $report.scanLocationUnexcluded = $true
   $report.phase = 'scan archive and extracted binaries without execution'
   # Default remediation remains enabled. If Defender quarantines a file, preserve
   # the detection report; never restore, exclude, or allow it automatically.
-  & $scannerPath -Scan -ScanType 3 -File (Resolve-Path '.shots/security-scan').Path 2>&1 | Tee-Object -FilePath '.shots/security-scan-output.txt'
+  & $scannerPath -Scan -ScanType 3 -File $scanRoot 2>&1 | Tee-Object -FilePath '.shots/security-scan-output.txt'
   $report.scanExitCode = $LASTEXITCODE
-  $report.threats = @(Get-MpThreatDetection | Where-Object { ($_.Resources -join ' ') -match 'security-scan' } | Select-Object ThreatID, InitialDetectionTime, LastThreatStatusChangeTime, ActionSuccess, Resources)
+  $report.threats = @(Get-MpThreatDetection | Where-Object { ($_.Resources -join ' ') -match 'previz-security-' } | Select-Object ThreatID, InitialDetectionTime, LastThreatStatusChangeTime, ActionSuccess, Resources)
   if ($report.scanExitCode -ne 0 -or $report.threats.Count -gt 0) {
     $report.status = 'DETECTION_OR_SCAN_ERROR'
     throw 'Threat detection or scan error; do not use or redistribute this package'
   }
+  # Return code zero can also accompany successful remediation. Require that
+  # both original files still exist and remain byte-identical after the scan.
+  foreach ($item in @($inventory.installers) + @($inventory.binaries)) {
+    $file = Join-Path $dest $item.path
+    if (!(Test-Path -LiteralPath $file) -or (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant() -ne $item.sha256) { throw 'A binary disappeared or changed during the scan' }
+  }
+  $report.postScanHashesVerified = $true
   $report.status = 'NO_DETECTIONS_BY_THIS_ENGINE'
   $report.phase = 'completed'
   $exitCode = 0
