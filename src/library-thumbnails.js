@@ -96,7 +96,7 @@ export class LibraryThumbnails {
       if(!Number.isFinite(extent)||extent<=0)throw Error('模型边界无效');
       const factor=1.65/extent;
       root.position.sub(center);wrapper.add(root);wrapper.scale.setScalar(factor);this.scene.add(wrapper);
-      this.camera.position.set(3,2.2,3);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();
+      this.camera.position.set(3,2.2,['stairstraight','stairswitch','stairspiral'].includes(item.source?.type)?-3:3);this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();
       this.renderer.setClearColor(0x000000,0);this.renderer.render(this.scene,this.camera);
       return this.renderer.domElement.toDataURL('image/png');
     } finally {

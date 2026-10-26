@@ -331,7 +331,7 @@ function buildSign(p) {
 
 /** 轿车 / SUV */
 function buildCar(p) {
-  const g = new THREE.Group();
+  const g = new THREE.Group(); g.userData.forwardAxis = '+x';
   const color = p.color || '#dfe4e8';
   const suv = p.kind === 'suv';
   const body = mm(color, 0.4, 0.3);
@@ -356,7 +356,7 @@ function buildCar(p) {
 
 /** 公交车 */
 function buildBus(p) {
-  const g = new THREE.Group();
+  const g = new THREE.Group(); g.userData.forwardAxis = '+x';
   const color = p.color || '#c9a227';
   const body = mm(color, 0.45, 0.25);
   g.add(box(10.5, 2.2, 2.4, body, 0, 1.6, 0));

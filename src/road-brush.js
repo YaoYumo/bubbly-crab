@@ -1,3 +1,4 @@
+import { pointGuide, hitCurvePoint } from './curve-handles.js';
 // ---------------------------------------------------------------------------
 // 道路画笔 — 重构版（任务33）
 //
@@ -50,8 +51,18 @@ export class RoadBrush {
     this._seq = 0;
     this._drag = null;                         // 指针拖拽状态 { kind:'point'|'handle', idx }
     this._buildPreviewHelpers();
+    this.selectedGuides = new THREE.Group(); this.selectedGuides.name = 'selected-road-points';
+    this.app.stage.helperLayer.add(this.selectedGuides);
+    for(const event of ['select','objects','undoable']) this.app.bus.on(event, () => this.showSelectedPoints());
   }
 
+  showSelectedPoints() {
+    this._disposeChildren(this.selectedGuides);
+    const so = this.app.selObj;
+    if(this.active || !so || so.type !== 'road_brush' || so.locked || so.visible === false || this.app.state.preview) return;
+    const points = so.serialize().points;
+    if(points?.length) this.selectedGuides.add(pointGuide(points, 0x4a90d9));
+  }
   _buildPreviewHelpers() {
     const lineMat = new THREE.LineBasicMaterial({ color: 0x4A90D9, linewidth: 2, transparent: true, opacity: 0.5 });
     const lineGeo = new THREE.BufferGeometry();
@@ -156,7 +167,7 @@ export class RoadBrush {
     this.app.vegetationBrush?.stop();
     this.app.state.terrainTool = null; this.app.terrain?.refreshUI();
     this.app.roadPlanning?.setPicking(false);
-    this.active = true;
+    this.active = true; this.showSelectedPoints();
     this.points = [];
     this.filletH = [];
     this._drag = null;
@@ -165,6 +176,9 @@ export class RoadBrush {
   }
 
   stop() {
+    const drag=this._drag;this._drag=null;
+    if(drag && this.app.stage.orbit)this.app.stage.orbit.enabled=this._pointerOrbit ?? true;
+    if(drag?.pointerId!==undefined)try{this._host?.releasePointerCapture(drag.pointerId);}catch{}
     // 纯取消：清掉当前笔画，不落路（完成走 finish —— 双击 / Enter / 面板按钮）
     this.active = false;
     this.points = [];
@@ -269,12 +283,13 @@ export class RoadBrush {
     for (let i = 0; i < pts.length; i++) {
       const dot = new THREE.Mesh(
         new THREE.SphereGeometry(0.3, 12, 8),
-        new THREE.MeshBasicMaterial({ color: 0x4A90D9, transparent: true, opacity: 0.8 }),
+        new THREE.MeshBasicMaterial({ color: 0x4A90D9, transparent: true, opacity: 0.8, depthTest: false, depthWrite: false }),
       );
       dot.position.copy(pts[i]);
-      dot.userData.pointIdx = i;
+      dot.userData.pointIdx = i; dot.renderOrder = 1000; dot.userData.pickIgnore = true;
       this.previewDots.add(dot);
     }
+    this.previewDots.add(pointGuide(pts.map(p => p.toArray()), 0x4a90d9));
     if (pts.length >= 2) {
       const curve = this._buildPathCurve();
       const linePoints = curve.getSpacedPoints(Math.max(24, Math.round(curve.getLength() * 2)));
@@ -359,7 +374,7 @@ export class RoadBrush {
     this._updatePreview();
     if (mesh) {
       const wasEdit = !!this._editBackup;                 // 编辑接管模式：完成即收笔（不保持连续绘制）
-      this._editBackup = null;
+      this._editBackup = null;this._editUndoBefore=null;this._editUndoMark=null;
       this._editNoJunct = false;
       if (wasEdit) {
         this.stop();
@@ -417,10 +432,12 @@ export class RoadBrush {
     if (this._editBackup) this.cancelEdit();      // 正在编辑另一条：先还原上一条
     this.stop();                                  // 结束可能进行中的普通绘制（纯取消）
     const app = this.app;
+    this._editUndoBefore = { _undo:[...(app._undo||[])], _redo:[...(app._redo||[])], _undoBytes:app._undoBytes, _undoAvail:app._undoAvail, _redoAvail:app._redoAvail, _opKey:app._opKey };
     this._editBackup = data;
     this._editNoJunct = !!data.noJunct;
     this._editTargetShots = app.shots.filter(s => s.targetId === so.id);
     app.batchOp(`编辑 ${so.name || '道路'}`, () => app.removeObject(so));
+    this._editUndoMark = app._undo?.at(-1);
     this.start();
     this.points = data.points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
     this.roadWidth = data.width || 12;
@@ -438,6 +455,7 @@ export class RoadBrush {
 
   /** 放弃编辑：清空画笔并把原路原样恢复（路口重新检测） */
   cancelEdit() {
+    const undoBefore=this._editUndoBefore,undoMark=this._editUndoMark;this._editUndoBefore=null;this._editUndoMark=null;
     const b = this._editBackup;
     this._editBackup = null;
     this._editNoJunct = false;
@@ -449,6 +467,9 @@ export class RoadBrush {
       if (restored) this.app.select({ kind: 'obj', so: restored });
       this.app.bus.emit('objects');
       this.app.markDirty?.();
+      if(undoBefore && this.app._undo?.at(-1)===undoMark && this.app._undo.length===undoBefore._undo.length+1) {
+        Object.assign(this.app,undoBefore);this.app.bus.emit('undoable');
+      }
     }
   }
 
@@ -1047,7 +1068,7 @@ export class RoadBrush {
   }
 
   _findPointAt(screenX, screenY) {
-    const threshold = 6;
+    const threshold = 14;
     for (let i = 0; i < this.points.length; i++) {
       const s = this._projectToScreen(this.points[i]);
       if (!s) continue;
@@ -1090,13 +1111,24 @@ export class RoadBrush {
     };
 
     this._onPointerDown = (ev) => {
-      if (!this.active || ev.button !== 0) return;
+      if(ev.button !== 0 || this.app.state.playing || this.app.state.preview || this.app.suspended || this.app.aiScene?.busy) return;
+      let immediate = null;
+      if(!this.active) {
+        const so = this.app.selObj;
+        if(!this.selectedGuides.children.length || !so || so.locked) return;
+        const index = hitCurvePoint(ev, st, so.serialize().points);
+        if(index < 0 || !this.editRoad(so)) return;
+        immediate = {kind:'point', idx:index, autoCommit:true, before:this.points[index].clone()};
+        st.tc.detach();
+      }
       ev.preventDefault();
-      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+      this._pointerOrbit=st.orbit?.enabled;
       if (st.orbit) st.orbit.enabled = false;
-      const hit = pick(ev);
+      try{host.setPointerCapture(ev.pointerId);}catch{}
+      const hit = immediate || pick(ev);
       if (hit) {
-        this._drag = hit;
+        this._drag = {...hit,pointerId:ev.pointerId};
         try { host.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
         return;
       }
@@ -1107,6 +1139,7 @@ export class RoadBrush {
     this._onPointerMove = (ev) => {
       if (!this.active) return;
       if (this._drag) {
+        ev.preventDefault(); ev.stopImmediatePropagation();
         const p = this._aim(ev);
         if (!p || !isFinite(p.x)) return;
         if (this._drag.kind === 'handle') {
@@ -1126,8 +1159,13 @@ export class RoadBrush {
 
     this._onPointerUp = (ev) => {
       if (!this.active) return;
-      if (st.orbit) st.orbit.enabled = true;
+      if (st.orbit) st.orbit.enabled = this._pointerOrbit ?? true;
+      const autoCommit = this._drag?.autoCommit;
+      const unchanged=autoCommit && this._drag.before && this.points[this._drag.idx]?.distanceTo(this._drag.before)<.0001;
+      if(this._drag) { ev.preventDefault(); ev.stopImmediatePropagation(); }
       this._drag = null;
+      if(unchanged) this.cancelEdit();
+      else if(autoCommit) { try { this.finish(); this.app.bus.emit('objects'); this.app.markDirty?.(); } catch(e) { this.cancelEdit(); this.app.notify?.(e.message,'warn'); } }
       try { host.releasePointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
     };
 
@@ -1142,6 +1180,9 @@ export class RoadBrush {
     host.addEventListener('pointerdown', this._onPointerDown, true);
     host.addEventListener('pointermove', this._onPointerMove, true);
     host.addEventListener('pointerup', this._onPointerUp, true);
+    this._onPointerCancel = () => { if(this._drag?.autoCommit) this.cancelEdit(); this._drag = null; if(st.orbit) st.orbit.enabled = this._pointerOrbit ?? true; };
+    host.addEventListener('pointercancel', this._onPointerCancel, true);
+    host.addEventListener('lostpointercapture', this._onPointerCancel, true);
     host.addEventListener('dblclick', this._onDblClick, true);
   }
 
@@ -1151,6 +1192,8 @@ export class RoadBrush {
     host.removeEventListener('pointerdown', this._onPointerDown, true);
     host.removeEventListener('pointermove', this._onPointerMove, true);
     host.removeEventListener('pointerup', this._onPointerUp, true);
+    host.removeEventListener('pointercancel', this._onPointerCancel, true);
+    host.removeEventListener('lostpointercapture', this._onPointerCancel, true);
     host.removeEventListener('dblclick', this._onDblClick, true);
     this._host = null;
     this._drag = null;

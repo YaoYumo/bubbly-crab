@@ -1,3 +1,4 @@
+import { cleanPrimitiveParts } from './primitive-model-spec.js';
 // Data-only contract shared by manual plans, local recipes and API plans.
 export const AI_SCENE_SCHEMA = "previz-ai-scene/1";
 export const MAX_PLAN_BYTES = 512 * 1024,
@@ -194,6 +195,8 @@ export function allowedParams(params, descriptors, animations = []) {
         throw Error(
           k + (palette ? "需要1–8个逗号分隔的#RRGGBB" : "需要#RRGGBB"),
         );
+    } else if (d.t === "primitive-model") {
+      cleanPrimitiveParts(value);
     } else if (d.t === "text") {
       if (
         typeof value !== "string" ||

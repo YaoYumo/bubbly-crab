@@ -1,3 +1,4 @@
+import { buildPrimitiveModel } from './primitive-model.js';
 import { ProjectAssets } from './project-assets.js';
 import { uid } from './util.js';
 
@@ -164,6 +165,18 @@ export class ModelLibrary {
       await this.write(next, additions);
       return { count: models.length, errors: models.errors || [] };
     } finally { this.busy = false; this.app.bus.emit('library-changed'); }
+  }
+  async savePrimitive(so, groupId = 'my_models') {
+    await this.ready;this.assertEditable();
+    if(!so?.root.userData.primitiveModel || !this.app.objects.includes(so))throw Error('请选择当前场景的AI组合粗模');
+    if(!this.groups().some(g=>g.id===groupId))throw Error('模型分组不存在');
+    this.busy=true;const root=buildPrimitiveModel(so.params);
+    root.scale.copy(so.root.scale);
+    try {
+      const resources=new ProjectAssets(),assetId=await resources.register(root),next=structuredClone(this.meta);
+      const model={key:'userlib:'+uid('model_'),groupId,name:cleanName(so.name)||'AI粗模',assetId,format:'AI粗模'};
+      next.models.push(model);await this.write(next,new Map([[assetId,resources.records.get(assetId)]]));return model.key;
+    } finally { root.traverse(n=>{n.geometry?.dispose();n.material?.dispose();});this.busy=false;this.app.bus.emit('library-changed'); }
   }
   async place(key, point) {
     try {

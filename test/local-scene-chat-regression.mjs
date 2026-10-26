@@ -13,6 +13,7 @@ try{
    if(command!=='local_ai_chat')throw Error('Unexpected IPC: '+command);
    const data=JSON.parse(args.messages[1].content);window.__lastChat=data;
    const key=data.catalog.find(a=>a.key.startsWith('cn:hall:'))?.key;
+   if(__chatMode==='expanded')return JSON.stringify({reply:'已生成粗模、河流、车辆走位、跟拍和氛围',terrain:{rivers:[{action:'add',shape:'straight',center:[-50,-40],length:60,width:6,depth:2,water:true}]},operations:[{op:'primitive',name:'库外巡检机器人',pos:[-10,0,-10],parts:[{shape:'box',size:[.8,1.1,.6],pos:[0,.9,0],color:'#4f83b0'},{shape:'sphere',size:[.5,.5,.5],pos:[0,1.7,0]}]},{op:'add',key:data.catalog.find(a=>a.key.startsWith('env:car:')).key,name:'巡检车',pos:[0,0,0]},{op:'motion',objectId:'last',points:[[0,0,0,0],[data.scene.durationSeconds,20,0,10]]},{op:'camera',objectId:'last',preset:'follow'},{op:'environment',lighting:'golden',weather:'rain'}]});
    if(__chatMode.startsWith('river-screenshot-')){
     window.__riverScreenshotCalls??={};__riverScreenshotCalls[__chatMode]=(__riverScreenshotCalls[__chatMode]||0)+1;
     window.__riverPromptBytes=new TextEncoder().encode(args.messages[0].content+args.messages[1].content).length;
@@ -138,8 +139,14 @@ try{
  await send('生成一条河流','river-screenshot-simple');assert.deepEqual(await p.evaluate(()=>({width:app.terrain.workflow.rivers[0].width,depth:app.terrain.workflow.rivers[0].depth,points:app.terrain.workflow.rivers[0].points.length,calls:__riverScreenshotCalls['river-screenshot-simple']})),{width:6,depth:2,points:2,calls:1});await p.click('[data-local-chat-undo]');
  await p.evaluate(async()=>{const c=await app.aiScene.context({mode:'add'});const o=app.addAsset(c.catalog.find(a=>a.key.startsWith('cn:hall:')).key,[0,0,0],{authored:true});o.locked=true;});
  const lockedRiverUndo=await undo();await send('在中央生成一条约20米宽弯曲的河流，深度5米','river-screenshot-locked');assert.equal(await undo(),lockedRiverUndo);assert.match(await p.$eval('.local-chat-status',n=>n.textContent),/锁定|保护/);assert.equal(await p.evaluate(()=>__riverScreenshotCalls['river-screenshot-locked']),1);assert.deepEqual(await p.evaluate(()=>Array.from(app.terrain.h)),riverBaseline.h);
+ await p.evaluate(()=>{app.clearAll();app.localScene.recentIds=[];});
+ const expandedUndo=await undo();await send('生成河流和库外巡检机器人及轿车，车辆沿路径行驶，跟拍镜头，黄金光影雨天','expanded');
+ const expanded=await p.evaluate(()=>({primitive:!!app.objects.find(o=>o.root.userData.primitiveModel),motion:!!app.objects.find(o=>o.type==='car')?.motion.active,camera:app.shots.some(s=>s.targetId===app.objects.find(o=>o.type==='car')?.id),weather:app.weather.type,lighting:app.lighting.preset,rivers:app.terrain.workflow.rivers.length,fullCatalog:__lastChat.catalog.length>0,undo:app._undo.length}));
+ if(!expanded.primitive)console.log('EXPANDED FAILURE',await p.evaluate(()=>({status:document.querySelector('.local-chat-status').textContent,failure:app.localScene.lastFailure})));
+ assert.deepEqual(expanded,{primitive:true,motion:true,camera:true,weather:'rain',lighting:'golden',rivers:1,fullCatalog:true,undo:expandedUndo+1});
+ await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.length),0);assert.equal(await p.evaluate(()=>app.terrain.workflow.rivers.length),0);
  assert.equal(await p.evaluate(()=>__folderOpened),1);assert.ok((await p.evaluate(()=>__calls)).includes('local_ai_stop'));
  const snapshot=await p.evaluate(()=>({objects:app.objects.length,messages:app.localScene.messages.map(m=>({role:m.role,text:m.text})),ipc:__calls,csp:__chatCSP}));assert.deepEqual(snapshot.csp,[]);assert.deepEqual(errors,[]);
- fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,restoredLockedTransform,terrainSafety,city,riverScreenshot,errors,realGGUF:false},null,2));
+ fs.mkdirSync('.shots',{recursive:true});await p.screenshot({path:'.shots/local-scene-chat-mocked-ipc.png'});fs.writeFileSync('.shots/local-scene-chat-mocked-ipc.json',JSON.stringify({...snapshot,expanded,restoredLockedTransform,terrainSafety,city,riverScreenshot,errors,realGGUF:false},null,2));
  console.log('PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.');
 }finally{await b.close();}

@@ -1,3 +1,4 @@
+import { stairFlight, spiralStair, beamBetween } from './stair-geometry.js';
 // ---------------------------------------------------------------------------
 // 建筑构件：墙 / 窗 / 门 / 屋顶 / 天花板 / 楼梯（每种 2-3 个变体）
 // 全部程序化生成（纯 box / extrude，无外部资源），用于「搭一栋能进的画面」：
@@ -467,51 +468,11 @@ function buildCeilingGrid(p) { return ceilingBase(p, 'grid'); }
 
 // ============================ 楼梯 ==========================================
 /** 一段直跑梯：返回 { group, top:{y,z} }，并把洞口写到 root.userData.stairOpen */
-function flight(p, mat, rng) {
-  const g = new THREE.Group();
-  const antiSlip = Q.level !== 'lite';
-  const H = Math.max(0.6, p.rise), W = Math.max(0.5, p.w);
-  const n = Math.round(clamp(p.steps, 3, 40));
-  const tread = Math.max(0.12, p.tread);
-  const rail = !!p.rail;
-  const rh = 0.9;
-  for (let i = 0; i < n; i++) {
-    const y = (H * (i + 1)) / n;
-    const z = (i + 0.5) * (H / n) * clamp(p.slope, 1.2, 3.2);
-    const th = Math.max(0.04, H / n);
-    g.add(box(W, th, tread, mat, 0, y - th / 2, z));
-    if (Q.level !== 'lite') {
-      g.add(box(W + 0.03, 0.024, 0.036, mat, 0, y - th + 0.012, z + tread / 2 + 0.016));   // 踏步鼻线
-      if (antiSlip) g.add(box(W * 0.92, 0.006, 0.03, M.dark(0x3a3f45, 0.9), 0, y + 0.001, z + tread / 2 - 0.045));
-    }
-    if (rail) for (const sx of [-1, 1]) {
-      const post = box(0.05, rh, 0.05, M.metal(0x8f979f, 0.4, 0.7), sx * (W / 2 + 0.03), y + rh / 2 - 0.02, z);
-      g.add(post);
-    }
-  }
-  const depth = n * (H / n) * clamp(p.slope, 1.2, 3.2);
-  if (rail) {
-    for (const sx of [-1, 1]) {
-      const bar = box(0.06, 0.06, Math.hypot(depth, H), M.metal(0x8f979f, 0.4, 0.7), sx * (W / 2 + 0.03), H / 2 + rh - 0.02, depth / 2, 0.026);   // 圆扶手：倒角
-      bar.rotation.x = Math.atan2(H, depth);
-      g.add(bar);
-    }
-  }
-  // 梯梁（两侧斜板）：上端竖直切、下端水平落在地面上。
-  // 旧版是一整块旋转矩形，两端斜角会戳到地板下 1m，整挂楼梯被「底面贴地」抬起来悬在空中。
-  const bh = Math.max(0.14, H * 0.55);
-  const zA = Math.min(depth * 0.92, (bh / H) * depth);
-  const sp = new THREE.Shape();
-  sp.moveTo(0, 0); sp.lineTo(zA, 0); sp.lineTo(depth, H - bh); sp.lineTo(depth, H); sp.closePath();
-  const sg = new THREE.ExtrudeGeometry(sp, { depth: 0.1, bevelEnabled: false });
-  sg.translate(0, 0, -0.05);
-  for (const sx of [-1, 1]) {
-    const m = new THREE.Mesh(sg, mat);
-    m.rotation.y = -Math.PI / 2;
-    m.position.set(sx * (W / 2 + 0.06), 0, 0);
-    g.add(m);
-  }
-  return { g, depth, top: { y: H, z: depth } };
+function flight(p, mat) {
+  const H=Math.max(.6,p.rise),n=Math.round(clamp(p.steps,3,40));
+  // Keep legacy run length/slope, but a tread must cover its actual going.
+  const going=Math.max(p.tread, H/n*clamp(p.slope,1.2,3.2));
+  return stairFlight({height:H,width:Math.max(.5,p.w),steps:n,going,material:mat,railMaterial:M.metal(0x8f979f,.4,.7),rail:!!p.rail});
 }
 function buildStairStraight(p) {
   const g = new THREE.Group();
@@ -534,80 +495,30 @@ function buildStairStraight(p) {
   return shade(g);
 }
 function buildStairSwitch(p) {
-  const g = new THREE.Group();
-  const mat = M.paint(new THREE.Color(p.color).getHex(), 0.85);
-  const H = Math.max(1.2, p.rise), half = H / 2;
-  const p1 = { ...p, rise: half, rail: false };
-  const A = flight(p1, mat);
-  const W = Math.max(0.5, p.w);
-  const land = box((W + 0.3) * 2, 0.12, W + 0.3, mat, (W + 0.3) / 2, half, A.depth + (W + 0.3) / 2);   // 平台跨两跑（与 stairOpen 洞口同宽同轴；原来只盖第一跑，第二跑整段悬空）
-  g.add(A.g, land);
-  const B = flight(p1, mat);
-  const bgrp = new THREE.Group();
-  bgrp.add(B.g);
-  bgrp.rotation.y = Math.PI;
-  bgrp.position.set(W + 0.3, half + 0.06, A.depth + (W + 0.3));
-  g.add(bgrp);
-  if (p.rail) for (let i = 0; i < 4; i++) {
-    const pz = i * 0.4;                                                          // 立柱脚踩斜梁顶边（原公式 half*0.5 让整排立柱悬空 ~0.73m）
-    g.add(box(0.05, 0.9, 0.05, M.metal(0x8f979f, 0.4, 0.7), -W / 2 - 0.06 + i * 0.02, pz * half / A.depth + 0.087 + 0.45, pz));
+  const g=new THREE.Group(),mat=M.paint(new THREE.Color(p.color).getHex(),.85),metal=M.metal(0x8f979f,.4,.7);
+  const H=Math.max(1.2,p.rise),half=H/2,W=Math.max(.5,p.w),gap=.3,landing=W+.3;
+  const A=flight({...p,rise:half},mat),B=flight({...p,rise:half},mat);
+  g.add(A.g);
+  g.add(box(2*W+gap,.12,landing,mat,(W+gap)/2,half-.06,A.depth+landing/2));
+  const ret=new THREE.Group();ret.add(B.g);ret.rotation.y=Math.PI;ret.position.set(W+gap,half,A.depth);g.add(ret);
+  if(p.rail) {
+    const x0=-W/2,x1=1.5*W+gap,z=A.depth+landing;
+    for(const x of [x0,x1]) {
+      g.add(beamBetween([x,half,A.depth],[x,half+.9,A.depth],.023,metal));
+      g.add(beamBetween([x,half,z],[x,half+.9,z],.023,metal));
+      g.add(beamBetween([x,half+.9,A.depth],[x,half+.9,z],.032,metal));
+    }
+    g.add(beamBetween([x0,half+.9,z],[x1,half+.9,z],.032,metal));
   }
-  const depth = A.depth * 2 + (W + 0.3);
-  const hl2 = n0(p.holeLen, 2.4, 0, 20);
-  const end2 = W + 0.3;                                              // 上跑梯顶（走下来进二层的那条边）
-  const d2 = hl2 > 0.05 ? Math.min(hl2, depth) : depth;
-  g.userData.stairOpen = {
-    w: (W + 0.3) * 2 + clamp(p.pad, 0, 1.2),
-    d: d2,
-    cx: (W + 0.3) / 2,
-    cz: end2 - d2 / 2,
-    y: H + clamp(p.openUp, 0, 3),
-    band: clamp(p.band, 0.6, 6),
-  };
+  const full=A.depth+landing,hl=n0(p.holeLen,2.4,0,20),d=hl>.05?Math.min(hl,full):full;
+  g.userData.stairOpen={w:2*W+gap+clamp(p.pad,0,1.2),d,cx:(W+gap)/2,cz:d/2,y:H+clamp(p.openUp,0,3),band:clamp(p.band,.6,6)};
+  g.userData.returnFlight={landingHeight:half,returnStart:[W+gap,half,A.depth],returnTop:[W+gap,H,0]};
   return shade(g);
 }
 function buildStairSpiral(p) {
-  const g = new THREE.Group();
-  const mat = M.paint(new THREE.Color(p.color).getHex(), 0.85);
-  const H = Math.max(1, p.rise), R = Math.max(0.8, p.r), r0 = Math.max(0.12, p.post);
-  const n = Math.round(clamp(p.steps, 6, 60));
-  const turn = clamp(p.turn, 0.3, 2) * Math.PI * 2;
-  g.add(cyl(r0, r0, H + 0.2, M.metal(0x8f979f, 0.45, 0.6), 12, 0, (H + 0.2) / 2, 0));
-  for (let i = 0; i < n; i++) {
-    const a = ((i + 1) / n) * turn;
-    const y = ((i + 1) / n) * H;
-    const step = box(R - r0, Math.max(0.04, H / n * 0.8), Math.max(0.16, (turn * R) / n * 0.55), mat, 0, 0, 0);
-    const holder = new THREE.Group();
-    holder.rotation.y = -a;
-    step.position.set((R + r0) / 2, y - H / n * 0.4, 0);
-    holder.add(step);
-    g.add(holder);
-    if (p.rail) {
-      const bal = box(0.04, 0.88, 0.04, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
-      const bh = new THREE.Group();
-      bh.rotation.y = -a;
-      bal.position.set(R + 0.02, y + 0.41, 0);        // 底端插进踏步 3cm
-      bh.add(bal);
-      g.add(bh);
-      // 扶手：相邻立柱顶之间的螺旋段（旧版只有立柱、扶手整圈缺失）
-      if (i < n - 1) {
-        const a2 = ((i + 2) / n) * turn, y2 = ((i + 2) / n) * H;
-        const da = a2 - a, rr = R + 0.02;
-        const chord = 2 * rr * Math.sin(da / 2), dy = y2 - y;
-        const len = Math.hypot(chord, dy) + 0.06;
-        const rail = box(0.05, 0.06, len, M.metal(0x9aa2ab, 0.4, 0.7), 0, 0, 0);
-        const rh = new THREE.Group();
-        rh.rotation.y = -(a + da / 2);
-        rail.position.set(rr, (y + y2) / 2 + 0.82, 0);
-        rail.rotation.x = Math.atan2(dy, chord);
-        rh.add(rail);
-        g.add(rh);
-      }
-    }
-  }
-  g.add(box(0.5, 0.05, 0.5, mat, 0, H + 0.03, 0));                                          // 顶部小平台
-  const rr = R + 0.2 + clamp(p.pad, 0, 1.2);
-  g.userData.stairOpen = { round: rr, y: H + clamp(p.openUp, 0, 3), band: clamp(p.band, 0.6, 6) };
+  const H=Math.max(1,p.rise),R=Math.max(.8,p.r),mat=M.paint(new THREE.Color(p.color).getHex(),.85);
+  const g=spiralStair({height:H,radius:R,postRadius:Math.max(.12,p.post),steps:Math.round(clamp(p.steps,6,60)),turn:clamp(p.turn,.3,2),rail:!!p.rail,material:mat,railMaterial:M.metal(0x9aa2ab,.4,.7)});
+  g.userData.stairOpen={round:R+.2+clamp(p.pad,0,1.2),y:H+clamp(p.openUp,0,3),band:clamp(p.band,.6,6)};
   return shade(g);
 }
 

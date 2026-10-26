@@ -32,7 +32,7 @@ try{
   await page.evaluate(()=>app.redo());assert.equal((await read()).width,14);
   await page.evaluate(id=>app.select({kind:'obj',so:app.byId(id)}),id);
   // 拖动滑块结束时提交一次，不在拖动途中反复销毁控件。
-  const slider=await page.$('#inspector-scene [data-road-property="width-range"]'),box=await slider.boundingBox();
+  const slider=await page.$('#inspector-scene [data-road-property="width-range"]');await slider.evaluate(el=>el.scrollIntoView({block:'center'}));const box=await slider.boundingBox();
   const x=box.x+8+(8-1)/19*(box.width-16);
   await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.down();await page.mouse.move(x,box.y+box.height/2,{steps:4});await page.mouse.up();
   info=await read();assert.equal(info.width,8);assert.deepEqual(info.caps,[8,8]);

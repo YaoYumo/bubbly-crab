@@ -1,3 +1,4 @@
+import { applyDirecting } from "./local-scene-directing.js";
 import { compileConversationTerrain } from "./local-scene-terrain.js";
 import {
   lowerAISceneRelations,
@@ -50,13 +51,14 @@ export class AISceneWorkflow {
       a.reference?.busy ||
       a.stage.exportOwner ||
       a.terrain.workflow.busy ||
+      a.terrain.workflow.draft ||
       a.terrain.workflow.erosionPreview ||
       a.roadBrush.active ||
       a.roadBrush._editBackup ||
       a.vegetationBrush.active
     )
       throw Error(
-        "请先停止播放、导出、道路 / 植被编辑和地形任务，并应用或放弃侵蚀预览",
+        "请先停止播放、导出、道路 / 植被编辑和地形任务，并完成或取消河道编辑 / 侵蚀预览",
       );
   }
   cancel() {
@@ -264,7 +266,10 @@ export class AISceneWorkflow {
     const p = validateEnvelope(cloneData(input), {
         allowEmptyOperations:
           permissions?.conversational === true &&
-          !!permissions?.conversationTerrain,
+          !!(
+            permissions?.conversationTerrain ||
+            permissions?.conversationDirecting
+          ),
       }),
       a = this.app;
     if (!permissions || p.mode !== permissions.mode)
@@ -806,6 +811,30 @@ export class AISceneWorkflow {
         const root = roots.get(id) || a.byId(id)?.root;
         return root ? new THREE.Box3().setFromObject(root) : null;
       });
+      if (permissions.conversationDirecting) {
+        const camera = applyDirecting({
+          raw: permissions.conversationDirecting,
+          doc,
+          changes,
+          permissions,
+          protectedIds,
+          bounds: p.bounds,
+          duration: p.durationSeconds,
+          terrainEnabled,
+          heightAt,
+          warnings,
+        });
+        if (camera)
+          this.buildCameras(
+            doc,
+            roots,
+            {
+              ...p,
+              previs: { subjectId: camera.objectId, camera: camera.preset },
+            },
+            warnings,
+          );
+      }
       if (p.previs) {
         const subject = doc.objects.find((o) => o.id === p.previs.subjectId);
         if (!subject?.key) throw Error("预演主体必须是存在的库资产");
@@ -1017,7 +1046,11 @@ export class AISceneWorkflow {
       );
       restoreSubjects(
         a,
-        runtime.filter((s) => !rebuiltIds.has(s.id)),
+        runtime.filter(
+          (s) =>
+            !rebuiltIds.has(s.id) &&
+            !current.changes.directing?.motions.includes(s.id),
+        ),
       );
       a.stage.view.fov = current.document.view.fov;
       a.stage.view.updateProjectionMatrix();

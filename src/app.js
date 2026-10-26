@@ -1,3 +1,4 @@
+import { actorFaceOffset, actorTangent, actorMotionDistance } from './actor-heading.js';
 // ---------------------------------------------------------------------------
 // App：状态与行为中枢（物体增删、选择、拖放、导入、路径、时间轴、导出）
 // ---------------------------------------------------------------------------
@@ -16,7 +17,7 @@ import { Lighting } from './lighting.js';
 import { Shot, MOVE_BY_ID, SENSORS } from './camera.js';
 import { LIB, LIB_INDEX, buildAsset, defaultsFor, shade } from './assets.js';
 import { mergeSimilar, bakeMerge } from './geo.js';
-import { updateChar, setCharAnim, stepCrowd, ANIMS } from './character.js';
+import { updateChar, setCharAnim, stepCrowd, ANIMS, applyPathCharPose } from './character.js';
 import { LEVELS, setDetailLevel, setTexForce, textureStats, pruneTextureCache, texOn } from './detail.js';
 
 const v0 = new THREE.Vector3();
@@ -1080,15 +1081,16 @@ export class App {
           }
           dist = so.root.position.distanceTo(prev);
           if (m.autoFace) {
-            const t = m.mover.tangent(u);
+            const t = actorTangent(m, u);
             // faceOffset：模型车头非 +z（如轿车车头沿 +x → 偏移 -PI/2）时对齐行进方向
-            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z) + (m.faceOffset || 0);
+            if (t.lengthSq() > 1e-6) so.root.rotation.y = Math.atan2(t.x, t.z) + actorFaceOffset(so);
           }
         }
       }
       if (so.isChar) {
         if (so.root.userData.crowd) stepCrowd(so, dt, this.terrain);   // 人群：各自随机漫游（避水 + 贴地）
-        updateChar(so.root, dt, dist, m?.speed ?? 1);
+        if(!so.root.userData.crowd && m?.active && m.mover?.count>1)applyPathCharPose(so.root,m.anim||'walk',actorMotionDistance(m,u),m.speed??1,S.time);
+        else updateChar(so.root, dt, dist, m?.speed ?? 1);
       }
     }
     // 预览相机：编辑选择与实际播出的镜头分离

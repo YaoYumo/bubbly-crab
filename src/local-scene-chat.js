@@ -100,6 +100,7 @@ function messagesFor(
     }));
   const scene = {
     bounds: workpack.bounds,
+    durationSeconds: workpack.durationSeconds,
     objects: workpack.objects.map((o) => ({
       id: o.id,
       name: o.name,
@@ -110,7 +111,12 @@ function messagesFor(
       position: o.position,
       rotationY: o.rotation?.[1] || 0,
       scale: o.scale,
-      parameters: existing.has(o.key) ? o.parameters : undefined,
+      parameters:
+        existing.has(o.key) ||
+        (o.type === "ai_primitive" &&
+          [...grams].some((s) => s.length > 1 && o.name.includes(s)))
+          ? o.parameters
+          : undefined,
     })),
     recentIds,
     terrain: {
@@ -275,7 +281,7 @@ export class LocalSceneConversation {
         }
       }
       if (typeof data.unsupported === "string") throw Error(data.unsupported);
-      if (!data.operations.length && !data.terrain) {
+      if (!data.operations.length && !data.terrain && !data.directing) {
         const result = {
           text: data.reply || "请进一步描述场景要求。",
           changed: false,
@@ -285,6 +291,7 @@ export class LocalSceneConversation {
       }
       const operations = data.operations;
       if (data.terrain) permissions.conversationTerrain = data.terrain;
+      if (data.directing) permissions.conversationDirecting = data.directing;
       const plan = {
         schema: "previz-ai-scene/1",
         id: uid("chat_"),
@@ -332,7 +339,7 @@ export class LocalSceneConversation {
       }
       const warningCount = draft.warnings.length;
       const notices = draft.warnings
-        .filter((s) => /河道|沟槽|地形|世界高度|贴地/.test(s))
+        .filter((s) => /河道|沟槽|地形|世界高度|贴地|运动|导航|机位/.test(s))
         .slice(0, 3);
       check();
       this.committing = true;
@@ -347,7 +354,7 @@ export class LocalSceneConversation {
           : data.terrain
             ? "terrain"
             : false;
-      const text = `${data.reply}\n已完成：新增 ${applied.changes.added.length}，调整 ${applied.changes.modified.length}，删除 ${applied.changes.removed.length}。${applied.changes.terrain ? " 地形：" + applied.changes.terrain.actions.join("、") + "。" : ""}${warningCount ? " 有 " + warningCount + " 条布局提示。" : ""} 可撤销。${notices.length ? "\n提示：" + notices.join("；") : ""}`;
+      const text = `${data.reply}\n已完成：新增 ${applied.changes.added.length}，调整 ${applied.changes.modified.length}，删除 ${applied.changes.removed.length}。${applied.changes.terrain ? " 地形：" + applied.changes.terrain.actions.join("、") + "。" : ""}${data.directing ? " 运动/机位/氛围已按本轮工具执行。" : ""}${warningCount ? " 有 " + warningCount + " 条布局提示。" : ""} 可撤销。${notices.length ? "\n提示：" + notices.join("；") : ""}`;
       this.messages.push({ role: "assistant", text });
       this.messages = this.messages.slice(-20);
       return { text, changed: true, warnings: applied.warnings };

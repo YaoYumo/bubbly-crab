@@ -1,0 +1,169 @@
+{
+  "objects": 0,
+  "messages": [
+    {
+      "role": "assistant",
+      "text": "未完成：地形修改范围触及锁定 / 保护对象：chat_obj_acx8e"
+    },
+    {
+      "role": "user",
+      "text": "填平所有地形，移除河道，关闭水面"
+    },
+    {
+      "role": "assistant",
+      "text": "地形已填平并关闭水面\n已完成：新增 0，调整 0，删除 0。 地形：生成flat地形、删除河道、关闭全局水面。 有 1 条布局提示。 可撤销。\n提示：原有静态模型保留世界高度；如需跟随新地形，可继续说让原有建筑贴地"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "30座中式建筑组成古城，中轴对称路网，不要河流"
+    },
+    {
+      "role": "assistant",
+      "text": "30座中式古城与中轴道路\n已完成：新增 33，调整 0，删除 0。 可撤销。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "在中央生成一条约20米宽弯曲的河流，深度5米"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：本地模型未返回有效河道指令，自动纠正后仍无效。本轮没有修改场景，可展开失败诊断查看原因。"
+    },
+    {
+      "role": "user",
+      "text": "在中央生成一条约20米宽弯曲的河流，深度5米"
+    },
+    {
+      "role": "assistant",
+      "text": "生成河道\n已完成：新增 0，调整 0，删除 0。 地形：新增河道。 可撤销。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "生成一条河流"
+    },
+    {
+      "role": "assistant",
+      "text": "生成河道\n已完成：新增 0，调整 0，删除 0。 地形：新增河道。 可撤销。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "在中央生成一条约20米宽弯曲的河流，深度5米"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：地形修改范围触及锁定 / 保护对象：obj1p99ck"
+    },
+    {
+      "role": "user",
+      "text": "生成河流和库外巡检机器人及轿车，车辆沿路径行驶，跟拍镜头，黄金光影雨天"
+    },
+    {
+      "role": "assistant",
+      "text": "已生成粗模、河流、车辆走位、跟拍和氛围\n已完成：新增 2，调整 0，删除 0。 地形：新增河道。 运动/机位/氛围已按本轮工具执行。 有 2 条布局提示。 可撤销。\n提示：运动按当前时间轴执行，自动朝向按模型前轴修正；尚无车辆导航/避撞或人物脚步接触求解，请预演核查路径。；机位由现有自动机位生成；不是最优构图，应用后请使用参考包镜头诊断。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    }
+  ],
+  "ipc": [
+    "local_ai_status",
+    "local_ai_open_folder",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_stop",
+    "local_ai_chat",
+    "local_ai_stop",
+    "local_ai_status",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat"
+  ],
+  "csp": [],
+  "expanded": {
+    "primitive": true,
+    "motion": true,
+    "camera": true,
+    "weather": "rain",
+    "lighting": "golden",
+    "rivers": 1,
+    "fullCatalog": true,
+    "undo": 9
+  },
+  "restoredLockedTransform": true,
+  "terrainSafety": {
+    "tamper": true,
+    "stale": true,
+    "legacy": true,
+    "rollback": true,
+    "cancelled": true,
+    "roadPrivate": true,
+    "atomic": true
+  },
+  "city": {
+    "buildings": 30,
+    "roads": 3,
+    "rivers": 0,
+    "calls": 2,
+    "uncommittedAtRepair": true,
+    "undo": 8,
+    "water": false
+  },
+  "riverScreenshot": {
+    "width": 20,
+    "depth": 5,
+    "curved": true,
+    "bed": -5,
+    "globalWater": false,
+    "objects": 0,
+    "calls": 2,
+    "promptBytes": 1670,
+    "catalog": 0,
+    "undo": 8
+  },
+  "errors": [],
+  "realGGUF": false
+}

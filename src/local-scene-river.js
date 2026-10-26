@@ -81,7 +81,7 @@ export function singleRiverRequest(prompt) {
   )
     return null;
   if (
-    /不要|无需|不需要|禁止|别|删除|移除|去掉|撤销|修改|加宽|加深|[?？]|怎么|如何|能否|可以吗|房|建筑|塔|宫殿|路网|道路|桥|树|人物|角色|水面|湖|海|山|丘陵|岛|水位|模型|houses?|buildings?|roads?|bridges?/i.test(
+    /不要|无需|不需要|禁止|别|删除|移除|去掉|撤销|修改|加宽|加深|[?？]|怎么|如何|能否|可以吗|机位|镜头|相机|跟拍|运镜|氛围|光影|天气|下雨|下雪|夜景|人物运动|车辆|camera|lighting|weather|motion|房|建筑|塔|宫殿|路网|道路|桥|树|人物|角色|水面|湖|海|山|丘陵|岛|水位|模型|houses?|buildings?|roads?|bridges?/i.test(
       prompt,
     )
   )

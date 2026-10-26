@@ -48,7 +48,7 @@ export function terrainWorkflowControls(app) {
     const d = w.draft;
     river.body.append(row('河道名称', el('input', { class: 'txt', type: 'text', maxlength: 40, value: d.name, disabled: w.busy, dataset: { terrainRiverName: '1' }, onchange: run((event) => { const name = event.currentTarget.value; w.updateDraft({ name }); }) })),
       numeric('河面宽 m', 'river-width', d.width, 1, 60, .5, (v) => w.updateDraft({ width: v })), numeric('中心切深 m', 'river-depth', d.depth, .1, 30, .1, (v) => w.updateDraft({ depth: v })), numeric('岸坡过渡 m', 'river-bank', d.bank, .5, 60, .5, (v) => w.updateDraft({ bank: v })), check('显示河面', 'river-water', d.water, (v) => w.updateDraft({ water: v })));
-    river.body.append(el('p', { class: 'fnote', text: w.drawing ? '左键点地形布点；右键可旋转。Enter 停止布点，Backspace 删除末点，Esc 丢弃预览。点坐标为 X / 水面标高 Y / Z（米）。' : '可在下表编辑坐标 / 水面标高，也可继续视口布点。预览仅显示路径 / 河面，不改地形。' }));
+    river.body.append(el('p', { class: 'fnote', text: w.drawing ? '左键点地形布点，拖动已有圆点调整；右键可旋转。Enter 停止布点，Backspace 删除末点，Esc 丢弃预览。点坐标为 X / 水面标高 Y / Z（米）。' : '拖动视口中的圆点即可调整路径（保持水面标高）；下表可改Y。保存才应用，Esc取消；移动旧河道不会自动填回旧河床。' }));
     const points = el('div', { style: 'max-height:260px;overflow:auto' });
     d.points.forEach((p, index) => {
       const fields = p.map((v, axis) => el('input', { class: 'num', type: 'number', step: .1, value: Number(v.toFixed(3)), disabled: w.busy, style: 'min-width:0;width:28%', 'aria-label': `河道点 ${index + 1} ${['X', 'Y', 'Z'][axis]}`, dataset: { riverPoint: `${index}:${axis}` }, onchange: run((event) => {

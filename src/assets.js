@@ -1,3 +1,5 @@
+import { PRIMITIVE_GROUP } from './primitive-model.js';
+import { beamBetween, stairFlight } from './stair-geometry.js';
 // ---------------------------------------------------------------------------
 // 预设模型库：64 款美式风格程序化模型（8 章 × 8 类）
 // 单位：米。朝向：+Z 为前方。
@@ -63,7 +65,7 @@ function winUnit(w, h, o = {}) {
   const glassMat = o.glassMat || M.glass(0x8fb4cc);
   const darkMat = o.darkMat || M.dark(0x151a20, 0.95);
   const dep = o.dep ?? 0.09, ins = 0.055, ft = o.ft ?? 0.08;
-  G.add(box(w + 0.02, h + 0.02, 0.016, darkMat, 0, 0, 0.008));                    // 洞口暗腔
+  if (!o.openBack) G.add(box(w + 0.02, h + 0.02, 0.016, darkMat, 0, 0, 0.008));                    // 洞口暗腔
   G.add(box(w, h, 0.016, glassMat, 0, 0, dep - ins));                             // 玻璃
   if (o.muntins !== false) {
     const cols = o.cols ?? 2, rows = o.rows ?? 2;
@@ -2116,47 +2118,9 @@ function buildClapboardWall(p) {
 }
 
 function buildStaircase(p) {
-  const g = new THREE.Group();
-  const nSteps = p.steps, stepW = p.stepWidth, rise = p.rise, run = p.run;
-  const woodMat = M.paint(p.woodColor, 0.82);
-  const trim = M.paint(0xf2ede4, 0.72);
-  const totalH = nSteps * rise, totalL = nSteps * run;
-  // 斜梁（stringer）
-  const sLen = Math.hypot(totalL, totalH), sAng = Math.atan2(totalH, totalL);
-  for (const s of [-1, 1]) {
-    const st = box(0.05, 0.26, sLen + 0.1, woodMat, s * (stepW / 2 - 0.02), totalH / 2 - 0.08, -totalL / 2 + run / 2);
-    st.rotation.x = sAng; g.add(st);
-  }
-  // 踏步（8mm 微倒角）+ 踢面板
-  for (let i = 0; i < nSteps; i++) {
-    const y = i * rise + rise, z = -i * run;
-    g.add(slabTop(stepW, 0.04, run + 0.035, woodMat, 0, y - 0.02, z - 0.015));
-    g.add(box(stepW, rise - 0.02, 0.025, trim, 0, y - rise / 2 - 0.01, z + run / 2 - 0.01));
-  }
-  g.add(box(stepW + 0.06, 0.06, run + 0.1, woodMat, 0, 0.03, run / 2));
-  // 一侧完整斜栏杆（随踏步倾斜），另一侧仅靠墙扶手
-  const railLen = Math.hypot(totalL, totalH);
-  const balG = new THREE.Group();
-  balG.position.set(stepW / 2 + 0.03, totalH / 2 + 0.02, -totalL / 2 + run / 2);
-  balG.rotation.x = sAng;
-  const bal = balustrade(railLen - 0.24, 0.86, trim, { spacing: 0.22, posts: false, belly: false });
-  bal.rotation.y = Math.PI / 2;
-  balG.add(bal);
-  g.add(balG);
-  const half = (railLen - 0.24) / 2, cs = Math.cos(sAng), sn = Math.sin(sAng);
-  const zc = -totalL / 2 + run / 2, yc = totalH / 2 + 0.02;
-  for (const sgn of [-1, 1]) {
-    const zz = zc - sgn * half * cs, yy = Math.max(0, yc + sgn * half * sn) - 0.02;
-    g.add(box(0.13, 1.02, 0.13, woodMat, stepW / 2 + 0.03, yy + 0.51, zz));
-    g.add(box(0.17, 0.05, 0.17, woodMat, stepW / 2 + 0.03, yy + 1.04, zz));
-    g.add(box(0.08, 0.08, 0.08, trim, stepW / 2 + 0.03, yy + 1.1, zz));
-  }
-  // 另一侧：斜向实心栏板 + 扶手（封闭弦杆侧）
-  const skirt = box(0.05, 0.8, railLen + 0.1, trim, -stepW / 2 - 0.02, totalH / 2 + 0.4, -totalL / 2 + run / 2);
-  skirt.rotation.x = sAng; g.add(skirt);
-  const wallRail = box(0.07, 0.08, railLen + 0.14, woodMat, -stepW / 2 - 0.02, totalH / 2 + 0.84, -totalL / 2 + run / 2);
-  wallRail.rotation.x = sAng; g.add(wallRail);
-  shade(g); return g;
+  const n=Math.round(p.steps),W=p.stepWidth;
+  const {g}=stairFlight({height:n*p.rise,width:W,steps:n,going:p.run,rail:true,material:M.paint(p.woodColor,.82),railMaterial:M.paint(0xf2ede4,.72)});
+  const root=new THREE.Group();g.rotation.y=Math.PI;root.add(g);shade(root);return root;
 }
 
 function buildFrontDoor(p) {
@@ -2166,19 +2130,20 @@ function buildFrontDoor(p) {
   const doorMat = M.paint(p.doorColor, 0.72);
   const wallMat = M.paint(0xd8d0c2, 0.9);
   // 墙面片段（衬托门洞景深）+ 门槛 + 台阶
-  g.add(box(w + 1.1, h + 0.75, 0.14, wallMat, 0, (h + 0.75) / 2, -0.1));
+  for(const side of [-1,1]) g.add(box(.17,h+.75,.14,wallMat,side*(w/2+.465),(h+.75)/2,-.1));
+  g.add(box(w+.76,.12,.14,wallMat,0,h+.69,-.1));
   g.add(box(w + 1.16, 0.07, 0.07, trim, 0, h + 0.76, -0.02));
   g.add(box(w + 0.5, 0.1, 0.42, M.concrete(0xb8b2a6, 0.9), 0, 0.05, 0.16));
   g.add(box(w + 0.66, 0.1, 0.5, M.concrete(0xb8b2a6, 0.9), 0, 0.0, 0.28));
   // 门套（casing）+ 门楣 + 内缩门组件（扇形亮子 + 侧窗）
   // 门楣/檐口要抬到扇形亮子之上（旧版横压在亮子中间，把气窗挡掉四成）
-  g.add(box(w + 0.42, h + 0.9, 0.1, trim, 0, (h + 0.9) / 2 + 0.1, -0.01));
+  for(const side of [-1,1]) g.add(box(.075,h+.1,.1,trim,side*(w/2+.055),(h+.1)/2+.05,-.01));
   g.add(box(w + 0.62, 0.14, 0.16, trim, 0, h + 0.89, 0.02));
   g.add(box(w + 0.74, 0.09, 0.2, trim, 0, h + 1.005, 0.03));
   const du = doorUnit(w, h, { frameMat: trim, doorMat, panelColor: 0x4a3020, panelCols: 2, panelRows: 3, fanlight: true, dep: 0.12 });
   du.position.set(0, h / 2 + 0.1, 0); g.add(du);
   for (const s of [-1, 1]) {
-    const sl = winUnit(0.24, h * 0.78, { frameMat: trim, glassMat: M.glass(0x99bbcc), muntins: false, ft: 0.05, dep: 0.12 });
+    const sl = winUnit(0.24, h * 0.78, { frameMat: trim, openBack: true, glassMat: M.glass(0x99bbcc), muntins: false, ft: 0.05, dep: 0.12 });
     sl.position.set(s * (w / 2 + 0.2), h * 0.5 + 0.1, 0); g.add(sl);
     g.add(box(0.3, 0.06, 0.16, trim, s * (w / 2 + 0.2), 0.12, 0.02));
   }
@@ -2199,11 +2164,12 @@ function buildSashWindow(p) {
   const wallMat = M.paint(0xd8d0c2, 0.9);
   const trim = M.paint(0xf2ede4, 0.7);
   // 墙面片段 + 窗洞衬套
-  g.add(box(w + 0.9, h + 0.8, 0.14, wallMat, 0, (h + 0.8) / 2, -0.12));
-  g.add(box(w + 0.3, h + 0.3, 0.12, M.dark(0x1a2028, 0.95), 0, h / 2 + 0.02, -0.04));
+  for(const side of [-1,1]) g.add(box(.3,h+.8,.14,wallMat,side*(w/2+.3),(h+.8)/2,-.12));
+  g.add(box(w+.3,.62,.14,wallMat,0,h+.49,-.12));
+  for(const side of [-1,1]) g.add(box(.12,h+.3,.12,frameMat,side*(w/2+.09),h/2+.02,-.04));
   // 内缩推拉窗组件（含窗棂、窗台、窗楣、百叶扇、花箱）
   const wu = winUnit(w, h, {
-    frameMat, glassMat: M.glass(0x99bbcc), muntins: true, cols: 2, rows: 3,
+    frameMat, openBack: true, glassMat: M.glass(0x99bbcc), muntins: true, cols: 2, rows: 3,
     ft: 0.085, dep: 0.13, sill: true, lintel: true, lintelMat: trim,
     shutters: true, shutterMat: M.paint(0x3a5a4a, 0.7), flowerBox: true,
     boxMat: M.paint(0x6b4e35, 0.8), flowerColor: 0xcc4466,
@@ -2361,14 +2327,11 @@ function buildRockingChair(p) {
   const woodMat = M.paint(p.woodColor, 0.82);
   const darkWood = M.paint(0x4a3020, 0.85);
   const seatY = 0.42;
-  // 弧形摇杆（定段数圆环，避免精度档放大面数）
-  const rockerR = d * 0.62;
-  for (const s of [-1, 1]) {
-    const rk = new THREE.Mesh(new THREE.TorusGeometry(rockerR, 0.028, 4, 18, Math.PI * 0.62), woodMat);
-    rk.rotation.y = Math.PI / 2;
-    rk.rotation.z = -Math.PI * 0.19;
-    rk.position.set(s * (w / 2 - 0.04), rockerR * 0.79, 0);
-    g.add(rk);
+  // Rockers are symmetric ground-contact arcs; legs end on the actual runners.
+  const runnerY=z=>.028+.12*(z/(d*.55))**2;
+  for(const side of [-1,1]) {
+    const points=Array.from({length:25},(_,i)=>{const z=(i/24-.5)*d*1.1;return new THREE.Vector3(side*(w/2-.06),runnerY(z),z);});
+    const runner=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),32,.028,8,false),woodMat);runner.name='rocker-runner';g.add(runner);
   }
   // 座面（微倒角）+ 座框 + 编织纹
   g.add(slabTop(w, 0.05, d * 0.62, woodMat, 0, seatY, d * 0.02));
@@ -2378,8 +2341,8 @@ function buildRockingChair(p) {
   for (let i = 0; i < 5; i++) g.add(box(w - 0.1, 0.012, 0.022, darkWood, 0, seatY + 0.031, -d * 0.18 + i * d * 0.1));
   // 4 条椅腿 + 横撑
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const legH = seatY - 0.1 - (sz > 0 ? 0.02 : 0);
-    g.add(cylRaw(0.024, 0.03, legH, woodMat, 6, sx * (w / 2 - 0.06), legH / 2 + 0.08, sz * d * 0.24));
+    const x=sx*(w/2-.06),z=sz*d*.24;
+    g.add(beamBetween([x,runnerY(z),z],[x,seatY-.025,z],.025,woodMat));
   }
   for (const sz of [-1, 1]) {
     const st = cylRaw(0.017, 0.017, w - 0.14, woodMat, 6, 0, 0.18, sz * d * 0.24);
@@ -3380,7 +3343,7 @@ const LIB_AM = [
 ];
 
 // 素材库 = 美式 64 款 + 建筑构件 / 中式古建 / 美式经典 / 室内 / 自然 / 战争 / 星际 / 玄幻特效
-export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS, ...SHOWCASE_GROUPS, ...USER_MODEL_GROUPS].map(group => group.id === 'cn'
+export const LIB = [...LIB_AM, ...GROUPS_CITY, ...GROUPS_BLD, ...GROUPS_ARCH, ...GROUPS_NATURE, ...GROUPS_PROPS, ...SHOWCASE_GROUPS, ...USER_MODEL_GROUPS, PRIMITIVE_GROUP].map(group => group.id === 'cn'
   ? {...group,items:group.items.flatMap(item => item.type === 'pagoda' ? [item,PAGODA_WOOD_ITEM] : [item])}
   : group);
 

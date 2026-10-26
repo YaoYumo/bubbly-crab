@@ -1,3 +1,4 @@
+import { pointGuide, hitCurvePoint, dragOnLevel } from './curve-handles.js';
 import * as THREE from 'three';
 import { decodeHeightPNG, cleanHeightMapping, mappedHeights } from './terrain-import.js';
 import { cleanRiver, carveRiver, riverStrip } from './terrain-river.js';
@@ -150,7 +151,14 @@ export class TerrainWorkflow {
     this.draft.points.push([point.x, point.y - .15, point.z]); this.renderDraft(); this.changed();
   }
   updateDraft(patch) { this.assertEditable(); if (!this.draft) return; Object.assign(this.draft, patch); this.renderDraft(); this.changed(); }
-  cancelDraft() { this.draft = null; this.editingId = null; this.drawing = false; disposeGroup(this.previewGroup); this.rebuildRivers(); this.changed(); }
+  releasePointDrag(cancel = false) {
+    const d = this.pointDrag; if (!d) return;
+    if (cancel && this.draft?.points[d.index]) this.draft.points[d.index] = d.before;
+    this.app.stage.orbit.enabled = d.orbitEnabled; this.pointDrag = null;
+    try { this.app.stage.host.releasePointerCapture(d.pointerId); } catch {}
+    if(this.draft) { this.renderDraft(); this.changed(); }
+  }
+  cancelDraft() { this.releasePointDrag(); this.draft = null; this.editingId = null; this.drawing = false; disposeGroup(this.previewGroup); this.rebuildRivers(); this.changed(); }
   setGuides(on) { this.guides = !!on; this.previewGroup.visible = !!on && !!this.draft && !this.app.state.preview; }
   riverMesh(river, preview = false) {
     const data = riverStrip(river, this.terrain.size), geometry = new THREE.BufferGeometry();
@@ -165,6 +173,7 @@ export class TerrainWorkflow {
       const geometry = new THREE.BufferGeometry().setFromPoints(this.draft.points.map((p) => new THREE.Vector3(p[0], p[1] + .2, p[2])));
       const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x66ffe3, depthTest: false })); line.userData.pickIgnore = true; line.renderOrder = 740; this.previewGroup.add(line);
     }
+    if (this.draft.points.length) this.previewGroup.add(pointGuide(this.draft.points));
     this.setGuides(this.guides);
   }
   rebuildRivers() {
@@ -292,6 +301,7 @@ export class TerrainWorkflow {
   }
   toJSON() { return { erosion: erosionSettings(this.erosionSettings), precise: !!this.precise, heightSource: this.heightSource ? clone(this.heightSource) : null, overlay: this.overlay ? { ...this.overlay } : null, rivers: clone(this.rivers) }; }
   reset() {
+    this.releasePointDrag();
     this.cancelErosionPreview(false); this.erosionSettings = erosionSettings(); this.erosionProgress = null; this.erosionLastStats = null;
     this.cancelJob(); this.overlayEpoch++; this.readyPromise = Promise.resolve(); this.draft = null; this.editingId = null; this.drawing = false; this.pendingHeight = null; this.heightSource = null; this.precise = false;
     this.texture?.dispose(); this.texture = null; this.overlay = null; this.rivers = []; disposeGroup(this.previewGroup); disposeGroup(this.riverGroup); this.syncOverlay();
@@ -329,16 +339,41 @@ export class TerrainWorkflow {
   bind() {
     const host = this.app.stage.host, signal = (this.bindController = new AbortController()).signal;
     host.addEventListener('pointerdown', (event) => {
-      if (!this.drawing || !this.draft || event.button !== 0 || this.app.state.playing || this.app.state.preview || this.app.suspended || this.busy) return;
+      if (!this.draft || event.button !== 0 || this.app.state.playing || this.app.state.preview || this.app.suspended || this.busy) return;
+      const index = this.guides ? hitCurvePoint(event, this.app.stage, this.draft.points) : -1;
+      if (index < 0 && !this.drawing) return;
       event.preventDefault(); event.stopImmediatePropagation();
-      try { const p = this.terrain.pointerPoint(event); if (p) this.addPoint(p); } catch (e) { this.app.notify?.(e.message, 'warn'); }
+      try {
+        this.assertEditable();
+        if(index >= 0) {
+          this.pointDrag = {index, before: [...this.draft.points[index]], pointerId: event.pointerId, orbitEnabled: this.app.stage.orbit.enabled};
+          this.app.stage.orbit.enabled = false; host.setPointerCapture(event.pointerId);
+        } else { const p = this.terrain.pointerPoint(event); if (p) this.addPoint(p); }
+      } catch (e) { this.releasePointDrag(true); this.app.notify?.(e.message, 'warn'); }
     }, { capture: true, signal });
-    host.addEventListener('pointerup', (e) => { if (this.drawing && e.button === 0) { e.preventDefault(); e.stopImmediatePropagation(); } }, { capture: true, signal });
+    host.addEventListener('pointermove', (event) => {
+      const d = this.pointDrag; if(!d || event.pointerId !== d.pointerId) return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      try {
+        this.assertEditable();
+        const p = dragOnLevel(event, this.app.stage, d.before[1]);
+        if(p && Math.abs(p.x) <= this.terrain.size/2 && Math.abs(p.z) <= this.terrain.size/2) {
+          this.draft.points[d.index] = [p.x, d.before[1], p.z]; this.renderDraft();
+        }
+      } catch(e) { this.releasePointDrag(true); this.app.notify?.(e.message,'warn'); }
+    }, {capture: true, signal});
+    host.addEventListener('pointerup', (e) => {
+      if(this.pointDrag && e.pointerId === this.pointDrag.pointerId) { e.preventDefault(); e.stopImmediatePropagation(); this.releasePointDrag(); }
+      else if(this.drawing && e.button === 0) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, { capture: true, signal });
+    for(const name of ['pointercancel', 'lostpointercapture']) host.addEventListener(name, e => {
+      if(this.pointDrag && e.pointerId === this.pointDrag.pointerId) this.releasePointDrag(true);
+    }, {signal});
     window.addEventListener('keydown', (event) => {
       if (/INPUT|TEXTAREA|SELECT/.test(event.target?.tagName)) return;
       if (event.key === 'Escape' && this.erosionPreview) { event.preventDefault(); this.cancelErosionPreview(); return; }
       if (!this.draft) return;
-      if (event.key === 'Escape') { event.preventDefault(); this.cancelDraft(); }
+      if (event.key === 'Escape') { event.preventDefault(); if(this.pointDrag) this.releasePointDrag(true); else this.cancelDraft(); }
       else if (event.key === 'Enter') { event.preventDefault(); this.drawing = false; this.changed(); }
       else if (event.key === 'Backspace' && this.drawing) { event.preventDefault(); this.draft.points.pop(); this.renderDraft(); this.changed(); }
     }, { signal });

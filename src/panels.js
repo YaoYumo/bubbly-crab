@@ -318,8 +318,8 @@ function fieldsForItem(app, so) {
   if (!item) return [];
   const out = [];
   for (const p of item.params) {
-    if (p.k === 'anim' || (p.k === 'glow' && isLuminaire(so))) continue;
-    const f = { ...p, t: p.t === 'color' ? 'color' : p.t === 'bool' ? 'bool' : p.t === 'sel' ? 'sel' : p.t === 'int' ? 'int' : p.t === 'text' ? 'text' : 'range' };
+    if (p.t === 'primitive-model' || p.k === 'anim' || (p.k === 'glow' && isLuminaire(so))) continue;
+    const f = { ...p, t: p.t === 'color' ? 'color' : p.t === 'bool' ? 'bool' : (p.t === 'sel' || p.t === 'select') ? 'sel' : p.t === 'int' ? 'int' : p.t === 'text' ? 'text' : 'range' };
     f.get = () => so.params[p.k];
     f.set = (v) => { app.beginOp('改参数 ' + (p.l || p.k), 'param:' + so.id + ':' + p.k); so.params[p.k] = v; scheduleRebuild(app, so); };
     out.push(f);
@@ -373,6 +373,15 @@ function tabObject(app, rerender, ctx) {
       statRow('光影', app.lighting.enabled ? '开启' : '已关闭（内存优先）'),
     ]));
     return { root };
+  }
+  if(so.root.userData.primitiveModel) {
+    const compound=section('AI组合粗模');
+    compound.body.append(el('p',{class:'fnote',text:`${so.params.parts?.length||0} 个基础几何部件。可继续通过对话调整结构；不是纹理/任意拓扑生成。`}),
+      el('button',{class:'fbtn wide',type:'button',dataset:{savePrimitiveLibrary:'1'},text:'保存到「我的模型」分组',onclick:async(e)=>{
+        e.currentTarget.disabled=true;
+        try{await app.modelLibrary.savePrimitive(so);app.notify('已保存为可复用模型，不会改动当前场景');}catch(error){app.notify(error.message,'warn');}
+        finally{rerender();}
+      }}));root.append(compound.wrap);
   }
   // ---- 变换
   const tf = {
@@ -462,7 +471,7 @@ function tabObject(app, rerender, ctx) {
       const bridge=so.root.userData.bridgeStatus;
       f2.body.appendChild(el('div',{class:'fnote',dataset:{bridgeStatus:'1'},text:`桥墩 ${bridge?.built||0} 处 · 受阻未放置 ${bridge?.blocked||0} 处。柱身及承托体积避让下层道路、建筑；相交植物会删除且可随操作撤销；受阻时尝试沿路移位，仍冲突则留空，不强行穿插。固定标高不会自动挖山；可压低地形或抬高道路。非结构工程校核。`}));
       f2.body.appendChild(el('button',{class:'fbtn wide',type:'button',disabled:so.locked,text:'抬高路基，填充此路下方空隙',dataset:{roadFill:'1'},onclick:()=>{const count=app.roadTerrain.fillRoad(so);toast(`已填充 ${count||0} 个地形顶点；避开下层道路和建筑，可撤销`);}}));
-      f2.body.appendChild(el('button', { class: 'fbtn wide', type: 'button', disabled: so.locked, text: '编辑此路（画笔接管）', onclick: () => {
+      f2.body.appendChild(el('button', { class: 'fbtn wide', type: 'button', disabled: so.locked, text: '编辑路径圆点（拖动调整）', onclick: () => {
         if (app.roadBrush.editRoad(so)) {
           toast('画笔已接管：拖动控制点改线，双击 / Enter 完成，Esc 放弃并恢复原路');
           rerender();
@@ -628,7 +637,7 @@ function tabCamera(app, rerender, ctx) {
     { k: 'move', l: '预设', t: 'sel', opts: MOVE_OPTS, set: (v) => { s.generateMove(v); mv.desc = MOVE_BY_ID[v]?.desc || '手工关键帧：自由拖动每个节点。'; app.bus.emit('shot-change'); rerender(); } },
     { k: 'desc', l: `<span class="mvdesc">${mv.desc}</span>`, t: 'note' },
     ...(move ? move.params.map((p) => ({
-      ...p, t: p.t === 'bool' ? 'bool' : p.t === 'sel' ? 'sel' : p.t === 'range' ? 'range' : 'range',
+      ...p, t: p.t === 'bool' ? 'bool' : (p.t === 'sel' || p.t === 'select') ? 'sel' : p.t === 'range' ? 'range' : 'range',
       get: () => state[p.k], set: (v) => { state[p.k] = v; s.moveParams[p.k] = v; },
     })) : []),
     ...(move ? [{ k: '_g', l: '重新生成路径', t: 'btn', onClick: () => { s.moveParams = { ...s.moveParams, ...state }; s.generateMove(s.move); rerender(); toast('已按参数生成 ' + s.keys.length + ' 个关键帧'); }, btn2: { l: '清空为静态', onClick: () => { s.generateMove(''); rerender(); } } }] : []),
