@@ -1,0 +1,11 @@
+{
+  "platform": "Linux Chromium, compiled file:// HTML, network disabled",
+  "primitive": true,
+  "libraryRoundtrip": true,
+  "directing": true,
+  "actualVehicleHeading": true,
+  "oneUndoRedo": true,
+  "realGGUF": false,
+  "errors": [],
+  "outbound": []
+}

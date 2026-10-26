@@ -1,6 +1,6 @@
 # Windows 1.5.0：本地对话建场与粗模 / 走位 / 机位
 
-[Windows 1.5.0 构建与安装说明](desktop-windows.md#150-曲线编辑粗模动画与结构修订) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.5.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40280088451/artifacts/12631539359) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 

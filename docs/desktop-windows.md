@@ -1,10 +1,20 @@
-> **1.4.0 更新**：桌面“一句话生成”使用安装目录 `models` 内的 GGUF，现可直接控制地形、河道、水面、道路及模型增改，持续对话、整轮撤销；无需手动蓝图或候选预览。见 [桌面本地 AI](desktop-local-ai.md)。以下历史版本“没有模型进程”的说明只描述当时版本；Generate 图片/视频网关依然没有启用。
+> **1.5.0 更新**：曲线拖点、库外组合粗模、本地 AI 走位/机位/氛围、两组模型结构、人偶 Walk 和车辆车头修订；安装目录 models 保持不动。详见下方下载与 [专项记录](editor-expansion-1.5.0.md)。历史版本说明只描述当时版本。
 
 # Windows 轻量桌面版：Tauri 2 预检工程
 
 ## 1.5.0 曲线编辑、粗模、动画与结构修订
 
-六项实现及本地回归已完成；Windows 构建与安装检查结果将在本节记录。不要把下面历史 1.4.1 下载当作本次更新。
+[下载 Windows 1.5.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40280088451/artifacts/12631539359)（可能需要登录 GitHub；附件保留至 2027-01-24）。
+
+另存备份重要工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.5.0_x64-setup.exe` 覆盖安装到原目录。不要运行 ZIP 中的裸应用 EXE；两个 GGUF 分片留在原 models 文件夹，无需重下、移动、合并或改名。
+
+- 六项实现及本地回归完成后才构建本包：道路/河流拖点；库外基础几何粗模与存库；本地对话运动/机位/天气光影；家具与构件两组结构修订；简化人偶外观与无竖直弹跳 Walk；车辆前轴与时间匹配切线。保留直接应用/连续对话/整轮撤销与旧工程/拖放/离线 HTML。
+- 84 次两组模型参数构建、踏面/玻璃射线、真实拖点、车头实际采样、Walk 跳转确定性与底面数值、本地桌面模拟推理 IPC 同轮混合工具、断网单文件粗模/存库/走位/机位/撤销，以及旧核心回归通过。不是用户真实 Qwen 语义验收。
+- [Windows run 40280088451](https://github.com/YaoYumo/bubbly-crab/actions/runs/40280088451) / job `121431269900` 全部成功，构建源码 `25740a95259b236ccfe0bd269c3422f9ae31f20a`。新增六项纯回归、地形与机位单测、10 项 helper Rust 测试、4 项原生边界测试、NSIS、实际安装/窗口存活/引擎/已安装 helper fixture、重装保留模型目录通过。15 个前端文件路径/字节/SHA256 与本地回归构建逐项一致。
+- 安装器 **20,968,112 bytes**；SHA256 `e88068c0fc57a9f8a11ff7c1dfe3145493ccc4383ab9f4b87ffeddfe87c98132`。
+- ZIP **23,548,712 bytes**；GitHub 上传摘要 `a21c052348d62cede784550706cafdda10934c6d5bfde0b7875d9c2fee9ad43d`。仍未签名、不含权重；未另行下载做第二次独立二进制哈希核验。
+
+证据：[六项浏览器回归](desktop-1.5.0-evidence/editor-expansion.json)、[模拟桌面推理](desktop-1.5.0-evidence/conversation-mocked-ipc.json)、[真实断网 HTML](desktop-1.5.0-evidence/editor-expansion-offline.json)、[Windows 步骤](desktop-1.5.0-evidence/windows-run.json)、[文件摘要](desktop-1.5.0-evidence/windows-artifacts.json)、[安装](desktop-1.5.0-evidence/windows-install-smoke.json)、[通信 fixture](desktop-1.5.0-evidence/loopback-installed.json)、[验收边界](desktop-1.5.0-evidence/verification.json)。没有 4070Ti / 真实 GGUF / 用户 DLL 注入复验，也不等于完整 Windows 六项原生鼠标验收。已推当前分支，未合并 main 或发布 Release。
 
 详见 [六项与验收边界](editor-expansion-1.5.0.md)、[本地 AI 操作](desktop-local-ai.md)。覆盖安装前另存工程备份，保留两个 GGUF 分片，不下载或移动模型；安装器不含权重，仍未签名。
 

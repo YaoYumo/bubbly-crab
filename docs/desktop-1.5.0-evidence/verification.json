@@ -1,0 +1,33 @@
+{
+  "sourceCommit": "25740a95259b236ccfe0bd269c3422f9ae31f20a",
+  "run": 40280088451,
+  "job": 121431269900,
+  "artifact": 12631539359,
+  "windowsBuildAndInstallCheck": true,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathBytesSHA256": true
+  },
+  "sixRequestedFeaturesImplemented": true,
+  "groupVariantBuilds": 84,
+  "legacyPartsFailCount": 0,
+  "walk": {
+    "soleRangeMeters": 0.0026530407933716207,
+    "maxKneeStepRadians": 0.011824471089129762,
+    "hipHeightFixed": true,
+    "seekDeterministic": true
+  },
+  "tests": [
+    "pure schema/security/authorization and heading/Walk numerics",
+    "actual browser river/road point dragging + atomic undo/cancel",
+    "actual desktop frontend + mocked native IPC, rough model + river + motion + camera + environment one undo",
+    "compiled offline file HTML: rough model + library roundtrip + directing + sampled vehicle heading + undo/redo, network disabled",
+    "legacy terrain/road/AI safety/behavior/video/model library/drag/CN stairs/camera cut/timeline regressions",
+    "Windows native build/NSIS install/window liveness/engine/helper fixture/model folder reinstall preservation"
+  ],
+  "realGGUFInference": false,
+  "rtx4070TiVerified": false,
+  "realAstrillDLLInjected": false,
+  "fullyFunctionalWindowsUIValidated": false,
+  "installerIndependentlyRedownloadedAndHashed": false
+}
