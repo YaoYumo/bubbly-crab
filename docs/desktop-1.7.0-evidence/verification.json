@@ -1,0 +1,32 @@
+{
+  "version": "1.7.0",
+  "status": "frontend-regressions-passed-windows-pending",
+  "modes": [
+    "Vite web",
+    "compiled desktop with CSP",
+    "compiled file HTML with network disabled"
+  ],
+  "platform": "Linux Chromium 131 / software WebGL; not native user Windows hardware",
+  "tests": [
+    "A/B road and point selection with actual pointer events and section number input in all three modes",
+    "Four automatic flat/graded road-mode/point-mode scenes, fixed hosts, one-step undo-redo, exact saved section/path/provenance",
+    "Near-side highway ramp, original median and opposite lane retained; no sidewalk; independent shoulder/sidewalk widths",
+    "Locked targets rejected atomically, bounded acute core with actual seam rays",
+    "40 pure 3D endpoint contact cases, finite-target negatives; 60 grade-invariant acute plans",
+    "12 graded ramp networks per mode, both orders/directions, upper/lower mouths, seam rays, incremental reflow, save-load",
+    "Old independent green Y grips, actual blue XZ edits, curved highway, true underpasses, self-stacked ramp, lamps and terrain supports in all modes",
+    "Real road reselection/type/section fields and per-field undo-redo; offline properties",
+    "Terrain road adaptation and safe supports/fill; 84 model variants, heading and furniture/building constructs, actual model/road dragging",
+    "16 actual range drags, radial menu and mocked native scene chat (not GGUF inference)",
+    "Exact batching/subdivision geometry hash and pixelDifference0, draw calls356->82; not a GPU benchmark"
+  ],
+  "harnessNotes": [
+    "Compatibility log ends with a missing cached Chromium executable for performance test (launched without the wrapper). The corrected invocation with test/withchrome.sh completed successfully in performance.txt. All preceding compatibility tests completed successfully.",
+    "Product render settings were not changed. Road browser tests reduce pixel ratio to 0.5 and pause rendering outside gestures to run under software WebGL."
+  ],
+  "limitations": [
+    "Not native user Windows UI, RTX4070Ti performance or real GGUF inference acceptance",
+    "Connection search is bounded scene-layout geometry, not civil-engineering/traffic planning",
+    "Generated connection provenance is saved, but is not a live constraint after host road edits"
+  ]
+}

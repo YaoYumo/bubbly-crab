@@ -104,7 +104,7 @@ export class VegetationBrush {
     if (on) { this.app.terrain?.workflow?.cancelErosionPreview(); this.app.terrain?.workflow?.cancelDraft(); }
     if(!on){this.stop();return true;}
     const rb=this.app.roadBrush;if(rb?.active&&rb.points.length){this.app.notify('请先完成或取消当前道路绘制','warn');return false;}
-    rb?.stop();this.app.state.terrainTool=null;this.app.roadPlanning?.setPicking(false);this.app.state.dofPickMode=false;
+    rb?.stop();this.app.state.terrainTool=null;this.app.roadPlanning?.setPicking(false);this.app.roadConnector?.setPicking(null);this.app.state.dofPickMode=false;
     this.active=true;this.app.bus.emit('vegetation-brush');return true;
   }
   stop() {

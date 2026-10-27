@@ -5,7 +5,7 @@ export function prismEdges(polygon) {
   return polygon.map((a,i)=>{const b=polygon[(i+1)%polygon.length],dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,sign=area>=0?1:-1;return {a,b,n:{x:-dz/l*sign,z:dx/l*sign}};});
 }
 function split(poly,edge,positionOffset) {
-  const inside=[],outside=[],f=v=>(v[positionOffset]-edge.a.x)*edge.n.x+(v[positionOffset+2]-edge.a.z)*edge.n.z;
+  const inside=[],outside=[],f=v=>(v[positionOffset]-edge.a.x)*edge.n.x+(v[positionOffset+2]-edge.a.z)*edge.n.z+(edge.n.y||0)*(v[positionOffset+1]-(edge.a.y||0));
   for(let i=0;i<poly.length;i++){
     const a=poly[i],b=poly[(i+1)%poly.length],fa=f(a),fb=f(b);
     if(fa>=-1e-8)inside.push(a);if(fa<=1e-8)outside.push(a);
@@ -17,9 +17,14 @@ function split(poly,edge,positionOffset) {
 }
 /** Subtract a convex XZ prism from owned, freshly generated road geometry. Preserve
  * the complete position/normal/UV interpolation and material groups, not just centroids. */
-export function subtractRoadPrism(root,polygon,keep=null) {
+export function subtractRoadPrism(root,polygon,keep=null,heightBand=null) {
   if(polygon.length<3)return;
-  const edges=prismEdges(polygon);root.updateWorldMatrix(true,true);
+  const edges=prismEdges(polygon);
+  if(heightBand){const {origin,gradient,below,above}=heightBand;
+    edges.push({a:{...origin,y:origin.y-below},n:{x:-gradient.x,y:1,z:-gradient.z}},
+      {a:{...origin,y:origin.y+above},n:{x:gradient.x,y:-1,z:gradient.z}});
+  }
+  root.updateWorldMatrix(true,true);
   const minX=Math.min(...polygon.map(p=>p.x)),maxX=Math.max(...polygon.map(p=>p.x)),minZ=Math.min(...polygon.map(p=>p.z)),maxZ=Math.max(...polygon.map(p=>p.z));
   const bounds=new THREE.Box3();
   root.traverse(mesh=>{

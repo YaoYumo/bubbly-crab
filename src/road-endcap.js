@@ -2,12 +2,15 @@
 // 所有半径均由实际铺装横断面推导，不使用固定颈宽/大圆盘/矩形基座。
 import * as THREE from 'three';
 import { M, shade } from './mat.js';
+import { sectionDimensions } from './road-section.js';
 
 export function buildRoadEndcap(roadType, fullWidth) {
   const id = roadType.id;
   const sided = ['asphalt', 'oneway', 'concrete'].includes(id);
   const half = fullWidth / 2;
-  const radius = sided ? half - 2.25 : half;
+  const section=roadType.section?sectionDimensions(id,roadType.section):null;
+  const curbWidth=section?.curbWidth??.45,sidewalkWidth=section?.sidewalkWidth??1.8;
+  const radius = sided ? half - curbWidth - sidewalkWidth : half;
   if (!(radius > 0)) return null;
   const g = new THREE.Group();
   g.name = 'road_endcap';
@@ -63,19 +66,20 @@ export function buildRoadEndcap(roadType, fullWidth) {
 
   if (sided) {
     band('endcap_pavement',0,radius,0,.15,id==='concrete'?concrete(0x9d9c97):asphalt);
-    band('endcap_curb',radius,radius+.45,0,.30,curb);
-    band('endcap_walk',radius+.45,half,0,.30,walk);
+    band('endcap_curb',radius,radius+curbWidth,0,.30,curb);
+    band('endcap_walk',radius+curbWidth,half,0,.30,walk);
     if (id!=='concrete' && radius>.675) {
       // 直路边线中心距路缘 0.6m，厚 0.02；在端头保持同样偏距连续绕回。
-      band('endcap_edge_line',radius-.675,radius-.525,.152,.172,white);
+      const inset=section?section.shoulderWidth+.15:.6;
+      band('endcap_edge_line',radius-inset-.075,radius-inset+.075,.152,.172,white);
     }
     // 步道分缝沿弧长约 1.8m，宽度/标高与直路 rdSideZ 一致。
-    const count=Math.max(2,Math.round(Math.PI*(radius+.45+.9)/1.8));
+    const count=Math.max(2,Math.round(Math.PI*(radius+curbWidth+sidewalkWidth/2)/1.8));
     const mat=dark;
-    for(let i=1;i<count;i++) {
-      const geo=new THREE.BoxGeometry(1.8*.94,.02,.04);
+    for(let i=1;sidewalkWidth>0&&i<count;i++) {
+      const geo=new THREE.BoxGeometry(sidewalkWidth*.94,.02,.04);
       const mesh=new THREE.Mesh(geo,mat), a=Math.PI*i/count;
-      const r=radius+.45+.9;
+      const r=radius+curbWidth+sidewalkWidth/2;
       mesh.position.set(r*Math.cos(a),.31,r*Math.sin(a));
       mesh.rotation.y=-a; mesh.name='endcap_walk_joint'; g.add(mesh);
     }
@@ -84,9 +88,10 @@ export function buildRoadEndcap(roadType, fullWidth) {
     band('endcap_median',0,2,0,.15,concrete(0x8f8b82));
     band('endcap_median_base',0,.5,.125,.375,curb);
     band('endcap_median_wall',0,.3,.275,1.125,concrete(0xb5b1a8));
-    band('endcap_edge_line',half-2.875,half-2.725,.152,.172,white);
-    band('endcap_median_line',2.45,2.55,.152,.172,yellow);
-    band('endcap_guardrail',half-.6,half-.5,.45,.75,M.metal(0x999999,.35,.7));
+    const inset=section?section.shoulderWidth+.15:2.8;
+    band('endcap_edge_line',half-inset-.075,half-inset+.075,.152,.172,white);
+    band('endcap_median_line',section?2.075:2.45,section?2.225:2.55,.152,.172,yellow);
+    band('endcap_guardrail',half-(section?.25:.6),half-(section?.15:.5),.45,.75,M.metal(0x999999,.35,.7));
   } else if (id==='gravel') {
     const gr=fullWidth-1.2;
     band('endcap_base',0,half,0,.1,concrete(0xc7ad83,.95));

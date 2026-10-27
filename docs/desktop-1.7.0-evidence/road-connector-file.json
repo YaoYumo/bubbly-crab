@@ -1,0 +1,197 @@
+{
+  "platform": "Linux Chromium / software WebGL, not native user Windows hardware",
+  "results": [
+    {
+      "roadMode": false,
+      "height": 0,
+      "count": 3,
+      "sameHosts": true,
+      "oneUndo": true,
+      "generated": true,
+      "undone": true,
+      "redone": true,
+      "reloaded": true,
+      "start": [
+        -40,
+        0,
+        0
+      ],
+      "end": [
+        40,
+        0,
+        30
+      ],
+      "points": 49
+    },
+    {
+      "roadMode": false,
+      "height": 8,
+      "count": 3,
+      "sameHosts": true,
+      "oneUndo": true,
+      "generated": true,
+      "undone": true,
+      "redone": true,
+      "reloaded": true,
+      "start": [
+        -40,
+        0,
+        0
+      ],
+      "end": [
+        40,
+        8,
+        30
+      ],
+      "points": 49
+    },
+    {
+      "roadMode": true,
+      "height": 0,
+      "count": 3,
+      "sameHosts": true,
+      "oneUndo": true,
+      "generated": true,
+      "undone": true,
+      "redone": true,
+      "reloaded": true,
+      "start": [
+        -40,
+        0,
+        0
+      ],
+      "end": [
+        40,
+        0,
+        30
+      ],
+      "points": 49
+    },
+    {
+      "roadMode": true,
+      "height": 8,
+      "count": 3,
+      "sameHosts": true,
+      "oneUndo": true,
+      "generated": true,
+      "undone": true,
+      "redone": true,
+      "reloaded": true,
+      "start": [
+        -40,
+        0,
+        0
+      ],
+      "end": [
+        40,
+        8,
+        30
+      ],
+      "points": 49
+    }
+  ],
+  "highwayResult": {
+    "ports": 1,
+    "median": 9.145000011920928,
+    "opposite": 8.170000002980228,
+    "end": [
+      12,
+      8,
+      6
+    ],
+    "section": {
+      "laneCount": 1,
+      "laneWidth": 3.5,
+      "shoulderWidth": 0.75,
+      "sidewalkWidth": 0
+    },
+    "type": "oneway"
+  },
+  "independent": {
+    "laneWidth": 3.5,
+    "lanes": 2,
+    "width": 11,
+    "oldWidth": 8,
+    "undoWidth": 8,
+    "redoWidth": 11,
+    "sidewalk": 3
+  },
+  "rejected": {
+    "message": "目标道路已删除、隐藏或锁定，请重新标记。",
+    "unchanged": true,
+    "undoUnchanged": true
+  },
+  "acute": {
+    "compact": true,
+    "maxMouth": 16.200000000000003,
+    "maxAnalytic": 77.2405806274854,
+    "seams": [
+      {
+        "x": -12.649999993771488,
+        "z": 0,
+        "y": 0.17000000298023224
+      },
+      {
+        "x": -11.649999993771502,
+        "z": 0,
+        "y": 0.10000000149011257
+      },
+      {
+        "x": -10.649999993771502,
+        "z": 0,
+        "y": 0.10000000149011257
+      },
+      {
+        "x": 15.1884368129665,
+        "z": 0,
+        "y": 0.10000000149011612
+      },
+      {
+        "x": 16.1884368129665,
+        "z": 0,
+        "y": 0.10000000149011612
+      },
+      {
+        "x": 17.1884368129665,
+        "z": 0,
+        "y": 0.17000000298023224
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "y": 0.10000000149011257
+      },
+      {
+        "x": 0,
+        "z": 0,
+        "y": 0.10000000149011257
+      },
+      {
+        "x": 0.9656157585206737,
+        "z": 0.2599734734478737,
+        "y": 0.10000000149011257
+      },
+      {
+        "x": 14.798428361159145,
+        "z": 3.9841922510813084,
+        "y": 0.10000000149011612
+      },
+      {
+        "x": 15.764044119679804,
+        "z": 4.244165724529178,
+        "y": 0.10000000149011612
+      },
+      {
+        "x": 16.729659878200493,
+        "z": 4.5041391979770555,
+        "y": 0.17000000298023224
+      }
+    ]
+  },
+  "pointerMarks": [
+    "ui-a",
+    "ui-b"
+  ],
+  "errors": [],
+  "csp": []
+}

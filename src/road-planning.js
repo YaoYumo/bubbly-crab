@@ -105,7 +105,7 @@ export class RoadPlanning {
     return this.parcels;
   }
   setPicking(on) {
-    if(on)this.app.vegetationBrush?.stop();
+    if(on){this.app.vegetationBrush?.stop();this.app.roadConnector?.setPicking(null);}
     this.picking=!!on;
     if(on){this.app.roadBrush.stop();this.app.state.terrainTool=null;this.app.state.dofPickMode=false;this.app.select(null);}
     this.tick();this.changed();

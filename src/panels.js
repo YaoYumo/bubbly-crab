@@ -1,3 +1,6 @@
+import { roadConnectorControls } from './road-connector-ui.js';
+import { roadSectionControls } from './road-section-ui.js';
+import { sectionForRoad } from './road-section.js';
 import { roadElevationControls, roadLightingControls } from './road-elevation-ui.js';
 import { buildModelLibrary } from './library-ui.js';
 import { DESKTOP_BUILD } from './desktop-runtime.js';
@@ -353,6 +356,9 @@ function tabObject(app, rerender, ctx) {
     const edit = section(app.roadBrush._editBackup ? '三维道路编辑' : '三维道路绘制');
     edit.body.appendChild(roadElevationControls(app)); root.appendChild(edit.wrap); return root;
   }
+  if ((!so || so.type==='road_brush') && app.objects.filter(o=>o.type==='road_brush').length>=2) {
+    const connect=section('自动连接道路',{badge:'A → B'});connect.body.appendChild(roadConnectorControls(app));root.appendChild(connect.wrap);
+  }
   const appearance = section('材质显示', { badge: app.state.tex === false ? '全局关闭' : '全局开启' });
   appearance.body.appendChild(el('div', { class: 'btnrow' }, [
     el('button', { class: 'fbtn', type: 'button', dataset: { materials: 'all-off' }, text: '全部关闭', onclick: () => app.setTex(false) }),
@@ -450,19 +456,10 @@ function tabObject(app, rerender, ctx) {
         onchange: e => commit({ roadType: e.target.value }),
       }, ROAD_TYPES.map(t => el('option', { value: t.id, text: t.label })));
       typeSelect.value = rd?.roadType?.id || 'asphalt';
-      const widthNum = el('input', { class: 'num', type: 'number', min: 1, max: 20, step: .5,
-        value: rd?.width || 12, disabled: so.locked, dataset: { roadProperty: 'width' },
-        onchange: e => commit({ width: e.target.valueAsNumber }),
-      });
-      const widthRange = el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: .5,
-        value: rd?.width || 12, disabled: so.locked, dataset: { roadProperty: 'width-range' },
-        oninput: e => { widthNum.value = e.target.value; },
-        onchange: e => commit({ width: Number(e.target.value) }),
-      });
       f2.body.append(
         el('div', { class: 'row' }, [el('label', { class: 'lab', text: '道路类型' }), el('div', { class: 'ctl' }, [typeSelect])]),
-        el('div', { class: 'row' }, [el('label', { class: 'lab', text: '宽度 m' }), el('div', { class: 'ctl' }, [el('div', { class: 'rg' }, [widthRange, widthNum])])]),
-        el('div', { class: 'fnote', text: so.locked ? '道路已锁定，请先解锁再修改。' : '退出绘制后重新选中也能修改；类型选择后立即生效，宽度拖动结束或输入后离开输入框生效。支持 Ctrl+Z 撤销。' }),
+        roadSectionControls(app, so),
+        el('div', { class: 'fnote', text: so.locked ? '道路已锁定，请先解锁再修改。' : '分项输入后离开输入框生效，支持 Ctrl+Z。两条路／连接点可在道路工具中标记后自动连接。' }),
       );
       const terrainControls=buildForm([
         {k:'mode',l:'地形关系',t:'sel',opts:[{v:'follow',l:'随地形（横断面保持平整）'},{v:'fixed',l:'固定标高（高架 / 桥梁）'}],set:v=>app.roadTerrain.setRoad(so,{terrainMode:v})},
@@ -866,23 +863,15 @@ function tabTerrain(app, rerender, ctx) {
       onclick: () => { rb.setType(rt.id); rbGrid.querySelectorAll('.bchip').forEach((b) => b.classList.toggle('on', b.dataset.rtype === rt.id)); },
     }));
   }
+  g1b.body.appendChild(roadConnectorControls(app));
   g1b.body.appendChild(rbGrid);
-  let rbVal;
-  const rbRow = el('div', { class: 'row' }, [
-    el('label', { class: 'lab', text: '宽度 m' }),
-    el('div', { class: 'ctl' }, [
-      el('input', { class: 'rng', type: 'range', min: 1, max: 20, step: 0.5, value: rb?.roadWidth || 12,
-        oninput: (e) => { rb.setWidth(parseFloat(e.target.value)); rbVal.textContent = rb.roadWidth.toFixed(1) + ' m'; } }),
-      el('span', { class: 'stat', text: (rb?.roadWidth || 12).toFixed(1) + ' m' }),
-    ]),
-  ]);
-  rbVal = rbRow.querySelector('.stat');
-  g1b.body.appendChild(rbRow);
+  g1b.body.appendChild(roadSectionControls(app));
   const rbBtnRow = el('div', { class: 'btnrow' }, [
     (() => {
       const label = () => (rb.active ? (rb.points.length >= 2 ? '完成绘制' : '绘制中·点击视口放点') : '开始绘制');
       const b = el('button', { class: 'fbtn', type: 'button', text: label(), onclick: () => {
         if (!rb.active) {
+          if(!rb.roadType.section){const section=sectionForRoad(rb.roadType.id,rb.roadWidth);if(section)rb.setSection(section);}
           rb.start();
           toast('钢笔工具：点击放置控制点生成直线段，双击或点本按钮完成，Esc 退出');
         } else if (rb.points.length >= 2) {

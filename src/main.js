@@ -821,6 +821,7 @@ window.addEventListener('keydown', (e) => {
   else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === 'backspace' || k === 'delete')) { e.preventDefault(); app.clearScene({ blank: true }); }
   else if (k === 'escape') {
     if (app.vegetationBrush?.active) { app.vegetationBrush.stop(); toast('已退出植被笔刷'); return; }
+    if (app.roadConnector?.picking) { app.roadConnector.setPicking(null); toast('已退出道路标记'); return; }
     if (app.roadPlanning?.picking) { app.roadPlanning.setPicking(false); toast('已退出区域选择'); return; }
     if (app.roadBrush?.active) {
       if (app.roadBrush._editBackup) { app.roadBrush.cancelEdit(); toast('已放弃编辑，原道路已恢复'); }

@@ -481,7 +481,7 @@ export class Terrain {
     this.workflow?.cancelErosionPreview();
     this.workflow?.cancelDraft();
     this._cancelStroke?.();
-    this.app.vegetationBrush?.stop();this.app.roadPlanning?.setPicking(false);
+    this.app.vegetationBrush?.stop();this.app.roadPlanning?.setPicking(false);this.app.roadConnector?.setPicking(null);
     if(this.app.roadBrush?._editBackup)this.app.roadBrush.cancelEdit();else this.app.roadBrush?.stop();
     this.app.state.terrainTool=id===this.app.state.terrainTool?null:id;this.refreshUI();
   }

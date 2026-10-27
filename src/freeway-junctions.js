@@ -31,7 +31,8 @@ export function freewayConnections({newCurve,newWidth,newType,existing}) {
   const newMain=newType.id==='freeway',main=newMain?newCurve:existing.curve,branch=newMain?existing.curve:newCurve;
   const branchType=newMain?existing.roadType:newType,branchWidth=newMain?existing.width:newWidth;
   if(branchType.id==='freeway')return [];
-  const width=Math.max(20,newMain?newWidth:existing.width),laneWidth=(width-4)/2,offset=2+laneWidth/2;
+  const mainType=newMain?newType:existing.roadType;
+  const width=mainType.section?(newMain?newWidth:existing.width):Math.max(20,newMain?newWidth:existing.width),laneWidth=(width-4)/2,offset=2+laneWidth/2;
   const out=[],n=Math.min(256,Math.max(80,Math.ceil(main.getLength()/2))),m=Math.min(256,Math.max(80,Math.ceil(branch.getLength()/2)));
   const B=Array.from({length:m+1},(_,i)=>branch.getPointAt(i/m));
   for(const side of [-1,1]){

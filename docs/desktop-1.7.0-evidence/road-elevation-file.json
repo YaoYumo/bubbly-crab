@@ -1,0 +1,309 @@
+{
+  "url": "file:///home/user/bubbly-crab/previz-lab.html?fresh=1",
+  "rendererPixelRatio": 0.5,
+  "continuousRenderingPausedOutsideViewportGestures": true,
+  "interchange": {
+    "junctions": 0,
+    "gaps": [
+      0,
+      0
+    ],
+    "hits": [
+      8.19000000298023,
+      0.19000000298023223
+    ],
+    "bridge": {
+      "built": 10,
+      "blocked": 0,
+      "plantsRemoved": 0,
+      "blockedAt": []
+    },
+    "lamps": [
+      10,
+      10
+    ],
+    "supportClear": true
+  },
+  "lighting": {
+    "upper": {
+      "id": "upper",
+      "name": "上层高架",
+      "type": "road_brush",
+      "materialMode": "inherit",
+      "visible": true,
+      "locked": false,
+      "roadType": "asphalt",
+      "width": 8,
+      "fillet": false,
+      "filletH": [],
+      "points": [
+        [
+          0,
+          8.02,
+          -60
+        ],
+        [
+          0,
+          8.02,
+          60
+        ]
+      ],
+      "streetLights": true,
+      "lampSpacing": 80,
+      "lampSide": "left",
+      "terrainMode": "fixed",
+      "terrainOffset": 0,
+      "bridges": true,
+      "pierSpacing": 12,
+      "bridgeThreshold": 1.8,
+      "noJunct": false
+    },
+    "count": 2,
+    "lower": 10,
+    "manual": true
+  },
+  "ramp": {
+    "points": [
+      [
+        -40,
+        0.02,
+        -40
+      ],
+      [
+        -35,
+        0.10984375,
+        -35
+      ],
+      [
+        -30,
+        0.36375,
+        -30
+      ],
+      [
+        -25,
+        0.75828125,
+        -25
+      ],
+      [
+        -20,
+        1.27,
+        -20
+      ],
+      [
+        -15,
+        1.87546875,
+        -15
+      ],
+      [
+        -10,
+        2.55125,
+        -10
+      ],
+      [
+        -5,
+        3.27390625,
+        -5
+      ],
+      [
+        0,
+        4.02,
+        0
+      ],
+      [
+        5,
+        4.76609375,
+        5
+      ],
+      [
+        10,
+        5.48875,
+        10
+      ],
+      [
+        15,
+        6.16453125,
+        15
+      ],
+      [
+        20,
+        6.77,
+        20
+      ],
+      [
+        25,
+        7.28171875,
+        25
+      ],
+      [
+        30,
+        7.67625,
+        30
+      ],
+      [
+        35,
+        7.93015625,
+        35
+      ],
+      [
+        40,
+        8.02,
+        40
+      ]
+    ],
+    "junctions": [
+      0.02,
+      8.02
+    ],
+    "samples": [
+      {
+        "t": 0.2,
+        "expected": 1.0340699077595696,
+        "actual": 1.0341722038580499
+      },
+      {
+        "t": 0.3,
+        "expected": 1.9282978911829047,
+        "actual": 1.9282978832308266
+      },
+      {
+        "t": 0.4,
+        "expected": 3.0131192678439405,
+        "actual": 3.013609576628502
+      },
+      {
+        "t": 0.5,
+        "expected": 4.190000000000004,
+        "actual": 4.189445355741081
+      },
+      {
+        "t": 0.6,
+        "expected": 5.3668807321560665,
+        "actual": 5.366880736389855
+      },
+      {
+        "t": 0.7,
+        "expected": 6.4517021088171,
+        "actual": 6.451702107828482
+      },
+      {
+        "t": 0.8,
+        "expected": 7.3459300922404305,
+        "actual": 7.345827787201251
+      }
+    ],
+    "bridge": {
+      "built": 5,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 102,
+          "point": [
+            32.124891681027925,
+            7.7841546556772,
+            32.124891681027925
+          ]
+        }
+      ]
+    }
+  },
+  "loop": {
+    "joins": [
+      {
+        "x": 45,
+        "y": 8
+      }
+    ],
+    "stackedHits": [
+      8.170000002980231,
+      0.17000000298023224
+    ],
+    "lowAfterJoin": [
+      8.170000002980231,
+      0.17000000298023224
+    ],
+    "ownGaps": [
+      {
+        "t0": 0.767548906858003,
+        "t1": 0.8407465941749589,
+        "midY": 8
+      }
+    ]
+  },
+  "drag": {
+    "id": "drag",
+    "name": "可编辑高架",
+    "type": "road_brush",
+    "materialMode": "inherit",
+    "visible": true,
+    "locked": false,
+    "roadType": "asphalt",
+    "width": 8,
+    "fillet": false,
+    "filletH": [],
+    "points": [
+      [
+        -30,
+        12.479586500141941,
+        20
+      ],
+      [
+        30,
+        8,
+        20
+      ]
+    ],
+    "streetLights": true,
+    "lampSpacing": 24,
+    "lampSide": "right",
+    "terrainMode": "fixed",
+    "terrainOffset": 0,
+    "bridges": true,
+    "pierSpacing": 12,
+    "bridgeThreshold": 1.8,
+    "noJunct": false
+  },
+  "newFixed": {
+    "data": {
+      "id": "rb9",
+      "name": "道路_沥青路",
+      "type": "road_brush",
+      "materialMode": "inherit",
+      "visible": true,
+      "locked": false,
+      "roadType": "asphalt",
+      "width": 8,
+      "fillet": false,
+      "filletH": [],
+      "points": [
+        [
+          -24.99999713873838,
+          6,
+          -10.00000303045897
+        ],
+        [
+          24.999998691974497,
+          6,
+          -10.000003585920652
+        ]
+      ],
+      "streetLights": false,
+      "lampSpacing": 24,
+      "lampSide": "both",
+      "terrainMode": "fixed",
+      "terrainOffset": 0.02,
+      "bridges": true,
+      "pierSpacing": 12,
+      "bridgeThreshold": 1.8,
+      "noJunct": false
+    },
+    "bridge": {
+      "built": 4,
+      "blocked": 0,
+      "plantsRemoved": 0,
+      "blockedAt": []
+    }
+  },
+  "errors": [],
+  "csp": []
+}

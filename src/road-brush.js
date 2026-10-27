@@ -1,3 +1,5 @@
+import { tagRoadRoles, applyCompactCuts } from './road-compact-junction.js';
+import { normalizeSection, sectionDimensions, sectionRoadType, sectionAtWidth } from './road-section.js';
 import { endpointRoadContact } from './road-contact.js';
 import { junctionHeightField } from './junction-elevation.js';
 import { freewayConnections, applyFreewayCuts } from './freeway-junctions.js';
@@ -105,22 +107,31 @@ export class RoadBrush {
   setType(typeId) {
     const idx = ROAD_TYPES.findIndex(t => t.id === typeId);
     if (idx >= 0) {
-      this.roadType = ROAD_TYPES[idx];
-      this._updateLiveRoad();
+      this.roadType = this.roadType.section ? sectionRoadType(ROAD_TYPES[idx], this.roadType.section) : ROAD_TYPES[idx];
+      if(this.roadType.section)this.roadWidth=sectionDimensions(this.roadType.id,this.roadType.section).pavementWidth;
+      this._updateLiveRoad();this.app.bus.emit('road-section');
     }
   }
 
   cycleRoadType() {
-    const idx = ROAD_TYPES.indexOf(this.roadType);
+    const idx = ROAD_TYPES.findIndex(t=>t.id===this.roadType.id);
     const next = ROAD_TYPES[(idx + 1) % ROAD_TYPES.length];
-    this.roadType = next;
-    this._updateLiveRoad();
+    this.setType(next.id);
     return next;
   }
 
   setWidth(w) {
+    if(this.roadType.section)return this.setSection(sectionAtWidth(this.roadType.id,this.roadType.section,w));
     this.roadWidth = Math.max(1, Math.min(20, w));
     this._updateLiveRoad();
+  }
+
+  setSection(section) {
+    const value=normalizeSection(this.roadType.id,section);
+    if(!value)return false;
+    this.roadType=sectionRoadType(ROAD_TYPES.find(t=>t.id===this.roadType.id),value);
+    this.roadWidth=sectionDimensions(this.roadType.id,value).pavementWidth;
+    this._updateLiveRoad();this.app.bus.emit('road-section');return true;
   }
 
   toggleFillet() {
@@ -187,6 +198,7 @@ export class RoadBrush {
     this.app.vegetationBrush?.stop();
     this.app.state.terrainTool = null; this.app.terrain?.refreshUI();
     this.app.roadPlanning?.setPicking(false);
+    this.app.roadConnector?.setPicking(null);
     this.active = true; this.showSelectedPoints();
     this.terrainMode = 'follow'; this.terrainOffset = .02; this.draftHeight = 8;
     this.points = [];
@@ -435,11 +447,14 @@ export class RoadBrush {
   }
 
   /** 已完成道路的属性编辑：一次提交一次撤销，不进入持续绘制状态。 */
-  updateRoadProperties(so, { roadType = so?._roadData?.roadType?.id, width = so?._roadData?.width, points, terrainMode } = {}) {
+  updateRoadProperties(so, { roadType = so?._roadData?.roadType?.id, width = so?._roadData?.width, points, terrainMode, section } = {}) {
     if (!so || so.type !== 'road_brush' || so.locked || !this.app.objects.includes(so)) return null;
-    const type = ROAD_TYPES.find(t => t.id === roadType);
+    let type = ROAD_TYPES.find(t => t.id === roadType);
+    let explicit=section!==undefined?section:so?._roadData?.roadType?.section;
+    if(explicit&&section===undefined&&width!==so?._roadData?.width)explicit=sectionAtWidth(roadType,explicit,width);
+    if(type&&explicit){type=sectionRoadType(type,explicit);width=sectionDimensions(type.id,explicit)?.pavementWidth??width;}
     if (!type || !Number.isFinite(width) || (points !== undefined && !validRoadPoints(points)) || (terrainMode !== undefined && !['fixed', 'follow'].includes(terrainMode))) return null;
-    width = Math.max(1, Math.min(20, width));
+    width = Math.max(1, Math.min(type.section ? 80 : 20, width));
     if (this._editBackup || (this.active && this.points.length)) {
       this.app.notify?.('请先完成或取消当前道路绘制', 'warn');
       return null;
@@ -495,6 +510,7 @@ export class RoadBrush {
     this.points = effectivePoints.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
     this.roadWidth = data.width || 12;
     this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
+    if(data.section)this.roadType=sectionRoadType(this.roadType,data.section);
     this.terrainMode = data.terrainMode; this.terrainOffset = data.terrainOffset ?? 0;
     this.filletOn = !!data.fillet;
     this.filletH = (data.filletH || []).slice();
@@ -545,8 +561,9 @@ export class RoadBrush {
       this.filletOn = !!o.fillet;
       this.filletH = (o.filletH || []).slice();
       if (this.filletOn) this.syncFillets();
-      const roadType = ROAD_TYPES.find(t => t.id === o.roadType) || ROAD_TYPES[0];
-      const width = o.width || 12;
+      const baseType = ROAD_TYPES.find(t => t.id === o.roadType) || ROAD_TYPES[0];
+      const roadType = o.section ? sectionRoadType(baseType,o.section) : baseType;
+      const width = roadType.section ? sectionDimensions(roadType.id,roadType.section).pavementWidth : o.width || 12;
       this.roadType = roadType;
       this.roadWidth = width;
       const curve = this._buildPathCurve();
@@ -570,7 +587,7 @@ export class RoadBrush {
         ctrl: e.ctrl, noJunct: e.noJunct, name: e.name,
         streetLights: !!e.o.streetLights, lampSpacing: e.o.lampSpacing || 24, lampSide: e.o.lampSide || 'both',
         terrainMode: e.terrainMode, terrainOffset: e.terrainOffset, bridges: e.o.bridges !== false, pierSpacing: e.o.pierSpacing || 12, bridgeThreshold: e.o.bridgeThreshold || 1.8,
-        filletOn: e.filletOn, filletH: e.filletH,
+        filletOn: e.filletOn, filletH: e.filletH, connection: e.o.connection,
       };
       this._roads.push(rd);
       pending.push({ e, rd, isects });
@@ -638,7 +655,7 @@ export class RoadBrush {
       serialize: () => ({
         id: roadObj.id, name: roadObj.name, type: 'road_brush', materialMode: roadObj.materialMode,
         visible: roadObj.visible !== false, locked: !!roadObj.locked,
-        roadType: roadType.id, width, fillet: filletOn, filletH, points: rd.ctrl,
+        roadType: roadType.id, width, ...(roadType.section ? {section:{...roadType.section}} : {}), ...(rd.connection ? {connection:rd.connection} : {}), fillet: filletOn, filletH, points: rd.ctrl,
         streetLights: !!rd.streetLights, lampSpacing: rd.lampSpacing || 24, lampSide: rd.lampSide || 'both',
         terrainMode: rd.terrainMode, terrainOffset: rd.terrainOffset, bridges: rd.bridges !== false, pierSpacing: rd.pierSpacing || 12, bridgeThreshold: rd.bridgeThreshold || 1.8,
         noJunct: !!noJunct,
@@ -656,7 +673,7 @@ export class RoadBrush {
     const roadName = so?.name || `道路_${roadType.label}`;
     const rd = {
       curve, width, roadType, mesh: null, gaps, ctrl, noJunct, name: roadName,
-      filletOn, filletH,
+      filletOn, filletH, connection: so?.connection,
       streetLights: !!opt.streetLights, lampSpacing: opt.lampSpacing || 24, lampSide: opt.lampSide || 'both',
       terrainMode: opt.terrainMode || 'follow', terrainOffset: opt.terrainOffset ?? .02, bridges: opt.bridges !== false, pierSpacing: opt.pierSpacing || 12, bridgeThreshold: opt.bridgeThreshold || 1.8,
     };
@@ -735,6 +752,7 @@ export class RoadBrush {
 
   _junctionIntervals(curve, plan, half, isect) {
     const t = curve === isect.newCurve ? isect.tNew : isect.tExisting;
+    if(plan.compact&&!isect.freeway){const own=gapIntervals(curve,plan,0).filter(r=>t>=r.t0-1e-5&&t<=r.t1+1e-5);return own.length?own:[{t0:t,t1:t}];}
     if(isect.freeway){
       const f=isect.freeway,main=curve===f.curve,virtual=main?f.laneCurve:curve;
       const centre=gapIntervals(virtual,plan,0);
@@ -915,7 +933,8 @@ export class RoadBrush {
 
     const SIDED = { asphalt: 1, oneway: 1, concrete: 1 };
     let pieceW;
-    if (rt.id === 'freeway') pieceW = Math.max(width, 20);                    // 高速=全宽结构（中央带+护栏），守库下限
+    if (rt.section) pieceW = sectionDimensions(rt.id,rt.section).outerWidth;
+    else if (rt.id === 'freeway') pieceW = Math.max(width, 20);                    // 高速=全宽结构（中央带+护栏），守库下限
     else pieceW = Math.max(SIDED[rt.id] ? width + 4.5 : width, SIDED[rt.id] ? 6.6 : 0.6);
     const target = rt.id === 'garden' ? 6 : 22;            // 分段目标长（贴近库件默认模数）
 
@@ -924,7 +943,7 @@ export class RoadBrush {
     const pts = curve.getSpacedPoints(n).map(p => following ? p.clone().setY(0) : p);
     const inGap = (i) => {
       const t = i / n;
-      for (const g of gaps || []) if (!(g.isect?.freeway && curve===g.isect.freeway.curve) && g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
+      for (const g of gaps || []) if (!g.isect?.plan?.compact && !(g.isect?.freeway && curve===g.isect.freeway.curve) && g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
       return false;
     };
     const spans = [];
@@ -959,7 +978,7 @@ export class RoadBrush {
     // 相邻跨在关节顶点重合后，按本段转角把端面顶点拉到角分面上斜接，V 形缝从几何上消除
 
     // 自由端等宽半圆收口：半径、侧带与实际路件横断面一致，不再外挂固定颈宽的大圆盘。
-    if (!rd?.noJunct && spans.length && (SIDED[rt.id] || width >= 5.5)) {
+    if (!rd?.noJunct && spans.length && (rt.section || SIDED[rt.id] || width >= 5.5)) {
       const terrain = this.app.terrain;
       const halfEdge = (terrain?.size || 320) / 2;
       const eA = curve.getPointAt(0), eB = curve.getPointAt(1);
@@ -1019,6 +1038,7 @@ export class RoadBrush {
       if (chord < .01) continue;
       const piece = rt.build({ ...prm, width: pieceW, length: chord });
       if (!piece) continue;
+      tagRoadRoles(piece,roadProfile(rt,width).pav);
       if(rt.id==='freeway')piece.traverse(m=>{if(m.isMesh)m.userData.freewaySide=Math.abs(m.position.x)<2?0:Math.sign(m.position.x);});
       shearRoadGrade(piece, dy / chord);
       this._miterPieceEnds(piece, chord, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
@@ -1031,6 +1051,7 @@ export class RoadBrush {
     }
     this.app.roadTerrain?.warp(roadGroup, curve, true);
     applyFreewayCuts(roadGroup,curve,gaps);
+    applyCompactCuts(roadGroup,curve,gaps);
     if(this.batchRoads!==false)batchRoadParts(roadGroup);
     return roadGroup;
   }
@@ -1228,6 +1249,7 @@ export class RoadBrush {
     };
 
     this._onPointerDown = (ev) => {
+      if(this.app.roadConnector?.picking)return;
       if(ev.button !== 0 || this.app.state.playing || this.app.state.preview || this.app.suspended || this.app.aiScene?.busy) return;
       let immediate = null;
       if(!this.active) {

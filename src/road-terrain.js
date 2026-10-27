@@ -194,7 +194,7 @@ export class RoadTerrain {
       count = Math.min(4096, Math.max(2, Math.ceil(length / 0.75)));
     const half =
         type.id === "freeway"
-          ? Math.max(width, 20) / 2
+          ? (type.section ? width : Math.max(width, 20)) / 2
           : Math.max(
               roadProfile(type, width).half,
               ["asphalt", "oneway", "concrete"].includes(type.id) ? 3.3 : 0.3,

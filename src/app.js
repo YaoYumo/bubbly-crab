@@ -1,3 +1,4 @@
+import { RoadConnector } from './road-connector.js';
 import { actorFaceOffset, actorTangent, actorMotionDistance } from './actor-heading.js';
 // ---------------------------------------------------------------------------
 // App：状态与行为中枢（物体增删、选择、拖放、导入、路径、时间轴、导出）
@@ -174,6 +175,7 @@ export class App {
     // 绘制网格贴合地形；只有旧平面网格回退时才阻止穿插。
     this.stage.gridBlocked = () => !this.stage.drawingGrid && !!this.terrain?.enabled;
     this.roadPlanning = new RoadPlanning(this);
+    this.roadConnector = new RoadConnector(this);
     this.vegetationBrush = new VegetationBrush(this);
     this.stage.setGridVisible(false);
     this.stage.setGroundY(-0.035);
@@ -916,6 +918,7 @@ export class App {
       this.bus.on(event, () => st.pickIndex.invalidate(event));
     }
     st.bus.on('click', ({ hit, ndc }) => {
+      if (this.roadConnector?.pick(hit, ndc)) return;
       if (this.roadPlanning?.pick(ndc)) return;
       if (!hit) return;
       // DOF 点选模式
@@ -1309,6 +1312,7 @@ export class App {
     this.terrain?._cancelStroke?.();
     this.terrain?.workflow?.reset();
     this.roadPlanning?.reset();
+    this.roadConnector?.reset();
     this.vegetationBrush?.stop();
     const prev = this._suspendUndo;
     this._suspendUndo = true;                       // 清空是「一步」，由调用方（载入模板 / 一键清空）负责留快照

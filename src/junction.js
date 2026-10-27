@@ -20,6 +20,7 @@
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
 import ClipperLib from 'clipper-lib';
+import { sectionDimensions } from './road-section.js';
 
 export const SIDE_BAND = 2.25;      // 路侧带（缘石 0.45 + 步道 1.8，照抄库常量）
 export const RRET = 5;              // 路缘回转半径 R5（照抄库 RRET）
@@ -44,6 +45,7 @@ export function junctionSurface(arms) {
 
 // 横断面：带侧带的类型件全宽 = width+4.5（车行=width、双侧各 2.25），其余全宽即车行
 export function roadProfile(roadType, width) {
+  if(roadType?.section){const d=sectionDimensions(roadType.id,roadType.section);return {pav:d.pavementWidth/2,half:d.outerWidth/2,sid:d.sidewalkWidth>0};}
   const w = Math.max(1, width || 12);
   const sid = !!(roadType && SIDED[roadType.id]);
   return { pav: w / 2, half: sid ? (w + 4.5) / 2 : w / 2, sid };
@@ -69,7 +71,7 @@ export function armsFromIsect(isect) {
   const push = (curve, t, width, roadType) => {
     const freeway=isect.freeway,sourceCurve=curve;
     const isMain=freeway && curve===freeway.curve;
-    if(isMain){curve=freeway.laneCurve;width=freeway.width;}
+    if(isMain){curve=freeway.laneCurve;width=freeway.width;roadType={...roadType,section:null};}
     const tc = Math.max(0.001, Math.min(0.999, t));
     const tan = curve.getTangentAt(tc).setY(0).normalize();
     const d0 = v2(tan.x, tan.z);
@@ -172,6 +174,14 @@ export function junctionPlan(center, arms, freeway = null) {
     ai.c = Math.max(ai.c, reach(ai, aj));
     aj.c = Math.max(aj.c, reach(aj, ai));
   }
+
+  // Acute approaches use a bounded merge core plus exact corridor clipping.
+  // Extending a convex slab to 1/sin(theta) fills a huge empty wedge. Keep the
+  // analytic distance ONLY for trimming overlapping internal side bands.
+  const compactLimit=Math.max(...arms.map(a=>a.half))*1.6+3;
+  const acute=sorted.some((idx,k)=>{const a=arms[idx].dir,b=arms[sorted[(k+1)%sorted.length]].dir;return dot(a,b)>.500001&&Math.abs(cross2(a,b))>.04;});
+  const compact=acute&&arms.some(a=>a.c>compactLimit+1);
+  if(compact)for(const a of arms){a.overlapReach=Math.min(a.c,a.available??Infinity);a.c=Math.min(a.c,compactLimit);}
 
   // A small acute-angle branch cannot acquire an imaginary 100m continuation.
   // Stop mouths at real endpoints; long roads keep their analytic tangent reach.
@@ -330,7 +340,7 @@ export function junctionPlan(center, arms, freeway = null) {
   }
 
   return {
-    center: C, arms, hull, edges, walks:freeway?[]:walks, freeway,
+    center: C, arms, hull, edges, walks:freeway?[]:walks, freeway, compact,
     // 挖洞判定：所有边内法线方向至少内缩 GAP_LIP
     insideLip: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= GAP_LIP - 1e-9),
     insideHull: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= -1e-9),
@@ -615,7 +625,7 @@ export function buildJunction(plan, opts = {}) {
   //    相交的两根条只留臂序靠前的一根，避免两组标线共面交织。
   // 斑马线只铺在最终采用沥青的路口面上。混合路口统一铺装后，各进口的
   // 斑马均在路口面内；非沥青路口不生成斑马，停止线仍走原有规则。
-  const barsByArm = (plan.freeway?[]:plan.arms).map((a) => {
+  const barsByArm = (plan.freeway||plan.compact?[]:plan.arms).map((a) => {
     if (!surface.asphalt) return [];
     const c = a.c ?? (a.pav + MOUTH_EXTRA);
     if(c<5)return [];
@@ -657,7 +667,7 @@ export function buildJunction(plan, opts = {}) {
     }
   });
   g.userData.crosswalkBars = marks.length;
-  (plan.freeway?[]:plan.arms).forEach((a) => {
+  (plan.freeway||plan.compact?[]:plan.arms).forEach((a) => {
     const c = a.c ?? (a.pav + MOUTH_EXTRA);
     if(c<5)return;
     const d = a.dir;
