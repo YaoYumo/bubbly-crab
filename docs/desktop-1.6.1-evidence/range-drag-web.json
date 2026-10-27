@@ -1,0 +1,153 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "cases": [
+    {
+      "kind": "param",
+      "key": "length",
+      "inputs": 12,
+      "first": 13.5,
+      "final": 31,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "param",
+      "key": "height",
+      "inputs": 12,
+      "first": 4.6,
+      "final": 9.5,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "param",
+      "key": "thick",
+      "inputs": 12,
+      "first": 0.36,
+      "final": 0.78,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "param",
+      "key": "length",
+      "inputs": 12,
+      "first": 13.5,
+      "final": 31,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "param",
+      "key": "length",
+      "inputs": 12,
+      "first": 13.5,
+      "final": 31,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "param",
+      "key": "length",
+      "inputs": 12,
+      "first": 13.5,
+      "final": 31,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "motion",
+      "key": "speed",
+      "inputs": 8,
+      "first": 0.95,
+      "final": 2.3,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "terrain",
+      "key": "exaggerate",
+      "inputs": 9,
+      "first": 1.1,
+      "final": 2.35,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "terrain-state",
+      "key": "brushSize",
+      "inputs": 12,
+      "first": 15,
+      "final": 33.5,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "terrain-state",
+      "key": "waterY",
+      "inputs": 12,
+      "first": 3.7,
+      "final": 17.2,
+      "commitOnly": true,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "light",
+      "key": "sunInt",
+      "inputs": 10,
+      "first": 3.25,
+      "final": 7.75,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "bloom",
+      "key": "strength",
+      "inputs": 12,
+      "first": 0.65,
+      "final": 1.55,
+      "commitOnly": true,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "sky",
+      "key": "ev",
+      "inputs": 12,
+      "first": -2.1,
+      "final": 3.3,
+      "commitOnly": true,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "camera",
+      "key": "focal",
+      "inputs": 12,
+      "first": 102,
+      "final": 234,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "camera",
+      "key": "duration",
+      "inputs": 12,
+      "first": 13.5,
+      "final": 31,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    },
+    {
+      "kind": "move",
+      "key": "deg",
+      "inputs": 12,
+      "first": 240,
+      "final": 560,
+      "commitOnly": false,
+      "heldAcrossRebuildDelay": true
+    }
+  ],
+  "keyboardRepeatAndFocus": true,
+  "cancelLostCaptureBlurRecovery": true,
+  "errors": [],
+  "csp": []
+}

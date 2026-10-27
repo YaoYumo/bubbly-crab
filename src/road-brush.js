@@ -1,3 +1,6 @@
+import { junctionHeightField } from './junction-elevation.js';
+import { freewayConnections, applyFreewayCuts } from './freeway-junctions.js';
+import { roadHeightGuide, hitRoadHeightGrip } from './road-point-controls.js';
 import { validRoadPoints, shearRoadGrade } from './road-elevation.js';
 import { dragOnLevel, pointGuide, hitCurvePoint } from './curve-handles.js';
 // ---------------------------------------------------------------------------
@@ -61,8 +64,23 @@ export class RoadBrush {
     this._disposeChildren(this.selectedGuides);
     const so = this.app.selObj;
     if(this.active || !so || so.type !== 'road_brush' || so.locked || so.visible === false || this.app.state.preview) return;
-    const points = so.serialize().points;
-    if(points?.length) this.selectedGuides.add(pointGuide(points, 0x4a90d9));
+    const points = this.controlPointsFor(so);
+    if(points?.length) this.selectedGuides.add(pointGuide(points, 0x4a90d9), roadHeightGuide(points));
+  }
+  controlPointsFor(so) {
+    const rd=so?._roadData;
+    return (rd?.ctrl || so?.serialize?.().points || []).map(p=>[p[0], rd?.terrainMode==='follow' ? (this.app.roadTerrain?.height(rd.curve,p[0],p[2]) ?? p[1]) : p[1], p[2]]);
+  }
+  draftControlPoints() {
+    const points=this.points.map(p=>p.toArray());
+    if(this.terrainMode!=='follow'||points.length<2||this._editBackup)return points;
+    const curve=this._buildPathCurve();
+    return points.map(p=>[p[0],this.app.roadTerrain?.height(curve,p[0],p[2])??p[1],p[2]]);
+  }
+  freezeDraftHeights() {
+    if(this.terrainMode!=='follow')return;
+    const points=this.draftControlPoints();
+    this.points.forEach((p,i)=>{p.y=points[i][1];});
   }
   _buildPreviewHelpers() {
     const lineMat = new THREE.LineBasicMaterial({ color: 0x4A90D9, linewidth: 2, transparent: true, opacity: 0.5 });
@@ -226,6 +244,7 @@ export class RoadBrush {
   setDraftPoint(index, axis, value) {
     const p = this.points[index];
     if (!this.active || !p || !['x','y','z'].includes(axis) || !Number.isFinite(value) || Math.abs(value) > 10000) return false;
+    if(axis==='y')this.freezeDraftHeights();
     p[axis] = value;
     if (axis === 'y') this.terrainMode = 'fixed';
     else if (this.terrainMode !== 'fixed') p.y = (this.app.terrain?.enabled ? this.app.terrain.heightAt(p.x,p.z) : 0) + .02;
@@ -307,7 +326,7 @@ export class RoadBrush {
       dot.userData.pointIdx = i; dot.renderOrder = 1000; dot.userData.pickIgnore = true;
       this.previewDots.add(dot);
     }
-    this.previewDots.add(pointGuide(pts.map(p => p.toArray()), 0x4a90d9));
+    this.previewDots.add(pointGuide(pts.map(p => p.toArray()), 0x4a90d9), roadHeightGuide(pts.map(p=>p.toArray())));
     if (pts.length >= 2) {
       const curve = this._buildPathCurve();
       const linePoints = curve.getSpacedPoints(Math.max(24, Math.round(curve.getLength() * 2)));
@@ -373,9 +392,13 @@ export class RoadBrush {
       return null;
     }
 
-    if (!this._editBackup) this.app.beginOp?.('绘制道路', '', true);
     const curve = this._buildPathCurve();
     const isects = curve ? this._detectIntersections(curve, this.roadWidth, !!this._editNoJunct) : [];
+    if(curve?._freewayConflicts?.length){
+      this.app.notify?.('高速公路不能同高穿越中央隔离带。请拖绿色箭头调整各点标高形成跨线立交，或用普通道路作为匝道接入近侧车道。','warn');
+      return null;
+    }
+    if (!this._editBackup) this.app.beginOp?.('绘制道路', '', true);
     const mesh = curve ? this._addRoad(curve, {
       roadType: this.roadType, width: this.roadWidth,
       ctrl: this.points.map(p => [p.x, p.y, p.z]),
@@ -451,6 +474,7 @@ export class RoadBrush {
   editRoad(so) {
     if (!so || so.type !== 'road_brush' || so.locked) return false;
     const data = so.serialize();
+    const effectivePoints=this.controlPointsFor(so);
     if (!data.points || data.points.length < 2) return false;
     if (this._editBackup) this.cancelEdit();      // 正在编辑另一条：先还原上一条
     this.stop();                                  // 结束可能进行中的普通绘制（纯取消）
@@ -462,7 +486,7 @@ export class RoadBrush {
     app.batchOp(`编辑 ${so.name || '道路'}`, () => app.removeObject(so));
     this._editUndoMark = app._undo?.at(-1);
     this.start();
-    this.points = data.points.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    this.points = effectivePoints.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
     this.roadWidth = data.width || 12;
     this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
     this.terrainMode = data.terrainMode; this.terrainOffset = data.terrainOffset ?? 0;
@@ -546,6 +570,11 @@ export class RoadBrush {
       pending.push({ e, rd, isects });
     }
 
+    // Legacy projects keep both roads, with a derived warning on each. Draft
+    // detection must never stamp an uncommitted conflict onto an existing road.
+    for(const {rd}of pending)for(const peer of rd.curve._freewayConflicts||[]){
+      peer._freewayConflicts ||= [];if(!peer._freewayConflicts.includes(rd.curve))peer._freewayConflicts.push(rd.curve);
+    }
     // ② 计划 + 挖洞并集
     const hits = new Map();
     const addHit = (rd, is) => {
@@ -656,7 +685,7 @@ export class RoadBrush {
   _planForIsect(is) {
     if (is.plan !== undefined) return is.plan;
     const arms = armsFromIsect(is);
-    is.plan = junctionPlan(is.point, arms);
+    is.plan = junctionPlan(is.point, arms, is.freeway);
     return is.plan;
   }
 
@@ -676,6 +705,14 @@ export class RoadBrush {
 
   _junctionIntervals(curve, plan, half, isect) {
     const t = curve === isect.newCurve ? isect.tNew : isect.tExisting;
+    if(isect.freeway){
+      const f=isect.freeway,main=curve===f.curve,virtual=main?f.laneCurve:curve;
+      const centre=gapIntervals(virtual,plan,0);
+      const own=centre.filter(r=>t>=r.t0-1e-5&&t<=r.t1+1e-5);
+      // A lateral port can lie just outside a short branch's centreline. Its
+      // dedicated geometry cut still needs an owning t interval, never a full-width gap.
+      return own.length?own:[{t0:t,t1:t}];
+    }
     // The same alignment can pass through the same XZ footprint on another level.
     // Only cut the contiguous interval owning this particular accepted crossing.
     return gapIntervals(curve, plan, half).filter(r => !Number.isFinite(t) || (t >= r.t0 - 1e-5 && t <= r.t1 + 1e-5));
@@ -690,6 +727,8 @@ export class RoadBrush {
     const patch = buildJunction(plan);
     if (!patch) return null;
     patch.position.y = isect.terrainY ?? (terrain?.enabled ? terrain.heightAt(isect.point.x, isect.point.z) : 0);
+    const field=junctionHeightField(plan,patch.position.y);
+    if(field)this.app.roadTerrain?.warpWith(patch,field);
     const isectObj = {
       id: `ri${++this._seq}`,
       root: patch, name: '交叉路口', type: 'road_intersection',
@@ -715,12 +754,19 @@ export class RoadBrush {
   // ============ 交叉检测（采样 + 二分精化；与旧版语义一致） ============
 
   _detectIntersections(newCurve, newWidth, noJunct = false) {
-    const intersections = [];
+    const intersections = [];newCurve._freewayConflicts=[];
     if (noJunct) return intersections;                       // 基座/台面：贴地但不生成路口
     const threshold = (newWidth / 2) + 1.0; // 交叉检测阈值
 
     for (const existing of this._roads) {
       if (existing.noJunct) continue;                        // 对面是基座：只贴不接
+      if(this.roadType.id==='freeway'||existing.roadType.id==='freeway'){
+        if(this.roadType.id==='freeway'&&existing.roadType.id==='freeway'){
+          const ports=freewayConnections({newCurve,newWidth,newType:this.roadType,existing:{...existing,roadType:{...existing.roadType,id:'asphalt'}}});
+          if(ports.length)newCurve._freewayConflicts.push(existing.curve);
+        }else intersections.push(...freewayConnections({newCurve,newWidth,newType:this.roadType,existing}));
+        continue;
+      }
       const exThreshold = (existing.width / 2) + 1.0;
       const combinedThreshold = threshold + exThreshold - 1.0;
 
@@ -757,7 +803,7 @@ export class RoadBrush {
         const hA=height(newCurve,refined.tA),hB=height(existing.curve,refined.tB);
         const limit = newCurve._terrainProfile?.follow && existing.curve._terrainProfile?.follow ? Infinity : .08;
         if (Math.abs(hA-hB)>limit)continue;
-        const tA=newCurve.getTangentAt(refined.tA),tB=existing.curve.getTangentAt(refined.tB);
+        const tA=newCurve.getTangentAt(refined.tA).setY(0).normalize(),tB=existing.curve.getTangentAt(refined.tB).setY(0).normalize();
         if(Math.abs(tA.x*tB.z-tA.z*tB.x)<.08)continue;
         if(accepted.some(q=>q.point.distanceTo(refined.point)<.5))continue;
         accepted.push(refined);
@@ -846,16 +892,16 @@ export class RoadBrush {
     const pts = curve.getSpacedPoints(n).map(p => following ? p.clone().setY(0) : p);
     const inGap = (i) => {
       const t = i / n;
-      for (const g of gaps || []) if (g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
+      for (const g of gaps || []) if (!(g.isect?.freeway && curve===g.isect.freeway.curve) && g.t1 > g.t0 && t >= g.t0 && t <= g.t1) return true;
       return false;
     };
     const spans = [];
-    let a = null, b = null, len = 0;
-    const push = () => { if (a && b && len >= 0.01) spans.push({ a, b, len }); a = null; b = null; len = 0; };
+    let a = null, b = null, len = 0, t0=0,t1=0;
+    const push = () => { if (a && b && len >= 0.01) spans.push({ a, b, len, t0,t1 }); a = null; b = null; len = 0; };
     for (let i = 0; i <= n; i++) {
       if (inGap(i)) { push(); continue; }
       const p = pts[i];
-      if (!a) { a = p; b = p; len = 0; continue; }
+      if (!a) { a = p; b = p; len = 0;t0=t1=i/n; continue; }
       const dx = p.x - b.x, dz = p.z - b.z;
       const seg = Math.hypot(dx, dz);
       if (seg < 1e-9) continue;
@@ -863,16 +909,16 @@ export class RoadBrush {
         const clen = Math.hypot(b.x - a.x, b.z - a.z);
         const cos = clen > 1e-9 ? ((b.x - a.x) * dx + (b.z - a.z) * dz) / (clen * seg) : 1;
         if (!following && Math.abs((p.y - b.y) / seg - (b.y - a.y) / (clen || 1)) > .002) {
-          const joint = b; push(); a = joint; b = p; len = seg; continue;
+          const joint = b, jointT=t1; push(); a = joint; b = p; len = seg;t0=jointT;t1=i/n; continue;
         }
         if (cos < 0.995 || len + seg > target) {           // 转角 >~5.7° 或超长 → 拆跨
-          b = p; len += seg;                               // 把引发断跨的段并入本跨，端点落在关节顶点
+          b = p; len += seg;t1=i/n;                               // 把引发断跨的段并入本跨，端点落在关节顶点
           push();                                          // a/b 清空
-          a = p; b = p; len = 0;                           // 新跨从同一顶点出发 → 相邻跨端点严格重合
+          a = p; b = p; len = 0;t0=t1=i/n;                           // 新跨从同一顶点出发 → 相邻跨端点严格重合
           continue;
         }
       }
-      b = p;
+      b = p;t1=i/n;
       len += seg;
     }
     push();
@@ -941,15 +987,18 @@ export class RoadBrush {
       if (chord < .01) continue;
       const piece = rt.build({ ...prm, width: pieceW, length: chord });
       if (!piece) continue;
+      if(rt.id==='freeway')piece.traverse(m=>{if(m.isMesh)m.userData.freewaySide=Math.abs(m.position.x)<2?0:Math.sign(m.position.x);});
       shearRoadGrade(piece, dy / chord);
       this._miterPieceEnds(piece, chord, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
       piece.rotation.order = 'YXZ';
       piece.rotation.y = Math.atan2(dx, dz);               // 件 +Z 对齐行进方向
       // Grade is a vertical shear, not a pitch: adjacent deck/curb ends remain joined.
       piece.position.set((s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2 + 0.02, (s.a.z + s.b.z) / 2);
+      piece.userData.roadRange=[s.t0,s.t1];
       roadGroup.add(piece);
     }
     this.app.roadTerrain?.warp(roadGroup, curve, true);
+    applyFreewayCuts(roadGroup,curve,gaps);
     if(this.batchRoads!==false)batchRoadParts(roadGroup);
     return roadGroup;
   }
@@ -1062,6 +1111,7 @@ export class RoadBrush {
       if (related(o)) this.app.removeObject(o);
     }
     for (const other of this._roads) {
+      if(other.curve._freewayConflicts)other.curve._freewayConflicts=other.curve._freewayConflicts.filter(c=>c!==rd.curve);
       const before = (other.gaps || []).length;
       other.gaps = (other.gaps || []).filter(g => !(g.isect && (g.isect.newCurve === rd.curve || g.isect.existingCurve === rd.curve)));
       if (other.gaps.length !== before) this._rebuildRoad(other);
@@ -1136,10 +1186,12 @@ export class RoadBrush {
     const pick = (ev) => {
       const r = st.canvas.getBoundingClientRect();
       const sx = ev.clientX - r.left, sy = ev.clientY - r.top;
-      const hi = this._findHandleAt(sx, sy);
-      if (hi >= 0) return { kind: 'handle', idx: hi };
+      const yi=hitRoadHeightGrip(ev,st,this.points.map(p=>p.toArray()));
+      if(yi>=0)return {kind:'height',idx:yi};
       const pi = this._findPointAt(sx, sy);
       if (pi >= 0) return { kind: 'point', idx: pi };
+      const hi = this._findHandleAt(sx, sy);
+      if (hi >= 0) return { kind: 'handle', idx: hi };
       return null;
     };
 
@@ -1149,9 +1201,10 @@ export class RoadBrush {
       if(!this.active) {
         const so = this.app.selObj;
         if(!this.selectedGuides.children.length || !so || so.locked) return;
-        const index = hitCurvePoint(ev, st, so.serialize().points);
+        const controls=this.controlPointsFor(so),heightIndex=hitRoadHeightGrip(ev,st,controls);
+        const index = heightIndex>=0 ? heightIndex : hitCurvePoint(ev, st, controls);
         if(index < 0 || !this.editRoad(so)) return;
-        immediate = {kind:'point', idx:index, autoCommit:true, before:this.points[index].clone()};
+        immediate = {kind:heightIndex>=0?'height':'point', idx:index, autoCommit:true, before:this.points[index].clone()};
         st.tc.detach();
       }
       ev.preventDefault();
@@ -1161,10 +1214,12 @@ export class RoadBrush {
       try{host.setPointerCapture(ev.pointerId);}catch{}
       const hit = immediate || pick(ev);
       if (hit) {
-        const before = hit.before || this.points[hit.idx]?.clone();
+        const heightDrag=hit.kind==='height' || (hit.kind==='point' && ev.shiftKey);
+        if(heightDrag)this.freezeDraftHeights();
+        const before = this.points[hit.idx]?.clone();
         const camera = st.view, rect = st.canvas.getBoundingClientRect();
         const units = camera.isOrthographicCamera ? (camera.top-camera.bottom)/camera.zoom/rect.height : 2*Math.tan((camera.fov||50)*Math.PI/360)*(before?.distanceTo(camera.position)||30)/rect.height;
-        this._drag = {...hit, before, pointerId:ev.pointerId, heightDrag: hit.kind === 'point' && ev.shiftKey, startY:ev.clientY, units};
+        this._drag = {...hit, before, pointerId:ev.pointerId, heightDrag, startY:ev.clientY, units};
         try { host.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
         return;
       }

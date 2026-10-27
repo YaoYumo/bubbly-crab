@@ -1120,7 +1120,7 @@ export class App {
       }
     } else {
       if (!S.preview) {
-        this.stage.orbit.enabled = !this.stage.dragging;
+        this.stage.orbit.enabled = !this.stage.dragging && !this.roadBrush?._drag;
       }
       this.stage.setDofEnabled(false);
     }

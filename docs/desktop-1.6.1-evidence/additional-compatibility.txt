@@ -1,0 +1,62 @@
+(node:2989) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("./test/assets-only-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS exact subdivision / conservative material batching / incremental vs full geometry / road IDs-order-selection / off-road no-op / fixed-deck terrain supports / cached vegetation clearance / grade topology / draw attribution restore / native diagnostic button {"pixelDifference":0,"localRebuilt":1,"offRoadRebuilt":0,"unbatched":{"calls":356,"triangles":11462,"attribution":{"at":"2026-10-27T06:18:44.460Z","calls":356,"rows":[{"category":"road_brush","main":177,"shadow":177,"total":354},{"category":"天空 / 地面 / 辅助","main":2,"shadow":0,"total":2}],"otherCalls":0,"note":"单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"},"shape":{"hash":1353071472,"count":17172}},"batched":{"calls":82,"triangles":11462,"attribution":{"at":"2026-10-27T06:18:45.711Z","calls":82,"rows":[{"category":"road_brush","main":40,"shadow":40,"total":80},{"category":"天空 / 地面 / 辅助","main":2,"shadow":0,"total":2}],"otherCalls":0,"note":"单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"},"shape":{"hash":1353071472,"count":17172}},"supportCacheHits":18}
+{"angle":90,"walks":4,"c":12.500000000000004,"views":[{"height":70,"tilt":0.06,"pixels":[[220,224,225],[220,224,225],[220,224,225],[220,224,225]]},{"height":70,"tilt":0.8,"pixels":[[220,224,225],[220,224,225],[220,224,225],[220,224,225]]},{"height":320,"tilt":0.06,"pixels":[[215,221,225],[215,221,225],[215,221,225],[215,221,225]]},{"height":320,"tilt":0.8,"pixels":[[213,220,224],[213,220,224],[213,220,224],[213,220,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+{"angle":60,"walks":4,"c":20.552558883256076,"views":[{"height":70,"tilt":0.06,"pixels":[[220,224,225],[220,224,225],[220,224,225],[220,224,225]]},{"height":70,"tilt":0.8,"pixels":[[220,224,225],[220,224,225],[220,224,225],[220,224,225]]},{"height":320,"tilt":0.06,"pixels":[[215,221,225],[215,221,225],[215,221,225],[215,221,225]]},{"height":320,"tilt":0.8,"pixels":[[213,220,224],[213,220,224],[213,220,224],[213,220,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+{"angle":45,"walks":4,"c":28.05634918610405,"views":[{"height":84.16904755831214,"tilt":0.06,"pixels":[[219,224,225],[220,224,225],[220,224,225],[219,224,225]]},{"height":84.16904755831214,"tilt":0.8,"pixels":[[219,224,225],[219,224,225],[220,224,225],[219,224,225]]},{"height":320,"tilt":0.06,"pixels":[[215,221,225],[215,221,225],[215,221,225],[215,221,225]]},{"height":320,"tilt":0.8,"pixels":[[213,220,224],[213,220,224],[213,220,224],[213,220,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+{"angle":30,"walks":4,"c":42.55255888326357,"views":[{"height":127.65767664979072,"tilt":0.06,"pixels":[[219,223,225],[219,224,225],[219,224,225],[219,224,225]]},{"height":127.65767664979072,"tilt":0.8,"pixels":[[219,223,225],[219,223,225],[219,223,225],[219,223,225]]},{"height":320,"tilt":0.06,"pixels":[[215,221,225],[215,221,225],[215,221,225],[215,221,225]]},{"height":320,"tilt":0.8,"pixels":[[213,220,224],[213,220,224],[213,220,224],[213,220,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+{"angle":20,"walks":4,"c":63.884100015795525,"views":[{"height":191.65230004738657,"tilt":0.06,"pixels":[[218,223,225],[218,223,225],[218,223,225],[218,223,225]]},{"height":191.65230004738657,"tilt":0.8,"pixels":[[217,222,225],[217,222,225],[218,223,225],[217,223,225]]},{"height":320,"tilt":0.06,"pixels":[[215,221,225],[215,221,225],[215,221,225],[215,221,225]]},{"height":320,"tilt":0.8,"pixels":[[213,220,224],[213,220,224],[213,220,224],[213,220,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+{"angle":15,"walks":4,"c":85.05329524000243,"views":[{"height":255.15988572000728,"tilt":0.06,"pixels":[[217,222,225],[217,222,225],[217,222,225],[217,222,225]]},{"height":255.15988572000728,"tilt":0.8,"pixels":[[215,221,225],[215,221,225],[216,222,225],[216,221,225]]},{"height":425.2664762000121,"tilt":0.06,"pixels":[[212,219,224],[212,219,224],[212,220,224],[212,219,224]]},{"height":425.2664762000121,"tilt":0.8,"pixels":[[208,217,224],[208,217,224],[208,217,224],[208,217,224]]},{"height":600,"tilt":0.06,"pixels":[[206,216,223],[206,216,223],[206,216,223],[206,216,223]]},{"height":600,"tilt":0.8,"pixels":[[199,212,222],[199,212,222],[200,212,223],[200,212,223]]}],"valid":true}
+PASS: 6 angles × 3 distances × 2 tilts × 4 sidewalk corners; no page errors
+PASS {"yaw":0,"angle":90} [[[0.45882396671195114,0.5411760332880489]],[[0.903922589123249,1]]]
+PASS {"yaw":0,"angle":90,"miss":0.01} [[[0.45882396671195114,0.5411760332880489]],[[0.9039979222416878,1]]]
+PASS {"yaw":37,"angle":90,"reverse":true,"stemFirst":true} [[[0,0.09607741095478695]],[[0.45882396671195114,0.5411760332880489]]]
+PASS {"yaw":90,"angle":90,"miss":0.01,"reverse":true} [[[0.45882396671195114,0.5411760332880489]],[[0,0.09600207775831224]]]
+PASS {"yaw":37,"angle":60,"stemFirst":true} [[[0.8391317371418352,1]],[[0.42986753991380244,0.5411062264850872]]]
+PASS {"yaw":0,"angle":30} [[[0.351177730256536,0.5405465403384262]],[[0.6640505866706372,1]]]
+PASS {"yaw":0,"angle":90,"draw":true} [[[0.45882396671195114,0.5411760332880489]],[[0.903922589123249,1]]]
+PASS {"yaw":37,"angle":90,"draw":true,"stemFirst":true,"reverse":true,"miss":0.01} [[[0,0.09600207775831224]],[[0.45882396671195114,0.5411760332880489]]]
+PASS: T junction restore/draw, reversed endpoints/order, rotation, acute angles, near-miss endpoints; no page errors
+PASS six-request regression {
+  primitiveParts: 4,
+  oneUndo: true,
+  redo: true,
+  motion: true,
+  camera: true,
+  environment: true,
+  libraryRoundtrip: true,
+  realGGUF: false,
+  nativeCarFrontAxisSampled: true,
+  legacyZeroFixed: true,
+  walkSeekDeterministic: true,
+  lockedRejected: true
+} {
+  realPointerDrag: true,
+  heightPreserved: true,
+  draftOnly: true,
+  oneSaveUndo: true
+} {
+  realPointerDrag: true,
+  selectShowsPoints: true,
+  commitOnRelease: true,
+  idPreserved: true,
+  cancelRestoresPathAndUndo: true
+} group/variant builds 84
+PASS range dragging web 16 real mouse drags: model/terrain/brush/water/light/Bloom/physical sky/lens/duration/camera move, paused across rebuilds, paired readouts, final values and held keyboard
+PASS radial trigger web {
+  platform: 'Linux Chromium, not native Windows mouse/trackpad',
+  longStationaryRightHold: true,
+  contextOnlyFallback: true,
+  contextOnlyAndMissingUpAreSimulated: true,
+  missingPointerupFallback: true,
+  noDuplicateReopen: true,
+  rightDownDoesNotOpen: true,
+  rightPanAndReturnToStartPreserved: true,
+  delayedPostPanSuppressed: true,
+  blockedReasonVisible: true,
+  blockedRoadDoesNotAddUndo: true,
+  launcherAndRightClickRecover: true,
+  errors: [],
+  csp: []
+}

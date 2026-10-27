@@ -1,0 +1,55 @@
+{
+  "version": "1.6.1",
+  "status": "frontend-regressions-passed; Windows build pending",
+  "testedSource": "feature source commit; delivery documentation commit will record its exact SHA",
+  "platform": "Linux Chromium 131 / software WebGL; not native Windows mouse hardware",
+  "modes": [
+    "Vite web",
+    "compiled desktop frontend with production CSP",
+    "network-disabled compiled single-file HTML"
+  ],
+  "viewport": {
+    "cssWidth": 1500,
+    "cssHeight": 1050,
+    "rendererPixelRatio": 0.5,
+    "continuousRenderingPausedOutsideActualViewportGestures": true,
+    "note": "Actual input and CPU geometry/rays continue. Not GPU performance or pixel-quality acceptance."
+  },
+  "checks": [
+    "direct green per-point Y grip, no Shift, perspective + top view + terrain-following road",
+    "only selected Y changes; original XZ and all other effective point heights retained",
+    "blue XZ-only grip, active draft, cancel/lock, undo-redo-save-load",
+    "8 actual-library freeway scenes: both sides, both insertion orders, isolated ports on full crossing",
+    "continuous original median and opposing carriageway, near guardrail opening, branch absent from median",
+    "curved freeway median + opposing carriageway baseline rays unchanged; no branch over median",
+    "no crosswalk or stop line on freeway portals",
+    "same-level freeway/freeway new crossing rejected, unfinished draft and undo stack retained",
+    "60 pure acute/short/unequal-width/graded plans with unit horizontal frames and real endpoint bounds",
+    "12 actual acute/short/graded scenes, paved seam rays, vertical transition follows approach geometry",
+    "retained existing stacked interchange, ramp endpoints, self-stacked loop and level-specific gaps",
+    "independent lamps, bridge supports, original ordinary junctions, terrain/undo/properties",
+    "16 real range drags and radial-menu regressions in all three modes",
+    "offline editing + mocked desktop conversation and IPC + desktop visual/native-boundary preflight"
+  ],
+  "gradedAcuteRayMaxAbsoluteHeightDelta": 0.07000004379719504,
+  "gradedAcuteRayNote": "Includes the existing designed pavement-layer overlap: junction face is lower than adjoining road pieces. Not a structural tolerance. The unchanged flat-junction algorithm had produced up to 2.4832685887278827m discrepancy in this working regression before junction height deformation was added.",
+  "performance": {
+    "ordinaryRoadBatchingPixelDifference": 0,
+    "unbatchedCalls": 356,
+    "batchedCalls": 82,
+    "trianglesBoth": 11462,
+    "note": "Controlled regression comparison only; not user GPU benchmark."
+  },
+  "windows": {
+    "status": "pending",
+    "frontendInventory": "desktop-artifacts.json"
+  },
+  "boundaries": [
+    "Not native user Windows interaction, 4070Ti performance or real GGUF inference.",
+    "Unsigned installer, no model weights; do not move, rename, merge or redownload user GGUF shards.",
+    "Scene-building geometry, not arbitrary extreme-curvature/civil-engineering/traffic-simulation acceptance.",
+    "Legacy at-grade freeway/freeway layouts are retained with diagnostics, not silently deleted or converted into fictitious grade separation.",
+    "No merge to main authorized or performed."
+  ],
+  "harnessNote": "One initial Node performance command omitted the image-URL loader; raw failure retained in compatibility.txt and successful corrected run retained in additional-compatibility.txt."
+}

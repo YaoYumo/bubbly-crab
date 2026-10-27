@@ -67,16 +67,24 @@ const ang = (d) => Math.atan2(d.z, d.x);
 export function armsFromIsect(isect) {
   const arms = [];
   const push = (curve, t, width, roadType) => {
+    const freeway=isect.freeway;
+    const isMain=freeway && curve===freeway.curve;
+    if(isMain){curve=freeway.laneCurve;width=freeway.width;}
     const tc = Math.max(0.001, Math.min(0.999, t));
-    const tan = curve.getTangentAt(tc).normalize();
+    const tan = curve.getTangentAt(tc).setY(0).normalize();
     const d0 = v2(tan.x, tan.z);
     const prof = roadProfile(roadType, width);
     const at = curve.getPointAt(t);
     const axisPoint = v2(at.x, at.z);
     const mk = (sign) => {
       const dir = mul(d0, sign);
-      return { dir, pav: prof.pav, half: prof.half, sid: prof.sid, width, roadType, axisPoint };
+      const end=curve.getPointAt(sign>0?1:0),endDelta=v2(end.x-at.x,end.z-at.z);
+      const available=Math.max(0,dot(endDelta,dir));
+      const straight=[.25,.5,.75,1].every(f=>{const q=curve.getPointAt(t+((sign>0?1:0)-t)*f);return Math.abs(dot(v2(q.x-at.x,q.z-at.z),perp(dir)))<.05;});
+      return { dir, pav: prof.pav, half: prof.half, sid: prof.sid, width, roadType, axisPoint,
+        available:straight?available:curve.getLength()*(sign>0?1-t:t),straight,curve,t,sign };
     };
+    if(freeway&&!isMain) { arms.push(mk(dot(d0,freeway.normal)>=0?1:-1)); return; }
     if (t < 0.02) arms.push(mk(1));                  // 路体在 +切向前方
     else if (t > 0.98) arms.push(mk(-1));            // 路体在 −切向后方
     else { arms.push(mk(1)); arms.push(mk(-1)); }
@@ -131,7 +139,7 @@ const EPS_G = 1e-4;
  * 解析路口方案：轮廓、挖洞面、步道角块（含 R5 回转）、断面标记。
  * 任何交角同一套流程；近平行（sin<0.08）已被检测层拦掉。
  */
-export function junctionPlan(center, arms) {
+export function junctionPlan(center, arms, freeway = null) {
   if (!center || !arms || arms.length < 2) return null;
   let C = v2(center.x, center.z);
   // 检测器用两条曲线最近点的中点作为交点。端头稍差几毫米时，中点不在
@@ -164,6 +172,10 @@ export function junctionPlan(center, arms) {
     aj.c = Math.max(aj.c, reach(aj, ai));
   }
 
+  // A small acute-angle branch cannot acquire an imaginary 100m continuation.
+  // Stop mouths at real endpoints; long roads keep their analytic tangent reach.
+  for(const a of arms)if(Number.isFinite(a.available)&&a.c>a.available){a.c=Math.max(0,a.available);a.capped=true;}
+
   // —— 出口断面四角
   const cornerMeta = [];                      // { arm, sign, p }
   arms.forEach((a, i) => {
@@ -173,7 +185,17 @@ export function junctionPlan(center, arms) {
     }
   });
   // a.c 赋值放在上面（臂对象共享缓存，重复 plan 时一致）
-  const hull = convexHull(cornerMeta.map(m => m.p));
+  let hull = convexHull(cornerMeta.map(m => m.p));
+  for(const a of arms)if(a.capped&&a.straight)hull=clipHalf(hull,a.axisPoint,mul(a.dir,-1),-a.available);
+  if(freeway){
+    hull=clipHalf(hull,freeway.origin,freeway.normal,freeway.inner);
+    const reach=Math.max(...arms.filter(a=>a.curve===freeway.laneCurve).map(a=>a.c),4)+2;
+    const dt=reach/Math.max(freeway.curve.getLength(),1),n=Math.min(128,Math.max(4,Math.ceil(reach)));
+    for(let i=0;i<=n&&hull.length>=3;i++){
+      const t=Math.max(0,Math.min(1,freeway.t-dt+2*dt*i/n)),p=freeway.curve.getPointAt(t),d=freeway.curve.getTangentAt(t).setY(0).normalize();
+      hull=clipHalf(hull,p,{x:d.z*freeway.side,z:-d.x*freeway.side},freeway.inner);
+    }
+  }
   if (hull.length < 3) return null;
   // 标记每个凸包顶点属于哪个臂角
   const tag = hull.map(p => {
@@ -199,7 +221,9 @@ export function junctionPlan(center, arms) {
     const t = tag[i], t2 = tag[(i + 1) % hull.length];
     // 内法线：CCW（(x,z) 当作 (x,y)）时为边方向左转 (−e.z, e.x)，反之取反
     const nIn = ccw ? norm(v2(-e.z, e.x)) : norm(v2(e.z, -e.x));
-    const mouth = !!(t && t2 && t.arm === t2.arm);
+    const mouth = !!(t && t2 && t.arm === t2.arm) || arms.some(arm=>
+      Math.abs(dot(sub(a,C),arm.dir)-arm.c)<1e-5 && Math.abs(dot(sub(b,C),arm.dir)-arm.c)<1e-5 &&
+      Math.abs(dot(sub(a,C),perp(arm.dir)))<=arm.half+1e-5 && Math.abs(dot(sub(b,C),perp(arm.dir)))<=arm.half+1e-5);
     edges.push({ a, b, n: nIn, mouth, tagA: t, tagB: t2 });
   }
 
@@ -305,7 +329,7 @@ export function junctionPlan(center, arms) {
   }
 
   return {
-    center: C, arms, hull, edges, walks,
+    center: C, arms, hull, edges, walks:freeway?[]:walks, freeway,
     // 挖洞判定：所有边内法线方向至少内缩 GAP_LIP
     insideLip: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= GAP_LIP - 1e-9),
     insideHull: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= -1e-9),
@@ -329,7 +353,7 @@ export function gapIntervals(curve, plan, half = 0) {
   const dT = 0.8 / L;                               // 沿弧长的前探步（覆盖 0.75 出头步长）
   const EPS_IN = 0.05;
   const pts = curve.getSpacedPoints(n);             // i/n 弧长参数
-  const tans = pts.map((_, i) => curve.getTangentAt(i / n).normalize());
+  const tans = pts.map((_, i) => curve.getTangentAt(i / n).setY(0).normalize());
   const clearance = (p, tg) => {
     const px = tg.z, pz = -tg.x;
     let s = Infinity;
@@ -358,7 +382,7 @@ export function gapIntervals(curve, plan, half = 0) {
     for (const tt of [t - dT, t, t + dT]) {
       const tc = clampT(tt);
       const p = curve.getPointAt(tc);
-      const tg = curve.getTangentAt(tc).normalize();
+      const tg = curve.getTangentAt(tc).setY(0).normalize();
       s = Math.min(s, clearance(p, tg));
     }
     return s;
@@ -590,9 +614,10 @@ export function buildJunction(plan, opts = {}) {
   //    相交的两根条只留臂序靠前的一根，避免两组标线共面交织。
   // 斑马线只铺在最终采用沥青的路口面上。混合路口统一铺装后，各进口的
   // 斑马均在路口面内；非沥青路口不生成斑马，停止线仍走原有规则。
-  const barsByArm = plan.arms.map((a) => {
+  const barsByArm = (plan.freeway?[]:plan.arms).map((a) => {
     if (!surface.asphalt) return [];
     const c = a.c ?? (a.pav + MOUTH_EXTRA);
+    if(c<5)return [];
     const d = a.dir, Pd = perp(d);
     const align = Math.atan2(d.x, d.z);           // 局部 +Z 对齐臂方向
     const zebraSpan = 2 * Math.max(1, a.pav - 0.3);
@@ -631,8 +656,9 @@ export function buildJunction(plan, opts = {}) {
     }
   });
   g.userData.crosswalkBars = marks.length;
-  plan.arms.forEach((a) => {
+  (plan.freeway?[]:plan.arms).forEach((a) => {
     const c = a.c ?? (a.pav + MOUTH_EXTRA);
+    if(c<5)return;
     const d = a.dir;
     const align = Math.atan2(d.x, d.z);
     // 停止线：臂方向左侧半幅（照抄模型 side=(dz,−dx) 规则），位于斑马内沿再进 0.6

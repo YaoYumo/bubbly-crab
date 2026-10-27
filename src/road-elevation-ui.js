@@ -13,7 +13,7 @@ export function roadElevationControls(app, so = null) {
   });
   const points = () =>
     draft
-      ? rb.points.map((p) => p.toArray())
+      ? rb.draftControlPoints()
       : rd.ctrl.map((p) => [
           p[0],
           rd.terrainMode === "follow"
@@ -37,9 +37,10 @@ export function roadElevationControls(app, so = null) {
   root.appendChild(
     el("div", {
       class: "fnote",
-      text: "三维道路：每个控制点可独立设置 X / 标高 Y / Z；按住 Shift 拖动圆点调高低，普通拖动只改平面位置。不同标高交叉保持上下分层，同高交叉生成路口。",
+      text: "三维道路：每个控制点可独立设置 X / 标高 Y / Z；直接上下拖动每个点上方的绿色高度箭头，只升降该点；蓝色圆点改平面位置，Shift 拖蓝点也可调高低。不同标高交叉保持上下分层，同高交叉生成路口。",
     }),
   );
+  if(rd?.curve?._freewayConflicts?.length)root.appendChild(el("div",{class:"fnote",text:"此工程包含同高交叉的高速公路，中央隔离带不会打开。请逐点调高构成立交，或改用普通道路作匝道，从近侧接入；旧工程数据保留。"}));
   if (draft) {
     const mode = el(
       "select",
@@ -47,6 +48,7 @@ export function roadElevationControls(app, so = null) {
         class: "sel",
         dataset: { roadDraftMode: "1" },
         onchange: (e) => {
+          if(e.target.value==='fixed')rb.freezeDraftHeights();
           rb.terrainMode = e.target.value;
           if (rb.terrainMode === "fixed") {
             if (!rb.points.length) rb.draftHeight = 8;
