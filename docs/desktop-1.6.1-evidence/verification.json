@@ -1,7 +1,7 @@
 {
   "version": "1.6.1",
-  "status": "frontend-regressions-passed; Windows build pending",
-  "testedSource": "feature source commit; delivery documentation commit will record its exact SHA",
+  "status": "frontend-regressions-and-windows-build-install-smoke-passed",
+  "testedSource": "2bd694b5fcae60289e9fc198154696d30491e8ce; subsequent delivery commit changes documentation only",
   "platform": "Linux Chromium 131 / software WebGL; not native Windows mouse hardware",
   "modes": [
     "Vite web",
@@ -41,8 +41,31 @@
     "note": "Controlled regression comparison only; not user GPU benchmark."
   },
   "windows": {
-    "status": "pending",
-    "frontendInventory": "desktop-artifacts.json"
+    "status": "success",
+    "frontendInventory": "desktop-artifacts.json",
+    "runId": 40461848231,
+    "jobId": 122048052715,
+    "runUrl": "https://github.com/YaoYumo/bubbly-crab/actions/runs/40461848231",
+    "artifactId": 12714823986,
+    "artifactUrl": "https://github.com/YaoYumo/bubbly-crab/actions/runs/40461848231/artifacts/12714823986",
+    "artifactBytes": 23567435,
+    "artifactUploadDigest": "sha256:7493a390d58319ce160aec788a31eebbf6d2825b49a3e1ffcd91e5e3b78421c4",
+    "expiresAt": "2027-01-25T06:33:50Z",
+    "installer": {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.1_x64-setup.exe",
+      "bytes": 20972964,
+      "sha256": "d863d4217156a9fdb32bda47dbe266b59ebabf523e4b248e14adfe777ecb7acb"
+    },
+    "frontendFileCount": 15,
+    "frontendPathBytesSHA256Match": true,
+    "nativeInstallAndStartupSmoke": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY",
+    "modelFolderPreservedOnReinstall": true,
+    "installedEngineValidated": true,
+    "installedLoopbackHelperValidated": true,
+    "realGGUFInferenceValidated": false,
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "independentlyRedownloadedAndRehashed": false
   },
   "boundaries": [
     "Not native user Windows interaction, 4070Ti performance or real GGUF inference.",
@@ -51,5 +74,6 @@
     "Legacy at-grade freeway/freeway layouts are retained with diagnostics, not silently deleted or converted into fictitious grade separation.",
     "No merge to main authorized or performed."
   ],
-  "harnessNote": "One initial Node performance command omitted the image-URL loader; raw failure retained in compatibility.txt and successful corrected run retained in additional-compatibility.txt."
+  "harnessNote": "One initial Node performance command omitted the image-URL loader; raw failure retained in compatibility.txt and successful corrected run retained in additional-compatibility.txt.",
+  "sourceCommit": "2bd694b5fcae60289e9fc198154696d30491e8ce"
 }

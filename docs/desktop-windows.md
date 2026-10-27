@@ -1,12 +1,27 @@
-> **1.6.1 道路纠错**：单点绿色高度手柄、高速近侧接入、锐角 / 短路 / 带坡接头。回归完成后再构建安装器；当前下方 1.6.0 为历史包，不含这些修正。
+# Windows 轻量桌面版：Tauri 2
 
-## 1.6.1 纠错验证与构建状态
+> **1.6.1 更新**：每点可直接拖动的绿色高度箭头；高速近侧车道接入并保留中央隔离带 / 对向车道；锐角、短支路与带坡接头修正。保留 1.6.0 的立交 / 匝道 / 路灯，以及 1.5.2 滑块修复和既有功能。
 
-使用说明见 [道路搭建](roads-elevation.md)。源码修订已通过网页、桌面 CSP 前端、断网单文件的真实手势与几何专项；旧立交 / 匝道 / 灯具、16 项滑块、右键、六项、地形、原生模拟 IPC 和普通路口 / 性能回归通过。Windows 安装器尚待 CI 构建，本节不提供未完成的新包下载。
+## 1.6.1 道路纠错
+
+[下载 Windows 1.6.1 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40461848231/artifacts/12714823986)（可能需要登录 GitHub；附件保留至 2027-01-25）。[单点操作与高速接入说明](roads-elevation.md)。
+
+先备份工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.1_x64-setup.exe` 覆盖到原安装目录；不要运行 ZIP 中的裸应用 EXE。**原 `models` 中的两个 GGUF 分片保留原名原位置，不重下、移动、改名或合并。**
+
+- **单点升降**：选路后，直接拖动目标蓝点正上方的小绿色 ↑，只改该点 Y，不用 Shift；蓝点改 X/Z，原 Shift 手势也保留。俯视可用，贴地转固定标高时保留其他点实际高度。
+- **高速口**：只打开靠近支路的单幅车道，保留中隔离带 / 防撞墙及对向车道；曲线道路也按实际中央带处理。横穿支路在中带截断成独立两侧口，不生成斑马线 / 停止线。跨越应逐点抬高形成跨线立交；新画同高高速 / 高速交叉会拒绝完成并保留草稿，旧工程保留并提示。
+- **锐角接头**：水平单位断面、有限真实出口、随纵坡衔接的路口铺装；覆盖短路、宽窄道路与带坡场景。
+
+完成网页、桌面 CSP、断网离线 HTML 三模式专项及兼容回归之后才构建安装包。[Windows run 40461848231](https://github.com/YaoYumo/bubbly-crab/actions/runs/40461848231) / job `122048052715` **success**，源码 **`2bd694b5fcae60289e9fc198154696d30491e8ce`**。新增道路纠错纯测试、原纯回归、helper / 原生边界、NSIS、实际安装 / 窗口存活、已安装引擎 / helper fixture、覆盖重装模型目录保留全部通过。包内 **15 个前端文件路径、字节、SHA256 与本地三模式回归构建逐项一致**。
+
+- 安装器 **20,972,964 bytes**；SHA256 `d863d4217156a9fdb32bda47dbe266b59ebabf523e4b248e14adfe777ecb7acb`。
+- ZIP **23,567,435 bytes**；GitHub 上传摘要 `7493a390d58319ce160aec788a31eebbf6d2825b49a3e1ffcd91e5e3b78421c4`。未签名、不含 GGUF；未重新下载做第二次独立二进制哈希校验。
+- [三模式道路回归](desktop-1.6.1-evidence/final-road-regressions.txt)、[旧功能 / 性能](desktop-1.6.1-evidence/additional-compatibility.txt)、[生产前端](desktop-1.6.1-evidence/production-regressions.txt)、[Windows 步骤](desktop-1.6.1-evidence/windows-run.json)、[摘要](desktop-1.6.1-evidence/windows-artifacts.json)、[安装检查](desktop-1.6.1-evidence/windows-install-smoke.json)、[验收范围](desktop-1.6.1-evidence/verification.json)。原性能 Node 命令漏 URL loader 的运行错误与正确重跑均保留，未将错误忽略为通过。
+- Linux Chromium 真实手势 / CPU 几何回归，以及 CI Windows 安装启动检查，不等于用户原生 Windows 完整鼠标交互、4070Ti 或真实 Qwen 推理验收。场景道路不是交通 / 结构工程保证。源码已推当前开发分支，未合并 main。
+
+**下方 1.6.0 及更早链接均为历史包，不包含本次三项纠错。**
 
 > **1.6.0 更新**：三维道路逐点标高、高架 / 升降匝道、分层交叉与每路独立路灯分布；保留 1.5.2 的共用滑块修订和历史功能。
-
-# Windows 轻量桌面版：Tauri 2 预检工程
 
 ## 1.6.0 三维道路与路灯
 
