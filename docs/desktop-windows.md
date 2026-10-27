@@ -1,3 +1,26 @@
+# Windows 1.7.1：短匝道、近侧地面汇入与中央带闪烁修复
+
+[下载 Windows 1.7.1 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40502214731/artifacts/12733981419)（可能需要登录 GitHub；附件保留至 2027-01-25）。
+
+先备份工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.1_x64-setup.exe`，覆盖原安装目录。不要运行 ZIP 中的裸应用 EXE。**models 内两个 GGUF 分片保持原名原位，不重下、移动、改名或合并。**
+
+- 匝道不再为凑坡度强绕大 U；整路标记搜索更合适的接点，空间不足明确拒绝。
+- 地面普通双向街道使用近侧汇入口，保留中心线与对向车道，不套用带斑马线的大 T 口。
+- 旧自动连接可选中后点「重新生成这条连接」，保留 ID／机位目标并可一步撤销。旧曲线不静默改线。
+- 高速中央带与尽端的共面重叠闪烁已修复，加载工程即重建生效。保留固定车道宽、独立路肩／步道、绿色单点高度柄及本地模型对话。
+
+Windows [run 40502214731](https://github.com/YaoYumo/bubbly-crab/actions/runs/40502214731) / job `122182447151` 全部成功，打包源码 `8193188ed83ca2f71d627f61d46eb27a6ac26655`。原生安装器构建、边界单测、安装／窗口存活、已安装 helper／引擎，以及覆盖重装保留模型目录的测试通过。15 个前端文件的路径、字节数、SHA256 与本地桌面构建逐项一致；该前端包含已经通过网页／断网离线 HTML／桌面 CSP 三模式回归的匝道修复。
+
+- 安装器 **20,991,150 bytes**，SHA256 `712375fde1a01da103839611a4149549508ba00ca7efbdaae639e2e24240ea6c`。
+- ZIP **23,596,103 bytes**，GitHub 上传摘要 `f63a4398ace9b9b2c75c2cbca4200e99c463aefbf16eb84ba498f0bb3205285a`。
+- 未签名，不含模型权重；附带既有 Vulkan 推理引擎。缺少 WebView2 时安装过程需要联网下载运行环境。未独立重新下载做第二次二进制哈希核验。
+- [Windows 步骤](desktop-1.7.1-evidence/windows-run.json)、[构建摘要](desktop-1.7.1-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.1-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.1-evidence/verification.json)、[匝道三模式证据](road-ramp-routing-fix.md)、[中央带修复证据](freeway-median-fix.md)。
+- Windows runner 安装与窗口检查不等于用户 Windows 完整交互、4070Ti 性能或真实 GGUF 推理验收。模型目录保留测试使用哨兵文件，不包含用户模型。
+
+**以下为历史版本，推荐上方 1.7.1。**
+
+---
+
 # Windows 1.7.0：程序化连接、紧凑锐角口、固定车道宽
 
 [下载 Windows 1.7.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40479315968/artifacts/12721973481)（可能需要登录 GitHub；附件保留至 2027-01-25）。[道路新操作说明](road-automatic-connections.md)。
@@ -15,7 +38,7 @@
 - [三模式专项](desktop-1.7.0-evidence/three-mode-regressions.txt)、[兼容回归](desktop-1.7.0-evidence/compatibility.txt)、[性能／精确几何](desktop-1.7.0-evidence/performance.txt)、[Windows 步骤](desktop-1.7.0-evidence/windows-run.json)、[构建摘要](desktop-1.7.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.0-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.0-evidence/verification.json)。兼容组合最后一条性能命令缺少 Chrome 包装器而未启动；随后正确命令单独执行通过，保留两份日志，不冒充首次通过。
 - Linux Chromium / software WebGL 实际手势、几何回归及 CI Windows 安装启动，**不是用户 Windows 完整交互、4070Ti 性能或真实 Qwen / GGUF 验收**。已推当前开发分支，未合并 main。
 
-**以下为历史版本，推荐上方 1.7.0。**
+**以下为历史版本，推荐本页顶部 1.7.1。**
 
 ---
 

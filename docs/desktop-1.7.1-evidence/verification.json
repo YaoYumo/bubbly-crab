@@ -1,0 +1,62 @@
+{
+  "version": "1.7.1",
+  "sourceCommit": "8193188ed83ca2f71d627f61d46eb27a6ac26655",
+  "runId": 40502214731,
+  "jobId": 122182447151,
+  "artifact": {
+    "id": 12733981419,
+    "node_id": "MDg6QXJ0aWZhY3QxMjczMzk4MTQxOQ==",
+    "name": "previz-lab-windows-x64-unsigned",
+    "size_in_bytes": 23596103,
+    "url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12733981419",
+    "archive_download_url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12733981419/zip",
+    "expired": false,
+    "digest": "sha256:f63a4398ace9b9b2c75c2cbca4200e99c463aefbf16eb84ba498f0bb3205285a",
+    "created_at": "2026-10-27T12:20:10Z",
+    "updated_at": "2026-10-27T12:20:10Z",
+    "expires_at": "2027-01-25T12:14:32Z",
+    "workflow_run": {
+      "id": 40502214731,
+      "repository_id": 1412714078,
+      "head_repository_id": 1412714078,
+      "head_branch": "arena/3f9ececc-bubbly-crab",
+      "head_sha": "8193188ed83ca2f71d627f61d46eb27a6ac26655"
+    }
+  },
+  "frontendPathBytesSHA256Match": true,
+  "frontendFileCount": 15,
+  "installer": {
+    "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.1_x64-setup.exe",
+    "bytes": 20991150,
+    "sha256": "712375fde1a01da103839611a4149549508ba00ca7efbdaae639e2e24240ea6c"
+  },
+  "windowsSmoke": {
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY"
+  },
+  "priorThreeModeEvidence": "../road-ramp-routing-evidence/",
+  "localChecks": [
+    "node test/road-connector.test.mjs",
+    "node test/freeway-median-surface.test.mjs",
+    "npm run test:desktop",
+    "npm run build:desktop"
+  ],
+  "limits": [
+    "Windows runner install/window/helper/engine and model-folder reinstall fixture, not user-machine GPU/full UI or real GGUF inference acceptance",
+    "Installer hashes recovered from ordered CI inventory annotations; no independent binary re-download",
+    "No model weights bundled; unsigned x64 NSIS installer"
+  ]
+}

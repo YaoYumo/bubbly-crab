@@ -1,6 +1,6 @@
 # PREVIZ LAB — 给 AI 视频做「运镜参考 + 动作参考」的工作台
 
-**2026-10-27 · Windows 1.7.0 已构建：标记 A → 标记 B → 自动连接道路。** 支持选两条路或指定路上接点，自动计算弯道与高度过渡；锐角改紧凑汇入口，独立设置车道数 / 固定单车道宽 / 路肩 / 步道，不再用整体宽度滑块拉伸车道。旧工程、单点绿色高度柄、上下分层与高速中央带保持。[Windows 下载与验证](docs/desktop-windows.md)、[新操作说明与边界](docs/road-automatic-connections.md)。不动用户 GGUF 分片，已推开发分支，未合并 main。
+**2026-10-27 · Windows 1.7.1 已构建。** 包含自动匝道不再强绕大 U、地面近侧汇入口、旧连接一键重算及高速中央带闪烁修复；保留 A/B 自动连接、独立固定车道宽和全部既有功能。[Windows 下载与验证](docs/desktop-windows.md)、[匝道修复说明](docs/road-ramp-routing-fix.md)。不动用户 GGUF 分片，已推开发分支，未合并 main。
 
 **2026-10-27 · Windows 1.6.2 已构建：三维夹角匝道接入修订。** 端点达到主路路幅和标高时生成接头，不再仅比较近侧车道轴线高度；约束短匝道相邻路口范围，保留真正的上下分层、绿色单点高度柄、中央带与对向车道。[Windows 下载与验证](docs/desktop-windows.md)、[道路操作说明](docs/roads-elevation.md)。不动用户 GGUF 分片，已推开发分支，未合并 main。
 
