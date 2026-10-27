@@ -1,4 +1,23 @@
-> **1.6.2 带纵坡匝道接入修订正在最终验证**：端点已到达目标路幅且高度吻合时生成接头，不再仅用近侧车道轴线高差误判；限制相邻路口覆盖范围。新 Windows 包尚未构建，下面 1.6.1 为历史下载。
+# Windows 1.6.2：带三维夹角的匝道接入修订
+
+[下载 Windows 1.6.2 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40466659859/artifacts/12717615012)（可能需要登录 GitHub；附件保留至 2027-01-25）。[道路操作说明](roads-elevation.md)。
+
+先备份工程、退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.2_x64-setup.exe` 覆盖到原安装目录，不要运行 ZIP 中的裸应用 EXE。原 `models` 两个 GGUF 分片保持原名原位置，不重下、移动、改名或合并。
+
+- 修复带纵坡 + 斜向夹角的匝道：端点已经接触主路路幅并达到目标标高，不再因高速近侧车道轴线处的匝道高度较低而拒绝生成路口。
+- 单独检查端点与有限目标路幅，端点舍入 / 铺装容差为 0.15 m；不全局放宽中段交叉的高差限制。真正上下错层、远处端点、超出目标道路末端都不据此强行接通。
+- 短匝道两端接头受相邻路口间距约束，避免锐角路口覆盖另一端；后来补画第三条路会重建受影响接头，保留路 ID、当前网格与一步撤销 / 重做。单点绿色高度柄、中央隔离带 / 对向车道、原路灯 / 桥墩与工程保存保持。
+
+网页、生产桌面 CSP 和断网单文件三模式完成最终专项与兼容回归后才构建本包。[Windows run 40466659859](https://github.com/YaoYumo/bubbly-crab/actions/runs/40466659859) / job `122063592619` 全部 **success**，源码 **`8d3dfbe130548576fe7402146b38a9d3637cce17`**。新增三维接入纯测试、既有纯测试、helper / 原生边界、NSIS、实际安装 / 窗口存活、已安装 helper / 引擎、覆盖重装保留模型目录均通过；**15 个前端文件路径 / bytes / SHA256 与本地三模式回归构建逐项一致**。
+
+- 安装器 **20,969,911 bytes**；SHA256 `0440105f24a57975a31ec581a0116113c626736751b4c510302e0976042bb0cc`。
+- ZIP **23,566,583 bytes**；GitHub 上传摘要 `1291326d8bedd51368d35fb9fd73474d23917a7e07fed7dbfee7e2a490bac640`。未签名，不含模型权重；未另行重新下载做第二次独立二进制哈希核验。
+- [最终三模式道路回归](desktop-1.6.2-evidence/final-road-regressions.txt)、[原功能 / 性能 / 模拟对话](desktop-1.6.2-evidence/compatibility.txt)、[Windows 步骤](desktop-1.6.2-evidence/windows-run.json)、[摘要](desktop-1.6.2-evidence/windows-artifacts.json)、[安装检查](desktop-1.6.2-evidence/windows-install-smoke.json)、[验收边界](desktop-1.6.2-evidence/verification.json)。初始全分辨率软件 WebGL 组合命令停止等待的部分日志未冒充完成；独立半分辨率道路属性回归随后通过并保留记录。
+- Linux Chromium 实际手势 / 几何回归及 CI Windows 安装启动，不是用户 Windows 完整交互、4070Ti 或真实 Qwen / GGUF 验收；道路是场景几何，不是结构或极端曲率工程保证。已推当前开发分支，未合并 main。
+
+**下面 1.6.1 及更早包均为历史版本，不含本次三维端点接入修订。**
+
+---
 
 # Windows 轻量桌面版：Tauri 2
 

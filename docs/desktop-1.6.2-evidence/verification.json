@@ -1,7 +1,7 @@
 {
   "version": "1.6.2",
-  "status": "three-mode-frontend-and-compatibility-passed; Windows pending",
-  "testedSource": "feature commit; delivery documentation will add exact source SHA",
+  "status": "frontend-and-windows-build-install-smoke-passed",
+  "testedSource": "8d3dfbe130548576fe7402146b38a9d3637cce17",
   "modes": [
     "Vite web",
     "compiled desktop with CSP",
@@ -61,12 +61,36 @@
   ],
   "harnessNote": "Initial combined command stopped waiting at 300s while a full-resolution software-WebGL road-properties test continued; it is not claimed as a completed pass in initial-compatibility.txt. The isolated run with opt-in TEST_RENDER_RATIO=0.5 then completed successfully in compatibility.txt. No product rendering setting was changed.",
   "windows": {
-    "status": "pending"
+    "status": "success",
+    "runId": 40466659859,
+    "jobId": 122063592619,
+    "artifactId": 12717615012,
+    "artifactBytes": 23566583,
+    "artifactUploadDigest": "sha256:1291326d8bedd51368d35fb9fd73474d23917a7e07fed7dbfee7e2a490bac640",
+    "artifactExpiresAt": "2027-01-25T07:21:46Z",
+    "installer": {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.2_x64-setup.exe",
+      "bytes": 20969911,
+      "sha256": "0440105f24a57975a31ec581a0116113c626736751b4c510302e0976042bb0cc"
+    },
+    "frontendPathBytesSHA256Match": true,
+    "frontendFileCount": 15,
+    "installed": true,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "installedEngineValidated": true,
+    "installedLoopbackHelperValidated": true,
+    "modelFolderPreservedOnReinstall": true,
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "realGGUFInferenceValidated": false,
+    "independentlyRedownloadedAndRehashed": false
   },
   "boundaries": [
     "No user Windows interaction, actual Qwen/GGUF, or 4070Ti testing performed.",
     "Scene geometry, not universal civil-engineering or extreme curvature acceptance.",
     "Unsigned installer, no model weights, no movement/rename/merge/redownload of user model shards.",
     "No merge to main authorized or performed."
-  ]
+  ],
+  "sourceCommit": "8d3dfbe130548576fe7402146b38a9d3637cce17"
 }
