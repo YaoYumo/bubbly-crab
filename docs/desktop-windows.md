@@ -4,7 +4,18 @@
 
 ## 1.6.0 三维道路与路灯
 
-使用方法见 [立交 / 高架 / 匝道与路灯](roads-elevation.md)。网页、桌面 CSP 前端、断网离线 HTML 的道路专项及旧功能回归均已通过；Windows 1.6.0 安装包待 Windows 构建 / 安装检查成功后交付。下方 1.5.2 及更早下载是历史版本，不包含本次新增功能。
+使用方法见 [立交 / 高架 / 匝道与路灯](roads-elevation.md)。[下载 Windows 1.6.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40446945479/artifacts/12708662973)（可能需要登录 GitHub；附件保留至 2027-01-25）。
+
+先备份工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.0_x64-setup.exe` 覆盖到原安装目录，不要运行 ZIP 中的裸应用 EXE。原 `models` 中两个 GGUF 分片保持原名原位置，不需要重下、合并或移动。
+
+网页、桌面 CSP 前端、断网离线 HTML 的道路专项及旧功能回归均通过后，才构建本次安装包。[Windows run 40446945479](https://github.com/YaoYumo/bubbly-crab/actions/runs/40446945479) / job `122000357677` 全部成功，构建源码 **`7425a3c6ad78735fc03492e7e73f5c9c5fee4c49`**。新增道路纯测试、共用滑块 / 右键 / 六项 / 地形 / 机位纯测试、helper / 原生边界、NSIS、安装启动窗口、已安装引擎 / helper fixture、覆盖重装保留模型目录通过；15 个前端文件的路径 / 字节 / SHA256 与本地回归构建逐项一致。
+
+- 安装器 **20,962,780 bytes**；SHA256 `b21f08ea59b06f87222e716516993ca517565ab9ada6548b8d21eed68fa7cc62`。
+- ZIP **23,552,253 bytes**；GitHub 上传摘要 `ee1b08030fffc3dd76508b5fa587325274e83cc64234c3148b87d65373ad7509`。未签名、不含 GGUF；未另行重新下载做第二次独立二进制哈希校验。
+- 原生安装检查只证明 CI runner 上安装、窗口存活、引擎 / helper 和模型目录保留，不是用户 Windows 完整交互或实际 Qwen / 4070Ti 验收。已推当前分支，未合并 main。
+- Windows 证据：[步骤与结论](desktop-1.6.0-evidence/windows-run.json)、[文件摘要](desktop-1.6.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.6.0-evidence/windows-install-smoke.json)、[已安装 helper](desktop-1.6.0-evidence/loopback-installed.json)。
+
+下方 1.5.2 及更早下载保留为历史版本，不包含本次新增道路功能。
 
 - 固定标高绘制、逐点 X / Y / Z、Shift 拖点调高低；保留整路抬升、路线与倒角编辑。
 - 高架设为等标高，升降匝道按水平里程添加平缓过渡点；路口逐处检查高度，分层交叉不生成平交缺口。回环先下穿再接入，以及单条道路自身上下交叠均保留各层。

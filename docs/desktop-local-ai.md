@@ -1,6 +1,6 @@
 # Windows 1.6.0：本地对话建场与粗模 / 走位 / 机位
 
-[Windows 1.6.0 构建与安装包状态](desktop-windows.md) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.6.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40446945479/artifacts/12708662973) · [构建检查与摘要](desktop-windows.md)
 
 1.6.0 增加手动三维道路编辑与分路路灯分布设置，操作见 [立交 / 高架 / 匝道说明](roads-elevation.md)；这里的本地模型路径、分片与推理引擎规则不变。
 

@@ -1,6 +1,6 @@
 {
   "version": "1.6.0",
-  "testedSource": "source tree of the feature commit; exact Windows source SHA added after CI",
+  "testedSource": "feature source commit; subsequent delivery commit changes documentation only",
   "platform": "Linux Chromium 131 / software WebGL; not native Windows input hardware",
   "modes": [
     "Vite web",
@@ -41,13 +41,23 @@
     "offlineRoadProperties": true
   },
   "networkFinalPass": "final station-local gap-filter follow-up passed original terrain-roads and geometry/performance parity; ordinary real-mouse road-properties rerun also passed",
-  "windowsBuildAndInstallSmoke": false,
-  "windowsStatus": "pending CI; not yet an installer deliverable",
+  "windowsBuildAndInstallSmoke": true,
+  "windowsStatus": "success: pure tests, NSIS build, native boundary/helper tests, silent install, window liveness, installed engine/helper and model-folder reinstall preservation",
   "fullyFunctionalNativeWindowsUIValidated": false,
   "userMouseHardwareVerified": false,
   "realGGUFInference": false,
   "rtx4070TiVerified": false,
   "structuralEngineeringValidation": false,
   "models": "No GGUF downloaded, merged, renamed or moved; existing installed model-folder policy unchanged",
-  "mergedToMain": false
+  "mergedToMain": false,
+  "sourceCommit": "7425a3c6ad78735fc03492e7e73f5c9c5fee4c49",
+  "windowsRun": 40446945479,
+  "windowsJob": 122000357677,
+  "windowsArtifact": 12708662973,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathBytesSHA256": true
+  },
+  "artifactUploadDigest": "ee1b08030fffc3dd76508b5fa587325274e83cc64234c3148b87d65373ad7509",
+  "independentBinaryRedownloadHashCheck": false
 }
