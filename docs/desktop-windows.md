@@ -1,3 +1,24 @@
+# Windows 1.7.0：程序化连接、紧凑锐角口、固定车道宽
+
+[下载 Windows 1.7.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40479315968/artifacts/12721973481)（可能需要登录 GitHub；附件保留至 2027-01-25）。[道路新操作说明](road-automatic-connections.md)。
+
+先备份工程、退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.0_x64-setup.exe`，覆盖到原安装目录；不要运行 ZIP 中的裸应用 EXE。**原 `models` 中的两个 GGUF 分片保留原名原位置，不重下、移动、改名或合并。**
+
+- **自动连接**：右侧「自动连接道路」标记 A、B，再点击生成；支持整条路或路上接点，自动平面曲线和三维高度过渡、短坡绕弯延长及保守净空检查，支持一步撤销。连接结果仍可编辑、保存重载；不是实时道路绑定，也不是工程设计或保证任意点都可连通。
+- **紧凑锐角口**：不再沿锐角无限撑开大凸包。使用小型接头与精确走廊裁切，清理穿入车行面的侧带，保护上下层、高速中央带与对向车道，修正短坡出口高程和浮点边界缝。
+- **独立横断面**：车道总数、固定单车道宽、单侧路肩／步道分别设置，总宽度计算。真实几何、标线数量与位置、端头、接头、地形走廊及保存一致；旧工程不在加载时擅自改变。
+
+网页、生产桌面 CSP、断网单文件三模式专项及兼容回归通过后才构建本包。[Windows run 40479315968](https://github.com/YaoYumo/bubbly-crab/actions/runs/40479315968) / job `122105336205` 全部 **success**，源码 **`0b64d35d236c6bbd178448c9a3c87cd5673057ec`**。原生构建、边界单测、NSIS、安装／窗口存活、已安装 helper／引擎，以及覆盖重装保留模型目录检查均通过；**15 个前端文件的路径 / bytes / SHA256 与三模式回归构建逐项一致**。
+
+- 安装器 **20,991,268 bytes**；SHA256 `e53b014bef3552a278523e892871661e69c974d4273b0d111adf90f47c85b52c`。
+- ZIP **23,594,389 bytes**；GitHub 上传摘要 `87dc77127f30e858d0c924c06e5286169677aefebcae5e064f5d297a864ae2e5`。未签名，不含模型权重；未另行重新下载做第二次独立二进制哈希核验。
+- [三模式专项](desktop-1.7.0-evidence/three-mode-regressions.txt)、[兼容回归](desktop-1.7.0-evidence/compatibility.txt)、[性能／精确几何](desktop-1.7.0-evidence/performance.txt)、[Windows 步骤](desktop-1.7.0-evidence/windows-run.json)、[构建摘要](desktop-1.7.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.0-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.0-evidence/verification.json)。兼容组合最后一条性能命令缺少 Chrome 包装器而未启动；随后正确命令单独执行通过，保留两份日志，不冒充首次通过。
+- Linux Chromium / software WebGL 实际手势、几何回归及 CI Windows 安装启动，**不是用户 Windows 完整交互、4070Ti 性能或真实 Qwen / GGUF 验收**。已推当前开发分支，未合并 main。
+
+**以下为历史版本，推荐上方 1.7.0。**
+
+---
+
 # Windows 1.6.2：带三维夹角的匝道接入修订
 
 [下载 Windows 1.6.2 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40466659859/artifacts/12717615012)（可能需要登录 GitHub；附件保留至 2027-01-25）。[道路操作说明](roads-elevation.md)。

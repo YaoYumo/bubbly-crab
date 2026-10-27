@@ -1,6 +1,6 @@
 {
   "version": "1.7.0",
-  "status": "frontend-regressions-passed-windows-pending",
+  "status": "frontend-and-windows-build-install-smoke-passed",
   "modes": [
     "Vite web",
     "compiled desktop with CSP",
@@ -28,5 +28,50 @@
     "Not native user Windows UI, RTX4070Ti performance or real GGUF inference acceptance",
     "Connection search is bounded scene-layout geometry, not civil-engineering/traffic planning",
     "Generated connection provenance is saved, but is not a live constraint after host road edits"
-  ]
+  ],
+  "testedSource": "0b64d35d236c6bbd178448c9a3c87cd5673057ec",
+  "windows": {
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY",
+    "runId": 40479315968,
+    "jobId": 122105336205,
+    "artifactId": 12721973481,
+    "artifactBytes": 23594389,
+    "artifactUploadDigest": "sha256:87dc77127f30e858d0c924c06e5286169677aefebcae5e064f5d297a864ae2e5",
+    "artifactExpiresAt": "2027-01-25T09:14:47Z",
+    "installer": {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.0_x64-setup.exe",
+      "bytes": 20991268,
+      "sha256": "e53b014bef3552a278523e892871661e69c974d4273b0d111adf90f47c85b52c"
+    },
+    "frontendPathBytesSHA256Match": true,
+    "frontendFileCount": 15,
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "installedHelper": {
+      "status": "PASS_INSTALLED_LOOPBACK_HELPER",
+      "probe": true,
+      "chunkedHealth": true,
+      "unicodeChatRoundTrip": true,
+      "proxyEnvironmentIgnored": true,
+      "noRedirect": true,
+      "malformedInputRejected": true,
+      "socketTimeout": true,
+      "childTerminationDoesNotTerminateTestHost": true,
+      "realAstrillDllInjected": false,
+      "realGGUFInferenceVerified": false
+    },
+    "independentlyRedownloadedInstallerHash": false
+  }
 }

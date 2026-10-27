@@ -1,12 +1,12 @@
-# Windows 1.6.2：本地对话建场与粗模 / 走位 / 机位
+# Windows 1.7.0：本地对话建场与粗模 / 走位 / 机位
 
-[下载 Windows 1.6.2 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40466659859/artifacts/12717615012) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.7.0 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40479315968/artifacts/12721973481) · [构建检查与摘要](desktop-windows.md)
 
-1.6.2 继续修正带三维夹角的匝道端点接入；保留 1.6.1 的绿色单点高度柄、高速近侧口及 1.6.0 的三维道路 / 分路路灯设置，操作见 [立交 / 高架 / 匝道说明](roads-elevation.md)；这里的本地模型路径、分片与推理引擎规则不变。
+1.7.0 新增标记 A/B 自动道路连接、紧凑锐角口与独立车道截面，见 [新道路操作](road-automatic-connections.md)；继续保留三维匝道端点接入修订，保留 1.6.1 的绿色单点高度柄、高速近侧口及 1.6.0 的三维道路 / 分路路灯设置，操作见 [立交 / 高架 / 匝道说明](roads-elevation.md)；这里的本地模型路径、分片与推理引擎规则不变。
 
 ## 用户使用
 
-1. 安装完整的 1.6.2 Windows 版。程序附带 **llama.cpp b11829 Vulkan x64** 推理引擎，不附带模型权重；无需安装 Node.js、CUDA 工具链或另开模型服务。
+1. 安装完整的 1.7.0 Windows 版。程序附带 **llama.cpp b11829 Vulkan x64** 推理引擎，不附带模型权重；无需安装 Node.js、CUDA 工具链或另开模型服务。
 2. RTX 4070 Ti / 12GB 显存建议先使用 **Qwen2.5-7B-Instruct 的 Q4_K_M GGUF**。模型来源建议：[Qwen 官方 GGUF 仓库](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/tree/main)。本环境未访问或下载该仓库文件，具体文件名、大小、许可证与完整性以发布者页面为准，避免下载来路不明的 GGUF。
 3. 打开桌面“一句话生成”→“打开模型文件夹”，把 GGUF 放进去。这个 `models` 在安装后的应用 EXE 旁边，**不是放安装器 EXE 的下载目录**，也不是 `runtime/llama`。分片模型应完整下载所有分片，选择第一片。程序不会搬动、下载、删除你的权重。
 4. 点击“刷新”。只有一个模型会自动选中；有多个可选择。输入“建一个中式院落，中间留出空地”，发送。程序首次发送时自动加载模型，后台校验后直接搭建。
