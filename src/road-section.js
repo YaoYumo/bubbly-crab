@@ -63,8 +63,11 @@ export function buildSectionRoad(type, section, length = 10) {
       box('lane-divider', x, .162, .15, .02, mat, z + len / 2, len, 'marking');
     }
   };
-  box('road-pavement', 0, .075, d.pavementWidth, .15, asphalt);
   if (type === 'freeway') {
+    // The median owns its surface. A full-width asphalt slab underneath it has
+    // the same top height and z-fights as the camera moves (also after batching).
+    const carriageWidth = (d.pavementWidth - d.medianWidth) / 2;
+    for (const sign of [-1, 1]) box('road-pavement', sign * (d.medianWidth / 2 + carriageWidth / 2), .075, carriageWidth, .15, asphalt);
     box('road-median', 0, .075, 4, .15, concrete);
     box('road-median-base', 0, .25, 1, .25, concrete);
     box('road-median-wall', 0, .7, .6, .85, concrete);
@@ -75,6 +78,7 @@ export function buildSectionRoad(type, section, length = 10) {
       box('road-guardrail', sign * (d.pavementWidth / 2 - .2), .6, .1, .3, M.metal(0x999999, .35, .7), 0, length, 'side');
     }
   } else {
+    box('road-pavement', 0, .075, d.pavementWidth, .15, asphalt);
     const laneHalf = d.laneCount * d.laneWidth / 2;
     line(-laneHalf + .15); line(laneHalf - .15);
     for (let i = 1; i < d.laneCount; i++) {

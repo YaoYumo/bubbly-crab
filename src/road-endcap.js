@@ -84,7 +84,8 @@ export function buildRoadEndcap(roadType, fullWidth) {
       mesh.rotation.y=-a; mesh.name='endcap_walk_joint'; g.add(mesh);
     }
   } else if (id==='freeway') {
-    band('endcap_pavement',0,half,0,.15,asphalt);
+    // The inner disk belongs to the median, not a second coplanar asphalt top.
+    band('endcap_pavement',2,half,0,.15,asphalt);
     band('endcap_median',0,2,0,.15,concrete(0x8f8b82));
     band('endcap_median_base',0,.5,.125,.375,curb);
     band('endcap_median_wall',0,.3,.275,1.125,concrete(0xb5b1a8));

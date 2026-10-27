@@ -1,0 +1,159 @@
+{
+  "platform": "Linux Chromium software WebGL, not native Windows GPU acceptance",
+  "angles": [
+    {
+      "height": 6,
+      "yaw": 0,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 6,
+      "yaw": 0.7,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 6,
+      "yaw": 1.8,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 6,
+      "yaw": 3.4,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 18,
+      "yaw": 0,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 18,
+      "yaw": 0.7,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 1
+      }
+    },
+    {
+      "height": 18,
+      "yaw": 1.8,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 18,
+      "yaw": 3.4,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 40,
+      "yaw": 0,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 40,
+      "yaw": 0.7,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 1
+      }
+    },
+    {
+      "height": 40,
+      "yaw": 1.8,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 0
+      }
+    },
+    {
+      "height": 40,
+      "yaw": 3.4,
+      "orderDependentPixels": {
+        "median": 0,
+        "entireFrame": 3
+      }
+    }
+  ],
+  "negativeControlPixels": 95,
+  "counts": [
+    {
+      "explicit": false,
+      "x": 1.23,
+      "z": 3.41,
+      "tops": 1
+    },
+    {
+      "explicit": false,
+      "x": -1.37,
+      "z": -6.53,
+      "tops": 1
+    },
+    {
+      "explicit": false,
+      "x": 1.23,
+      "z": 45.41,
+      "tops": 1
+    },
+    {
+      "explicit": false,
+      "x": -1.37,
+      "z": -45.53,
+      "tops": 1
+    },
+    {
+      "explicit": true,
+      "x": 1.23,
+      "z": 3.41,
+      "tops": 1
+    },
+    {
+      "explicit": true,
+      "x": -1.37,
+      "z": -6.53,
+      "tops": 1
+    },
+    {
+      "explicit": true,
+      "x": 1.23,
+      "z": 45.41,
+      "tops": 1
+    },
+    {
+      "explicit": true,
+      "x": -1.37,
+      "z": -45.53,
+      "tops": 1
+    }
+  ],
+  "port": {
+    "count": 1,
+    "median": 9.145000011920928,
+    "opposite": 8.170000002980231,
+    "nearMain": []
+  },
+  "errors": []
+}
