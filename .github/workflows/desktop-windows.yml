@@ -23,6 +23,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: npm ci
       - run: npm run test:desktop
+      - run: node test/range-interaction.test.mjs
       - run: node test/radial-menu.test.mjs
       - run: npm run test:editor-expansion:pure
       - run: node test/local-scene-terrain.test.mjs

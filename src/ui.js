@@ -2,6 +2,7 @@
 // 轻量 UI 组件：schema 驱动的表单（物体属性 / 运镜 / 光影 / 导出 共用）
 // ---------------------------------------------------------------------------
 import { el, clear, fmt, clamp } from './util.js';
+import { isRangeInteracting } from './range-interaction.js';
 
 export function section(title, opts = {}) {
   const wrap = el('div', { class: 'sec' });
@@ -60,11 +61,14 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       if(f.commit)for(const control of [rng,num])control.addEventListener('change',e=>{const v=Number(e.target.value);if(Number.isFinite(v))setv(clamp(f.t==='int'?Math.round(v):v,f.min,f.max));});
       const grp = el('div', { class: 'rg' }, [rng, num]);
       input = grp;
-      sync = () => {
-        const v = Number(getv());
-        if (document.activeElement !== rng) rng.value = v;
-        if (document.activeElement !== num) num.value = f.t === 'int' ? Math.round(v) : +Number(v).toFixed(3);
+      sync = (force = false) => {
+        const v = Number(getv()), dragging = isRangeInteracting(rng);
+        if (!dragging && (force || document.activeElement !== rng)) rng.value = v;
+        if (document.activeElement !== num) num.value = dragging ? rng.value : f.t === 'int' ? Math.round(v) : +Number(v).toFixed(3);
       };
+      // Reconcile a commit-only preview after native change/cancel, not on each
+      // animation tick (which used to reset the paired number during a drag).
+      if (f.commit) rng.addEventListener('range-interaction-end', () => sync(true));
       refs.set(f.k, () => sync());
     } else if (f.t === 'bool') {
       const b = el('button', { class: 'sw', type: 'button', onclick: () => { setv(!getv()); sync(); } });

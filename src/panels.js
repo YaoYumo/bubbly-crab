@@ -12,6 +12,7 @@ import { selectiveBloomControls } from './selective-bloom-ui.js';
 import { windowLightingControls } from './window-lights-ui.js';
 import { LIB, LIB_INDEX } from './assets.js';
 import { buildForm, section } from './ui.js';
+import { deferRangeRender } from './range-interaction.js';
 import { MOVES, MOVE_BY_ID, LENS_OPTS, CAMERA_MODELS, SENSORS, MOVE_OPTS } from './camera.js';
 import { isLuminaire } from './local-lights.js';
 import { lightingModeControls, physicalLightingControls, localLightingControls, luminaireControls } from './lighting-ui.js';
@@ -273,6 +274,7 @@ export function buildInspector(app, host) {
     tabsEl.appendChild(b);
   });
   function render() {
+    if (deferRangeRender(body, render)) return;
     clear(body);
     ctx.sync = () => {};
     const t = ctx.cur;
@@ -497,7 +499,7 @@ function tabObject(app, rerender, ctx) {
     const st = { anim: so.root.userData.humans?.[0]?.anim || 'idle', speed: so.motion.speed ?? 1, amp: 1, phase: 0 };
     const form3 = buildForm([
       { k: 'anim', l: '动作', t: 'sel', opts: [{ v: '', l: '—' }, ...ANIMS.map((a) => ({ v: a.v, l: a.l }))], set: (v) => { so.motion.anim = v; so.root.userData.humans?.forEach((h) => { h.anim = v; }); } },
-      { k: 'speed', l: '播放速度', t: 'range', min: 0, max: 3, step: 0.05, set: (v) => { so.motion.speed = v; } },
+      { k: 'speed', l: '播放速度', t: 'range', min: 0, max: 3, step: 0.05, get: () => so.motion.speed ?? 1, set: (v) => { so.motion.speed = v; } },
       { k: 'phase', l: '相位偏移 °', t: 'range', min: 0, max: 360, step: 5, get: () => deg(so.root.userData.animPhase || 0) % 360, set: (v) => { so.root.userData.animPhase = rad(v); } },
       { k: '_t', l: '播放中冻结', t: 'btn', onClick: () => { app.state.playing = !app.state.playing; toast(app.state.playing ? '播放' : '暂停'); }, btn2: { l: '随机相位', onClick: () => { so.root.userData.animPhase = Math.random() * 6.28; rerender(); } } },
     ], st, () => { });
@@ -1171,6 +1173,7 @@ export function buildSceneInspector(app, host) {
     tabsEl.appendChild(b);
   });
   function render() {
+    if (deferRangeRender(body, render)) return;
     clear(body);
     ctx.sync = () => {};
     const t = ctx.cur;
@@ -1249,6 +1252,7 @@ export function buildCameraInspector(app, host) {
   let _sync = () => {};
 
   function render() {
+    if (deferRangeRender(host, render)) return;
     host.innerHTML = '';
     _sync = () => {};
     const s = app.activeShot;
@@ -1533,7 +1537,7 @@ export function buildCameraInspector(app, host) {
           row.appendChild(sel);
         } else {
           const ctl = el('div', { class: 'ctl' });
-          const slider = el('input', { type: 'range', min: p.min, max: p.max, step: p.step, value: s.moveParams[p.k] ?? p.def });
+          const slider = el('input', { type: 'range', min: p.min, max: p.max, step: p.step, value: s.moveParams[p.k] ?? p.def, dataset: { moveParam: p.k }, 'aria-label': p.l });
           const num = el('input', { type: 'number', class: 'num', min: p.min, max: p.max, step: p.step, value: s.moveParams[p.k] ?? p.def });
           slider.oninput = () => { s.moveParams[p.k] = +slider.value; num.value = slider.value; };
           num.onchange = () => { s.moveParams[p.k] = +num.value; slider.value = num.value; };

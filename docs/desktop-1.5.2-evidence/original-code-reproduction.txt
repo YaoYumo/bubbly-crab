@@ -1,0 +1,19 @@
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: #inspector-scene [data-field="length"] input[type=range] detached mid-drag
+
+false !== true
+
+    at drag (file:///home/user/bubbly-crab/test/range-drag-regression.mjs:37:10)
+    at async file:///home/user/bubbly-crab/test/range-drag-regression.mjs:60:24 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.22.3

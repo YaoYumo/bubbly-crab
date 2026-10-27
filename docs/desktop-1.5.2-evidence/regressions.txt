@@ -1,0 +1,58 @@
+PASS range dragging desktop-csp 16 real mouse drags: model/terrain/brush/water/light/Bloom/physical sky/lens/duration/camera move, paused across rebuilds, paired readouts, final values and held keyboard
+PASS range dragging file 16 real mouse drags: model/terrain/brush/water/light/Bloom/physical sky/lens/duration/camera move, paused across rebuilds, paired readouts, final values and held keyboard
+PASS six-request regression {
+  primitiveParts: 4,
+  oneUndo: true,
+  redo: true,
+  motion: true,
+  camera: true,
+  environment: true,
+  libraryRoundtrip: true,
+  realGGUF: false,
+  nativeCarFrontAxisSampled: true,
+  legacyZeroFixed: true,
+  walkSeekDeterministic: true,
+  lockedRejected: true
+} {
+  realPointerDrag: true,
+  heightPreserved: true,
+  draftOnly: true,
+  oneSaveUndo: true
+} {
+  realPointerDrag: true,
+  selectShowsPoints: true,
+  commitOnRelease: true,
+  idPreserved: true,
+  cancelRestoresPathAndUndo: true
+} group/variant builds 84
+PASS offline editor expansion {
+  platform: 'Linux Chromium, compiled file:// HTML, network disabled',
+  primitive: true,
+  libraryRoundtrip: true,
+  directing: true,
+  actualVehicleHeading: true,
+  oneUndoRedo: true,
+  realGGUF: false
+}
+PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.
+PASS {"nativeContextMenuSuppressed":true,"trustedRightClickEventsVerified":true,"overlayRetargetingCovered":true,"editableContextMenusPreserved":true,"rightClickOnPieDoesNotActivate":true,"platform":"Linux Chromium, not native Windows","top":["Direct","Scene","Camera","Generate","Export","性能","桌面检查"],"objectPickAndActions":true,"duplicateDeleteUndo":true,"cancelPreservesSelection":true,"rightDragPreserved":true,"edgePlacement":true,"narrowWindows":true,"keyboard":true,"exportGuard":true,"compactViewportDialog":{"centerError":0,"inside":true,"advanced":false,"visibleExamples":0,"disabled":true},"advancedOptIn":true,"cancelDoesNotGenerate":true,"cameraBodyPickAndActivation":true,"recordKeyUndo":true,"selectionAwareLauncher":true,"compactGenerationAndUndo":true,"settingsAndTemplatesReachable":true,"inputDoesNotTriggerSceneHotkeys":true,"errors":[],"csp":[]}
+PASS radial trigger desktop-csp {
+  platform: 'Linux Chromium, not native Windows mouse/trackpad',
+  longStationaryRightHold: true,
+  contextOnlyFallback: true,
+  contextOnlyAndMissingUpAreSimulated: true,
+  missingPointerupFallback: true,
+  noDuplicateReopen: true,
+  rightDownDoesNotOpen: true,
+  rightPanAndReturnToStartPreserved: true,
+  delayedPostPanSuppressed: true,
+  blockedReasonVisible: true,
+  blockedRoadDoesNotAddUndo: true,
+  launcherAndRightClickRecover: true,
+  errors: [],
+  csp: []
+}
+PASS real mouse draw / Enter / Esc / reselect; auto object tab; type and numeric width; actual cap + mesh width; stable name / ID / selection
+PASS slider one-step undo / redo; repeated Esc + real reselection; save / load
+PASS T rebuild / material priority / crosswalk policy; cancel restores properties; camera target; locked + unfinished drawing protection; redo cleared
+PASS road property regression, no page errors
