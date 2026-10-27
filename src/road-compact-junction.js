@@ -44,10 +44,13 @@ export function applyCompactCuts(root, curve, gaps) {
     if (!plan?.compact || seen.has(is)) continue;
     seen.add(is);
     const t = curve === is.newCurve ? is.tNew : is.tExisting;
-    const f = is.freeway, main = f && curve === f.curve;
+    const f = is.freeway||is.streetMerge, main = f && curve === f.curve;
     const own = plan.arms.filter(a => a.curve === curve || (main && a.curve === f.laneCurve));
     const reach = Math.max(...own.map(a => a.overlapReach || a.c), 1);
-    const keepMedian = main ? mesh => mesh.userData.freewaySide !== f.side : null;
+    // A graded ramp and a ground street meet at their actual deck heights.
+    // Keep those original pavements: replacing them with a blended flat core can
+    // flatten the descending tip. Only the curb/marking/gore is opened here.
+    const keepMedian = f?.street&&f.graded ? mesh=>mesh.userData.roadRole==='pavement' : main&&!f.street ? mesh => mesh.userData.freewaySide !== f.side : null;
     for (const span of root.children) {
       const range = span.userData.roadRange || [span.userData.endpoint, span.userData.endpoint];
       if (range[0] === undefined) continue;

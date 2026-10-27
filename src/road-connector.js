@@ -84,26 +84,33 @@ export class RoadConnector {
     };
     const point = (road, t) => road._roadData.curve.getPointAt(t).setY(roadDesignHeight(road._roadData.curve, t));
     if (ma.mode === 'point' && mb.mode === 'point') add(ma.t, mb.t);
-    else if (ma.mode === 'point') { add(ma.t, closestStation(B, point(A, ma.t))); for (const t of [0, 1]) add(ma.t, t); }
-    else if (mb.mode === 'point') { add(closestStation(A, point(B, mb.t)), mb.t); for (const t of [0, 1]) add(t, mb.t); }
+    else if (ma.mode === 'point') { add(ma.t, closestStation(B, point(A, ma.t))); for (let i=0;i<=8;i++)add(ma.t,i/8); }
+    else if (mb.mode === 'point') { add(closestStation(A, point(B, mb.t)), mb.t); for (let i=0;i<=8;i++)add(i/8,mb.t); }
     else {
-      for (const t of [0, 1]) { add(t, closestStation(B, point(A, t))); add(closestStation(A, point(B, t)), t); }
+      add(ma.t,mb.t);
+      for (let i=0;i<=8;i++) {const t=i/8;add(t, closestStation(B, point(A, t))); add(closestStation(A, point(B, t)), t);}
       for (const a of [0, 1]) for (const b of [0, 1]) add(a, b);
     }
     return pairs.map(([ta, tb]) => {
-      const make = (road, t, toward) => {
-        const rd = road._roadData, p = point(road, t), tan = rd.curve.getTangentAt(t);
+      const make = (road, t, toward, other) => {
+        const rd = road._roadData, p = point(road, t), tan = rd.curve.getTangentAt(t);let outwardNormal;
         if (rd.roadType.id === 'freeway') {
           const sign = (toward.x - p.x) * tan.z - (toward.z - p.z) * tan.x >= 0 ? 1 : -1;
           const width = rd.roadType.section ? rd.width : Math.max(20, rd.width), offset = 2 + (width - 4) / 4;
-          const n = new THREE.Vector3(tan.z, 0, -tan.x).normalize().multiplyScalar(sign * offset); p.add(n);
+          const n = new THREE.Vector3(tan.z, 0, -tan.x).normalize().multiplyScalar(sign * offset); p.add(n);outwardNormal=n.clone().normalize();
+        }else if(other._roadData.roadType.id==='freeway'&&t>.001&&t<.999){
+          // Join the near directional half, not the street centreline across traffic.
+          const normal=new THREE.Vector3(tan.z,0,-tan.x).normalize();
+          if((toward.x-p.x)*normal.x+(toward.z-p.z)*normal.z<0)normal.negate();
+          const offset=rd.roadType.id==='oneway'?Math.max(0,rd.width/2-2.5):rd.width/4;
+          p.addScaledVector(normal,offset);outwardNormal=normal;
         }
         const dt = .001, lo = Math.max(0, t - dt), hi = Math.min(1, t + dt);
         const h = rd.curve.getPointAt(hi).sub(rd.curve.getPointAt(lo)); h.y = roadDesignHeight(rd.curve, hi) - roadDesignHeight(rd.curve, lo); h.normalize();
-        return { roadId: road.id, t, position: p.toArray(), tangent: h, end: t < .001 ? 0 : t > .999 ? 1 : undefined, freeway: rd.roadType.id === 'freeway' };
+        return { roadId: road.id, t, position: p.toArray(), tangent: h, end: t < .001 ? 0 : t > .999 ? 1 : undefined, freeway: rd.roadType.id === 'freeway', outwardNormal };
       };
-      const a = make(A, ta, curveB.getPointAt(tb)), b = make(B, tb, curveA.getPointAt(ta));
-      return { a, b, distance: Math.hypot(a.position[0] - b.position[0], a.position[2] - b.position[2]) + 5 * Math.abs(a.position[1] - b.position[1]) };
+      const a = make(A, ta, curveB.getPointAt(tb),B), b = make(B, tb, curveA.getPointAt(ta),A);
+      return { a, b, span:Math.hypot(a.position[0]-b.position[0],a.position[2]-b.position[2]), distance: Math.hypot(a.position[0] - b.position[0], a.position[2] - b.position[2]) + 5 * Math.abs(a.position[1] - b.position[1]) };
     }).sort((a, b) => a.distance - b.distance);
   }
   drawMarkers() {
@@ -120,18 +127,29 @@ export class RoadConnector {
       this.overlay.add(sprite);
     });
   }
-  generate() {
+  regenerate(so) {
+    const connection=so?._roadData?.connection;
+    if(!this.usable(so)||!connection?.generated||connection.anchors?.length!==2)throw new Error('请选择已解锁的自动连接道路。');
+    const previous=this.marks,oldPicking=this.picking;
+    this.marks=connection.anchors.map(a=>({roadId:a.roadId,t:a.t,mode:'point'}));this.picking=null;
+    try{return this.generate({replace:so});}catch(e){this.marks=previous;this.picking=oldPicking;this.drawMarkers();this.changed();throw e;}
+  }
+  generate({replace=null}={}) {
     if (!this.marks.every(Boolean)) throw new Error('请先标记 A 和 B。');
     const app = this.app, rb = app.roadBrush;
     if (rb._editBackup || (rb.active && rb.points.length) || app.state.preview || app.state.playing || app.aiScene?.busy || app.terrain?.workflow?.busy) throw new Error('请先结束当前编辑或预演。');
+    if(replace&&!this.usable(replace))throw new Error('请先解锁需要重新生成的连接道路。');
     const pairs = this.pairs(); if (!pairs.length) throw new Error('目标道路已删除、隐藏或锁定，请重新标记。');
     const roadA = app.byId(this.marks[0].roadId), roadB = app.byId(this.marks[1].roadId);
     const highway = pairs[0].a.freeway || pairs[0].b.freeway;
     const roadType = highway ? 'oneway' : roadA._roadData.roadType.id === 'oneway' ? 'oneway' : 'asphalt';
-    const section = highway ? normalizeSection('oneway', { laneCount: 1, laneWidth: 3.5, shoulderWidth: .75, sidewalkWidth: 0 }) :
+    const directionalWidth=road=>{const rd=road._roadData;return rd.roadType.id==='freeway'?(rd.width-4)/2:rd.roadType.id==='oneway'?rd.width:rd.width/2;};
+    const available=Math.min(directionalWidth(roadA),directionalWidth(roadB));
+    if(highway&&available<3.5-.01)throw new Error('目标方向车道过窄，无法接入固定 3.5m 车道；请增加目标道路车道宽或换接点。');
+    const section = highway ? normalizeSection('oneway', { laneCount: 1, laneWidth: 3.5, shoulderWidth: Math.min(.75,Math.max(0,(available-3.5)/2)), sidewalkWidth: 0 }) :
       sectionForRoad(roadType, roadA._roadData.width, roadA._roadData.roadType.section);
     const dimensions = sectionDimensions(roadType, section), half = dimensions.outerWidth / 2;
-    const roads = app.objects.filter(o => o.type === 'road_brush').map(o => ({
+    const roads = app.objects.filter(o => o.type === 'road_brush'&&o!==replace).map(o => ({
       id: o.id, half: roadProfile(o._roadData.roadType, o._roadData.width).pav,
       samples: Array.from({ length: 81 }, (_, i) => { const p = o._roadData.curve.getPointAt(i / 80); p.y = roadDesignHeight(o._roadData.curve, i / 80); return p; }),
     }));
@@ -153,30 +171,36 @@ export class RoadConnector {
           const host = road.id === roadA.id || road.id === roadB.id;
           if (host && ((road.id === roadA.id && stations[i] < Math.max(18, half + road.half + 3)) || (road.id === roadB.id && length - stations[i] < Math.max(18, half + road.half + 3)))) continue;
           const r = road.half + half + .5;
-          if (road.samples.some(q => Math.hypot(q.x - p.x, q.z - p.z) < r && Math.abs(q.y - p.y) < 4)) return false;
+          if (road.samples.some(q => Math.hypot(q.x - p.x, q.z - p.z) < r && Math.abs(q.y - p.y) < 4))return false;
         }
-        if (obstacles.some(b => p.x + half > b.min.x && p.x - half < b.max.x && p.z + half > b.min.z && p.z - half < b.max.z && p.y + 1 > b.min.y && p.y - .2 < b.max.y)) return false;
+        if (obstacles.some(b => p.x + half > b.min.x && p.x - half < b.max.x && p.z + half > b.min.z && p.z - half < b.max.z && p.y + 1 > b.min.y && p.y - .2 < b.max.y))return false;
       }
       return true;
     };
     let solution, chosen, failure;
     for (const pair of pairs) {
+      if(solution&&pair.span>solution.score)continue;
       currentPair=pair;
       try {
-        solution = automaticRoadPath(pair.a, pair.b, { halfWidth: half, accept, terrainHeight: app.terrain?.enabled ? (x, z) => app.terrain.heightAt(x, z) : null, halfExtent: (app.terrain?.size || 320) / 2 });
-        chosen = pair; break;
+        const candidate = automaticRoadPath(pair.a, pair.b, { halfWidth: half, accept, terrainHeight: app.terrain?.enabled ? (x, z) => app.terrain.heightAt(x, z) : null, halfExtent: (app.terrain?.size || 320) / 2 });
+        if(!solution||candidate.score<solution.score){solution=candidate;chosen=pair;}
       } catch (e) { failure = e; }
     }
     if (!solution) throw failure || new Error('没有可用的连接点。');
-    const id = `rc_${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-    const source = { version: 1, generated: true, anchors: [chosen.a, chosen.b].map(a => ({ roadId: a.roadId, t: a.t, position: a.position })) };
-    const data = { id, type: 'road_brush', name: '自动连接道路', roadType, section, width: dimensions.pavementWidth, points: solution.points, fillet: false, terrainMode: 'fixed', terrainOffset: 0, bridges: true, connection: source };
+    const id = replace?.id || `rc_${globalThis.crypto?.randomUUID?.() || Date.now()}`;
+    const source = { version: 2, kind:highway?'ramp':'road', generated: true, anchors: [chosen.a, chosen.b].map(a => ({ roadId: a.roadId, t: a.t, position: a.position })) };
+    const data = { ...replace?.serialize(),id, type: 'road_brush', name: replace?.name||'自动连接道路', roadType, section, width: dimensions.pavementWidth, points: solution.points, fillet: false, terrainMode: 'fixed', terrainOffset: 0, bridges: true, connection: source };
     // Generate inside the established edit transaction. Existing roads, their shots,
     // supports, ids and all pre-existing junctions are restored by the same pipeline.
     const before = app.serialize({ assets: false });
     const undoState=Object.fromEntries(['_undo','_redo','_undoBytes','_undoAvail','_redoAvail','_opKey'].map(k=>[k,Array.isArray(app[k])?[...app[k]]:app[k]]));
     try {
-      app.batchOp('自动连接道路 A → B', () => { rb.restore([data]); app.roadTerrain.sync(); });
+      const shots=replace?app.shots.filter(s=>s.targetId===id):[];
+      app.batchOp(replace?'重新生成连接道路':'自动连接道路 A → B', () => {
+        if(replace)app.removeObject(replace);
+        rb.restore([data]);app.roadTerrain.sync();
+        for(const shot of shots){shot.targetId=id;shot.markDirty();}
+      });
     } catch (e) {
       app.loadJson(before); // no half-created network on a geometry failure
       Object.assign(app,undoState);app.bus.emit('undoable');throw e;

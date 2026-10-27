@@ -69,7 +69,7 @@ const ang = (d) => Math.atan2(d.z, d.x);
 export function armsFromIsect(isect) {
   const arms = [];
   const push = (curve, t, width, roadType) => {
-    const freeway=isect.freeway,sourceCurve=curve;
+    const freeway=isect.freeway||isect.streetMerge,sourceCurve=curve;
     const isMain=freeway && curve===freeway.curve;
     if(isMain){curve=freeway.laneCurve;width=freeway.width;roadType={...roadType,section:null};}
     const tc = Math.max(0.001, Math.min(0.999, t));
@@ -178,9 +178,10 @@ export function junctionPlan(center, arms, freeway = null) {
   // Acute approaches use a bounded merge core plus exact corridor clipping.
   // Extending a convex slab to 1/sin(theta) fills a huge empty wedge. Keep the
   // analytic distance ONLY for trimming overlapping internal side bands.
-  const compactLimit=Math.max(...arms.map(a=>a.half))*1.6+3;
+  const merge=arms.some(a=>a.roadType?.junctionStyle==='merge');
+  const compactLimit=merge?Math.max(...arms.map(a=>a.pav))*1.2+1.5:Math.max(...arms.map(a=>a.half))*1.6+3;
   const acute=sorted.some((idx,k)=>{const a=arms[idx].dir,b=arms[sorted[(k+1)%sorted.length]].dir;return dot(a,b)>.500001&&Math.abs(cross2(a,b))>.04;});
-  const compact=acute&&arms.some(a=>a.c>compactLimit+1);
+  const compact=merge||(acute&&arms.some(a=>a.c>compactLimit+1));
   if(compact)for(const a of arms){a.overlapReach=Math.min(a.c,a.available??Infinity);a.c=Math.min(a.c,compactLimit);}
 
   // A small acute-angle branch cannot acquire an imaginary 100m continuation.
@@ -340,7 +341,7 @@ export function junctionPlan(center, arms, freeway = null) {
   }
 
   return {
-    center: C, arms, hull, edges, walks:freeway?[]:walks, freeway, compact,
+    center: C, arms, hull, edges, walks:freeway?[]:merge?walks.filter(w=>w.back):walks, freeway, compact, merge,
     // 挖洞判定：所有边内法线方向至少内缩 GAP_LIP
     insideLip: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= GAP_LIP - 1e-9),
     insideHull: (p) => edges.every(e => dot(sub(p, e.a), e.n) >= -1e-9),

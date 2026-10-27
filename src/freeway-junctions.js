@@ -27,12 +27,22 @@ function refine(lane,branch,ta,tb){
 }
 /** Independent near-carriageway ports. Never use the 20m-wide freeway as a single
  * two-way intersection arm, and never cut an at-grade portal through its median. */
-export function freewayConnections({newCurve,newWidth,newType,existing}) {
-  const newMain=newType.id==='freeway',main=newMain?newCurve:existing.curve,branch=newMain?existing.curve:newCurve;
+export function freewayConnections(args) {return carriagewayConnections(args);}
+// Generated ramp -> ordinary TWO-WAY street: same near-carriageway topology,
+// but no invented physical median and no opening through the opposing lane.
+export function streetMergeConnections(args){
+  const rampNew=args.newType.junctionStyle==='merge',rampOld=args.existing.roadType.junctionStyle==='merge';
+  if(rampNew===rampOld)return null;
+  const mainType=rampNew?args.existing.roadType:args.newType;
+  if(!['asphalt','concrete'].includes(mainType.id))return null;
+  return carriagewayConnections(args,{street:true,newMain:!rampNew});
+}
+function carriagewayConnections({newCurve,newWidth,newType,existing},settings={}) {
+  const street=!!settings.street,newMain=settings.newMain??(newType.id==='freeway'),main=newMain?newCurve:existing.curve,branch=newMain?existing.curve:newCurve;
   const branchType=newMain?existing.roadType:newType,branchWidth=newMain?existing.width:newWidth;
   if(branchType.id==='freeway')return [];
   const mainType=newMain?newType:existing.roadType;
-  const width=mainType.section?(newMain?newWidth:existing.width):Math.max(20,newMain?newWidth:existing.width),laneWidth=(width-4)/2,offset=2+laneWidth/2;
+  const width=street||mainType.section?(newMain?newWidth:existing.width):Math.max(20,newMain?newWidth:existing.width),medianHalf=street?0:2,laneWidth=(width-2*medianHalf)/2,offset=medianHalf+laneWidth/2,inner=street?.3:2.02;
   const out=[],n=Math.min(256,Math.max(80,Math.ceil(main.getLength()/2))),m=Math.min(256,Math.max(80,Math.ceil(branch.getLength()/2)));
   const B=Array.from({length:m+1},(_,i)=>branch.getPointAt(i/m));
   for(const side of [-1,1]){
@@ -48,7 +58,7 @@ export function freewayConnections({newCurve,newWidth,newType,existing}) {
     }
     if(!seeds.length && closest && closest.dist<laneWidth/2+branchWidth/2+.5){
       const c=main.getPointAt(closest.ta),d=main.getTangentAt(closest.ta).setY(0).normalize(),p=branch.getPointAt(closest.tb);
-      if(((p.x-c.x)*d.z-(p.z-c.z)*d.x)*side>2.02)seeds.push([closest.ta,closest.tb]);
+      if(((p.x-c.x)*d.z-(p.z-c.z)*d.x)*side>inner)seeds.push([closest.ta,closest.tb]);
     }
     for(const [ta,tb]of seeds){
       const r=refine(lane,branch,ta,tb),md=main.getTangentAt(r.ta).setY(0).normalize(),bd=branch.getTangentAt(r.tb).setY(0).normalize();
@@ -59,14 +69,14 @@ export function freewayConnections({newCurve,newWidth,newType,existing}) {
       const point=r.a.clone().setY(endpointContact?hA:(hA+hB)/2),origin=main.getPointAt(r.ta),normal={x:md.z*side,z:-md.x*side};
       if(out.some(q=>q.point.distanceTo(point)<.5))continue;
       out.push({point,endpointContact,joinHeight:endpointContact?hA:undefined,tNew:newMain?r.ta:r.tb,tExisting:newMain?r.tb:r.ta,newCurve,existingCurve:existing.curve,newWidth,existingWidth:existing.width,newRoadType:newType,existingRoadType:existing.roadType,
-        freeway:{curve:main,laneCurve:lane,width:laneWidth,side,origin:{x:origin.x,z:origin.z},normal,t:r.ta,branchT:r.tb,branchCurve:branch,inner:2.02}});
+        [street?'streetMerge':'freeway']:{street,graded:Math.abs(designHeight(branch,0)-designHeight(branch,1))>.15,curve:main,laneCurve:lane,width:laneWidth,side,origin:{x:origin.x,z:origin.z},normal,t:r.ta,branchT:r.tb,branchCurve:branch,inner}});
     }
   }
   return out;
 }
 export function applyFreewayCuts(root,curve,gaps) {
   const seen=new Set();
-  for(const gap of gaps){const is=gap.isect,f=is?.freeway;if(!f||seen.has(is))continue;seen.add(is);
+  for(const gap of gaps){const is=gap.isect,f=is?.freeway||is?.streetMerge;if(!f||seen.has(is))continue;seen.add(is);
     const plan=is.plan;if(!plan)continue;
     const isMain=curve===f.curve;
     let polygons=[plan.hull],lo=gap.t0,hi=gap.t1;
@@ -88,7 +98,9 @@ export function applyFreewayCuts(root,curve,gaps) {
     for(const span of root.children){
       const range=span.userData.roadRange || [span.userData.endpoint,span.userData.endpoint];
       if(range[0]===undefined||range[1]<lo-lip||range[0]>hi+lip)continue;
-      for(const poly of polygons)subtractRoadPrism(span,poly,isMain?mesh=>mesh.userData.freewaySide!==f.side:null);
+      for(const poly of polygons)subtractRoadPrism(span,poly,
+        isMain&&f.street&&f.graded?mesh=>mesh.userData.roadRole==='pavement':
+        isMain&&!f.street?mesh=>mesh.userData.freewaySide!==f.side:null);
     }
   }
 }

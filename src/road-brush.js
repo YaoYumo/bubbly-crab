@@ -2,7 +2,7 @@ import { tagRoadRoles, applyCompactCuts } from './road-compact-junction.js';
 import { normalizeSection, sectionDimensions, sectionRoadType, sectionAtWidth } from './road-section.js';
 import { endpointRoadContact } from './road-contact.js';
 import { junctionHeightField } from './junction-elevation.js';
-import { freewayConnections, applyFreewayCuts } from './freeway-junctions.js';
+import { freewayConnections, streetMergeConnections, applyFreewayCuts } from './freeway-junctions.js';
 import { roadHeightGuide, hitRoadHeightGrip } from './road-point-controls.js';
 import { validRoadPoints, shearRoadGrade } from './road-elevation.js';
 import { dragOnLevel, pointGuide, hitCurvePoint } from './curve-handles.js';
@@ -107,7 +107,7 @@ export class RoadBrush {
   setType(typeId) {
     const idx = ROAD_TYPES.findIndex(t => t.id === typeId);
     if (idx >= 0) {
-      this.roadType = this.roadType.section ? sectionRoadType(ROAD_TYPES[idx], this.roadType.section) : ROAD_TYPES[idx];
+      this.roadType = this.roadType.section ? sectionRoadType(ROAD_TYPES[idx], this.roadType.section,this._editBackup?.connection) : ROAD_TYPES[idx];
       if(this.roadType.section)this.roadWidth=sectionDimensions(this.roadType.id,this.roadType.section).pavementWidth;
       this._updateLiveRoad();this.app.bus.emit('road-section');
     }
@@ -129,7 +129,7 @@ export class RoadBrush {
   setSection(section) {
     const value=normalizeSection(this.roadType.id,section);
     if(!value)return false;
-    this.roadType=sectionRoadType(ROAD_TYPES.find(t=>t.id===this.roadType.id),value);
+    this.roadType=sectionRoadType(ROAD_TYPES.find(t=>t.id===this.roadType.id),value,this._editBackup?.connection);
     this.roadWidth=sectionDimensions(this.roadType.id,value).pavementWidth;
     this._updateLiveRoad();this.app.bus.emit('road-section');return true;
   }
@@ -199,6 +199,7 @@ export class RoadBrush {
     this.app.state.terrainTool = null; this.app.terrain?.refreshUI();
     this.app.roadPlanning?.setPicking(false);
     this.app.roadConnector?.setPicking(null);
+    if(!this._editBackup&&this.roadType.junctionStyle)this.roadType=sectionRoadType(ROAD_TYPES.find(t=>t.id===this.roadType.id)||ROAD_TYPES[0],this.roadType.section);
     this.active = true; this.showSelectedPoints();
     this.terrainMode = 'follow'; this.terrainOffset = .02; this.draftHeight = 8;
     this.points = [];
@@ -452,7 +453,7 @@ export class RoadBrush {
     let type = ROAD_TYPES.find(t => t.id === roadType);
     let explicit=section!==undefined?section:so?._roadData?.roadType?.section;
     if(explicit&&section===undefined&&width!==so?._roadData?.width)explicit=sectionAtWidth(roadType,explicit,width);
-    if(type&&explicit){type=sectionRoadType(type,explicit);width=sectionDimensions(type.id,explicit)?.pavementWidth??width;}
+    if(type&&explicit){type=sectionRoadType(type,explicit,so?._roadData?.connection);width=sectionDimensions(type.id,explicit)?.pavementWidth??width;}
     if (!type || !Number.isFinite(width) || (points !== undefined && !validRoadPoints(points)) || (terrainMode !== undefined && !['fixed', 'follow'].includes(terrainMode))) return null;
     width = Math.max(1, Math.min(type.section ? 80 : 20, width));
     if (this._editBackup || (this.active && this.points.length)) {
@@ -510,7 +511,7 @@ export class RoadBrush {
     this.points = effectivePoints.map((p) => new THREE.Vector3(p[0], p[1], p[2]));
     this.roadWidth = data.width || 12;
     this.roadType = ROAD_TYPES.find((t) => t.id === data.roadType) || ROAD_TYPES[0];
-    if(data.section)this.roadType=sectionRoadType(this.roadType,data.section);
+    if(data.section)this.roadType=sectionRoadType(this.roadType,data.section,data.connection);
     this.terrainMode = data.terrainMode; this.terrainOffset = data.terrainOffset ?? 0;
     this.filletOn = !!data.fillet;
     this.filletH = (data.filletH || []).slice();
@@ -562,7 +563,7 @@ export class RoadBrush {
       this.filletH = (o.filletH || []).slice();
       if (this.filletOn) this.syncFillets();
       const baseType = ROAD_TYPES.find(t => t.id === o.roadType) || ROAD_TYPES[0];
-      const roadType = o.section ? sectionRoadType(baseType,o.section) : baseType;
+      const roadType = o.section ? sectionRoadType(baseType,o.section,o.connection) : baseType;
       const width = roadType.section ? sectionDimensions(roadType.id,roadType.section).pavementWidth : o.width || 12;
       this.roadType = roadType;
       this.roadWidth = width;
@@ -732,7 +733,7 @@ export class RoadBrush {
   _planForIsect(is) {
     if (is.plan !== undefined) return is.plan;
     const arms = armsFromIsect(is);
-    is.plan = junctionPlan(is.point, arms, is.freeway);
+    is.plan = junctionPlan(is.point, arms, is.freeway||is.streetMerge);
     return is.plan;
   }
 
@@ -752,9 +753,9 @@ export class RoadBrush {
 
   _junctionIntervals(curve, plan, half, isect) {
     const t = curve === isect.newCurve ? isect.tNew : isect.tExisting;
-    if(plan.compact&&!isect.freeway){const own=gapIntervals(curve,plan,0).filter(r=>t>=r.t0-1e-5&&t<=r.t1+1e-5);return own.length?own:[{t0:t,t1:t}];}
-    if(isect.freeway){
-      const f=isect.freeway,main=curve===f.curve,virtual=main?f.laneCurve:curve;
+    if(plan.compact&&!isect.freeway&&!isect.streetMerge){const own=gapIntervals(curve,plan,0).filter(r=>t>=r.t0-1e-5&&t<=r.t1+1e-5);return own.length?own:[{t0:t,t1:t}];}
+    if(isect.freeway||isect.streetMerge){
+      const f=isect.freeway||isect.streetMerge,main=curve===f.curve,virtual=main?f.laneCurve:curve;
       const centre=gapIntervals(virtual,plan,0);
       const own=centre.filter(r=>t>=r.t0-1e-5&&t<=r.t1+1e-5);
       // A lateral port can lie just outside a short branch's centreline. Its
@@ -815,6 +816,8 @@ export class RoadBrush {
         }else intersections.push(...freewayConnections({newCurve,newWidth,newType:this.roadType,existing}));
         continue;
       }
+      const mergePorts=streetMergeConnections({newCurve,newWidth,newType:this.roadType,existing});
+      if(mergePorts){intersections.push(...mergePorts);continue;}
       const exThreshold = (existing.width / 2) + 1.0;
       const combinedThreshold = threshold + exThreshold - 1.0;
 

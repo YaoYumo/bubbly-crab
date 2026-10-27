@@ -39,9 +39,10 @@ export function sectionAtWidth(type, section, width) {
   const s=normalizeSection(type,section);if(!s||!Number.isFinite(width))return s;
   return normalizeSection(type,{...s,laneCount:(width-2*s.shoulderWidth-(type==='freeway'?4:0))/s.laneWidth});
 }
-export function sectionRoadType(base, section) {
+export function sectionRoadType(base, section, connection = null) {
   const s = normalizeSection(base.id, section);
-  return s ? { ...base, section: s, build: params => buildSectionRoad(base.id, s, params.length) } : base;
+  const type=s ? { ...base, section: s, build: params => buildSectionRoad(base.id, s, params.length) } : base;
+  return connection?.kind==='ramp'&&base.id==='oneway'?{...type,junctionStyle:'merge'}:type;
 }
 
 export function buildSectionRoad(type, section, length = 10) {

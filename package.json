@@ -54,6 +54,7 @@
     "test:road-elevation": "node test/road-elevation.test.mjs && bash test/withchrome.sh node test/road-elevation-regression.mjs",
     "test:road-junction-corrections": "node test/road-junction-corrections.test.mjs && bash test/withchrome.sh node test/road-junction-corrections-regression.mjs",
     "test:freeway-median": "node test/freeway-median-surface.test.mjs && bash test/withchrome.sh node test/freeway-median-regression.mjs",
+    "test:ramp-routing": "node test/road-connector.test.mjs && bash test/withchrome.sh node test/road-ramp-routing-regression.mjs",
     "test:road-connector": "node test/road-connector.test.mjs && bash test/withchrome.sh node test/road-connector-regression.mjs",
     "test:road-3d-contact": "node test/road-3d-contact.test.mjs && bash test/withchrome.sh node test/road-3d-contact-regression.mjs"
   },
