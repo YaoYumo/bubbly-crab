@@ -1,3 +1,4 @@
+import { buildStreetLamp } from './street-lamp.js';
 import { PRIMITIVE_GROUP } from './primitive-model.js';
 import { beamBetween, stairFlight } from './stair-geometry.js';
 // ---------------------------------------------------------------------------
@@ -2827,16 +2828,6 @@ function buildPedSignal(p) {
   shade(g); return g;
 }
 
-function buildStreetLamp(p) {
-  const g = new THREE.Group();
-  const poleH = p.poleHeight;
-  g.add(cyl(0.08, 0.1, poleH, M.metal(0x444444, 0.5, 0.7), 10, 0, poleH / 2, 0));
-  g.add(box(0.8, 0.1, 0.1, M.metal(0x444444, 0.5, 0.7), 0.35, poleH - 0.05, 0));
-  const lampMat = new THREE.MeshStandardMaterial({ color: 0xffeecc, roughness: 0.3, emissive: new THREE.Color(0xffeecc), emissiveIntensity: 1.5 });
-  g.add(box(0.3, 0.15, 0.15, lampMat, 0.7, poleH - 0.1, 0));
-  g.userData.glow = [lampMat];
-  shade(g); return g;
-}
 
 function buildWaterBarrier(p) {
   const g = new THREE.Group();

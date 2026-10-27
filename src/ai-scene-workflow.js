@@ -588,6 +588,7 @@ export class AISceneWorkflow {
             });
             if (distance < 1) throw Error("道路长度不足");
             const road = {
+              ...oldRoad, // A width/path edit must retain bridge, elevation, lamp and display settings.
               id: roadOp.id,
               name: String(roadOp.name || "AI道路").slice(0, 120),
               type: "road_brush",

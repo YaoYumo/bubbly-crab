@@ -1,4 +1,5 @@
-import { pointGuide, hitCurvePoint } from './curve-handles.js';
+import { validRoadPoints, shearRoadGrade } from './road-elevation.js';
+import { dragOnLevel, pointGuide, hitCurvePoint } from './curve-handles.js';
 // ---------------------------------------------------------------------------
 // 道路画笔 — 重构版（任务33）
 //
@@ -168,11 +169,13 @@ export class RoadBrush {
     this.app.state.terrainTool = null; this.app.terrain?.refreshUI();
     this.app.roadPlanning?.setPicking(false);
     this.active = true; this.showSelectedPoints();
+    this.terrainMode = 'follow'; this.terrainOffset = .02; this.draftHeight = 8;
     this.points = [];
     this.filletH = [];
     this._drag = null;
     this._updatePreview();
     this.app.stage.host?.style && (this.app.stage.host.style.cursor = 'crosshair');
+    this.app.bus.emit('road-edit');
   }
 
   stop() {
@@ -185,26 +188,29 @@ export class RoadBrush {
     this.filletH = [];
     this._drag = null;
     this.previewLine.visible = false;
+    if (this._ghost) this._ghost.visible = false;
     this.previewDots.visible = false;
     this._disposeChildren(this.previewDots);
     this.filletDots.visible = false;
     this._disposeChildren(this.filletDots);
     this._clearLiveRoad();
     this.app.stage.host?.style && (this.app.stage.host.style.cursor = '');
+    this.app.bus.emit('road-edit');
   }
 
   addPoint(x, y, z) {
     if (!this.active) return;
     const snapped = this.app.roadPlanning?.snapPoint(new THREE.Vector3(x, y, z));
     if (snapped) { x = snapped.x; z = snapped.z; }
-    if (!this._editBackup) { this.terrainMode = 'follow'; this.terrainOffset = .02; }
+    if (!this.terrainMode) { this.terrainMode = 'follow'; this.terrainOffset = .02; }
     const terrain = this.app.terrain;
     const ty = terrain?.enabled ? terrain.heightAt(x, z) : 0;
-    const fixed = this._editBackup && this.terrainMode === 'fixed';
-    this.points.push(new THREE.Vector3(x, fixed ? (this.points.at(-1)?.y ?? this._editBackup.points[0][1]) : ty + 0.02, z));
+    const fixed = this.terrainMode === 'fixed';
+    this.points.push(new THREE.Vector3(x, fixed ? (this.points.at(-1)?.y ?? this.draftHeight ?? 8) : ty + 0.02, z));
     if (this.filletOn) this.syncFillets();
     this._updatePreview();
     this._updateLiveRoad();
+    this.app.bus.emit('road-edit');
   }
 
   undoPoint() {
@@ -213,7 +219,19 @@ export class RoadBrush {
       if (this.filletOn) this.syncFillets();
       this._updatePreview();
       this._updateLiveRoad();
+      this.app.bus.emit('road-edit');
     }
+  }
+
+  setDraftPoint(index, axis, value) {
+    const p = this.points[index];
+    if (!this.active || !p || !['x','y','z'].includes(axis) || !Number.isFinite(value) || Math.abs(value) > 10000) return false;
+    p[axis] = value;
+    if (axis === 'y') this.terrainMode = 'fixed';
+    else if (this.terrainMode !== 'fixed') p.y = (this.app.terrain?.enabled ? this.app.terrain.heightAt(p.x,p.z) : 0) + .02;
+    if (this.filletOn) this.syncFillets();
+    this._updatePreview(); this._updateLiveRoad(); this.app.bus.emit('road-edit');
+    return true;
   }
 
   // 路径曲线：未开倒角=直线段尖角；开倒角=每个转角用二次贝塞尔圆弧过渡
@@ -364,6 +382,7 @@ export class RoadBrush {
       filletH: this.filletH.slice(), filletOn: this.filletOn,
       isects, noJunct: !!this._editNoJunct,
       terrainMode: this.terrainMode || 'follow', terrainOffset: this.terrainOffset,
+      streetLights: this._editBackup?.streetLights, lampSpacing: this._editBackup?.lampSpacing, lampSide: this._editBackup?.lampSide,
       bridges: this._editBackup?.bridges, pierSpacing: this._editBackup?.pierSpacing, bridgeThreshold: this._editBackup?.bridgeThreshold,
       so: this._editBackup || null,             // 编辑后仍是同一道路：保留 ID / 名称 / 可见与锁定状态
     }) : null;
@@ -382,24 +401,28 @@ export class RoadBrush {
         this.app.select({ kind: 'obj', so: mesh.userData.so });
       }
     }
+    this.app.bus.emit('road-edit');
     return mesh;
   }
 
   /** 已完成道路的属性编辑：一次提交一次撤销，不进入持续绘制状态。 */
-  updateRoadProperties(so, { roadType = so?._roadData?.roadType?.id, width = so?._roadData?.width } = {}) {
+  updateRoadProperties(so, { roadType = so?._roadData?.roadType?.id, width = so?._roadData?.width, points, terrainMode } = {}) {
     if (!so || so.type !== 'road_brush' || so.locked || !this.app.objects.includes(so)) return null;
     const type = ROAD_TYPES.find(t => t.id === roadType);
-    if (!type || !Number.isFinite(width)) return null;
+    if (!type || !Number.isFinite(width) || (points !== undefined && !validRoadPoints(points)) || (terrainMode !== undefined && !['fixed', 'follow'].includes(terrainMode))) return null;
     width = Math.max(1, Math.min(20, width));
     if (this._editBackup || (this.active && this.points.length)) {
       this.app.notify?.('请先完成或取消当前道路绘制', 'warn');
       return null;
     }
-    if (type === so._roadData.roadType && width === so._roadData.width) return so;
+    if (type === so._roadData.roadType && width === so._roadData.width && points === undefined && terrainMode === undefined) return so;
     if (!this.editRoad(so)) return null;
     try {
       this.roadType = type;
       this.roadWidth = width;
+      if (points) this.points = points.map(p => new THREE.Vector3(...p));
+      if (terrainMode) this.terrainMode = terrainMode;
+      if (this.filletOn) this.syncFillets();
       const mesh = this.finish();
       if (!mesh) { this.cancelEdit(); return null; }
       this.app._redo = []; this.app._redoAvail = 0;
@@ -515,6 +538,7 @@ export class RoadBrush {
       const rd = {
         curve: e.curve, width: e.width, roadType: e.roadType, mesh: null, gaps: [],
         ctrl: e.ctrl, noJunct: e.noJunct, name: e.name,
+        streetLights: !!e.o.streetLights, lampSpacing: e.o.lampSpacing || 24, lampSide: e.o.lampSide || 'both',
         terrainMode: e.terrainMode, terrainOffset: e.terrainOffset, bridges: e.o.bridges !== false, pierSpacing: e.o.pierSpacing || 12, bridgeThreshold: e.o.bridgeThreshold || 1.8,
         filletOn: e.filletOn, filletH: e.filletH,
       };
@@ -579,6 +603,7 @@ export class RoadBrush {
         id: roadObj.id, name: roadObj.name, type: 'road_brush', materialMode: roadObj.materialMode,
         visible: roadObj.visible !== false, locked: !!roadObj.locked,
         roadType: roadType.id, width, fillet: filletOn, filletH, points: rd.ctrl,
+        streetLights: !!rd.streetLights, lampSpacing: rd.lampSpacing || 24, lampSide: rd.lampSide || 'both',
         terrainMode: rd.terrainMode, terrainOffset: rd.terrainOffset, bridges: rd.bridges !== false, pierSpacing: rd.pierSpacing || 12, bridgeThreshold: rd.bridgeThreshold || 1.8,
         noJunct: !!noJunct,
       }),
@@ -594,6 +619,7 @@ export class RoadBrush {
     const rd = {
       curve, width, roadType, mesh: null, gaps, ctrl, noJunct, name: roadName,
       filletOn, filletH,
+      streetLights: !!opt.streetLights, lampSpacing: opt.lampSpacing || 24, lampSide: opt.lampSide || 'both',
       terrainMode: opt.terrainMode || 'follow', terrainOffset: opt.terrainOffset ?? .02, bridges: opt.bridges !== false, pierSpacing: opt.pierSpacing || 12, bridgeThreshold: opt.bridgeThreshold || 1.8,
     };
     this.app.roadTerrain?.joinProfiles(isects);
@@ -615,7 +641,7 @@ export class RoadBrush {
         const plan = this._planForIsect(isect);
         if (plan) {
           const exHalf = roadProfile(ex.roadType, ex.width).half;
-          for (const r of gapIntervals(ex.curve, plan, exHalf)) ex.gaps.push({ t0: r.t0, t1: r.t1, isect });
+          for (const r of this._junctionIntervals(ex.curve, plan, exHalf, isect)) ex.gaps.push({ t0: r.t0, t1: r.t1, isect });
           this._rebuildRoad(ex);
         }
       }
@@ -643,9 +669,16 @@ export class RoadBrush {
     for (const is of isects) {
       const plan = this._planForIsect(is);
       if (!plan) continue;
-      for (const r of gapIntervals(curve, plan, half)) gaps.push({ t0: r.t0, t1: r.t1, isect: is });
+      for (const r of this._junctionIntervals(curve, plan, half, is)) gaps.push({ t0: r.t0, t1: r.t1, isect: is });
     }
     return gaps;
+  }
+
+  _junctionIntervals(curve, plan, half, isect) {
+    const t = curve === isect.newCurve ? isect.tNew : isect.tExisting;
+    // The same alignment can pass through the same XZ footprint on another level.
+    // Only cut the contiguous interval owning this particular accepted crossing.
+    return gapIntervals(curve, plan, half).filter(r => !Number.isFinite(t) || (t >= r.t0 - 1e-5 && t <= r.t1 + 1e-5));
   }
 
   // 路口物体注册（serialize / 面板字段与旧版一致；_isect 仍是检测记录，plan 缓存其上）
@@ -691,53 +724,46 @@ export class RoadBrush {
       const exThreshold = (existing.width / 2) + 1.0;
       const combinedThreshold = threshold + exThreshold - 1.0;
 
-      // 采样两条曲线，找最近点
-      const samplesA = 60;
-      const samplesB = 60;
-      let bestDist = Infinity;
-      let bestTA = 0, bestTB = 0;
-
-      for (let i = 0; i <= samplesA; i++) {
-        const tA = i / samplesA;
-        const pA = newCurve.getPointAt(tA);
-        for (let j = 0; j <= samplesB; j++) {
-          const tB = j / samplesB;
-          const pB = existing.curve.getPointAt(tB);
-          const dx = pA.x - pB.x;
-          const dz = pA.z - pB.z;
-          const dist = Math.sqrt(dx * dx + dz * dz);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestTA = tA;
-            bestTB = tB;
-          }
-        }
+      // Cache samples once. Keep every actual XZ crossing, not just the globally
+      // closest pair: a loop ramp can pass under a road before joining it later.
+      const samplesA = Math.min(256, Math.max(60, Math.ceil(newCurve.getLength() / 3)));
+      const samplesB = Math.min(256, Math.max(60, Math.ceil(existing.curve.getLength() / 3)));
+      const A = Array.from({length:samplesA+1},(_,i)=>newCurve.getPointAt(i/samplesA));
+      const B = Array.from({length:samplesB+1},(_,i)=>existing.curve.getPointAt(i/samplesB));
+      let bestDist = Infinity, bestTA = 0, bestTB = 0;
+      const seeds = [];
+      for (let i=0;i<=samplesA;i++) for (let j=0;j<=samplesB;j++) {
+        const dist = Math.hypot(A[i].x-B[j].x,A[i].z-B[j].z);
+        if (dist<bestDist) { bestDist=dist;bestTA=i/samplesA;bestTB=j/samplesB; }
+        if (i===samplesA || j===samplesB) continue;
+        const ax=A[i+1].x-A[i].x, az=A[i+1].z-A[i].z;
+        const bx=B[j+1].x-B[j].x, bz=B[j+1].z-B[j].z;
+        const den=ax*bz-az*bx;
+        if(Math.abs(den)<1e-9)continue;
+        const dx=B[j].x-A[i].x,dz=B[j].z-A[i].z;
+        const u=(dx*bz-dz*bx)/den,v=(dx*az-dz*ax)/den;
+        if(u< -1e-8||u>1+1e-8||v< -1e-8||v>1+1e-8)continue;
+        const ta=(i+Math.max(0,Math.min(1,u)))/samplesA,tb=(j+Math.max(0,Math.min(1,v)))/samplesB;
+        if(!seeds.some(q=>Math.abs(q[0]-ta)<1/samplesA&&Math.abs(q[1]-tb)<1/samplesB))seeds.push([ta,tb]);
       }
-
-      // 如果最近距离小于阈值，认为有交叉
-      if (bestDist < combinedThreshold) {
-        // 精确定位交叉点
-        const refined = this._refineIntersection(newCurve, existing.curve, bestTA, bestTB);
-        if (refined) {
-          const hA = this.app.roadTerrain?.height(newCurve, refined.point.x, refined.point.z) ?? newCurve.getPointAt(refined.tA).y;
-          const hB = this.app.roadTerrain?.height(existing.curve, refined.point.x, refined.point.z) ?? existing.curve.getPointAt(refined.tB).y;
-          const limit = newCurve._terrainProfile?.follow && existing.curve._terrainProfile?.follow ? Infinity : .08;
-          if (Math.abs(hA - hB) > limit) continue; // Grade separation is not a planar junction.
-
-          // 近乎平行的贴线不算路口（几何上无稳定断面可言）
-          const tA = newCurve.getTangentAt(Math.max(0, Math.min(1, refined.tA)));
-          const tB = existing.curve.getTangentAt(Math.max(0, Math.min(1, refined.tB)));
-          if (Math.abs(tA.x * tB.z - tA.z * tB.x) < 0.08) continue;
-          intersections.push({
-            point: refined.point,
-            tNew: refined.tA,
-            tExisting: refined.tB,
-            newCurve, existingCurve: existing.curve,
-            newWidth, existingWidth: existing.width,
-            newRoadType: this.roadType,
-            existingRoadType: existing.roadType,
-          });
-        }
+      // Preserve near-end T-junction semantics when centerlines do not quite touch.
+      if(!seeds.length && bestDist<combinedThreshold)seeds.push([bestTA,bestTB]);
+      const accepted=[];
+      for(const [ta,tb] of seeds) {
+        const refined = this._refineIntersection(newCurve, existing.curve, ta, tb);
+        if (!refined) continue;
+        const height = (curve,t) => curve._terrainProfile?.follow
+          ? this.app.roadTerrain.height(curve,refined.point.x,refined.point.z) : curve.getPointAt(t).y;
+        const hA=height(newCurve,refined.tA),hB=height(existing.curve,refined.tB);
+        const limit = newCurve._terrainProfile?.follow && existing.curve._terrainProfile?.follow ? Infinity : .08;
+        if (Math.abs(hA-hB)>limit)continue;
+        const tA=newCurve.getTangentAt(refined.tA),tB=existing.curve.getTangentAt(refined.tB);
+        if(Math.abs(tA.x*tB.z-tA.z*tB.x)<.08)continue;
+        if(accepted.some(q=>q.point.distanceTo(refined.point)<.5))continue;
+        accepted.push(refined);
+        intersections.push({point:refined.point,tNew:refined.tA,tExisting:refined.tB,
+          newCurve,existingCurve:existing.curve,newWidth,existingWidth:existing.width,
+          newRoadType:this.roadType,existingRoadType:existing.roadType});
       }
     }
 
@@ -747,8 +773,7 @@ export class RoadBrush {
   _refineIntersection(curveA, curveB, initTA, initTB) {
     // 二分法精确查找最近点
     let tA = initTA, tB = initTB;
-    const step = 0.005;
-    const range = 0.1;
+    let range = 0.04;
 
     for (let iter = 0; iter < 20; iter++) {
       let bestDist = Infinity;
@@ -778,7 +803,8 @@ export class RoadBrush {
 
       tA = bestTA;
       tB = bestTB;
-      if (Math.sqrt(bestDist) < 0.01) break;
+      range *= .5;
+      if (Math.sqrt(bestDist) < 0.001) break;
     }
 
     const pA = curveA.getPointAt(tA);
@@ -825,7 +851,7 @@ export class RoadBrush {
     };
     const spans = [];
     let a = null, b = null, len = 0;
-    const push = () => { if (a && b && len >= 0.5) spans.push({ a, b, len }); a = null; b = null; len = 0; };
+    const push = () => { if (a && b && len >= 0.01) spans.push({ a, b, len }); a = null; b = null; len = 0; };
     for (let i = 0; i <= n; i++) {
       if (inGap(i)) { push(); continue; }
       const p = pts[i];
@@ -836,6 +862,9 @@ export class RoadBrush {
       if (len > 0) {
         const clen = Math.hypot(b.x - a.x, b.z - a.z);
         const cos = clen > 1e-9 ? ((b.x - a.x) * dx + (b.z - a.z) * dz) / (clen * seg) : 1;
+        if (!following && Math.abs((p.y - b.y) / seg - (b.y - a.y) / (clen || 1)) > .002) {
+          const joint = b; push(); a = joint; b = p; len = seg; continue;
+        }
         if (cos < 0.995 || len + seg > target) {           // 转角 >~5.7° 或超长 → 拆跨
           b = p; len += seg;                               // 把引发断跨的段并入本跨，端点落在关节顶点
           push();                                          // a/b 清空
@@ -887,7 +916,7 @@ export class RoadBrush {
         if (!cap) continue;
         cap.rotation.order = 'YXZ';
         cap.rotation.y = Math.atan2(outward.x, outward.z);
-        cap.rotation.x = -Math.atan2(outward.y, Math.hypot(outward.x, outward.z));
+        shearRoadGrade(cap, outward.y / (Math.hypot(outward.x, outward.z) || 1));
         cap.position.set(en.p.x, en.p.y + .02, en.p.z);            // 与路件使用完全相同的标高偏置
         cap.userData.endpoint = en.t;
         roadGroup.add(cap);
@@ -907,13 +936,16 @@ export class RoadBrush {
     };
     for (let k = 0; k < spans.length; k++) {
       const s = spans[k];
-      const piece = rt.build({ ...prm, width: pieceW, length: s.len });
-      if (!piece) continue;
-      this._miterPieceEnds(piece, s.len, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
       const dx = s.b.x - s.a.x, dz = s.b.z - s.a.z, dy = s.b.y - s.a.y;
+      const chord = Math.hypot(dx, dz);
+      if (chord < .01) continue;
+      const piece = rt.build({ ...prm, width: pieceW, length: chord });
+      if (!piece) continue;
+      shearRoadGrade(piece, dy / chord);
+      this._miterPieceEnds(piece, chord, jointTau(spans[k - 1], s), jointTau(s, spans[k + 1]));
       piece.rotation.order = 'YXZ';
       piece.rotation.y = Math.atan2(dx, dz);               // 件 +Z 对齐行进方向
-      piece.rotation.x = -Math.atan2(dy, s.len);           // 俯仰随地形坡度（绕中心）
+      // Grade is a vertical shear, not a pitch: adjacent deck/curb ends remain joined.
       piece.position.set((s.a.x + s.b.x) / 2, (s.a.y + s.b.y) / 2 + 0.02, (s.a.z + s.b.z) / 2);
       roadGroup.add(piece);
     }
@@ -934,7 +966,7 @@ export class RoadBrush {
     const staT = Math.abs(tauStart) > 1e-3 ? Math.tan(tauStart / 2) : 0;
     if (!endT && !staT) return;
     grp.updateMatrixWorld(true);                // 件尚在原点恒等位姿 → matrixWorld 即子件→件的链
-    const eps = 0.05;
+    const eps = Math.min(0.05, d * .2);
     const eSin = Math.sin(tauEnd / 2), eCos = Math.cos(tauEnd / 2);
     const sSin = Math.sin(tauStart / 2), sCos = Math.cos(tauStart / 2);
     grp.traverse((o) => {
@@ -1008,6 +1040,7 @@ export class RoadBrush {
     if (parent) parent.add(mesh);
     if (parent) parent.remove(old);
     old.traverse(o => {
+      if (o.isInstancedMesh) o.dispose();
       o.geometry?.dispose?.();
       if (o.material) {
         if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
@@ -1128,7 +1161,10 @@ export class RoadBrush {
       try{host.setPointerCapture(ev.pointerId);}catch{}
       const hit = immediate || pick(ev);
       if (hit) {
-        this._drag = {...hit,pointerId:ev.pointerId};
+        const before = hit.before || this.points[hit.idx]?.clone();
+        const camera = st.view, rect = st.canvas.getBoundingClientRect();
+        const units = camera.isOrthographicCamera ? (camera.top-camera.bottom)/camera.zoom/rect.height : 2*Math.tan((camera.fov||50)*Math.PI/360)*(before?.distanceTo(camera.position)||30)/rect.height;
+        this._drag = {...hit, before, pointerId:ev.pointerId, heightDrag: hit.kind === 'point' && ev.shiftKey, startY:ev.clientY, units};
         try { host.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
         return;
       }
@@ -1140,7 +1176,12 @@ export class RoadBrush {
       if (!this.active) return;
       if (this._drag) {
         ev.preventDefault(); ev.stopImmediatePropagation();
-        const p = this._aim(ev);
+        if (this._drag.heightDrag) {
+          const pt = this.points[this._drag.idx];
+          if (pt) { pt.y = Math.max(-100, Math.min(200, this._drag.before.y + (this._drag.startY-ev.clientY)*this._drag.units)); this.terrainMode = 'fixed'; }
+          this._updatePreview(); this._updateLiveRoad(); return;
+        }
+        const p = this._drag.kind === 'point' && this.terrainMode === 'fixed' ? dragOnLevel(ev, st, this._drag.before.y) : this._aim(ev);
         if (!p || !isFinite(p.x)) return;
         if (this._drag.kind === 'handle') {
           this.setHandleFromWorld(this._drag.idx, p);
@@ -1167,6 +1208,7 @@ export class RoadBrush {
       if(unchanged) this.cancelEdit();
       else if(autoCommit) { try { this.finish(); this.app.bus.emit('objects'); this.app.markDirty?.(); } catch(e) { this.cancelEdit(); this.app.notify?.(e.message,'warn'); } }
       try { host.releasePointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+      this.app.bus.emit('road-edit');
     };
 
     this._onDblClick = (ev) => {
@@ -1203,7 +1245,7 @@ export class RoadBrush {
     const st = this.app.stage;
     const r = st.canvas.getBoundingClientRect();
     st.pointer.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
-    const p = this.app.dropPoint ? this.app.dropPoint(st.pointer) : st.groundPoint(0);
+    const p = this.terrainMode === 'fixed' ? dragOnLevel(ev, st, this._drag?.before?.y ?? this.points.at(-1)?.y ?? this.draftHeight ?? 8) : (this.app.dropPoint ? this.app.dropPoint(st.pointer) : st.groundPoint(0));
     return p && this.app.roadPlanning ? this.app.roadPlanning.snapPoint(p, ev.shiftKey, this.points[this.points.length - 1]) : p;
   }
 
@@ -1218,7 +1260,7 @@ export class RoadBrush {
     }
     const terrain = this.app.terrain;
     const gy = terrain?.enabled ? terrain.heightAt(p.x, p.z) : 0;
-    this._ghost.position.set(p.x, gy + 0.05, p.z);
+    this._ghost.position.set(p.x, this.terrainMode === 'fixed' ? p.y + .03 : gy + .05, p.z);
     this._ghost.visible = true;
   }
 }

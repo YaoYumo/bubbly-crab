@@ -1,3 +1,5 @@
+import { shearRoadGrade } from './road-elevation.js';
+import { updateRoadLighting } from './road-lighting.js';
 /** Height-field road adaptation and conservative, full-volume bridge collision checks.
  * Source controls remain the design alignment; derived geometry is rebuilt, never accumulated.
  * A blocked pier is omitted and reported, never forced through an obstacle.
@@ -328,7 +330,7 @@ export class RoadTerrain {
           nearestProfile(p, is.point.x, is.point.z),
         );
       let y = fixed
-        ? nearestProfile(fixed, is.point.x, is.point.z).y
+        ? (is.newCurve._terrainProfile === fixed ? is.newCurve.getPointAt(is.tNew).y : is.existingCurve.getPointAt(is.tExisting).y)
         : Math.max(...samples.map((p) => p.y));
       const plan = this.app.roadBrush._planForIsect(is);
       const radius =
@@ -507,9 +509,10 @@ export class RoadTerrain {
       )
     );
   }
-  intersectsGeometry(box, root) {
+  intersectsGeometry(box, root, solidInverse = null) {
     let hit = false;
     root.updateMatrixWorld(true);
+    const targetBox = solidInverse ? new THREE.Box3(V().setScalar(-.5), V().setScalar(.5)) : box;
     const triangle = new THREE.Triangle(),
       local = new THREE.Matrix4();
     root.traverse((m) => {
@@ -536,7 +539,8 @@ export class RoadTerrain {
           triangle.c
             .fromBufferAttribute(pos, index ? index.getX(i + 2) : i + 2)
             .applyMatrix4(local);
-          if (box.intersectsTriangle(triangle)) {
+          if (solidInverse) { triangle.a.applyMatrix4(solidInverse); triangle.b.applyMatrix4(solidInverse); triangle.c.applyMatrix4(solidInverse); }
+          if (targetBox.intersectsTriangle(triangle)) {
             hit = true;
             break;
           }
@@ -558,7 +562,7 @@ export class RoadTerrain {
       o.root.updateMatrixWorld(true);
       if (o.type === "road_brush") {
         for (const child of o.root.children) {
-          if (child.userData.roadSupport) continue;
+          if (child.userData.roadSupport || child.userData.roadLamps) continue;
           const box = roadCollisionBounds(child);
           if (!box.isEmpty())
             out.push({
@@ -608,7 +612,7 @@ export class RoadTerrain {
       ]);
       if (
         signature === this._supportSignature &&
-        (this._supportGround || []).every((p) => tr.heightAt(p.x, p.z) === p.y)
+        (this._supportGround || []).every((p) => (tr.enabled ? tr.heightAt(p.x, p.z) : 0) === p.y)
       ) {
         if (this._supportSolids?.length) this.removePlants(this._supportSolids);
         this.supportCacheHits = (this.supportCacheHits || 0) + 1;
@@ -619,7 +623,7 @@ export class RoadTerrain {
       // previously evaluated branch input is unchanged, its placements remain identical.
       const groundSamples = [];
       const groundAt = (x, z) => {
-        const y = tr.heightAt(x, z);
+        const y = tr.enabled ? tr.heightAt(x, z) : 0;
         groundSamples.push({ x, z, y });
         return y;
       };
@@ -640,7 +644,6 @@ export class RoadTerrain {
         if (
           !profile ||
           rd.bridges === false ||
-          !this.app.terrain.enabled ||
           o.visible === false
         )
           continue;
@@ -684,22 +687,21 @@ export class RoadTerrain {
               prev = this.atDistance(profile, Math.max(0, p.s - 0.3));
             const yaw = Math.atan2(next.x - prev.x, next.z - prev.z),
               span = Math.min(profile.half * 0.7, 4),
-              hx =
-                Math.abs(Math.cos(yaw)) * span + Math.abs(Math.sin(yaw)) * 0.8,
-              hz =
-                Math.abs(Math.sin(yaw)) * span + Math.abs(Math.cos(yaw)) * 0.8;
-            const cap = new THREE.Box3(
-              new THREE.Vector3(p.x - hx, top - 0.5, p.z - hz),
-              new THREE.Vector3(p.x + hx, top, p.z + hz),
-            );
-            // The rotated cap uses its conservative full-volume world box; self-crossings also test actual triangles.
+              grade = (next.y-prev.y)/(Math.hypot(next.x-prev.x,next.z-prev.z)||1);
+            const shear = new THREE.Matrix4().set(1,0,0,0, 0,1,grade,0, 0,0,1,0, 0,0,0,1);
+            const capMatrix = new THREE.Matrix4().makeRotationY(yaw).multiply(shear)
+              .scale(new THREE.Vector3(span*2,.5,1.6)).setPosition(p.x,top-.25,p.z);
+            const cap = new THREE.Box3(V().setScalar(-.5),V().setScalar(.5)).applyMatrix4(capMatrix);
+            const capInverse = capMatrix.clone().invert();
+            // Other objects use conservative full-volume bounds. Self geometry uses the
+            // actual sheared cap volume, so a sloped deck is not mistaken for a collision.
             const boxes = [column, cap],
               hit = boxes.some(
                 (b) =>
                   obstacles.some((v) =>
                     v.self
                       ? b.intersectsBox(v.box) &&
-                        this.intersectsGeometry(b, v.shape)
+                        this.intersectsGeometry(b, v.shape, b === cap ? capInverse : null)
                       : b
                           .clone()
                           .expandByScalar(v.road ? 0.35 : 0.15)
@@ -714,7 +716,7 @@ export class RoadTerrain {
               const mesh = new THREE.Mesh(
                 new THREE.BoxGeometry(
                   box === cap ? span * 2 : size.x,
-                  size.y,
+                  box === cap ? .5 : size.y,
                   box === cap ? 1.6 : size.z,
                 ),
                 new THREE.MeshStandardMaterial({
@@ -723,7 +725,7 @@ export class RoadTerrain {
                 }),
               );
               mesh.position.copy(center);
-              if (box === cap) mesh.rotation.y = yaw;
+              if (box === cap) { shearRoadGrade(mesh, grade); mesh.rotation.y = yaw; }
               mesh.castShadow = mesh.receiveShadow = true;
               mesh.userData.roadSupport = true;
               group.add(mesh);
@@ -744,7 +746,7 @@ export class RoadTerrain {
       }
       const decks = roads.flatMap((o) =>
         o.root.children
-          .filter((c) => !c.userData.roadSupport)
+          .filter((c) => !c.userData.roadSupport && !c.userData.roadLamps)
           .map((c) => roadCollisionBounds(c)),
       );
       const solids = allSupportBoxes.concat(decks);
@@ -756,6 +758,7 @@ export class RoadTerrain {
       this.app.stage.view.invalidate?.();
     } finally {
       this.busy = false;
+      updateRoadLighting(this.app);
     }
   }
   atDistance(profile, s) {

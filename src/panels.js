@@ -1,3 +1,4 @@
+import { roadElevationControls, roadLightingControls } from './road-elevation-ui.js';
 import { buildModelLibrary } from './library-ui.js';
 import { DESKTOP_BUILD } from './desktop-runtime.js';
 // ---------------------------------------------------------------------------
@@ -289,6 +290,7 @@ export function buildInspector(app, host) {
   app.bus.on('perf-changed', upd);
   app.bus.on('terrain', () => { if (ctx.cur === 'terr') render(); });
   app.bus.on('terrain-workflow', () => { if (ctx.cur === 'terr') render(); });
+  app.bus.on('road-edit', () => { if (ctx.cur === 'obj' || ctx.cur === 'terr') render(); });
   app.bus.on('tick', () => ctx.sync());
   render();
   return { render, get tab() { return ctx.cur; } };
@@ -347,6 +349,10 @@ function tabObject(app, rerender, ctx) {
   let syncDiagnostic=()=>{},syncWindow=()=>{};
   const root = el('div', { class: 'tabwrap' });
   const so = app.selObj;
+  if (app.roadBrush?.active) {
+    const edit = section(app.roadBrush._editBackup ? '三维道路编辑' : '三维道路绘制');
+    edit.body.appendChild(roadElevationControls(app)); root.appendChild(edit.wrap); return root;
+  }
   const appearance = section('材质显示', { badge: app.state.tex === false ? '全局关闭' : '全局开启' });
   appearance.body.appendChild(el('div', { class: 'btnrow' }, [
     el('button', { class: 'fbtn', type: 'button', dataset: { materials: 'all-off' }, text: '全部关闭', onclick: () => app.setTex(false) }),
@@ -468,6 +474,8 @@ function tabObject(app, rerender, ctx) {
       terrainControls.root.dataset.roadTerrain='1';
       if(so.locked)terrainControls.root.querySelectorAll('input,select,button').forEach(e=>e.disabled=true);
       f2.body.appendChild(terrainControls.root);
+      f2.body.appendChild(roadElevationControls(app, so));
+      f2.body.appendChild(roadLightingControls(app, so));
       const diagnostic=roadDiagnosticControls(app,so);f2.body.appendChild(diagnostic.root);
       syncDiagnostic=diagnostic.sync;
       const bridge=so.root.userData.bridgeStatus;
@@ -475,7 +483,7 @@ function tabObject(app, rerender, ctx) {
       f2.body.appendChild(el('button',{class:'fbtn wide',type:'button',disabled:so.locked,text:'抬高路基，填充此路下方空隙',dataset:{roadFill:'1'},onclick:()=>{const count=app.roadTerrain.fillRoad(so);toast(`已填充 ${count||0} 个地形顶点；避开下层道路和建筑，可撤销`);}}));
       f2.body.appendChild(el('button', { class: 'fbtn wide', type: 'button', disabled: so.locked, text: '编辑路径圆点（拖动调整）', onclick: () => {
         if (app.roadBrush.editRoad(so)) {
-          toast('画笔已接管：拖动控制点改线，双击 / Enter 完成，Esc 放弃并恢复原路');
+          toast('画笔已接管：拖动控制点改线，Shift 拖点调标高，面板可输入逐点坐标；双击 / Enter 完成，Esc 放弃并恢复原路');
           rerender();
         } else toast('这条路暂时无法编辑', 'warn');
       } }));
@@ -907,6 +915,7 @@ function tabTerrain(app, rerender, ctx) {
     })(),
   ]);
   g1b.body.appendChild(rbBtnRow);
+  if (rb.active) g1b.body.appendChild(roadElevationControls(app));
   g1b.body.appendChild(roadPlanningControls(app));
   g1b.body.appendChild(el('div', { class: 'fnote', html: '<b>钢笔工具模式：</b>点击放置控制点→直线段尖角转弯→点「平滑倒角」后每个转角内侧出现橙色圆心点，拖动它调整道路弯曲程度→双击或点「开始绘制」完成。Esc 取消。' }));
   root.appendChild(g1b.wrap);
@@ -1192,6 +1201,7 @@ export function buildSceneInspector(app, host) {
   app.bus.on('perf-changed', upd);
   app.bus.on('terrain', () => { if (ctx.cur === 'terr') render(); });
   app.bus.on('terrain-workflow', () => { if (ctx.cur === 'terr') render(); });
+  app.bus.on('road-edit', () => { if (ctx.cur === 'obj' || ctx.cur === 'terr') render(); });
   app.bus.on('weather', () => { if (ctx.cur === 'weather') render(); });
   app.bus.on('tick', () => ctx.sync());
   render();

@@ -1,0 +1,141 @@
+PASS range interaction: scoped/coalesced renders, native-change ordering, pointer IDs, cancel/lost capture/blur, held keyboard keys, fast next gesture, detached panels
+PASS primitive schema/security + resolved references + authorized directing + model front axes + time-matched motion heading + grounded smooth walk { soleRange: 0.0026530407933716207, maxKneeStep: 0.011824471089129762 }
+PASS pure conversational terrain: seeded generation, exact world amplitude, local-only edits, river carving/removal, water default, no live mutation, bounds/lock/cancel rejection; grid and private-vs-v1 envelope. NOT real LLM inference.
+PASS screenshot regressions: empty unsupported/terrain never dereference missing operations; literal 20m/5m + curved path compiled on a copy, no global flood, no asset fallback, bounded river-only protocol.
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
+PASS: open/T=0, closed=1, split=2/4, interior road holes, whole-footprint containment, rotation, stable IDs, coincident geometry
+{
+  "local": {
+    "paint": 0.6499999761581421,
+    "far": 0,
+    "heightSame": true,
+    "refined": 257,
+    "height": 0,
+    "paintRetained": true,
+    "saved": true
+  },
+  "cliffBefore": 1.446441332248135,
+  "cliffAfter": 0.6890171364770395,
+  "slopeFinite": true,
+  "hills": {
+    "center": 4.010477632073795,
+    "terrain": 4,
+    "actual": 4.180477828979492,
+    "finite": true,
+    "verts": 93840
+  },
+  "raised": 6.010477632073795,
+  "undo": 4.011176479003009,
+  "redo": 6.011176479003009,
+  "bridge": {
+    "junctions": 0,
+    "count": 16,
+    "status": {
+      "built": 8,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 54,
+          "point": [
+            0,
+            9,
+            -1
+          ]
+        }
+      ]
+    },
+    "collision": false,
+    "buildingCollision": false,
+    "blocked": 4,
+    "regenerated": true,
+    "lowBuildingCollision": false
+  },
+  "plants": {
+    "deleted": true,
+    "clearRetained": true
+  },
+  "fill": {
+    "crossing": 0,
+    "away": 8.979999542236328,
+    "remote": 0
+  },
+  "archive": {
+    "mode": "fixed",
+    "height": 8.979999542236328,
+    "n": 97
+  }
+}
+Extra checks {
+  holes: 0,
+  buried: 0,
+  minClear: 0.17003919194661393,
+  junctions: 1,
+  initial: true,
+  deleted: true,
+  oneUndo: true,
+  restored: true,
+  redone: true,
+  selfCollision: false,
+  supportCount: 20,
+  editLevel: 8,
+  editMode: 'fixed',
+  overflowHeight: 100
+}
+PASS local splat materials, refinement, steep smoothing, following roads, grade separation, full-volume pier collisions, vegetation clearance, safe embankment, undo/redo and archive
+PASS real mouse draw / Enter / Esc / reselect; auto object tab; type and numeric width; actual cap + mesh width; stable name / ID / selection
+PASS slider one-step undo / redo; repeated Esc + real reselection; save / load
+PASS T rebuild / material priority / crosswalk policy; cancel restores properties; camera target; locked + unfinished drawing protection; redo cleared
+PASS road property regression, no page errors
+(node:7996) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("./.shots/assets-only-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS exact subdivision / conservative material batching / incremental vs full geometry / road IDs-order-selection / off-road no-op / fixed-deck terrain supports / cached vegetation clearance / grade topology / draw attribution restore / native diagnostic button {"pixelDifference":0,"localRebuilt":1,"offRoadRebuilt":0,"unbatched":{"calls":356,"triangles":11462,"attribution":{"at":"2026-10-27T03:36:03.556Z","calls":356,"rows":[{"category":"road_brush","main":177,"shadow":177,"total":354},{"category":"天空 / 地面 / 辅助","main":2,"shadow":0,"total":2}],"otherCalls":0,"note":"单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"},"shape":{"hash":1353071472,"count":17172}},"batched":{"calls":82,"triangles":11462,"attribution":{"at":"2026-10-27T03:36:05.718Z","calls":82,"rows":[{"category":"road_brush","main":40,"shadow":40,"total":80},{"category":"天空 / 地面 / 辅助","main":2,"shadow":0,"total":2}],"otherCalls":0,"note":"单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"},"shape":{"hash":1353071472,"count":17172}},"supportCacheHits":18}
+PASS six-request regression {
+  primitiveParts: 4,
+  oneUndo: true,
+  redo: true,
+  motion: true,
+  camera: true,
+  environment: true,
+  libraryRoundtrip: true,
+  realGGUF: false,
+  nativeCarFrontAxisSampled: true,
+  legacyZeroFixed: true,
+  walkSeekDeterministic: true,
+  lockedRejected: true
+} {
+  realPointerDrag: true,
+  heightPreserved: true,
+  draftOnly: true,
+  oneSaveUndo: true
+} {
+  realPointerDrag: true,
+  selectShowsPoints: true,
+  commitOnRelease: true,
+  idPreserved: true,
+  cancelRestoresPathAndUndo: true
+} group/variant builds 84
+PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.
+PASS range dragging web 16 real mouse drags: model/terrain/brush/water/light/Bloom/physical sky/lens/duration/camera move, paused across rebuilds, paired readouts, final values and held keyboard
+PASS radial trigger web {
+  platform: 'Linux Chromium, not native Windows mouse/trackpad',
+  longStationaryRightHold: true,
+  contextOnlyFallback: true,
+  contextOnlyAndMissingUpAreSimulated: true,
+  missingPointerupFallback: true,
+  noDuplicateReopen: true,
+  rightDownDoesNotOpen: true,
+  rightPanAndReturnToStartPreserved: true,
+  delayedPostPanSuppressed: true,
+  blockedReasonVisible: true,
+  blockedRoadDoesNotAddUndo: true,
+  launcherAndRightClickRecover: true,
+  errors: [],
+  csp: []
+}
+PASS offline road property controls, stable identity + actual cap width, no page errors
+
+Final station-local gap filter: ordinary road-properties real mouse / T rebuild / undo / save-load rerun PASS (2026-10-27). Final three-mode road-elevation harness covers the additional self-stacked junction case.

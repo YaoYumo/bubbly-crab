@@ -301,7 +301,7 @@ export class RoadDiagnostics {
         }
         const meshes = [];
         for (const child of other.root.children) {
-          if (child.userData.roadSupport) continue;
+          if (child.userData.roadSupport || child.userData.roadLamps) continue;
           child.traverseVisible((m) => {
             if (m.isMesh && m.geometry?.attributes.position) meshes.push(m);
           });

@@ -89,7 +89,10 @@ try{
  await send('开启湖水面到世界高度1米','water');assert.equal(await p.evaluate(()=>app.terrain.state.water),true);
  await p.evaluate(()=>{app.objects.find(o=>o.key?.startsWith('cn:hall:')).root.position.y=40;});
  await send('将原有建筑贴地','ground');assert.ok(await p.evaluate(()=>{const o=app.objects.find(o=>o.key?.startsWith('cn:hall:'));return Math.abs(o.root.position.y-app.terrain.heightAt(o.root.position.x,o.root.position.z))<1e-6;}));
+ // Manual bridge/lamp configuration survives an ordinary conversational width edit.
+ await p.evaluate(()=>{const o=app.objects.find(o=>o.type==='road_brush');Object.assign(o._roadData,{streetLights:true,lampSpacing:40,lampSide:'right',bridges:false,pierSpacing:18,bridgeThreshold:3});app.roadTerrain.sync();});
  await send('把道路加宽到9米','road-edit');assert.equal(await p.evaluate(()=>app.objects.find(o=>o.type==='road_brush').serialize().width),9);
+ assert.ok(await p.evaluate(()=>{const d=app.objects.find(o=>o.type==='road_brush').serialize();return d.streetLights&&d.lampSpacing===40&&d.lampSide==='right'&&d.bridges===false&&d.pierSpacing===18&&d.bridgeThreshold===3;}),'conversational width edit stripped manual road settings');
  await send('移除这条道路','road-remove');assert.equal(await p.evaluate(()=>app.objects.filter(o=>o.type==='road_brush').length),0);
  await p.click('[data-local-chat-undo]');assert.equal(await p.evaluate(()=>app.objects.find(o=>o.type==='road_brush').serialize().width),9);
  const preserved=await p.evaluate(()=>({h:Array.from(app.terrain.h),rivers:JSON.stringify(app.terrain.workflow.rivers),water:app.terrain.state.water,undo:app._undo.length}));

@@ -1,6 +1,18 @@
-> **1.5.2 更新**：修复共用滑块拖动时被面板重建打断；保留实时更新、松手提交项、右键菜单与此前六项功能。
+> **1.6.0 更新**：三维道路逐点标高、高架 / 升降匝道、分层交叉与每路独立路灯分布；保留 1.5.2 的共用滑块修订和历史功能。
 
 # Windows 轻量桌面版：Tauri 2 预检工程
+
+## 1.6.0 三维道路与路灯
+
+使用方法见 [立交 / 高架 / 匝道与路灯](roads-elevation.md)。网页、桌面 CSP 前端、断网离线 HTML 的道路专项及旧功能回归均已通过；Windows 1.6.0 安装包待 Windows 构建 / 安装检查成功后交付。下方 1.5.2 及更早下载是历史版本，不包含本次新增功能。
+
+- 固定标高绘制、逐点 X / Y / Z、Shift 拖点调高低；保留整路抬升、路线与倒角编辑。
+- 高架设为等标高，升降匝道按水平里程添加平缓过渡点；路口逐处检查高度，分层交叉不生成平交缺口。回环先下穿再接入，以及单条道路自身上下交叠均保留各层。
+- 坡道路件采用纵向站点竖向剪切；桥墩承托随坡，对本路用实际承托体积检查，对其他路面 / 建筑保守全体积避让。关闭地形显示也能在平地生成桥墩。
+- 每条路独立开启路灯、设置 8–80 m 间距和左 / 右 / 双侧分布；关闭不动其他路的灯或手动灯。灯具采用实例化，灯面随光影自发光变化，不逐盏添加实时点光源。
+- 沿用保存、重载、锁定、一步撤销 / 重做、编辑取消和相机目标的契约；旧路默认不启用附属灯。
+
+- 前端验收证据：[网页](desktop-1.6.0-evidence/road-elevation-web.json)、[桌面 CSP](desktop-1.6.0-evidence/road-elevation-desktop-csp.json)、[断网单文件](desktop-1.6.0-evidence/road-elevation-file.json)、[生产前端 / 对话](desktop-1.6.0-evidence/production-regressions.txt)、[原功能](desktop-1.6.0-evidence/compatibility.txt)、[最终路网复核](desktop-1.6.0-evidence/final-network-compatibility.txt)、[验收边界](desktop-1.6.0-evidence/verification.json)。Linux 测试的渲染分辨率为 0.5，非视口手势时暂停连续绘制以降低软件 WebGL 开销；CPU 几何、真实控件输入仍运行，真实视口拖点和绘制时恢复渲染。不是用户原生 Windows 完整 UI、GGUF 或 4070Ti 验收。
 
 ## 1.5.2 滑块连续拖动修订
 

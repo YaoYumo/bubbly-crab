@@ -1,0 +1,53 @@
+{
+  "version": "1.6.0",
+  "testedSource": "source tree of the feature commit; exact Windows source SHA added after CI",
+  "platform": "Linux Chromium 131 / software WebGL; not native Windows input hardware",
+  "modes": [
+    "Vite web",
+    "compiled desktop frontend with CSP",
+    "network-disabled compiled single-file HTML"
+  ],
+  "viewport": {
+    "cssWidth": 1500,
+    "cssHeight": 1050,
+    "rendererPixelRatio": 0.5,
+    "continuousRenderingPausedOutsideActualViewportGestures": true,
+    "note": "CPU geometry/rays and actual DOM controls continue; rendering resumed for real viewport height drags and new drawing. Not pixel-quality or GPU-performance acceptance."
+  },
+  "checks": [
+    "independent stacked decks and no planar gaps",
+    "grade-following bridge caps and full-volume obstacles",
+    "ramp low/high T connections and paved height rays",
+    "same-pair loop underpass then valid join",
+    "single alignment stacked decks",
+    "high junction does not cut low self-stacked branch",
+    "actual Shift height drag without XZ drift",
+    "numeric XYZ and high/ramp preset controls",
+    "actual road lamp range retained until release",
+    "lamp toggle, spacing, side, glow and independent manual lamps",
+    "type/width edit preserves attached-lamp settings",
+    "conversation width edit retains manual bridge and lamp metadata",
+    "undo/redo, edit cancel, stable ID and camera targets, save/load and lock guards",
+    "fixed-height new mouse drawing and terrain-disabled supports"
+  ],
+  "previousFeatures": {
+    "terrainRoads": true,
+    "roadPropertiesRealMouse": true,
+    "incrementalFullGeometryParity": true,
+    "sixEditorFeatures": true,
+    "mockedNativeConversation": true,
+    "rangeRealMouseDrags": 16,
+    "radialTrigger": true,
+    "offlineRoadProperties": true
+  },
+  "networkFinalPass": "final station-local gap-filter follow-up passed original terrain-roads and geometry/performance parity; ordinary real-mouse road-properties rerun also passed",
+  "windowsBuildAndInstallSmoke": false,
+  "windowsStatus": "pending CI; not yet an installer deliverable",
+  "fullyFunctionalNativeWindowsUIValidated": false,
+  "userMouseHardwareVerified": false,
+  "realGGUFInference": false,
+  "rtx4070TiVerified": false,
+  "structuralEngineeringValidation": false,
+  "models": "No GGUF downloaded, merged, renamed or moved; existing installed model-folder policy unchanged",
+  "mergedToMain": false
+}

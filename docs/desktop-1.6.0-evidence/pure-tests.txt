@@ -1,0 +1,15 @@
+PASS road elevation presets / exact endpoints + original corners / input validation / grade shear + full-width section heights / lamp spacing, side, grade, gaps and bounded instances
+
+> previz-lab@1.6.0 test:desktop
+> node test/desktop.test.mjs
+
+PASS desktop config schema, minimal local capability allowlist, native isolation, name sanitization, exact chunk/partial writes, cancel, failures/close cleanup, queue budget/order/recovery. NOT native Windows execution.
+PASS range interaction: scoped/coalesced renders, native-change ordering, pointer IDs, cancel/lost capture/blur, held keyboard keys, fast next gesture, detached panels
+PASS radial placement: viewport edges, off-screen anchors, compact fallback
+PASS radial guards: explain busy/tool/playback states without dropping safety
+PASS primitive schema/security + resolved references + authorized directing + model front axes + time-matched motion heading + grounded smooth walk { soleRange: 0.0026530407933716207, maxKneeStep: 0.011824471089129762 }
+PASS pure conversational terrain: seeded generation, exact world amplitude, local-only edits, river carving/removal, water default, no live mutation, bounds/lock/cancel rejection; grid and private-vs-v1 envelope. NOT real LLM inference.
+PASS screenshot regressions: empty unsupported/terrain never dereference missing operations; literal 20m/5m + curved path compiled on a copy, no global flood, no asset fallback, bounded river-only protocol.
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
