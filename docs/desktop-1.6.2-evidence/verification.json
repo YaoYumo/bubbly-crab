@@ -1,0 +1,72 @@
+{
+  "version": "1.6.2",
+  "status": "three-mode-frontend-and-compatibility-passed; Windows pending",
+  "testedSource": "feature commit; delivery documentation will add exact source SHA",
+  "modes": [
+    "Vite web",
+    "compiled desktop with CSP",
+    "compiled file HTML with network disabled"
+  ],
+  "platform": "Linux Chromium 131 / software WebGL, not user Windows hardware",
+  "viewport": {
+    "width": 1500,
+    "height": 1050,
+    "roadTestPixelRatio": 0.5,
+    "renderingPausedOutsideGestures": true,
+    "notGPUPerformanceAcceptance": true
+  },
+  "reproduction": {
+    "main": [
+      [
+        -60,
+        8,
+        0
+      ],
+      [
+        60,
+        8,
+        0
+      ]
+    ],
+    "ramp": [
+      [
+        -30,
+        8,
+        0
+      ],
+      [
+        30,
+        0,
+        60
+      ]
+    ],
+    "originalFreewayPorts": 0,
+    "fixedFreewayPorts": 1,
+    "reason": "Near-carriageway axis samples a lower portion of the graded ramp, although its endpoint reaches the main deck at height 8."
+  },
+  "changes": [
+    "Separate endpoint contact with a finite target deck from through-crossing height gates",
+    "0.15m endpoint deck/rounding tolerance only; distant endpoints, outside finite deck, and grade-separated through crossings rejected",
+    "Endpoint intent produces a single outward branch arm and uses target deck height",
+    "Neighbor junction station limits prevent upper/lower junction patches swallowing a short ramp",
+    "Incremental completion reflows changed existing junctions; returned mesh current; one-step undo-redo; save-load"
+  ],
+  "tests": [
+    "40 pure angled/graded freeway ports in both sides, directions and creation orders",
+    "12 actual upper freeway + sloped ramp + lower road scenes per frontend mode, seam height rays and median/opposite lane invariance",
+    "Incremental third-road drawing / neighbor reflow / one-step undo-redo / current mesh identity",
+    "Old direct Y grips, freeway median, acute plans, ramps, lights, terrain supports and self-stacked grade-separated crossings",
+    "Road properties, T junctions, exact subdivision/batching, terrain road adaptation",
+    "Six-request 84 variant builds / offline editing / 16 real range drags / radial menu / mocked desktop scene conversation"
+  ],
+  "harnessNote": "Initial combined command stopped waiting at 300s while a full-resolution software-WebGL road-properties test continued; it is not claimed as a completed pass in initial-compatibility.txt. The isolated run with opt-in TEST_RENDER_RATIO=0.5 then completed successfully in compatibility.txt. No product rendering setting was changed.",
+  "windows": {
+    "status": "pending"
+  },
+  "boundaries": [
+    "No user Windows interaction, actual Qwen/GGUF, or 4070Ti testing performed.",
+    "Scene geometry, not universal civil-engineering or extreme curvature acceptance.",
+    "Unsigned installer, no model weights, no movement/rename/merge/redownload of user model shards.",
+    "No merge to main authorized or performed."
+  ]
+}

@@ -329,9 +329,9 @@ export class RoadTerrain {
         samples = profiles.map((p) =>
           nearestProfile(p, is.point.x, is.point.z),
         );
-      let y = fixed
+      let y = is.joinHeight ?? (fixed
         ? (is.newCurve._terrainProfile === fixed ? is.newCurve.getPointAt(is.tNew).y : is.existingCurve.getPointAt(is.tExisting).y)
-        : Math.max(...samples.map((p) => p.y));
+        : Math.max(...samples.map((p) => p.y)));
       const plan = this.app.roadBrush._planForIsect(is);
       const radius =
         Math.max(

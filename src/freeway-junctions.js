@@ -1,12 +1,7 @@
 import * as THREE from 'three';
 import { subtractRoadPrism } from './road-prism-clip.js';
 
-function designHeight(curve,t) {
-  const profile=curve._terrainProfile;
-  if(!profile?.follow)return curve.getPointAt(t).y;
-  const s=t*(profile.points.length-1),i=Math.min(profile.points.length-2,Math.floor(s)),f=s-i;
-  return profile.points[i].y+(profile.points[i+1].y-profile.points[i].y)*f;
-}
+import { roadDesignHeight as designHeight, endpointRoadContact } from './road-contact.js';
 export class FreewayLaneCurve extends THREE.Curve {
   constructor(source,offset){super();this.source=source;this.offset=offset;}
   getPoint(t,target=new THREE.Vector3()){
@@ -58,10 +53,11 @@ export function freewayConnections({newCurve,newWidth,newType,existing}) {
       const r=refine(lane,branch,ta,tb),md=main.getTangentAt(r.ta).setY(0).normalize(),bd=branch.getTangentAt(r.tb).setY(0).normalize();
       if(r.distance>laneWidth/2+branchWidth/2+.5 || Math.abs(md.x*bd.z-md.z*bd.x)<.08)continue;
       const hA=designHeight(main,r.ta),hB=designHeight(branch,r.tb);
-      if(Math.abs(hA-hB)>.08 && !(main._terrainProfile?.follow&&branch._terrainProfile?.follow))continue;
-      const point=r.a.clone().setY((hA+hB)/2),origin=main.getPointAt(r.ta),normal={x:md.z*side,z:-md.x*side};
+      const endpointContact=endpointRoadContact(branch,r.tb,main,r.ta,width/2,branchWidth/2);
+      if(Math.abs(hA-hB)>.08 && !(main._terrainProfile?.follow&&branch._terrainProfile?.follow) && !endpointContact)continue;
+      const point=r.a.clone().setY(endpointContact?hA:(hA+hB)/2),origin=main.getPointAt(r.ta),normal={x:md.z*side,z:-md.x*side};
       if(out.some(q=>q.point.distanceTo(point)<.5))continue;
-      out.push({point,tNew:newMain?r.ta:r.tb,tExisting:newMain?r.tb:r.ta,newCurve,existingCurve:existing.curve,newWidth,existingWidth:existing.width,newRoadType:newType,existingRoadType:existing.roadType,
+      out.push({point,endpointContact,joinHeight:endpointContact?hA:undefined,tNew:newMain?r.ta:r.tb,tExisting:newMain?r.tb:r.ta,newCurve,existingCurve:existing.curve,newWidth,existingWidth:existing.width,newRoadType:newType,existingRoadType:existing.roadType,
         freeway:{curve:main,laneCurve:lane,width:laneWidth,side,origin:{x:origin.x,z:origin.z},normal,t:r.ta,branchT:r.tb,branchCurve:branch,inner:2.02}});
     }
   }

@@ -67,7 +67,7 @@ const ang = (d) => Math.atan2(d.z, d.x);
 export function armsFromIsect(isect) {
   const arms = [];
   const push = (curve, t, width, roadType) => {
-    const freeway=isect.freeway;
+    const freeway=isect.freeway,sourceCurve=curve;
     const isMain=freeway && curve===freeway.curve;
     if(isMain){curve=freeway.laneCurve;width=freeway.width;}
     const tc = Math.max(0.001, Math.min(0.999, t));
@@ -82,8 +82,9 @@ export function armsFromIsect(isect) {
       const available=Math.max(0,dot(endDelta,dir));
       const straight=[.25,.5,.75,1].every(f=>{const q=curve.getPointAt(t+((sign>0?1:0)-t)*f);return Math.abs(dot(v2(q.x-at.x,q.z-at.z),perp(dir)))<.05;});
       return { dir, pav: prof.pav, half: prof.half, sid: prof.sid, width, roadType, axisPoint,
-        available:straight?available:curve.getLength()*(sign>0?1-t:t),straight,curve,t,sign };
+        available:Math.min(straight?available:curve.getLength()*(sign>0?1-t:t),isect.armLimits?.get(sourceCurve)?.[sign]??Infinity),straight,curve,t,sign };
     };
+    if(isect.endpointContact?.branch===curve){arms.push(mk(isect.endpointContact.end===0?1:-1));return;}
     if(freeway&&!isMain) { arms.push(mk(dot(d0,freeway.normal)>=0?1:-1)); return; }
     if (t < 0.02) arms.push(mk(1));                  // 路体在 +切向前方
     else if (t > 0.98) arms.push(mk(-1));            // 路体在 −切向后方

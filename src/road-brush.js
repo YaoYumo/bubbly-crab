@@ -1,3 +1,4 @@
+import { endpointRoadContact } from './road-contact.js';
 import { junctionHeightField } from './junction-elevation.js';
 import { freewayConnections, applyFreewayCuts } from './freeway-junctions.js';
 import { roadHeightGuide, hitRoadHeightGrip } from './road-point-controls.js';
@@ -376,6 +377,7 @@ export class RoadBrush {
     const curve = this._buildPathCurve();
     if (!curve) return;
     const isects = this._detectIntersections(curve, this.roadWidth);
+    this._prepareJunctionLimits(isects);
     const gaps = this._gapsForCurve(curve, isects, this.roadType, this.roadWidth);
     const mesh = this._buildRoadMesh(curve, gaps);
     if (mesh) {
@@ -399,7 +401,7 @@ export class RoadBrush {
       return null;
     }
     if (!this._editBackup) this.app.beginOp?.('绘制道路', '', true);
-    const mesh = curve ? this._addRoad(curve, {
+    let mesh = curve ? this._addRoad(curve, {
       roadType: this.roadType, width: this.roadWidth,
       ctrl: this.points.map(p => [p.x, p.y, p.z]),
       filletH: this.filletH.slice(), filletOn: this.filletOn,
@@ -423,6 +425,10 @@ export class RoadBrush {
         this._restoreEditTargets(mesh.userData.so.id);
         this.app.select({ kind: 'obj', so: mesh.userData.so });
       }
+    }
+    if(mesh&&this._junctionReflow){
+      this._junctionReflow=false;const id=mesh.userData.so.id;
+      this.app.roadTerrain?.sync();mesh=this.app.byId(id)?.root||mesh;
     }
     this.app.bus.emit('road-edit');
     return mesh;
@@ -588,6 +594,7 @@ export class RoadBrush {
         addHit(this._roads.find(r => r.curve === is.existingCurve), is);
       }
     }
+    this._prepareJunctionLimits([...hits.values()].flat());
     for (const [rd, isList] of hits) rd.gaps = this._gapsForCurve(rd.curve, isList, rd.roadType, rd.width);
 
     this.app.roadTerrain?.joinProfiles(pending.flatMap(p => p.isects));
@@ -643,6 +650,8 @@ export class RoadBrush {
   /** 建网格 + 注册成一等场景物体 + 生成路口并断开被交叉的既有道路 */
   _addRoad(curve, opt) {
     const { roadType, width, ctrl, filletH, filletOn, isects = [], so = null, noJunct = false } = opt;
+    const oldNodes=this.app.objects.filter(o=>o.type==='road_intersection').map(o=>o._isect).filter(Boolean);
+    this._junctionReflow=this._prepareJunctionLimits([...oldNodes,...isects]);
     const gaps = this._gapsForCurve(curve, isects, roadType, width);
     const roadName = so?.name || `道路_${roadType.label}`;
     const rd = {
@@ -682,6 +691,27 @@ export class RoadBrush {
   }
 
   // 路口计划：每条交叉记录只解析一次（两条路与路口本体共用同一份轮廓）
+  _prepareJunctionLimits(isects) {
+    const nodes=[...new Set(isects)],byCurve=new Map(),next=new Map(nodes.map(is=>[is,new Map()]));
+    for(const is of nodes)for(const [curve,t]of [[is.newCurve,is.tNew],[is.existingCurve,is.tExisting]]){
+      if(!byCurve.has(curve))byCurve.set(curve,[]);byCurve.get(curve).push({is,t});
+    }
+    for(const [curve,entries]of byCurve){
+      entries.sort((a,b)=>a.t-b.t);
+      for(const a of entries){const limits={};
+        for(const b of entries){if(a===b||Math.abs(a.t-b.t)<1e-5)continue;
+          const tan=curve.getTangentAt(a.t),distance=Math.abs(b.t-a.t)*curve.getLength()*Math.hypot(tan.x,tan.z),sign=b.t>a.t?1:-1;
+          limits[sign]=Math.min(limits[sign]??Infinity,distance*.45);
+        }if(Object.keys(limits).length)next.get(a.is).set(curve,limits);
+      }
+    }
+    let changed=false;
+    for(const is of nodes){const old=is.armLimits,limits=next.get(is);
+      const same=old&&old.size===limits.size&&[...limits].every(([curve,lim])=>JSON.stringify(old.get(curve))===JSON.stringify(lim));
+      if(!same){if(is.plan)changed=true;is.armLimits=limits;delete is.plan;}
+    }
+    return changed;
+  }
   _planForIsect(is) {
     if (is.plan !== undefined) return is.plan;
     const arms = armsFromIsect(is);
@@ -802,12 +832,14 @@ export class RoadBrush {
           ? this.app.roadTerrain.height(curve,refined.point.x,refined.point.z) : curve.getPointAt(t).y;
         const hA=height(newCurve,refined.tA),hB=height(existing.curve,refined.tB);
         const limit = newCurve._terrainProfile?.follow && existing.curve._terrainProfile?.follow ? Infinity : .08;
-        if (Math.abs(hA-hB)>limit)continue;
+        const endpointContact=endpointRoadContact(newCurve,refined.tA,existing.curve,refined.tB,roadProfile(existing.roadType,existing.width).half,roadProfile(this.roadType,newWidth).half)
+          || endpointRoadContact(existing.curve,refined.tB,newCurve,refined.tA,roadProfile(this.roadType,newWidth).half,roadProfile(existing.roadType,existing.width).half);
+        if (Math.abs(hA-hB)>limit && !endpointContact)continue;
         const tA=newCurve.getTangentAt(refined.tA).setY(0).normalize(),tB=existing.curve.getTangentAt(refined.tB).setY(0).normalize();
         if(Math.abs(tA.x*tB.z-tA.z*tB.x)<.08)continue;
         if(accepted.some(q=>q.point.distanceTo(refined.point)<.5))continue;
         accepted.push(refined);
-        intersections.push({point:refined.point,tNew:refined.tA,tExisting:refined.tB,
+        intersections.push({endpointContact,joinHeight:endpointContact?.height,point:refined.point,tNew:refined.tA,tExisting:refined.tB,
           newCurve,existingCurve:existing.curve,newWidth,existingWidth:existing.width,
           newRoadType:this.roadType,existingRoadType:existing.roadType});
       }

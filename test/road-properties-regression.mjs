@@ -9,6 +9,7 @@ try{
   const page=await browser.newPage();await page.setViewport({width:1440,height:1000});page.on('pageerror',e=>errors.push(String(e)));
   await page.goto('http://localhost:5174/?fresh=1',{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__t?.app?.roadBrush);
   await page.click('[data-page="scene"]');
+  if(process.env.TEST_RENDER_RATIO)await page.evaluate(r=>app.stage.renderer.setPixelRatio(r),Number(process.env.TEST_RENDER_RATIO));
   await page.evaluate(()=>{app.clearAll();const rb=app.roadBrush;rb.setType('asphalt');rb.setWidth(6);rb.filletOn=false;rb.start();app.stage.view.position.set(.01,110,.01);app.stage.orbit.target.set(0,0,0);app.stage.orbit.update();app.stage.view.updateMatrixWorld(true);});
   const project=async(x,z)=>page.evaluate(({x,z})=>{const v=new window.__t.THREE.Vector3(x,0,z).project(app.stage.view),r=app.stage.canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};},{x,z});
   for(const [x,z]of [[-30,-10],[30,-10]]){const q=await project(x,z);await page.mouse.click(q.x,q.y);}
