@@ -1,7 +1,7 @@
 {
   "name": "previz-lab",
   "private": true,
-  "version": "1.7.0",
+  "version": "1.7.1",
   "type": "module",
   "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
   "scripts": {
