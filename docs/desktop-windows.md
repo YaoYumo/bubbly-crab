@@ -4,12 +4,22 @@
 
 ## 1.5.2 滑块连续拖动修订
 
-已在原代码复现“拖一下就断触”：滑动触发 objects/select/shot-change/terrain 等通知，检查器重建并删除正在拖动的原 input；模型参数的 130ms 延迟重建也会打断拖动。修订后相同真实鼠标回归通过，Windows 构建与安装结果随后补齐。
+[下载 Windows 1.5.2 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40436391473/artifacts/12704023201)（可能需要登录 GitHub；附件保留至 2027-01-25）。
+
+先备份工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.5.2_x64-setup.exe` 覆盖到原目录，不要直接运行 ZIP 中的裸应用 EXE。两个 GGUF 分片留在原 models 目录，无需重新下载、改名、合并或移动。
+
+已用 1.5.1 原始 panels.js 配合同一真实鼠标回归复现“拖一下就断触”：第一个模型 length 滑块在拖动中被删除；恢复修订后测试通过。滑动触发 objects/select/shot-change/terrain 等通知，检查器重建并删除正在拖动的原 input；模型参数的 130ms 延迟重建也会打断拖动。
 
 - 通用、Scene、Camera 检查器在手势期间保留控件 DOM，只合并推迟该面板的结构刷新，不暂停实时模型/场景数值更新，也不冻结其它面板。
 - 等原生 pointerup 后的 change 提交完成再刷新；保留原有 commit-only 项松手提交，避免 tick 把配对数字跳回旧值。
 - 处理 pointercancel、lostpointercapture、失焦与键盘按住重复调整，释放后可继续拖动；补齐人物动作速度读取真实状态。
 - 16 项真实鼠标拖动覆盖模型参数、人物速度、地形夸张、笔刷半径、水位、手动灯光、Bloom、物理天空曝光、镜头焦距/时长、Camera 运镜参数，包含拖动中停顿超过 130ms 后继续移动，以及三个取消/失焦后的恢复。测试平台为 Linux Chromium，非用户 Windows 鼠标硬件复验。
+
+[Windows run 40436391473](https://github.com/YaoYumo/bubbly-crab/actions/runs/40436391473) / job `121965938314` 全部成功，构建源码 `77de4f6944feac7b2d2ebfdfb903944aad09507d`。新增手势生命周期纯测试、右键/六项/地形/机位纯回归、helper/原生边界 Rust 测试、NSIS、安装启动窗口、已安装引擎与 helper fixture、重装保留模型目录通过；15 个前端文件路径/字节/SHA256 逐项匹配本地三模式回归构建。
+
+- 安装器 **20,966,519 bytes**；SHA256 `debd2dc04b13e6f737abc705c42aacc0a9a4c5dc4b3bbf0d829dbfe99813d131`。
+- ZIP **23,548,467 bytes**；GitHub 上传摘要 `d79abc404836900c2ed93e699feac6ece260dacf8a24676f7dd6806448f761e1`。仍未签名、不含模型权重，未另行下载进行第二次独立二进制哈希核验。
+- 证据：[原面板失败复现](desktop-1.5.2-evidence/original-code-reproduction.txt)、[网页 16 项](desktop-1.5.2-evidence/range-drag-web.json)、[桌面 CSP 16 项](desktop-1.5.2-evidence/range-drag-desktop-csp.json)、[离线 16 项](desktop-1.5.2-evidence/range-drag-file.json)、[原功能回归](desktop-1.5.2-evidence/regressions.txt)、[Windows 步骤](desktop-1.5.2-evidence/windows-run.json)、[文件摘要](desktop-1.5.2-evidence/windows-artifacts.json)、[安装检查](desktop-1.5.2-evidence/windows-install-smoke.json)、[验收边界](desktop-1.5.2-evidence/verification.json)。这些不是用户真实 Windows 鼠标硬件、完整原生 UI 或 Qwen/4070Ti 验收。已推当前分支，未合并 main。
 
 ## 1.5.1 右键饼菜单触发修订
 

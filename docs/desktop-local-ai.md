@@ -1,6 +1,6 @@
 # Windows 1.5.2：本地对话建场与粗模 / 走位 / 机位
 
-[Windows 1.5.2 下载与构建记录](desktop-windows.md#152-滑块连续拖动修订) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.5.2 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40436391473/artifacts/12704023201) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 

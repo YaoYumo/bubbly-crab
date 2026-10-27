@@ -1,0 +1,38 @@
+{
+  "sourceCommit": "77de4f6944feac7b2d2ebfdfb903944aad09507d",
+  "run": 40436391473,
+  "job": 121965938314,
+  "artifact": 12704023201,
+  "windowsBuildAndInstallSmoke": true,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathBytesSHA256": true
+  },
+  "original151PanelsReproducedFailure": "first wall length range detached mid-drag after delayed model rebuild; fixture retains new ui.js but uses original panels.js",
+  "fixedRealPointerDragsPerMode": 16,
+  "modes": [
+    "web",
+    "desktop frontend with CSP",
+    "network-disabled compiled file HTML"
+  ],
+  "modelAndSceneLiveUpdatesPreserved": true,
+  "commitOnlyFieldsWaitForRelease": true,
+  "pairedNumbersStableDuringTick": true,
+  "cancelLostCaptureBlurRecovery": true,
+  "heldKeyboardAndFocusDuringGesture": true,
+  "coreLifecyclePureUnitTests": true,
+  "previousFeaturesRetested": [
+    "six editor features",
+    "offline primitive/library/directing",
+    "mocked native IPC terrain/roads/river/expanded chat",
+    "radial actions/trigger",
+    "road properties real slider one-undo/redo"
+  ],
+  "onceLockMetadataCorrection": "version now matches existing once-1.4.0 tarball URL and integrity; no runtime dependency resolution upgrade",
+  "fullyFunctionalNativeWindowsUIValidated": false,
+  "userMouseHardwareVerified": false,
+  "realGGUFInference": false,
+  "rtx4070TiVerified": false,
+  "realAstrillDLLInjected": false,
+  "installerIndependentlyRedownloadedAndHashed": false
+}
