@@ -1,6 +1,6 @@
 # Windows 1.5.1：本地对话建场与粗模 / 走位 / 机位
 
-[Windows 1.5.1 下载与构建记录](desktop-windows.md#151-右键饼菜单触发修订) · [构建检查与摘要](desktop-windows.md)
+[下载 Windows 1.5.1 安装包](https://github.com/YaoYumo/bubbly-crab/actions/runs/40429204160/artifacts/12700564369) · [构建检查与摘要](desktop-windows.md)
 
 ## 用户使用
 

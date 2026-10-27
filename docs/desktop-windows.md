@@ -4,7 +4,15 @@
 
 ## 1.5.1 右键饼菜单触发修订
 
-已修订右键触发并执行浏览器回归，Windows 安装构建结果随后补齐。没有移除饼菜单。
+[下载 Windows 1.5.1 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40429204160/artifacts/12700564369)（可能需要登录 GitHub；附件保留至 2027-01-25）。没有移除饼菜单。
+
+先备份工程并退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.5.1_x64-setup.exe`，覆盖到原安装目录；不要运行 ZIP 中的裸应用 EXE。原 models 中两个 GGUF 保持原名原位置，无需重新下载。
+
+[Windows run 40429204160](https://github.com/YaoYumo/bubbly-crab/actions/runs/40429204160) / job `121942484627` 全部成功，构建源码 `127599df9782ae1602315c01583d310a0a45cf0e`。饼菜单保护原因/边缘布局、六项纯回归、地形/机位单测、helper 与原生边界 Rust 测试、NSIS、安装窗口存活、已安装引擎/helper fixture、重装保留模型目录通过；15 个前端文件路径/字节/SHA256 逐项匹配本地回归构建。
+
+- 安装器 **20,972,087 bytes**；SHA256 `69f78729f7d705330f308c1008c392705351246fc3bebfc0f44322abe54b03e0`。
+- ZIP **23,552,913 bytes**；GitHub 上传摘要 `41885fd100bbf22b056f0b4d91bc97f3bf5bfd51c7446110eda3b7f200d910ed`。仍未签名，不含模型权重；未另行下载二进制做第二次独立哈希校验。
+- 证据：[网页触发](desktop-1.5.1-evidence/radial-trigger-web.json)、[桌面 CSP 触发](desktop-1.5.1-evidence/radial-trigger-desktop-csp.json)、[离线触发](desktop-1.5.1-evidence/radial-trigger-file.json)、[六项回归](desktop-1.5.1-evidence/editor-expansion.json)、[模拟本地模型对话](desktop-1.5.1-evidence/conversation-mocked-ipc.json)、[Windows 步骤](desktop-1.5.1-evidence/windows-run.json)、[文件摘要](desktop-1.5.1-evidence/windows-artifacts.json)、[安装](desktop-1.5.1-evidence/windows-install-smoke.json)、[验收边界](desktop-1.5.1-evidence/verification.json)。已推当前分支，未合并 main。
 
 - 去掉右键按住超过 900ms 就忽略的限制；仍等松手才弹出，右键拖动继续平移，包括拖回起点也不误弹菜单。
 - 增加 contextmenu-only / 缺失 pointerup 的兼容路径；右键按下时的 contextmenu 不抢占拖动，抬键后迟到事件不重复打开。输入框、文本编辑和非视口 UI 保留系统右键菜单。

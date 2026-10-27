@@ -1,0 +1,29 @@
+{
+  "sourceCommit": "127599df9782ae1602315c01583d310a0a45cf0e",
+  "run": 40429204160,
+  "job": 121942484627,
+  "artifact": 12700564369,
+  "windowsBuildAndInstallSmoke": true,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathBytesSHA256": true
+  },
+  "rightClickMenuRetained": true,
+  "longRightHoldTested": true,
+  "contextOnlyAndMissingUpDeliveryTestedWithSyntheticBrowserEvents": true,
+  "rightPanPreserved": true,
+  "blockedStatesExplainedNotBypassed": true,
+  "webDesktopCSPAndOfflineTriggerTests": true,
+  "legacyRadialActionsTestedWebAndOffline": true,
+  "sixFeatureRegressionAndOfflineExpansion": true,
+  "nativeModelIPCMockedConversation": true,
+  "modelDragDesktopCSP": true,
+  "oldDesktopFullRadialScriptLimitation": "The legacy radial-ui-regression desktop path expects the pre-1.4 .tg-mask town form and times out on the current desktop chat UI. Desktop coverage here uses radial-trigger-regression plus local-scene-chat-regression; web/offline legacy radial actions pass.",
+  "exactUserMachineRootCauseReproduced": false,
+  "userWindowsMouseOrTrackpadVerified": false,
+  "fullyFunctionalNativeWindowsUIValidated": false,
+  "realGGUFInference": false,
+  "rtx4070TiVerified": false,
+  "realAstrillDLLInjected": false,
+  "installerIndependentlyRedownloadedAndHashed": false
+}
