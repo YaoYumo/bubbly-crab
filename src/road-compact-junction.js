@@ -50,11 +50,11 @@ export function applyCompactCuts(root, curve, gaps) {
     // A graded ramp and a ground street meet at their actual deck heights.
     // Keep those original pavements: replacing them with a blended flat core can
     // flatten the descending tip. Only the curb/marking/gore is opened here.
-    const keepMedian = f?.street&&f.graded ? mesh=>mesh.userData.roadRole==='pavement' : main&&!f.street ? mesh => mesh.userData.freewaySide !== f.side : null;
+    const keepMedian = f?.street&&f.graded ? mesh=>mesh.userData.roadRole==='pavement' : main&&!f.street ? mesh => mesh.userData.freewaySide !== f.side||(plan.merge&&mesh.userData.roadRole==='pavement') : null;
     for (const span of root.children) {
       const range = span.userData.roadRange || [span.userData.endpoint, span.userData.endpoint];
       if (range[0] === undefined) continue;
-      if (range[1] >= gap.t0 - 2 / length && range[0] <= gap.t1 + 2 / length) subtractRoadPrism(span, insetPolygon(plan.hull), keepMedian);
+      if (range[1] >= gap.t0 - 2 / length && range[0] <= gap.t1 + 2 / length) subtractRoadPrism(span, insetPolygon(plan.hull), main&&!f.street&&plan.merge?mesh=>keepMedian(mesh)||mesh.userData.roadRole==='marking':keepMedian);
       if (range[1] < t - (reach + 2) / length || range[0] > t + (reach + 2) / length) continue;
       for (const arm of plan.arms) {
         if (own.includes(arm)) continue;
@@ -74,7 +74,7 @@ export function applyCompactCuts(root, curve, gaps) {
           const grade = (roadDesignHeight(arm.curve,end) - y) / seg;
           subtractRoadPrism(span, strip(a, dir, -.03, seg + .03, Math.max(0, arm.pav - .03)), mesh =>
             (keepMedian?.(mesh) || !['side', 'marking'].includes(mesh.userData.roadRole)),
-          { origin: { x: a.x, y, z: a.z }, gradient: { x: dir.x * grade, z: dir.z * grade }, below: .15, above: .6 });
+          { origin: { x: a.x, y, z: a.z }, gradient: { x: dir.x * grade, z: dir.z * grade }, below: .15, above: f&&!f.street&&plan.merge?1.6:.6 });
         }
       }
     }

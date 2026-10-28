@@ -42,7 +42,7 @@ export function sectionAtWidth(type, section, width) {
 export function sectionRoadType(base, section, connection = null) {
   const s = normalizeSection(base.id, section);
   const type=s ? { ...base, section: s, build: params => buildSectionRoad(base.id, s, params.length) } : base;
-  return connection?.kind==='ramp'&&base.id==='oneway'?{...type,junctionStyle:'merge'}:type;
+  return connection?.kind==='ramp'&&base.id==='oneway'?{...type,junctionStyle:'merge',connectorRouting:connection.routing}:type;
 }
 
 export function buildSectionRoad(type, section, length = 10) {

@@ -1,6 +1,7 @@
 // Deterministic endpoint/tangent routing with an arc-length height transition.
 // This is a scene-layout tool, not a surveyed civil-engineering alignment solver.
 import * as THREE from 'three';
+import { fitConnectorElevation } from './road-connector-elevation.js';
 const flat = v => new THREE.Vector3(v.x, 0, v.z).normalize();
 const cross = (a, b, c) => (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x);
 function intersects(a, b, c, d) {
@@ -52,27 +53,10 @@ export function automaticRoadPath(a, b, { halfWidth = 4, maxGrade = .18, accept 
       if (intersects(points[i - 1], points[i], points[j - 1], points[j])) { valid = false; break; }
     }
     if (!valid) continue;
-    const length = stations.at(-1), dy = B.y - A.y;
-    // Endpoint grade is retained on sloped host roads. Clamp only in the direction
-    // of the net rise to avoid height overshoot in the interpolated ramp.
-    const grade = (anchor, sign) => anchor.end === undefined ? 0 : anchor.tangent.y / (Math.hypot(anchor.tangent.x, anchor.tangent.z) || 1) * sign * (anchor.end === 0 ? -1 : 1);
-    const limit = Math.abs(dy) < 1e-6 ? 0 : 3 * Math.abs(dy) / length;
-    const bounded = g => Math.sign(g) === Math.sign(dy) ? Math.sign(g) * Math.min(Math.abs(g), limit) : 0;
-    const ga = bounded(grade(a, 1)), gb = bounded(grade(b, -1));
-    let steepest = 0;
-    for (let i = 0; i < points.length; i++) {
-      const t = stations[i] / length, t2 = t * t, t3 = t2 * t;
-      points[i].y = (2 * t3 - 3 * t2 + 1) * A.y + (t3 - 2 * t2 + t) * length * ga + (-2 * t3 + 3 * t2) * B.y + (t3 - t2) * length * gb;
-      if (terrainHeight && i && i < points.length - 1) {
-        const p = points[i], required = terrainHeight(p.x, p.z) + .02;
-        points[i].y = Math.max(points[i].y, required);
-      }
-      if (i) steepest = Math.max(steepest, Math.abs(points[i].y - points[i - 1].y) / (stations[i] - stations[i - 1]));
-    }
-    points[0].copy(A); points.at(-1).copy(B);
-    if (steepest > maxGrade + .002 || !accept(points, stations, halfWidth)) continue;
+    const length=stations.at(-1),elevation=fitConnectorElevation(points,stations,a,b,{halfWidth,maxGrade,terrainHeight});
+    if(!elevation||!accept(points,stations,halfWidth))continue;
     const score = length + Math.abs(amplitude) * .1;
-    if (!best || score < best.score) best = { points: points.map(p => p.toArray()), length, maxGrade: steepest, minRadius: radius, detourRatio: length/distance, totalTurn, score };
+    if (!best || score < best.score) best = { points: points.map(p => p.toArray()), length, ...elevation, shape:'short', minRadius: radius, detourRatio: length/distance, totalTurn, score };
     if (amplitude === 0 && best) break;
   }
   if (!best) throw new Error('当前接点之间没有找到满足转弯、坡度与净空限制的连接。请选择沿路更远的顺向接点；不强行绕大圈，原道路未修改。');

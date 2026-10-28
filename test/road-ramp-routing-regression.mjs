@@ -35,7 +35,7 @@ try{
   reset();rc.mark(0,app.byId('highway'),.25,'road');rc.mark(1,app.byId('street'),.75,'road');const automatic=metrics(rc.generate());
   // Very short fixed points cannot gain length by making a U loop; no undo/change.
   reset();rc.mark(0,app.byId('highway'),.4);rc.mark(1,app.byId('street'),.6);
-  const before=JSON.stringify(app.serialize()),undo=app._undo?.length||0;let message='';try{rc.generate();}catch(e){message=e.message;}
+  const before=JSON.stringify(app.serialize()),undo=app._undo?.length||0;let message='';try{rc.generate({routeMode:'short'});}catch(e){message=e.message;}
   const rejection={message,unchanged:JSON.stringify(app.serialize())===before,undoSame:(app._undo?.length||0)===undo};
   // Old saved large loop can be recomputed atomically, keeping ID and shot target.
   reset();const old={id:'old-loop',name:'旧连接',roadType:'oneway',width:5,section:{laneCount:1,laneWidth:3.5,shoulderWidth:.75,sidewalkWidth:0},terrainMode:'fixed',bridges:false,points:[[-72,8,0],[-125,8,20],[-130,4,70],[-80,0,95],[0,0,84]],connection:{version:1,generated:true,anchors:[{roadId:'highway',t:.2},{roadId:'street',t:.85}]}};

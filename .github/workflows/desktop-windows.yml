@@ -29,6 +29,7 @@ jobs:
       - run: node test/road-3d-contact.test.mjs
       - run: node test/road-connector.test.mjs
       - run: node test/freeway-median-surface.test.mjs
+      - run: node test/road-spiral.test.mjs
       - run: node test/radial-menu.test.mjs
       - run: npm run test:editor-expansion:pure
       - run: node test/local-scene-terrain.test.mjs
@@ -114,3 +115,4 @@ jobs:
             docs/windows-install-quickstart.md
             docs/desktop-local-ai.md
             docs/roads-elevation.md
+            docs/road-spiral-connections.md

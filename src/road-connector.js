@@ -3,6 +3,7 @@ import { removeDeep } from './util.js';
 import { roadDesignHeight } from './road-contact.js';
 import { roadProfile } from './junction.js';
 import { sectionForRoad, sectionDimensions, normalizeSection } from './road-section.js';
+import { automaticSpiralPath } from './road-connector-spiral.js';
 import { automaticRoadPath } from './road-connector-path.js';
 
 function closestStation(road, point) {
@@ -15,9 +16,23 @@ function closestStation(road, point) {
   const t = (lo + hi) / 2;
   return t < .0001 ? 0 : t > .9999 ? 1 : t;
 }
+// Station-local deck projection also works on curved/graded hosts; do not use
+// nearest-XZ over a whole stacked road, or flatten a sloped host to anchor.y.
+function nearbyDeckHeight(road,t){
+  const curve=road._roadData.curve,dt=(road._roadData.width+24)/Math.max(1,curve.getLength()),lo=Math.max(0,t-dt),hi=Math.min(1,t+dt),n=16;
+  const samples=Array.from({length:n+1},(_,i)=>{const t=lo+(hi-lo)*i/n;return{t,p:curve.getPointAt(t)};});
+  return p=>{
+    let best=samples[0],d=Infinity;
+    for(const s of samples){const q=(s.p.x-p.x)**2+(s.p.z-p.z)**2;if(q<d){d=q;best=s;}}
+    let l=Math.max(lo,best.t-(hi-lo)/n),r=Math.min(hi,best.t+(hi-lo)/n);
+    const distance=t=>{const q=curve.getPointAt(t);return(q.x-p.x)**2+(q.z-p.z)**2;};
+    for(let i=0;i<20;i++){const a=(2*l+r)/3,b=(l+2*r)/3;if(distance(a)<distance(b))r=b;else l=a;}
+    return roadDesignHeight(curve,(l+r)/2);
+  };
+}
 export class RoadConnector {
   constructor(app) {
-    this.app = app; this.marks = [null, null]; this.picking = null;
+    this.routeMode='auto'; this.app = app; this.marks = [null, null]; this.picking = null;
     this.status = '标记 A → 标记 B → 自动生成连接。可选整条路，也可指定路上任意接点。';
     this.overlay = new THREE.Group(); this.overlay.name = 'road-connection-markers';
     this.overlay.userData.pickIgnore = true; app.stage.helperLayer.add(this.overlay);
@@ -107,7 +122,7 @@ export class RoadConnector {
         }
         const dt = .001, lo = Math.max(0, t - dt), hi = Math.min(1, t + dt);
         const h = rd.curve.getPointAt(hi).sub(rd.curve.getPointAt(lo)); h.y = roadDesignHeight(rd.curve, hi) - roadDesignHeight(rd.curve, lo); h.normalize();
-        return { roadId: road.id, t, position: p.toArray(), tangent: h, end: t < .001 ? 0 : t > .999 ? 1 : undefined, freeway: rd.roadType.id === 'freeway', outwardNormal };
+        return { roadId: road.id, t, position: p.toArray(), tangent: h, end: t < .001 ? 0 : t > .999 ? 1 : undefined, freeway: rd.roadType.id === 'freeway', deckHeight:outwardNormal&&t>.001&&t<.999?nearbyDeckHeight(road,t):null, deckHalf:(rd.roadType.id==='freeway'&&!rd.roadType.section?Math.max(20,rd.width):rd.width)/2, lateral:outwardNormal?Math.abs((p.x-point(road,t).x)*outwardNormal.x+(p.z-point(road,t).z)*outwardNormal.z):0, outwardNormal };
       };
       const a = make(A, ta, curveB.getPointAt(tb),B), b = make(B, tb, curveA.getPointAt(ta),A);
       return { a, b, span:Math.hypot(a.position[0]-b.position[0],a.position[2]-b.position[2]), distance: Math.hypot(a.position[0] - b.position[0], a.position[2] - b.position[2]) + 5 * Math.abs(a.position[1] - b.position[1]) };
@@ -134,14 +149,16 @@ export class RoadConnector {
     this.marks=connection.anchors.map(a=>({roadId:a.roadId,t:a.t,mode:'point'}));this.picking=null;
     try{return this.generate({replace:so});}catch(e){this.marks=previous;this.picking=oldPicking;this.drawMarkers();this.changed();throw e;}
   }
-  generate({replace=null}={}) {
+  generate({replace=null,routeMode=this.routeMode}={}) {
     if (!this.marks.every(Boolean)) throw new Error('请先标记 A 和 B。');
     const app = this.app, rb = app.roadBrush;
     if (rb._editBackup || (rb.active && rb.points.length) || app.state.preview || app.state.playing || app.aiScene?.busy || app.terrain?.workflow?.busy) throw new Error('请先结束当前编辑或预演。');
     if(replace&&!this.usable(replace))throw new Error('请先解锁需要重新生成的连接道路。');
+    if(!['auto','short','spiral'].includes(routeMode))throw new Error('未知连接方式。');
     const pairs = this.pairs(); if (!pairs.length) throw new Error('目标道路已删除、隐藏或锁定，请重新标记。');
     const roadA = app.byId(this.marks[0].roadId), roadB = app.byId(this.marks[1].roadId);
     const highway = pairs[0].a.freeway || pairs[0].b.freeway;
+    if(routeMode==='spiral'&&!highway)throw new Error('螺旋模式目前用于高速相关的高差匝道；普通道路请选择自动或仅短连接。');
     const roadType = highway ? 'oneway' : roadA._roadData.roadType.id === 'oneway' ? 'oneway' : 'asphalt';
     const directionalWidth=road=>{const rd=road._roadData;return rd.roadType.id==='freeway'?(rd.width-4)/2:rd.roadType.id==='oneway'?rd.width:rd.width/2;};
     const available=Math.min(directionalWidth(roadA),directionalWidth(roadB));
@@ -155,7 +172,7 @@ export class RoadConnector {
     }));
     const obstacles = app.objects.filter(o => !['road_brush', 'road_intersection'].includes(o.type) && o.visible !== false && !o.isChar)
       .map(o => new THREE.Box3().setFromObject(o.root)).filter(b => !b.isEmpty());
-    let currentPair;
+    let currentPair,candidateShape='short';
     const accept = (points, stations) => {
       const length = stations.at(-1);
       for (let i = 1; i < points.length - 1; i++) {
@@ -171,14 +188,14 @@ export class RoadConnector {
           const host = road.id === roadA.id || road.id === roadB.id;
           if (host && ((road.id === roadA.id && stations[i] < Math.max(18, half + road.half + 3)) || (road.id === roadB.id && length - stations[i] < Math.max(18, half + road.half + 3)))) continue;
           const r = road.half + half + .5;
-          if (road.samples.some(q => Math.hypot(q.x - p.x, q.z - p.z) < r && Math.abs(q.y - p.y) < 4))return false;
+          if (road.samples.some(q => Math.hypot(q.x - p.x, q.z - p.z) < r && Math.abs(q.y - p.y) < (candidateShape==='spiral'?5.5:4)))return false;
         }
         if (obstacles.some(b => p.x + half > b.min.x && p.x - half < b.max.x && p.z + half > b.min.z && p.z - half < b.max.z && p.y + 1 > b.min.y && p.y - .2 < b.max.y))return false;
       }
       return true;
     };
     let solution, chosen, failure;
-    for (const pair of pairs) {
+    for (const pair of routeMode==='spiral'?[]:pairs) {
       if(solution&&pair.span>solution.score)continue;
       currentPair=pair;
       try {
@@ -186,9 +203,20 @@ export class RoadConnector {
         if(!solution||candidate.score<solution.score){solution=candidate;chosen=pair;}
       } catch (e) { failure = e; }
     }
+    // Exhaust short host-station candidates before considering a deliberate spiral.
+    if(!solution&&routeMode!=='short'&&highway){
+      for(const pair of pairs.slice(0,12)){
+        if(Math.abs(pair.a.position[1]-pair.b.position[1])<5.5){failure=new Error('螺旋需要至少 5.5m 设计高差以预留桥面厚度与层间净空，请选择其他接点。');continue;}
+        currentPair=pair;candidateShape='spiral';
+        try{
+          const candidate=automaticSpiralPath(pair.a,pair.b,{halfWidth:half,accept,terrainHeight:app.terrain?.enabled?(x,z)=>app.terrain.heightAt(x,z):null,halfExtent:(app.terrain?.size||320)/2});
+          if(!solution||candidate.score<solution.score){solution=candidate;chosen=pair;}
+        }catch(e){failure=e;}
+      }
+    }
     if (!solution) throw failure || new Error('没有可用的连接点。');
     const id = replace?.id || `rc_${globalThis.crypto?.randomUUID?.() || Date.now()}`;
-    const source = { version: 2, kind:highway?'ramp':'road', generated: true, anchors: [chosen.a, chosen.b].map(a => ({ roadId: a.roadId, t: a.t, position: a.position })) };
+    const source = { version: 2, kind:highway?'ramp':'road', generated: true, routing:{mode:routeMode,shape:solution.shape,flatStart:solution.flatStart,flatEnd:solution.flatEnd,...(solution.shape==='spiral'?{radius:solution.spiralRadius,turns:solution.turns,clearance:solution.clearance,nominalHeadroom:solution.nominalHeadroom}:{})}, anchors: [chosen.a, chosen.b].map(a => ({ roadId: a.roadId, t: a.t, position: a.position })) };
     const data = { ...replace?.serialize(),id, type: 'road_brush', name: replace?.name||'自动连接道路', roadType, section, width: dimensions.pavementWidth, points: solution.points, fillet: false, terrainMode: 'fixed', terrainOffset: 0, bridges: true, connection: source };
     // Generate inside the established edit transaction. Existing roads, their shots,
     // supports, ids and all pre-existing junctions are restored by the same pipeline.
@@ -206,7 +234,7 @@ export class RoadConnector {
       Object.assign(app,undoState);app.bus.emit('undoable');throw e;
     }
     this.reset();
-    this.status = `已自动生成 ${solution.length.toFixed(1)} m 连接 · 最大纵坡 ${(solution.maxGrade * 100).toFixed(1)}%。可一步撤销；这是布景近似，不是道路工程校核。`;
+    this.status = `已自动生成${solution.shape==='spiral'?'螺旋匝道':'短连接'} ${solution.length.toFixed(1)} m 连接 · 最大纵坡 ${(solution.maxGrade * 100).toFixed(1)}%。可一步撤销；这是布景近似，不是道路工程校核。`;
     app.select({ kind: 'obj', so: app.byId(id) }); app.bus.emit('objects'); app.bus.emit('undoable'); app.markDirty?.(); this.changed();
     return app.byId(id);
   }

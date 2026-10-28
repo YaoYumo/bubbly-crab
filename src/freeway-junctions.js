@@ -64,6 +64,7 @@ function carriagewayConnections({newCurve,newWidth,newType,existing},settings={}
       const r=refine(lane,branch,ta,tb),md=main.getTangentAt(r.ta).setY(0).normalize(),bd=branch.getTangentAt(r.tb).setY(0).normalize();
       if(r.distance>laneWidth/2+branchWidth/2+.5 || Math.abs(md.x*bd.z-md.z*bd.x)<.08)continue;
       const hA=designHeight(main,r.ta),hB=designHeight(branch,r.tb);
+      if(branchType.connectorRouting?.shape==='spiral'&&Math.abs(hA-hB)>.08)continue;
       const endpointContact=endpointRoadContact(branch,r.tb,main,r.ta,width/2,branchWidth/2);
       if(Math.abs(hA-hB)>.08 && !(main._terrainProfile?.follow&&branch._terrainProfile?.follow) && !endpointContact)continue;
       const point=r.a.clone().setY(endpointContact?hA:(hA+hB)/2),origin=main.getPointAt(r.ta),normal={x:md.z*side,z:-md.x*side};
@@ -98,9 +99,24 @@ export function applyFreewayCuts(root,curve,gaps) {
     for(const span of root.children){
       const range=span.userData.roadRange || [span.userData.endpoint,span.userData.endpoint];
       if(range[0]===undefined||range[1]<lo-lip||range[0]>hi+lip)continue;
+      if(!isMain&&!f.street&&plan.merge){
+        // The original highway owns the whole deck, not just the small core.
+        // Remove the ramp's co-level slab/curb/paint under that deck, including
+        // the acute wedge outside the hull. Keep genuine lower/upper crossings.
+        const reach=Math.max(12,...plan.hull.map(p=>Math.hypot(p.x-f.origin.x,p.z-f.origin.z)))+f.width;
+        const steps=Math.max(8,Math.ceil(reach)),dt=reach/Math.max(f.curve.getLength(),1);
+        for(let i=0;i<steps;i++){
+          const ta=THREE.MathUtils.clamp(f.t-dt+2*dt*i/steps,0,1),tb=THREE.MathUtils.clamp(f.t-dt+2*dt*(i+1)/steps,0,1);
+          if(tb-ta<1e-8)continue;
+          const a=f.curve.getPointAt(ta),b=f.curve.getPointAt(tb),dir=b.clone().sub(a).setY(0).normalize(),n={x:dir.z*f.side,z:-dir.x*f.side};
+          const at=(p,w)=>({x:p.x+n.x*w,z:p.z+n.z*w});
+          const poly=[at(a,f.inner),at(a,f.width+2),at(b,f.width+2),at(b,f.inner)],y=designHeight(f.curve,ta),seg=Math.hypot(b.x-a.x,b.z-a.z),grade=(designHeight(f.curve,tb)-y)/(seg||1);
+          subtractRoadPrism(span,poly,null,{origin:{x:a.x,y,z:a.z},gradient:{x:dir.x*grade,z:dir.z*grade},below:.3,above:1.6});
+        }
+      }
       for(const poly of polygons)subtractRoadPrism(span,poly,
         isMain&&f.street&&f.graded?mesh=>mesh.userData.roadRole==='pavement':
-        isMain&&!f.street?mesh=>mesh.userData.freewaySide!==f.side:null);
+        isMain&&!f.street?mesh=>mesh.userData.freewaySide!==f.side||(plan.merge&&['pavement','marking'].includes(mesh.userData.roadRole)):null);
     }
   }
 }

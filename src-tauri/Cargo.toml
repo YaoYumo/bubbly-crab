@@ -1,6 +1,6 @@
 [package]
 name = "previz-lab"
-version = "1.7.1"
+version = "1.7.2"
 description = "Local 3D camera and character reference workbench with isolated offline GGUF terrain and scene chat"
 authors = ["PREVIZ LAB contributors"]
 edition = "2021"
