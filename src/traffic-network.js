@@ -36,7 +36,11 @@ export function signalPhase(time) {
                 ? { group: 2, color: "green" }
                 : { group: -1, color: "red" };
 }
-export function buildTrafficNetwork(objects) {
+export function buildTrafficNetwork(objects, { terrainSize = null } = {}) {
+  const boundary = (p) =>
+    Number.isFinite(terrainSize) &&
+    Math.max(Math.abs(p.x), Math.abs(p.z)) >= terrainSize / 2 - 2 &&
+    Math.max(Math.abs(p.x), Math.abs(p.z)) <= terrainSize / 2 + 2;
   const roads = objects.filter(
       (o) => o.type === "road_brush" && o.visible !== false,
     ),
@@ -87,6 +91,21 @@ export function buildTrafficNetwork(objects) {
           length: L,
           speed,
           events: [],
+          boundaryEntry: boundary(curve.getPointAt(dir > 0 ? 0 : 1)),
+          boundaryExit: boundary(curve.getPointAt(dir > 0 ? 1 : 0)),
+          lateralRoom:
+            kind === "car"
+              ? Math.max(
+                  0,
+                  Math.min(0.12, ((section?.laneWidth || 3.5) - 1.9) / 2),
+                )
+              : Math.max(
+                  0,
+                  Math.min(
+                    0.35,
+                    (section?.sidewalkWidth || rd.width / 2) / 2 - 0.3,
+                  ),
+                ),
         };
       lane.position = (s) => {
         const t = clamp(dir > 0 ? s / L : 1 - s / L, 0, 1),
@@ -176,7 +195,7 @@ export function buildTrafficNetwork(objects) {
     const a = byCurve.get(is.newCurve),
       b = byCurve.get(is.existingCurve);
     if (!a || !b) continue;
-    const f = is.freeway || is.streetMerge,
+    const f = is.freeway || is.streetMerge || plan.freeway,
       controlled = !f && !plan.merge && plan.arms.length >= 3;
     const id = [
       a.id,
@@ -189,6 +208,7 @@ export function buildTrafficNetwork(objects) {
       object: o,
       plan,
       controlled,
+      freeflow: !!f || !!plan.merge,
       mainRoad: f ? byCurve.get(f.curve)?.id : null,
       events: [],
     };
@@ -253,10 +273,13 @@ export function buildTrafficNetwork(objects) {
     lane.events.sort((a, b) => a.center - b.center);
   return { lanes, nodes };
 }
-const hash = (n) => {
-  n = (Math.imul(n, 1664525) + 1013904223) >>> 0;
-  return n / 4294967296;
+export const trafficRandom = (n) => {
+  n = (n ^ 0x9e3779b9) >>> 0;
+  n = Math.imul(n ^ (n >>> 16), 0x21f0aaad);
+  n = Math.imul(n ^ (n >>> 15), 0x735a2d97);
+  return ((n ^ (n >>> 15)) >>> 0) / 4294967296;
 };
+const hash = trafficRandom;
 export class TrafficSimulation {
   constructor(network, settings) {
     this.network = network;
@@ -276,8 +299,12 @@ export class TrafficSimulation {
         (l) => l.kind === kind,
       );
       if (!lanes.length) continue;
+      const shuffled = lanes
+        .map((lane, i) => ({ lane, key: hash(this.settings.seed + i * 137) }))
+        .sort((a, b) => a.key - b.key)
+        .map((x) => x.lane);
       for (let i = 0; i < count; i++) {
-        const lane = lanes[i % lanes.length];
+        const lane = shuffled[i % shuffled.length];
         let s = 3 + hash(i + this.settings.seed) * (lane.length - 7),
           placed = false;
         for (let k = 0; k < 60; k++) {
@@ -299,7 +326,24 @@ export class TrafficSimulation {
             kind,
             lane,
             s,
-            speed: 0,
+            speed:
+              kind === "car" && lane.boundaryEntry
+                ? lane.speed
+                : lane.speed *
+                  (0.45 + 0.55 * hash(i * 1877 + this.settings.seed)),
+            speedFactor:
+              kind === "car"
+                ? 0.87 + 0.13 * hash(i * 313 + this.settings.seed)
+                : 0.75 + 0.5 * hash(i * 313 + this.settings.seed),
+            gap:
+              kind === "car"
+                ? 6 + 2 * hash(i * 577 + this.settings.seed)
+                : 1.4 + 0.6 * hash(i * 577 + this.settings.seed),
+            lateralBias:
+              (hash(i * 911 + this.settings.seed) * 2 - 1) * lane.lateralRoom,
+            sizeScale: 0.92 + 0.14 * hash(i * 1237 + this.settings.seed),
+            animationPhase: hash(i * 2377 + this.settings.seed) * Math.PI * 2,
+            inactive: false,
             visits: 0,
             crossing: null,
             turn: null,
@@ -319,6 +363,41 @@ export class TrafficSimulation {
     return this.agents;
   }
   canEnter(a, e) {
+    if (e.node.freeflow && a.kind === "pedestrian")
+      return !(this.reservations.get(e.id) || []).some(
+        (b) =>
+          b.kind === "car" && (b.turn || b.lane.roadId !== e.node.mainRoad),
+      );
+    if (e.node.freeflow && a.kind === "car") {
+      // Grade-separated merge/diverge: through traffic has priority, not a
+      // city-junction mutex. Joining traffic only yields for a real gap.
+      if (a.lane.roadId === e.node.mainRoad) return true;
+      if (
+        (this.reservations.get(e.id) || []).some((b) => b.kind === "pedestrian")
+      )
+        return false;
+      const incoming = a.lane.tangent(e.entry);
+      const targets = e.node.events.filter(
+        (x) =>
+          x.lane.kind === "car" &&
+          x.lane.roadId === e.node.mainRoad &&
+          x.center < x.lane.length - 5 &&
+          x.lane.tangent(x.exit).dot(incoming) > -0.45,
+      );
+      return targets.some(
+        (target) =>
+          !this.agents.some(
+            (b) =>
+              b !== a &&
+              !b.inactive &&
+              b.lane === target.lane &&
+              Math.abs(b.s - target.exit) < Math.max(10, b.speed * 1.6),
+          ) &&
+          !this.agents.some(
+            (b) => b !== a && b.turn?.destination.lane === target.lane,
+          ),
+      );
+    }
     const holders = this.reservations.get(e.id) || [];
     if (holders.some((b) => b !== a && (b.kind === "car" || a.kind === "car")))
       return false;
@@ -358,8 +437,15 @@ export class TrafficSimulation {
     a.visits++;
     if (
       a.kind !== "car" ||
-      hash(a.visits * 17 + Number(a.id.split("-")[1]) + this.settings.seed) >
-        0.45
+      (!(e.node.freeflow && a.lane.roadId !== e.node.mainRoad) &&
+        hash(a.visits * 17 + Number(a.id.split("-")[1]) + this.settings.seed) >
+          (e.node.freeflow ? 0.18 : 0.45))
+    )
+      return;
+    if (
+      e.node.freeflow &&
+      a.lane.roadId === e.node.mainRoad &&
+      (this.reservations.get(e.id) || []).some((b) => b.kind === "pedestrian")
     )
       return;
     const at = a.lane.position(e.entry),
@@ -371,11 +457,22 @@ export class TrafficSimulation {
           x.center < x.lane.length - 5 &&
           x.lane.tangent(x.exit).dot(incoming) > -0.45,
       );
+    choices.sort(
+      (a, b) =>
+        at.distanceToSquared(a.lane.position(a.exit)) -
+        at.distanceToSquared(b.lane.position(b.exit)),
+    );
     for (const other of choices) {
       if (
         this.agents.some(
           (b) =>
-            b !== a && b.lane === other.lane && Math.abs(b.s - other.exit) < 9,
+            b !== a &&
+            !b.inactive &&
+            b.lane === other.lane &&
+            Math.abs(b.s - other.exit) <
+              (e.node.freeflow && a.lane.roadId !== e.node.mainRoad
+                ? Math.max(10, b.speed * 1.6)
+                : 9),
         )
       )
         continue;
@@ -405,7 +502,7 @@ export class TrafficSimulation {
   advance(dt) {
     const groups = new Map();
     for (const a of this.agents)
-      if (!a.turn) {
+      if (!a.turn && !a.inactive) {
         if (!groups.has(a.lane.id)) groups.set(a.lane.id, []);
         groups.get(a.lane.id).push(a);
       }
@@ -413,6 +510,7 @@ export class TrafficSimulation {
     for (const a of this.agents)
       if (a.turn) {
         const e = a.turn.destination;
+        if (e.node.freeflow && e.lane.roadId === e.node.mainRoad) continue;
         reservedStops.set(
           e.lane.id,
           Math.min(reservedStops.get(e.lane.id) ?? Infinity, e.exit - 7),
@@ -425,6 +523,23 @@ export class TrafficSimulation {
         leaders.set(group[i], group[i - 1]);
     }
     for (const a of this.agents) {
+      if (a.inactive) {
+        const clearance = a.lane.boundaryEntry
+          ? Math.max(12, (a.lane.speed * a.lane.speed) / 8 + 8)
+          : 10;
+        if (
+          !this.agents.some(
+            (b) =>
+              b !== a && !b.inactive && b.lane === a.lane && b.s < clearance,
+          )
+        ) {
+          a.inactive = false;
+          a.s = a.lane.boundaryEntry ? 0 : 2;
+          a.speed = a.lane.boundaryEntry ? a.lane.speed : 0;
+          this.stats.respawns++;
+        } else continue;
+      }
+      if (a.pauseUntil > this.time) continue;
       if (a.turn) {
         a.turn.s += Math.min(a.lane.speed, 7) * dt;
         if (a.turn.s >= a.turn.length) {
@@ -445,7 +560,13 @@ export class TrafficSimulation {
             (e) =>
               e.center > Math.max(3, e.reach * 0.3) && e.entry >= a.s - 0.15,
           );
-      let desired = a.lane.speed,
+      let desired =
+          a.lane.speed *
+          (a.kind === "car" &&
+          a.lane.boundaryEntry &&
+          a.s < Math.max(12, a.lane.speed * 1.5)
+            ? 1
+            : (a.speedFactor ?? 1)),
         maxMove = Infinity;
       const mergeStop = reservedStops.get(a.lane.id);
       if (Number.isFinite(mergeStop) && a.s <= mergeStop) {
@@ -455,7 +576,7 @@ export class TrafficSimulation {
       }
       const leader = leaders.get(a);
       if (leader) {
-        const gap = leader.s - a.s - (a.kind === "car" ? 6 : 1.4);
+        const gap = leader.s - a.s - (a.gap ?? (a.kind === "car" ? 6 : 1.4));
         maxMove = Math.min(maxMove, Math.max(0, gap));
         desired = Math.min(desired, Math.sqrt(Math.max(0, 2 * 3 * gap)));
       }
@@ -475,7 +596,7 @@ export class TrafficSimulation {
       }
       a.speed = Math.max(0, Math.min(desired, a.speed + 2.5 * dt));
       a.s += Math.min(maxMove, a.speed * dt);
-      if (a.s >= a.lane.length - 2) {
+      if (a.s >= a.lane.length - (a.lane.boundaryExit ? 0.05 : 2)) {
         this.release(a);
         const reverse = this.network.lanes.get(
           `${a.lane.roadId}:pedestrian:${-a.lane.dir}:0`,
@@ -484,16 +605,11 @@ export class TrafficSimulation {
           a.lane = reverse;
           a.s = 2;
           a.speed = 0;
-        } else if (
-          !this.agents.some((b) => b !== a && b.lane === a.lane && b.s < 10)
-        ) {
-          a.s = 2;
-          a.speed = 0;
-          this.stats.respawns++;
+          a.pauseUntil =
+            this.time + 0.2 + hash(a.visits++ + this.settings.seed) * 1.5;
         } else {
-          a.s = a.lane.length - 2;
-          a.speed = 0;
-        }
+          a.inactive = true;
+        } // disappear immediately; never queue at the exit
       }
     }
   }
@@ -505,6 +621,10 @@ export class TrafficSimulation {
         tangent: a.turn.curve.getTangentAt(t),
       };
     }
-    return { position: a.lane.position(a.s), tangent: a.lane.tangent(a.s) };
+    const position = a.lane.position(a.s),
+      tangent = a.lane.tangent(a.s);
+    const room = a.crossing ? 0 : a.lateralBias || 0;
+    position.addScaledVector(new T.Vector3(tangent.z, 0, -tangent.x), room);
+    return { position, tangent };
   }
 }

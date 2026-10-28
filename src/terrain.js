@@ -130,6 +130,12 @@ export class Terrain {
 
   /** 高度数据 → 网格顶点（含夸张系数） */
   refresh() {
+    const stage=this.app.stage;
+    if(stage.terrainExtent!==this.size){
+      stage.terrainExtent=this.size;
+      stage.orbit.maxDistance=Math.max(900,this.size*2);
+      stage.view.far=Math.max(3000,this.size*4);stage.view.updateProjectionMatrix();
+    }
     const pos = this.mesh.geometry.attributes.position;
     let lo = 0;
     const ex = this.exaggerate || 1;
@@ -221,7 +227,7 @@ export class Terrain {
   }
 
   setSize(size) {
-    this.size = clamp(size, 40, 600);
+    this.size = clamp(size, 40, 4096);
     this.app.stage.world.remove(this.mesh);
     this.mesh.geometry.dispose(); this.mesh.material.dispose();
     this._buildMesh();
@@ -566,7 +572,7 @@ export class Terrain {
     this.biome = BIOMES[d.biome] ? d.biome : this.biome;
     this.autoSurface=cleanSurface(d.autoSurface||{enabled:false});
     this.generation=cleanGeneration(d.generation);
-    if (d.size) this.size = clamp(d.size, 40, 600);
+    if (d.size) this.size = clamp(d.size, 40, 4096);
     if (d.exaggerate) this.exaggerate = clamp(d.exaggerate, 0.2, 3);
     if (d.n && d.n !== this.n) { this.n = clamp(Math.round(d.n), 33, 513) | 1; this.h = new Float32Array(this.n * this.n); }
     this.weights = unpackWeights(d.p64, this.n*this.n*6);

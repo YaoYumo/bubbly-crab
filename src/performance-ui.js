@@ -1,3 +1,4 @@
+import { installPerformanceHud } from "./performance-hud.js";
 import { el, downloadBlob } from "./util.js";
 import { runBenchmarks } from "./performance-benchmarks.js";
 const ms = (v) => (Number.isFinite(v) ? v.toFixed(2) + " ms" : "—");
@@ -17,9 +18,11 @@ export function benchmarkURL() {
   return url.href;
 }
 export function installPerformanceUI(app, toolbar, tbtn) {
+  const hud=installPerformanceHud(app);
   app.runPerformanceBenchmarks = (options) => runBenchmarks(app, options);
   let currentDialog = null;
   const open = () => {
+    hud.setEnabled(true);
     if (currentDialog?.open) return;
     const dialog = el("dialog", {
       class: "performance-dialog",

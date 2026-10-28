@@ -82,7 +82,7 @@ export async function decodeHeightPNG(input, { channel = 'red', checkpoint = pau
 }
 export function cleanHeightMapping(v = {}) {
   const num = (key, def, lo, hi) => typeof v[key] === 'number' && Number.isFinite(v[key]) ? Math.max(lo, Math.min(hi, v[key])) : def;
-  return { size: num('size', 160, 40, 600), n: Math.max(33, Math.min(513, Math.round(num('n', 129, 33, 513)))) | 1,
+  return { size: num('size', 160, 40, 4096), n: Math.max(33, Math.min(513, Math.round(num('n', 129, 33, 513)))) | 1,
     base: num('base', 0, -5000, 5000), range: num('range', 30, 0, 5000), flipX: v.flipX === true, flipY: v.flipY === true, invert: v.invert === true };
 }
 export function sampleGrid(data, width, height, u, v) {

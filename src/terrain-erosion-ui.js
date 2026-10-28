@@ -22,7 +22,7 @@ export function terrainErosionControls(app) {
   g.body.append(presets, select('处理流程', 'mode', [['combined', '热力 → 水力 → 沉积'], ['thermal', '仅热力坡面搬移'], ['hydraulic', '水力侵蚀 + 携沙沉积'], ['sediment', '仅松散表层沉积整理']]),
     numeric('整体强度', 'strength', 0, 1), numeric('最大升 / 降 m', 'maxChange', .01, 50, .1), numeric('固定种子', 'seed', 1, 2147483647, 1),
     select('作用范围', 'region', [['all', '全图'], ['box', '矩形局部'], ['river', '河道及岸带'], ['outside', '河道岸带以外']]));
-  if (p.region === 'box') g.body.append(numeric('中心 X m', 'centerX', -300, 300, 1), numeric('中心 Z m', 'centerZ', -300, 300, 1), numeric('区域宽 m', 'width', 1, 600, 1), numeric('区域深 m', 'depth', 1, 600, 1));
+  if (p.region === 'box') g.body.append(numeric('中心 X m', 'centerX', -2048, 2048, 1), numeric('中心 Z m', 'centerZ', -2048, 2048, 1), numeric('区域宽 m', 'width', 1, 4096, 1), numeric('区域深 m', 'depth', 1, 4096, 1));
   if (['river', 'outside'].includes(p.region)) g.body.append(select('关联已保存河道', 'riverId', [['all', '全部有效河道'], ...w.rivers.map((r) => [r.id, r.name])]), numeric('岸外影响宽 m', 'riverBand', 1, 80, 1));
   g.body.append(check('保护全部已保存河床', 'riverProtect'), check('保护模型 / 道路投影包围盒', 'protectObjects'));
   const advanced = el('details', { class: 'terrain-advanced', open: !!app.terrainUI?.advanced, ontoggle: (e) => { (app.terrainUI ||= {}).advanced = e.target.open; } }, [el('summary', { text: '高级参数 · 热力 / 水力 / 沉积' })]);

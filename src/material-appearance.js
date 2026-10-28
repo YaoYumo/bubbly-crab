@@ -47,6 +47,7 @@ export class MaterialAppearance {
       return mat;
     };
     root.traverse(mesh => {
+      if(mesh.userData.bakedRoadLightPool)return;
       if (!mesh.material || (!mesh.isMesh && !mesh.isPoints && !mesh.isSprite)) return;
       if (!state.meshes.has(mesh)) state.meshes.set(mesh, this.app.stage._matSwap?.get(mesh) || mesh.material);
       const source = state.meshes.get(mesh);

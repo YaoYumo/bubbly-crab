@@ -1,7 +1,7 @@
 import { sampleGrid } from './terrain-import.js';
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-export function cleanRiver(input, size = 600) {
+export function cleanRiver(input, size = 4096) {
   if (!input || !Array.isArray(input.points) || input.points.length > 64 || input.points.length < 2) throw Error('河道需要 2–64 个路径点');
   const points = input.points.map((p) => {
     if (!Array.isArray(p) || p.length !== 3 || !p.every(finite) || Math.abs(p[0]) > size / 2 || Math.abs(p[2]) > size / 2 || Math.abs(p[1]) > 10000) throw Error('河道坐标无效或超出地形边界');

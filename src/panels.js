@@ -802,10 +802,10 @@ function tabTerrain(app, rerender, ctx) {
     { k: '_g', l: '生成地形 + 自动地貌', t: 'btn', noUndo: true, onClick: (s) => { if (!s.gen) { toast('先选一种地形'); return; } tr.generate(s.gen, s.amp, s.seed); toast('已生成' + TERRAIN_GEN[s.gen].name + '，保留手绘材质，可撤销'); }, btn2: { l: '全部抹平', onClick: () => { tr.h.fill(0); tr.refresh(); app.bus.emit('terrain'); app.saveLocal(); } } },
     { k: 'exag', l: '高度夸张', t: 'range', min: 0.2, max: 3, step: 0.05, set: (v) => tr.setExaggerate(v) },
     { k: 'res', l: '网格密度', t: 'sel', opts: [{ v: 33, l: '33（省）' }, { v: 65, l: '65' }, { v: 97, l: '97（默认）' }, { v: 129, l: '129（细）' }, { v: 257, l: '257（精细）' }, { v: 513, l: '513（超细 / 较慢）' }], num: true, set: (v) => tr.setResolution(v) },
-    { k: 'size', l: '地形尺寸 m', t: 'range', min: 60, max: 400, step: 10, set: (v) => tr.setSize(v) },
+    { k: 'size', l: '地形尺寸 m（≤4096）', t: 'int', commit:true, min: 40, max: 4096, step: 1, set: (v) => tr.setSize(v) },
     { k: 'follow', l: '物体自动贴地', t: 'bool', on: '跟随地形', help: '拖动模型时自动落到地形表面；抬高 1.6m 以上视为刻意悬空', set: (v) => { st.followTerrain = v; if (!v) for (const o of app.objects) o.followTerrain = false; else { for (const o of app.objects) if (!['fx','road_brush','road_intersection','vegetation_patch'].includes(o.type)) { o.followTerrain = true; o.apply?.(); } } app.bus.emit('objects'); } },
   ].map(f => { if(f.set){const set=f.set;f.set=(v)=>{app.beginOp('地形：'+f.l,'terrain-setting:'+f.k);set(v);};} if(f.onClick&&!f.noUndo){const click=f.onClick;f.onClick=(...args)=>{app.beginOp('地形：'+f.l);click(...args);};} if(f.btn2){const click=f.btn2.onClick;f.btn2.onClick=(...args)=>{app.beginOp(f.btn2.l);click(...args);};} return f; }), { enabled: tr.enabled, biome: tr.biome, gen: tr.generation.kind, amp: tr.generation.amp, seed: tr.generation.seed, exag: tr.exaggerate, res: tr.n, size: tr.size, follow: st.followTerrain !== false }, (k,v) => { if (['gen','amp','seed'].includes(k)) { if(k==='gen'){if(v)tr.generation.kind=v;}else tr.generation[k]=v;app.saveLocal();return; } if(k!=='biome')app.bus.emit('terrain');app.saveLocal(); });
-  g0.body.appendChild(el('div',{class:'fnote',text:'生成会重建全图高度并启用自动底材；手绘覆盖保留在原位置。相同种子与参数可复现，支持一次撤销。海岛自动开启水面；其他类型保留当前水面设置。'}));
+  g0.body.appendChild(el('div',{class:'fnote',text:'地形边长支持 40–4096m；尺寸与网格密度独立，大地形不会自动增加顶点，细节分辨率会降低。生成会重建全图高度并启用自动底材；手绘覆盖保留在原位置。相同种子与参数可复现，支持一次撤销。海岛自动开启水面；其他类型保留当前水面设置。'}));
   f0.root.dataset.terrainGeneration='1';
   g0.body.appendChild(f0.root);
   root.appendChild(g0.wrap);

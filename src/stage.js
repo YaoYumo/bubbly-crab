@@ -667,6 +667,8 @@ export class Stage {
   }
 
   render() {
+    if(this.terrainExtent>600){this.sky.position.copy(this.view.position);this.sky.scale.setScalar(this.view.far*.85/2600);}
+    else {this.sky.position.set(0,0,0);this.sky.scale.setScalar(1);}
     if (!this.preview) {
       this.orbit.update();
     }

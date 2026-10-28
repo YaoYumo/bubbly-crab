@@ -1,6 +1,27 @@
 import * as T from "three";
+import { sectionForRoad } from "./road-section.js";
 import { roadDesignHeight } from "./road-contact.js";
 
+// Match the host's actual metre-valued lane boundaries. The virtual
+// carriageway centre includes shoulders; it is not the centre of its lanes.
+export function mergePaintOffsets(arm, f, rd) {
+  if (!f || arm.curve === f.branchCurve || !rd)
+    return [-1, 1].map((side) => Math.max(0.25, arm.pav - 0.2) * side);
+  const section = sectionForRoad(rd.roadType.id, rd.width, rd.roadType.section),
+    n = section.laneCount / 2,
+    median = rd.roadType.id === "freeway" ? 2 : 0,
+    side = f.side || 1;
+  const virtual = Number.isFinite(arm.curve.offset)
+    ? arm.curve.offset
+    : side * (median + arm.pav);
+  return [
+    ...Array.from(
+      { length: Math.max(0, n - 1) },
+      (_, i) => side * (median + (i + 1) * section.laneWidth) - virtual,
+    ),
+    side * (median + n * section.laneWidth - 0.15) - virtual,
+  ];
+}
 // Compact mouths need lane-edge/merge guides, not a freeway zebra crossing.
 // Place marks on the actual owning pavement, never on a flat world-Y plane.
 export function addMergeMarkings(app, root, plan) {
@@ -21,9 +42,9 @@ export function addMergeMarkings(app, root, plan) {
   const ray = new T.Raycaster(),
     pos = [],
     f = plan.freeway;
-  const arms = f
-    ? plan.arms.filter((a) => a.curve === f.branchCurve)
-    : plan.arms;
+  const arms = plan.arms;
+  const main = f && app.objects.find((o) => o._roadData?.curve === f.curve);
+  let laneGuides = 0;
   const surface = (p, expected) => {
     ray.set(new T.Vector3(p.x, expected + 1, p.z), new T.Vector3(0, -1, 0));
     ray.far = 2;
@@ -39,9 +60,11 @@ export function addMergeMarkings(app, root, plan) {
     const curve = arm.curve,
       L = Math.max(1, curve.getLength()),
       reach = Math.min(arm.available, Math.max(arm.c, 6) + 3);
-    for (const side of [-1, 1])
-      for (let s = 0.3; s < reach; s += 2.4) {
-        const end = Math.min(s + 1.4, reach),
+    const isMain = f && arm.curve !== f.branchCurve;
+    const offsets = mergePaintOffsets(arm, f, main?._roadData);
+    for (const edge of offsets)
+      for (let s = 0.3; s < reach; s += isMain ? 6 : 2.4) {
+        const end = Math.min(s + (isMain ? 3 : 1.4), reach),
           steps = Math.ceil((end - s) / 0.35),
           rings = [];
         for (let i = 0; i <= steps; i++) {
@@ -50,9 +73,7 @@ export function addMergeMarkings(app, root, plan) {
             p = curve.getPointAt(t),
             d = curve.getTangentAt(t).setY(0).normalize(),
             n = new T.Vector3(d.z, 0, -d.x);
-          const center = p
-            .clone()
-            .addScaledVector(n, Math.max(0.25, arm.pav - 0.2) * side);
+          const center = p.clone().addScaledVector(n, edge);
           if (!plan.insideHull(center)) break;
           const expected = roadDesignHeight(curve, t) + 0.17;
           rings.push({
@@ -87,6 +108,7 @@ export function addMergeMarkings(app, root, plan) {
           }
         }
         count++;
+        if (isMain) laneGuides++;
       }
   }
   if (pos.length) {
@@ -106,4 +128,5 @@ export function addMergeMarkings(app, root, plan) {
     root.add(m);
   }
   root.userData.mergeGuideSegments = count;
+  root.userData.mergeLaneGuideSegments = laneGuides;
 }

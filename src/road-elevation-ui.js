@@ -270,7 +270,7 @@ export function roadLightingControls(app, so) {
     el("div", {
       class: "fnote",
       dataset: { roadLampCount: "1" },
-      text: `附属路灯 ${so.root.userData.roadLampCount || 0} 盏；随道路标高和编辑更新，避开路口及其他路面阻挡。关闭只移除本路附属灯，不动手动摆放的灯。灯面随光影自发光设置变化，不逐盏新增实时点光源。`,
+      text: `附属路灯 ${so.root.userData.roadLampCount || 0} 盏；随道路标高和编辑更新，避开路口及其他路面阻挡。关闭只移除本路附属灯，不动手动摆放的灯。夜间叠加预烘焙衰减光斑，随坡度更新，不逐盏新增实时光源或阴影；不是遮挡／全局照明烘焙。`,
     }),
   );
   return form.root;

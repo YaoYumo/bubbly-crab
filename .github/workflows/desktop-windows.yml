@@ -30,6 +30,8 @@ jobs:
       - run: node test/road-connector.test.mjs
       - run: node test/freeway-median-surface.test.mjs
       - run: node test/road-spiral.test.mjs
+      - run: node test/traffic.test.mjs
+      - run: node test/traffic-flow.test.mjs
       - run: node test/radial-menu.test.mjs
       - run: npm run test:editor-expansion:pure
       - run: node test/local-scene-terrain.test.mjs

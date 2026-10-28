@@ -43,7 +43,7 @@ export function cleanConversationTerrain(input) {
       if (!Number.isInteger(p.generate.seed)) throw Error("地形种子需整数");
     }
     if (p.generate.size !== undefined)
-      finite(p.generate.size, 40, 600, "地形边长");
+      finite(p.generate.size, 40, 4096, "地形边长");
   }
   if (p.biome !== undefined && !biomes.includes(p.biome))
     throw Error("地表群系无效");

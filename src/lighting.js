@@ -1,3 +1,4 @@
+import {updateRoadLightPool} from "./road-light-pools.js";
 // ---------------------------------------------------------------------------
 // 光影氛围：预设 + 手动调光 + 关闭光影（内存优先）
 // ---------------------------------------------------------------------------
@@ -240,6 +241,7 @@ export class Lighting {
   applyGlow(g) {
     const glow = g ?? this.p.glow ?? 0;
     this.stage.world.traverse((o) => {
+      if(o.userData?.bakedRoadLightPool)updateRoadLightPool(o,glow);
       const list = o.userData?.glow;
       if (!list) return;
       const nightOnly = o.userData?.nightOnly;

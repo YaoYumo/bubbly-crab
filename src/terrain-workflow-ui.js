@@ -17,7 +17,7 @@ export function terrainWorkflowControls(app) {
   const input = el('input', { type: 'file', accept: '.png,image/png', disabled: w.busy, dataset: { terrainHeightFile: '1' }, onchange: run(async () => { const file = input.files[0]; if (file) await w.stageHeight(file, w.heightChannel || 'red'); }) });
   height.body.append(row('采样通道（选文件前设置）', channel), input);
   const p = w.mapping;
-  height.body.append(numeric('覆盖尺寸 m', 'height-size', p.size, 40, 600, 1, (v) => { w.mapping = cleanHeightMapping({ ...w.mapping, size: v }); }),
+  height.body.append(numeric('覆盖尺寸 m', 'height-size', p.size, 40, 4096, 1, (v) => { w.mapping = cleanHeightMapping({ ...w.mapping, size: v }); }),
     numeric('输出单边顶点', 'height-n', p.n, 33, 513, 2, (v) => { w.mapping = cleanHeightMapping({ ...w.mapping, n: v }); }),
     numeric('黑值高程 m', 'height-base', p.base, -5000, 5000, .1, (v) => { w.mapping = cleanHeightMapping({ ...w.mapping, base: v }); }),
     numeric('黑→白高差 m', 'height-range', p.range, 0, 5000, .1, (v) => { w.mapping = cleanHeightMapping({ ...w.mapping, range: v }); }));

@@ -14,7 +14,7 @@ export const EROSION_PRESETS = Object.freeze({
 });
 export function erosionSettings(value = {}) {
   if (!value || typeof value !== 'object') value = {};
-  const limits = { strength: [0, 1], iterations: [1, 40], angle: [1, 65], thermal: [0, 1], drops: [0, 60000], lifetime: [4, 96], inertia: [0, .95], erosion: [0, 1], deposition: [0, 1], evaporation: [.001, .5], capacity: [.1, 10], radius: [.1, 8], settling: [0, 1], sedimentDepth: [0, 10], maxChange: [.01, 50], layerScale: [.2, 30], seed: [1, 2147483647], riverBand: [1, 80], centerX: [-300, 300], centerZ: [-300, 300], width: [1, 600], depth: [1, 600] };
+  const limits = { strength: [0, 1], iterations: [1, 40], angle: [1, 65], thermal: [0, 1], drops: [0, 60000], lifetime: [4, 96], inertia: [0, .95], erosion: [0, 1], deposition: [0, 1], evaporation: [.001, .5], capacity: [.1, 10], radius: [.1, 8], settling: [0, 1], sedimentDepth: [0, 10], maxChange: [.01, 50], layerScale: [.2, 30], seed: [1, 2147483647], riverBand: [1, 80], centerX: [-2048, 2048], centerZ: [-2048, 2048], width: [1, 4096], depth: [1, 4096] };
   const result = { ...EROSION_DEFAULTS };
   for (const [key, [lo, hi]] of Object.entries(limits)) if (typeof value[key] === 'number' && Number.isFinite(value[key])) result[key] = Math.max(lo, Math.min(hi, value[key]));
   for (const key of ['iterations', 'drops', 'lifetime', 'seed']) result[key] = Math.round(result[key]);

@@ -1,3 +1,4 @@
+import {buildRoadLightPools} from "./road-light-pools.js";
 import * as THREE from "three";
 import { buildStreetLamp } from "./street-lamp.js";
 import { pointAtRoadProfile } from "./road-elevation.js";
@@ -147,6 +148,7 @@ export function updateRoadLighting(app) {
       mesh.computeBoundingSphere();
       group.add(mesh);
     });
+    const pools=buildRoadLightPools(o._roadData,fixtures);if(pools)group.add(pools);
     o.root.add(group);
     app.appearance?.apply(o);
   }

@@ -1,7 +1,7 @@
 {
   "name": "previz-lab",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "description": "AI 视频运镜 / 动作参考工作台（Three.js Previz Studio）",
   "scripts": {
@@ -58,7 +58,8 @@
     "test:ramp-routing": "node test/road-connector.test.mjs && bash test/withchrome.sh node test/road-ramp-routing-regression.mjs",
     "test:road-connector": "node test/road-connector.test.mjs && bash test/withchrome.sh node test/road-connector-regression.mjs",
     "test:road-3d-contact": "node test/road-3d-contact.test.mjs && bash test/withchrome.sh node test/road-3d-contact-regression.mjs",
-    "test:traffic": "node test/traffic.test.mjs && bash test/withchrome.sh node test/road-traffic-regression.mjs"
+    "test:traffic": "node test/traffic.test.mjs && bash test/withchrome.sh node test/road-traffic-regression.mjs",
+    "test:traffic-world": "node test/traffic-flow.test.mjs && bash test/withchrome.sh node test/traffic-world-regression.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "2.12.4",

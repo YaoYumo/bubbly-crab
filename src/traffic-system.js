@@ -63,7 +63,9 @@ export class TrafficSystem {
   rebuild() {
     this.clear();
     this.dirty = false;
-    this.network = buildTrafficNetwork(this.app.objects);
+    this.network = buildTrafficNetwork(this.app.objects, {
+      terrainSize: this.app.terrain.size,
+    });
     this.sim = new TrafficSimulation(this.network, this.settings);
     this.root.visible = this.settings.enabled;
     if (!this.settings.enabled) return;
@@ -100,7 +102,9 @@ export class TrafficSystem {
         car.setColorAt(
           i,
           new T.Color(
-            [0xdce5ee, 0x566e8c, 0xbb5044, 0xe0b05d, 0x646a70][i % 5],
+            [0xdce5ee, 0x566e8c, 0xbb5044, 0xe0b05d, 0x646a70][
+              Math.floor((((a.sizeScale || 1) - 0.92) / 0.14) * 5) % 5
+            ],
           ),
         ),
       );
@@ -153,7 +157,9 @@ export class TrafficSystem {
         peds,
         [side * 0.12, 0.35, 0],
         (a, time) =>
-          Math.sin(time * 7 + Number(a.id.split("-")[1])) *
+          Math.sin(
+            time * (5.5 + (a.speedFactor || 1)) + (a.animationPhase || 0),
+          ) *
           Math.min(0.2, a.speed * 0.15) *
           side,
       );
@@ -252,9 +258,10 @@ export class TrafficSystem {
             y = z.clone().cross(x).normalize();
           q.setFromRotationMatrix(new T.Matrix4().makeBasis(x, y, z));
         }
-        const p = new T.Vector3(...offset);
+        const p = new T.Vector3(...offset).multiplyScalar(a.sizeScale || 1);
         if (animate) p.z += animate(a, time);
         p.applyQuaternion(q).add(pose.position);
+        scale.setScalar(a.inactive ? 0 : a.sizeScale || 1);
         m.compose(p, q, scale);
         mesh.setMatrixAt(i, m);
       });

@@ -311,7 +311,7 @@ export class TerrainWorkflow {
     this.erosionSettings = erosionSettings(value.erosion);
     this.mapping = cleanHeightMapping(value.heightSource || { size: this.terrain.size, n: this.terrain.n });
     this.precise = value.precise === true; this.heightSource = value.heightSource && typeof value.heightSource === 'object' ? { name: String(value.heightSource.name || '').slice(0, 120), ...cleanHeightMapping(value.heightSource), depth: value.heightSource.depth === 16 ? 16 : 8 } : null;
-    this.rivers = (Array.isArray(value.rivers) ? value.rivers : []).slice(0, 16).flatMap((r) => { try { const river = cleanRiver(r, 600); riverStrip(river, 600); return [river]; } catch { return []; } });
+    this.rivers = (Array.isArray(value.rivers) ? value.rivers : []).slice(0, 16).flatMap((r) => { try { const river = cleanRiver(r, 4096); riverStrip(river, 4096); return [river]; } catch { return []; } });
     const ids = new Set(); for (const river of this.rivers) { if (!river.id || ids.has(river.id)) river.id = uid('river'); ids.add(river.id); }
     this.rebuildRivers();
     const record = value.overlay;
