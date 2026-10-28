@@ -14,10 +14,10 @@ export function roadElevationControls(app, so = null) {
   const points = () =>
     draft
       ? rb.draftControlPoints()
-      : rd.ctrl.map((p) => [
+      : (app.byId(so.id)?._roadData||rd).ctrl.map((p) => [
           p[0],
-          rd.terrainMode === "follow"
-            ? (app.roadTerrain.height(rd.curve, p[0], p[2]) ?? p[1])
+          (app.byId(so.id)?._roadData||rd).terrainMode === "follow"
+            ? (app.roadTerrain.height((app.byId(so.id)?._roadData||rd).curve, p[0], p[2]) ?? p[1])
             : p[1],
           p[2],
         ]);
@@ -30,7 +30,7 @@ export function roadElevationControls(app, so = null) {
       rb._updateLiveRoad();
       app.bus.emit("road-edit");
     } else if (
-      !rb.updateRoadProperties(so, { points: next, terrainMode: "fixed" })
+      !rb.updateRoadProperties(app.byId(so.id)||so, { points: next, terrainMode: "fixed" })
     )
       app.notify?.("请先解锁道路，完成或取消当前绘制", "warn");
   };

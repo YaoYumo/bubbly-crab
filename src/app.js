@@ -1,3 +1,4 @@
+import { TrafficSystem } from './traffic-system.js';
 import { RoadConnector } from './road-connector.js';
 import { actorFaceOffset, actorTangent, actorMotionDistance } from './actor-heading.js';
 // ---------------------------------------------------------------------------
@@ -186,6 +187,7 @@ export class App {
     this._bindStage();
     this.roadTerrain = new RoadTerrain(this);
     this.roadDiagnostics = new RoadDiagnostics(this);
+    this.traffic = new TrafficSystem(this);
     this.timeline = {
       get u() { return clamp(this.app.state.time / Math.max(0.05, this.app.state.duration), 0, 1); },
       app: this,
@@ -1146,6 +1148,7 @@ export class App {
     }
     this.lighting.setIso(S.preview && previewShot ? previewShot.iso : 400);
     this.lighting.physical.anchorSun(S.preview);
+    this.traffic?.update(dt,forExport);
     this.localLights.tick();
     this.windowLights.tick();
     if (forExport) this.lighting.flushEnvironment();
@@ -1296,6 +1299,7 @@ export class App {
       light: this.lighting.toJSON(),
       rendering: this.renderEffects.toJSON(),
       weather: this.weather.toJSON(),
+      traffic: this.traffic?.toJSON(),
       terrain: this.terrain?.toJSON() || null,
       objects: this.objects.map((o) => o.serialize()),
       shots: this.shots.map((s) => s.toJSON()),
@@ -1305,6 +1309,7 @@ export class App {
   }
   clearAll() {
     this.sceneGeneration = null;
+    this.traffic?.load(null);
     this.layoutRelations = null;
     this.cameraEdit.reset();
     this.weather?.set(null);
@@ -1488,6 +1493,7 @@ export class App {
     if (this.terrain) this.terrain.fromJSON(j.terrain || null);
     const roads = (j.objects || []).filter((o) => o.type === 'road_brush');
     if (roads.length) this.roadBrush.restore(roads);
+    this.traffic?.load(j.traffic);
     Object.assign(this.state, { aspect: j.state?.aspect || '1.85', duration: j.state?.duration || 6, fps: j.state?.fps || 30, showHelpers:j.state?.showHelpers!==false, perf: !!j.state?.perf });
     Object.assign(this.state, { grid: j.state?.grid === true, roadSnap: j.state?.roadSnap === true,
       roadGridSize: Math.max(1, Math.min(20, Number(j.state?.roadGridSize) || 5)), parcelZones: j.state?.parcelZones || {} });

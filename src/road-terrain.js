@@ -651,12 +651,17 @@ export class RoadTerrain {
             ...v,
             self: v.object === o,
           })),
-          spacing = clamp(Number(rd.pierSpacing) || 12, 6, 30),
+          requestedSpacing = clamp(Number(rd.pierSpacing) || 12, 6, 30),
+          spiral=rd.connection?.routing?.shape==='spiral',
+          spacing=spiral?Math.min(requestedSpacing,Math.max(6,Math.min(10,(rd.connection.routing.radius||12)*.6))):requestedSpacing,
           length = profile.points.at(-1).s,
           occupied = [];
         const group = new THREE.Group();
         group.name = "road-supports";
         group.userData.roadSupport = true;
+        const slabs=[];if(spiral)o.root.traverse(m=>{if(m.isMesh&&m.userData.roadRole==='pavement')slabs.push(m);});
+        const undersideRay=new THREE.Raycaster();o.root.updateMatrixWorld(true);
+        status.requestedSpacing=requestedSpacing;status.effectiveSpacing=spacing;status.stations=[];
         for (let s = spacing / 2; s < length; s += spacing) {
           const seed = this.atDistance(profile, s);
           if (
@@ -676,18 +681,31 @@ export class RoadTerrain {
               )
             )
               continue;
-            const ground = groundAt(p.x, p.z),
-              top = p.y + 0.015;
+            const ground = groundAt(p.x, p.z);
+            let top=p.y+.015;
             if (top - ground < (rd.bridgeThreshold || 1.8)) continue;
-            const column = new THREE.Box3(
-              new THREE.Vector3(p.x - 0.65, ground - 0.35, p.z - 0.65),
-              new THREE.Vector3(p.x + 0.65, top - 0.35, p.z + 0.65),
-            );
             const next = this.atDistance(profile, Math.min(length, p.s + 0.3)),
               prev = this.atDistance(profile, Math.max(0, p.s - 0.3));
             const yaw = Math.atan2(next.x - prev.x, next.z - prev.z),
               span = Math.min(profile.half * 0.7, 4),
               grade = (next.y-prev.y)/(Math.hypot(next.x-prev.x,next.z-prev.z)||1);
+            if(spiral&&slabs.length){
+              // Curved/tessellated slab undersides differ slightly from the design
+              // centreline. Seat the entire cap against the owning deck, not an
+              // unrelated level at the same XZ; avoid suppressing valid supports
+              // because a cap corner grazes its own slab.
+              let fitted=Infinity,valid=true;
+              for(const [across,along]of [[0,0],[-span,-.8],[-span,.8],[span,-.8],[span,.8]]){
+                const x=p.x+Math.cos(yaw)*across+Math.sin(yaw)*along,z=p.z-Math.sin(yaw)*across+Math.cos(yaw)*along,y=p.y+grade*along;
+                undersideRay.set(V().set(x,y-.6,z),V().set(0,1,0));undersideRay.far=1.2;
+                const hits=undersideRay.intersectObjects(slabs,false).filter(h=>Math.abs(h.point.y-y)<.35);
+                if(!hits.length){valid=false;break;}
+                const hit=hits.reduce((a,b)=>Math.abs(a.point.y-y-.02)<Math.abs(b.point.y-y-.02)?a:b);
+                fitted=Math.min(fitted,hit.point.y-grade*along-.004);
+              }
+              if(!valid)continue;top=Math.min(top,fitted);
+            }
+            const column = new THREE.Box3(V().set(p.x-.65,ground-.35,p.z-.65),V().set(p.x+.65,top-.35,p.z+.65));
             const shear = new THREE.Matrix4().set(1,0,0,0, 0,1,grade,0, 0,0,1,0, 0,0,0,1);
             const capMatrix = new THREE.Matrix4().makeRotationY(yaw).multiply(shear)
               .scale(new THREE.Vector3(span*2,.5,1.6)).setPosition(p.x,top-.25,p.z);
@@ -699,7 +717,7 @@ export class RoadTerrain {
               hit = boxes.some(
                 (b) =>
                   obstacles.some((v) =>
-                    v.self
+                    (v.self||(spiral&&v.road))
                       ? b.intersectsBox(v.box) &&
                         this.intersectsGeometry(b, v.shape, b === cap ? capInverse : null)
                       : b
@@ -727,12 +745,12 @@ export class RoadTerrain {
               mesh.position.copy(center);
               if (box === cap) { shearRoadGrade(mesh, grade); mesh.rotation.y = yaw; }
               mesh.castShadow = mesh.receiveShadow = true;
-              mesh.userData.roadSupport = true;
+              mesh.userData.roadSupport = true;mesh.userData.supportStation=p.s;mesh.userData.supportPart=box===cap?'cap':'column';if(box===cap)mesh.userData.supportSolidMatrix=capMatrix.toArray();
               group.add(mesh);
               allSupportBoxes.push(box);
             }
             occupied.push(p.s);
-            status.built++;
+            status.built++;status.stations.push(p.s);
             placed = true;
             break;
           }
@@ -741,6 +759,7 @@ export class RoadTerrain {
             status.blockedAt.push({ s, point: [seed.x, seed.y, seed.z] });
           }
         }
+        status.maxSupportGap=status.stations.length>1?Math.max(...status.stations.slice(1).map((s,i)=>s-status.stations[i])):0;
         if (group.children.length) o.root.add(group);
         this.app.appearance?.apply(o);
       }

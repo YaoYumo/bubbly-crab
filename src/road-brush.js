@@ -1,3 +1,4 @@
+import { addMergeMarkings } from './road-merge-markings.js';
 import { tagRoadRoles, applyCompactCuts } from './road-compact-junction.js';
 import { normalizeSection, sectionDimensions, sectionRoadType, sectionAtWidth } from './road-section.js';
 import { endpointRoadContact } from './road-contact.js';
@@ -461,8 +462,9 @@ export class RoadBrush {
       return null;
     }
     if (type === so._roadData.roadType && width === so._roadData.width && points === undefined && terrainMode === undefined) return so;
-    if (!this.editRoad(so)) return null;
+    this.app._roadPropertyCommit=true;
     try {
+      if (!this.editRoad(so)) return null;
       this.roadType = type;
       this.roadWidth = width;
       if (points) this.points = points.map(p => new THREE.Vector3(...p));
@@ -479,7 +481,7 @@ export class RoadBrush {
       this.cancelEdit();
       this.app.notify?.('道路参数更新失败：' + (err.message || err), 'warn');
       return null;
-    }
+    } finally { this.app._roadPropertyCommit=false; }
   }
 
   _restoreEditTargets(id) {
@@ -634,6 +636,7 @@ export class RoadBrush {
     this.terrainMode = saved.terrainMode; this.terrainOffset = saved.terrainOffset;
     this.points = saved.points; this.filletH = saved.filletH; this.filletOn = saved.filletOn;
     this.roadType = saved.roadType; this.roadWidth = saved.width;
+    this._refreshMergeMarkings();
     this.app.roadTerrain?.updateSupports();
     return out;
   }
@@ -704,8 +707,13 @@ export class RoadBrush {
     }
 
     this._roads.push(rd);
+    this._refreshMergeMarkings();
     this.app.roadTerrain?.updateSupports();
     return mesh;
+  }
+
+  _refreshMergeMarkings(){
+    for(const o of this.app.objects)if(o.type==='road_intersection'&&o._isect?.plan?.compact)addMergeMarkings(this.app,o.root,o._isect.plan);
   }
 
   // 路口计划：每条交叉记录只解析一次（两条路与路口本体共用同一份轮廓）
@@ -778,6 +786,7 @@ export class RoadBrush {
     patch.position.y = isect.terrainY ?? (terrain?.enabled ? terrain.heightAt(isect.point.x, isect.point.z) : 0);
     const field=junctionHeightField(plan,patch.position.y);
     if(field)this.app.roadTerrain?.warpWith(patch,field);
+
     const isectObj = {
       id: `ri${++this._seq}`,
       root: patch, name: '交叉路口', type: 'road_intersection',

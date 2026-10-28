@@ -102,6 +102,7 @@ export class Exporter {
     for (const [o, k, v] of r.props) o[k] = v;
     let failure;
     const attempt = (fn) => { try { fn(); } catch (error) { failure ??= error; } };
+    attempt(() => a.traffic?.update(0, false));
     attempt(() => s.renderer.setPixelRatio(r.pr));
     attempt(() => s.renderer.setSize(r.size.x, r.size.y, false));
     s.postSize = r.postSize ?? null;

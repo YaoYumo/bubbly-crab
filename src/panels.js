@@ -1,3 +1,5 @@
+import { trafficControls } from './traffic-ui.js';
+import { deferRoadInspectorRender } from './road-inspector-interaction.js';
 import { roadConnectorControls } from './road-connector-ui.js';
 import { roadSectionControls } from './road-section-ui.js';
 import { sectionForRoad } from './road-section.js';
@@ -278,7 +280,7 @@ export function buildInspector(app, host) {
     tabsEl.appendChild(b);
   });
   function render() {
-    if (deferRangeRender(body, render)) return;
+    if (deferRangeRender(body, render)||deferRoadInspectorRender(app,body,render)) return;
     clear(body);
     ctx.sync = () => {};
     const t = ctx.cur;
@@ -356,6 +358,7 @@ function tabObject(app, rerender, ctx) {
     const edit = section(app.roadBrush._editBackup ? '三维道路编辑' : '三维道路绘制');
     edit.body.appendChild(roadElevationControls(app)); root.appendChild(edit.wrap); return root;
   }
+  if((!so||so.type==='road_brush')&&app.objects.some(o=>o.type==='road_brush')){const traffic=section('自动交通',{badge:'车辆 / 行人'});traffic.body.appendChild(trafficControls(app));root.appendChild(traffic.wrap);}
   if ((!so || so.type==='road_brush') && app.objects.filter(o=>o.type==='road_brush').length>=2) {
     const connect=section('自动连接道路',{badge:'A → B'});connect.body.appendChild(roadConnectorControls(app));root.appendChild(connect.wrap);
   }
@@ -447,7 +450,7 @@ function tabObject(app, rerender, ctx) {
     f2.body.appendChild(el('div', { class: 'fnote', html }));
     if (so.type === 'road_brush') {
       const commit = (props) => {
-        if (!app.roadBrush.updateRoadProperties(so, props)) {
+        if (!app.roadBrush.updateRoadProperties(app.byId(so.id)||so, props)) {
           toast(so.locked ? '请先解锁道路' : '未能修改：请先完成当前绘制，并检查道路参数', 'warn');
           rerender();
         }
@@ -864,6 +867,7 @@ function tabTerrain(app, rerender, ctx) {
     }));
   }
   g1b.body.appendChild(roadConnectorControls(app));
+  g1b.body.appendChild(trafficControls(app));
   g1b.body.appendChild(rbGrid);
   g1b.body.appendChild(roadSectionControls(app));
   const rbBtnRow = el('div', { class: 'btnrow' }, [
@@ -1171,7 +1175,7 @@ export function buildSceneInspector(app, host) {
     tabsEl.appendChild(b);
   });
   function render() {
-    if (deferRangeRender(body, render)) return;
+    if (deferRangeRender(body, render)||deferRoadInspectorRender(app,body,render)) return;
     clear(body);
     ctx.sync = () => {};
     const t = ctx.cur;

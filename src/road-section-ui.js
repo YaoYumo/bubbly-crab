@@ -3,7 +3,7 @@ import { LANE_ROADS, sectionForRoad, sectionDimensions } from './road-section.js
 
 export function roadSectionControls(app, so = null) {
   const rb = app.roadBrush, root = el('div', { class: 'road-section-controls' });
-  const road = () => so?._roadData || { roadType: rb.roadType, width: rb.roadWidth };
+  const road = () => (so&&(app.byId(so.id)||so)?._roadData) || { roadType: rb.roadType, width: rb.roadWidth };
   const controls = {};
   const fields = [
     ['laneCount', '车道总数', 1, 12, 1], ['laneWidth', '单车道宽 m', 2, 5, .1],
@@ -14,7 +14,7 @@ export function roadSectionControls(app, so = null) {
     const section = sectionForRoad(rd.roadType.id, rd.width, rd.roadType.section);
     if (!section || !Number.isFinite(value)) { render(); return; }
     section[key] = value;
-    if (so) rb.updateRoadProperties(so, { section }); else rb.setSection(section);
+    if (so) rb.updateRoadProperties(app.byId(so.id)||so, { section }); else rb.setSection(section);
     render();
   };
   for (const [key, label, min, max, step] of fields) {
@@ -23,7 +23,7 @@ export function roadSectionControls(app, so = null) {
     root.append(el('div', { class: 'row' }, [el('label', { class: 'lab', text: label }), el('div', { class: 'ctl' }, [input])]));
   }
   const path = el('input', { class: 'num', type: 'number', min: 1, max: 20, step: .5, dataset: { roadProperty: 'pathWidth' },
-    'aria-label': '非机动车道铺装宽度 m', onchange: e => { if (so) rb.updateRoadProperties(so, { width: e.target.valueAsNumber }); else rb.setWidth(e.target.valueAsNumber); render(); } });
+    'aria-label': '非机动车道铺装宽度 m', onchange: e => { if (so) rb.updateRoadProperties(app.byId(so.id)||so, { width: e.target.valueAsNumber }); else rb.setWidth(e.target.valueAsNumber); render(); } });
   const pathRow = el('div', { class: 'row' }, [el('label', { class: 'lab', text: '铺装宽 m' }), el('div', { class: 'ctl' }, [path])]);
   const summary = el('div', { class: 'fnote', dataset: { roadSectionSummary: '1' }, 'aria-live': 'polite' });
   root.append(pathRow, summary);
@@ -32,7 +32,7 @@ export function roadSectionControls(app, so = null) {
     for (const [key] of fields) {
       const input = controls[key]; input.closest('.row').hidden = !section;input.closest('.row').style.display=section?'':'none';
       input.disabled = !!so?.locked || (id === 'freeway' && key === 'sidewalkWidth');
-      if (section) input.value = section[key];
+      if (section&&input!==document.activeElement) input.value = section[key];
     }
     controls.laneCount.min = id === 'oneway' ? 1 : 2; controls.laneCount.step = id === 'oneway' ? 1 : 2;
     pathRow.hidden = !!section;pathRow.style.display=section?'none':''; path.value = rd.width; path.disabled = !!so?.locked;
