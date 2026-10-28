@@ -1,0 +1,13 @@
+{
+  "status": "PASS_INSTALLED_LOOPBACK_HELPER",
+  "probe": true,
+  "chunkedHealth": true,
+  "unicodeChatRoundTrip": true,
+  "proxyEnvironmentIgnored": true,
+  "noRedirect": true,
+  "malformedInputRejected": true,
+  "socketTimeout": true,
+  "childTerminationDoesNotTerminateTestHost": true,
+  "realAstrillDllInjected": false,
+  "realGGUFInferenceVerified": false
+}

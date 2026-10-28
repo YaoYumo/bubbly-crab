@@ -1,12 +1,23 @@
 # Windows 1.9.0：交通通行、路灯光斑、性能浮层与 4km 地形
 
-六项合并升级，网页／无网单 HTML／桌面 CSP 前端及旧道路回归已完成。原生 Windows 包的构建结果和下载链接将在构建验收后补充；下方旧版结果不代表 1.9.0 实测。
+[下载 Windows 1.9.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40631710776/artifacts/12791827679)（可能需要登录 GitHub；保留至 2027-01-26）。
+
+解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.9.0_x64-setup.exe`。六项合并升级，网页／无网单 HTML／桌面 CSP 前端及旧道路回归已完成。
 
 - 主线不被匝道的预约拦停，匝道按真实目标空隙让行；边界车辆全速进入并直接离场。补齐车道线、打散位置／速度／间距／外观与步态。
 - 道路附属灯夜间叠加共享预烘焙光斑，不新增逐灯实时灯；不是遮挡／GI 烘焙。
 - 顶栏「性能」开启中间视窗浮层，退出诊断弹窗后仍显示；内存为 JS 堆，显存为场景资源估算，整机总占用明确不可读。
 - 地形尺寸支持 40–4096m，网格密度保持独立，支持导入／保存／撤销；不静默增加顶点预算。
 - [详细操作与边界](traffic-world-upgrade.md)、[三模式原始证据](traffic-world-evidence/)。安装前保存工程、退出旧版，覆盖原目录；**models 中两个 GGUF 分片原名原位，不重下、不移动、不改名、不合并。**
+
+### 1.9.0 构建验收
+
+- 源码 `a03ef75e23367708640f45b801594e994f2599bc`，CI [40631710776](https://github.com/YaoYumo/bubbly-crab/actions/runs/40631710776)，job `122629360845` 成功；新增两项交通纯测也在 Windows CI 中通过。15 个前端文件 SHA256 与本地最终构建完全一致。
+- ZIP 23,615,349 字节，GitHub digest `5df4cfd4b39f4a11994845825b9a2df9a61ee778e0b196956c70aa62f494046b`。
+- 安装器 20,994,286 字节，SHA256 `5e21bc2261cbb803860492c1e772acdcd5d35fece0b7de866559ea8c4ee4fb48`。
+- Windows 安装 exit 0、原生窗口／进程存活、安装后 helper／Vulkan 引擎及重装保留 models 哨兵通过。未实测原生完整 UI、原生磁盘保存、用户 RTX4070Ti 帧率／显存或真实 GGUF 推理。
+- 未签名 x64 NSIS，无模型权重；缺 WebView2 时需联网获取运行时。哈希来自 CI 原始 inventory annotations，未独立二次下载安装包核验。
+- [完整 Windows 原始证据](desktop-1.9.0-evidence/verification.json)、[三模式功能证据](traffic-world-evidence/)。下面为旧版本历史结果。
 
 ---
 
