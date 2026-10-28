@@ -1,3 +1,26 @@
+# Windows 1.7.2：上层接头修复与近距离螺旋匝道
+
+[下载 Windows 1.7.2 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40615714226/artifacts/12785421284)（可能需要登录 GitHub；附件保留至 2027-01-26）。
+
+先备份工程、退出旧版，解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.2_x64-setup.exe` 覆盖原安装目录。**原 models 中两个 GGUF 分片保留原名原位置，不重下、移动、改名或合并。**
+
+- **上层接头**：匝道完整断面离开高速之前跟随主路设计标高；原高速拥有主路铺装，裁除同层重复匝道路面，清理接入口护栏残段。倾斜主路不被强行拉平。
+- **螺旋选择**：自动／仅短连接／尝试螺旋匝道。默认先搜索短连接，短连接不可行才尝试有高差且满足占地、半径、坡度与立体间隔的螺旋；不任意绕大圈，也不保证任何两点都能连。
+- **旧连接**：选中旧自动匝道，选择连接方式，点「重新生成这条连接」。保留 ID／机位目标，可一步撤销；加载不会静默改线。
+- 保持中央带闪烁修复、近侧街道汇入口、独立固定车道宽、绿色高度柄、本地模型对话及既有工程功能。[详细操作与边界](road-spiral-connections.md)。
+
+Windows [run 40615714226](https://github.com/YaoYumo/bubbly-crab/actions/runs/40615714226) / job `122577594428` 全部成功，打包源码 `5ea6da1192b8b8a3499cbd7803c79d14ee8bd708`。原生构建、螺旋／道路／原生边界单测、NSIS、安装／窗口存活、已安装 helper／引擎、覆盖重装保留模型目录检查通过。**15 个前端文件的路径、字节数、SHA256 与通过三模式专项的本地桌面构建逐项一致。**
+
+- 安装器 **20,984,914 bytes**，SHA256 `b082140c140a86a48b009996598eb06dfcf5645f05fa9fc460c10772805179e3`。
+- ZIP **23,595,716 bytes**，GitHub 上传摘要 `7be7ec7438ae2c01aeb615123259cbdb996a14025388937e1292834615c2e599`。
+- 未签名，不含模型权重；保留既有 Vulkan 引擎。缺少 WebView2 时安装需要联网获取运行环境。没有独立重新下载做第二次二进制哈希核验。
+- [三模式几何／交互证据](road-spiral-evidence/)、[Windows 步骤](desktop-1.7.2-evidence/windows-run.json)、[构建摘要](desktop-1.7.2-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.2-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.2-evidence/verification.json)。
+- 三模式为 Linux 软件 WebGL；Windows runner 为安装和窗口存活检查，不是用户 Windows 全部交互、4070Ti 性能或真实 GGUF 推理验收。模型目录保留使用哨兵文件验证。
+
+**以下为历史版本，推荐上方 1.7.2。**
+
+---
+
 # Windows 1.7.1：短匝道、近侧地面汇入与中央带闪烁修复
 
 [下载 Windows 1.7.1 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40502214731/artifacts/12733981419)（可能需要登录 GitHub；附件保留至 2027-01-25）。
@@ -17,7 +40,7 @@ Windows [run 40502214731](https://github.com/YaoYumo/bubbly-crab/actions/runs/40
 - [Windows 步骤](desktop-1.7.1-evidence/windows-run.json)、[构建摘要](desktop-1.7.1-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.1-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.1-evidence/verification.json)、[匝道三模式证据](road-ramp-routing-fix.md)、[中央带修复证据](freeway-median-fix.md)。
 - Windows runner 安装与窗口检查不等于用户 Windows 完整交互、4070Ti 性能或真实 GGUF 推理验收。模型目录保留测试使用哨兵文件，不包含用户模型。
 
-**以下为历史版本，推荐上方 1.7.1。**
+**以下为历史版本，推荐本页顶部 1.7.2。**
 
 ---
 
@@ -38,7 +61,7 @@ Windows [run 40502214731](https://github.com/YaoYumo/bubbly-crab/actions/runs/40
 - [三模式专项](desktop-1.7.0-evidence/three-mode-regressions.txt)、[兼容回归](desktop-1.7.0-evidence/compatibility.txt)、[性能／精确几何](desktop-1.7.0-evidence/performance.txt)、[Windows 步骤](desktop-1.7.0-evidence/windows-run.json)、[构建摘要](desktop-1.7.0-evidence/windows-artifacts.json)、[安装检查](desktop-1.7.0-evidence/windows-install-smoke.json)、[验收边界](desktop-1.7.0-evidence/verification.json)。兼容组合最后一条性能命令缺少 Chrome 包装器而未启动；随后正确命令单独执行通过，保留两份日志，不冒充首次通过。
 - Linux Chromium / software WebGL 实际手势、几何回归及 CI Windows 安装启动，**不是用户 Windows 完整交互、4070Ti 性能或真实 Qwen / GGUF 验收**。已推当前开发分支，未合并 main。
 
-**以下为历史版本，推荐本页顶部 1.7.1。**
+**以下为历史版本，推荐本页顶部 1.7.2。**
 
 ---
 
