@@ -1,7 +1,9 @@
+import {updateRoadLightPool} from "./road-light-pools.js";
 // ---------------------------------------------------------------------------
 // 光影氛围：预设 + 手动调光 + 关闭光影（内存优先）
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
+import { PhysicalSky } from './physical-sky.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { clamp, deg, rad } from './util.js';
 
@@ -119,7 +121,9 @@ export class Lighting {
     this.enabled = true;      // 关闭光影 = 内存优先
     this.isoMultiplier = 1.0;
     this.p = {};
-    this.applyPreset('noon');
+    this.mode = 'physical';
+    this.physical = new PhysicalSky(this);
+    this.update();
   }
 
   buildEnv() {
@@ -135,16 +139,26 @@ export class Lighting {
   }
 
   applyPreset(id) {
-    this.preset = id;
+    this.mode = 'legacy'; // Preserve authored templates and existing preset API.
+    this.preset = ATMOS_BY_ID[id] ? id : 'noon';
     this.override = {};
     this._envManual = false;          // 换预设 → 环境反射回到预设值
     this.update();
   }
-  set(k, v) { this.override[k] = v; this.update(); }
+  set(k, v) { this.mode = 'legacy'; this.override[k] = v; this.update(); }
   resetOverride() { this.override = {}; this._envManual = false; this.update(); }
-  setIso(iso) { this.isoMultiplier = iso / 400; this.update(); }
+  setIso(iso) {
+    const gain = clamp(Number(iso) || 400, 25, 102400) / 400;
+    if (gain === this.isoMultiplier) return;
+    this.isoMultiplier = gain;
+    if (this.mode === 'physical') this.physical.applyExposure(); else this.update();
+  }
+  setMode(mode) { this.mode = mode === 'physical' ? 'physical' : 'legacy'; this.update(); }
+  flushEnvironment() { if (this.mode === 'physical') this.physical.flush(); }
 
   update() {
+    if (this.mode === 'physical') { this.physical.update(); return; }
+    this.physical.deactivate();
     const p = this.params();
     this.p = p;
     const st = this.stage;
@@ -227,6 +241,7 @@ export class Lighting {
   applyGlow(g) {
     const glow = g ?? this.p.glow ?? 0;
     this.stage.world.traverse((o) => {
+      if(o.userData?.bakedRoadLightPool)updateRoadLightPool(o,glow);
       const list = o.userData?.glow;
       if (!list) return;
       const nightOnly = o.userData?.nightOnly;
@@ -248,9 +263,13 @@ export class Lighting {
 
   emitChange() { this.stage.bus?.emit('light', this.p); }
 
-  toJSON() { return { preset: this.preset, override: { ...this.override }, enabled: this.enabled }; }
+  toJSON() { return { mode: this.mode, physical: this.physical.toJSON(), local: this.localLights?.toJSON(), windows: this.windowLights?.toJSON(), preset: this.preset, override: { ...this.override }, enabled: this.enabled }; }
   fromJSON(j) {
-    if (!j) return;
+    j ||= {};
+    this.mode = j.mode === 'physical' ? 'physical' : 'legacy';
+    this.physical.fromJSON(j.physical);
+    this.localLights?.fromJSON(j.local);
+    this.windowLights?.fromJSON(j.windows);
     this.preset = ATMOS_BY_ID[j.preset] ? j.preset : 'noon';
     this.override = j.override || {};
     this.enabled = j.enabled !== false;

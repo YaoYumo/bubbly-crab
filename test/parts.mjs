@@ -3,7 +3,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const wantShot = process.argv.slice(2).includes('shot');
 const errors = [];
 const fails = [];
@@ -28,9 +28,9 @@ const R = await page.evaluate(async () => {
   const grp = LIB.find((g) => g.id === 'bld');
   out.group = grp ? { cat: grp.cat, n: grp.items.length, types: grp.items.map((i) => i.type), icons: [...new Set(grp.items.map((i) => i.icon))] } : null;
   out.libCount = [...LIB].reduce((s, g) => s + g.items.length, 0);
-  const cards = [...document.querySelectorAll('#library .card')];
-  const mine = cards.filter((c) => grp.items.some((i) => (c.textContent || '').includes(i.name)));
-  out.iconSvg = { cards: cards.length, mine: mine.length, withSvg: mine.filter((c) => c.querySelectorAll('svg *').length > 0).length };
+  const cards = [...document.querySelectorAll('.library-card')];
+  const mine = cards.filter((c) => c.dataset.assetKey?.startsWith('bld:'));
+  out.iconSvg = { cards: cards.length, mine: mine.length, withSvg: mine.filter((c) => c.querySelectorAll('svg *, img').length > 0).length };
 
   const clear = () => { app.stage?.stopFly?.(); app.objects.slice().forEach((o) => app.removeObject(o)); };
   const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -171,10 +171,12 @@ const R = await page.evaluate(async () => {
   const tplLabel = app._undo[app._undo.length - 1].label;
   app.undo();
   const oAfterTpl = app.objects.length;
-  const ub = document.querySelector('.tb[title*="撤销上一步"]');
+  app.openViewportTools();
+  const ub = document.querySelector('button[title*="步可退"]');
   out.steps = { dupN0, dupN1, dupN2, dupDelta: dupUmid - dupU0, afterUndoDelta: dupU1 - dupU0, shotDelta: ud1 - ud0, shots0, shotsBack,
     tplDelta: u1 - u0, tplLabel, o0, o1, oAfterTpl, hasBtn: !!ub, btnTitle: ub ? ub.title.slice(0, 24) : '' };
 
+  app.closeViewportTools?.();
   // —— 7) 搭一个两层小房子的样品（关掉地形，室内最常见的搭法）
   clear();
   if (app.terrain) app.terrain.setEnabled(false);
@@ -194,7 +196,7 @@ const R = await page.evaluate(async () => {
 
 ck('素材库新增「建筑构件」分组：18 项（墙/窗/门/屋顶/天花板/楼梯 各 3 变体）',
   !!R.group && R.group.n === 18, JSON.stringify(R.group && R.group.types));
-ck('库总数从 121 增到 139，卡片渲染数同步', R.libCount === 139 && R.iconSvg.cards === 139, `lib=${R.libCount} cards=${R.iconSvg.cards}`);
+ck('现有库包含全部构件，卡片渲染数同步', R.libCount >= 213 && R.iconSvg.cards === R.libCount, `lib=${R.libCount} cards=${R.iconSvg.cards}`);
 ck('18 张新卡片都有图标（墙/窗/门/屋顶/天花板）', R.iconSvg.mine === 18 && R.iconSvg.withSvg === 18, JSON.stringify(R.iconSvg));
 ck('每个构件在默认 / 最小 / 最大参数下都成形且无 NaN',
   R.builds.every((b) => !b.empty && b.nan === 0 && b.tri > 2), `${R.builds.length} 次构建，坏:${JSON.stringify(R.builds.filter((b) => b.empty || b.nan > 0 || b.tri <= 2).slice(0, 3))}`);
@@ -214,7 +216,7 @@ ck('复制物体 / 删除机位 / 载入模板：每个入口都只加一步',
   R.steps.dupN1 === R.steps.dupN0 + 1 && R.steps.dupN2 === R.steps.dupN0 && R.steps.dupDelta === 1 && R.steps.afterUndoDelta === 0
   && R.steps.shotDelta === 1 && R.steps.shotsBack === R.steps.shots0 && R.steps.tplDelta === 1
   && /载入模板/.test(R.steps.tplLabel) && R.steps.o1 > 5 && R.steps.oAfterTpl === R.steps.o0, JSON.stringify(R.steps));
-ck('顶栏撤销 / 重做按钮带栈深提示', R.steps.hasBtn && /还有 \d+ 步可退/.test(R.steps.btnTitle), R.steps.btnTitle);
+ck('视口工具撤销 / 重做按钮带栈深提示', R.steps.hasBtn && /还有 \d+ 步可退/.test(R.steps.btnTitle), R.steps.btnTitle);
 ck('Ctrl+Z 一次只退一步（3→2→1，重做回到 3）',
   R.undo.n3 === 3 && R.undo.n2 === 2 && R.undo.n1 === 1 && R.undo.nR === 2 && R.undo.gone3 && !R.undo.back3, JSON.stringify(R.undo));
 ck('改参数可撤销回原值', Math.abs((R.undo.param.after ?? 0) - R.undo.param.before) < 0.01, JSON.stringify(R.undo.param));

@@ -1,0 +1,650 @@
+
+=== lod-final-file-lighting-offline.txt ===
+PASS offline shipped UI / lamp parameters / undo-redo / real light and shadow map / WB-IBL separation / .previz reload / PNG ISO consistency {
+  lit: 1,
+  shadowMap: true,
+  noRebake: true,
+  project: true,
+  exposure: 2,
+  during: 4,
+  after: 2,
+  png: true
+}
+
+=== lod-final-file-road-diagnostics-regression.txt ===
+PASS road diagnostics: signed metric grade / read-only / cancel + stale guard / terrain / actual underside clearance + lateral checks / at-grade exclusion / hidden road / derived following / actual blocked pier location / native UI + focus / comparison / archive / helper exclusion {
+  entry: 'file:',
+  slope: {
+    length: 60,
+    length3D: 60.29925372672529,
+    minY: 0,
+    maxY: 6,
+    maxGrade: 10.000000000000144,
+    verticalSegments: 0,
+    maxIntrusion: -0.24482221138598304,
+    minClearance: null,
+    terrainSamples: 711,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  buried: {
+    length: 50,
+    length3D: 50,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: 1.8299999970197678,
+    minClearance: null,
+    terrainSamples: 612,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  low: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.699999982118606,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  high: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 7.699999982118605,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  edge: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.680000001192093,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  follow: {
+    length: 60,
+    length3D: 60,
+    minY: 3,
+    maxY: 3,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.17000004768371557,
+    minClearance: null,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  underJunction: {
+    length: 12,
+    length3D: 12,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.7799999895691867,
+    terrainSamples: 153,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  outside: {
+    length: 30,
+    length3D: 30,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: null,
+    minClearance: null,
+    terrainSamples: 0,
+    terrainOutside: 369,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  blocked: {
+    length: 90,
+    length3D: 90,
+    minY: 7,
+    maxY: 7,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -7.170000002980231,
+    minClearance: null,
+    terrainSamples: 1089,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 7
+  },
+  cancelled: true,
+  staleCancelled: true
+}
+
+=== lod-final-file-road-planning-offline.txt ===
+PASS offline single-file planning: {"grid":false,"snap":false,"n":1,"count":9}
+
+=== lod-final-file-road-properties-offline.txt ===
+PASS offline road property controls, stable identity + actual cap width, no page errors
+
+=== lod-final-file-window-lights-regression.txt ===
+PASS window emission / ordinary and instanced rooms + city grid / deterministic seed / no geometry or real lights / opaque instancing / gray shader chain / Basic restore / bounded variants / per-object controls / undo-redo / archive / old project / native UI + day-night + locked / cleanup {
+  entry: 'file:',
+  brightness: { mean: 1.1195416666666667, changed: 4642 },
+  dark: { calls: 306, triangles: 10202 },
+  bright: { calls: 306, triangles: 10202 },
+  batched: { calls: 113, triangles: 10202 },
+  unbatched: { calls: 306, triangles: 10202 },
+  lights: 13,
+  ordinaryUnits: 7,
+  proceduralSurfaces: 5,
+  legacyPreserved: true,
+  archive: true
+}
+
+=== lod-final-junction-surface.test.txt ===
+PASS junction asphalt subtraction, area conservation and sidewalk ray coverage: 6 angles × T/four-way × unequal widths
+
+=== lod-final-lighting-regression.txt ===
+PASS solar position / UTC equivalence / orientation / sanitization
+PASS unified sky / IBL ownership / WB not baked / EV + ISO once / legacy presets {
+  noRebake: true,
+  exposure: 4,
+  owned: true,
+  protectedOwner: true,
+  neutral: true,
+  restored: true,
+  legacy: true,
+  sameSun: true,
+  amb: 0,
+  hemi: 0,
+  fill: 0,
+  rim: 0
+}
+PIXELS {
+  lit: 133.74074074074076,
+  dark: 0,
+  shadow: 0,
+  unshadowed: 133.74074074074076,
+  off: 0,
+  emissionIndependent: true,
+  offEmission: true,
+  whiteBalancePixels: true,
+  neutralRGB: [ 164.22222222222226, 131.7777777777778, 105.22222222222223 ],
+  coolRGB: [ 118.11111111111111, 132.66666666666666, 156.55555555555554 ],
+  warmRGB: [ 175.88888888888886, 130.77777777777777, 87.88888888888889 ]
+}
+PASS actual ground illumination / occluder shadow / independent emissive and light
+BUDGET {
+  medium: { active: 8, shadows: 1, budget: 8, emitters: 18, culled: 10 },
+  low: { active: 4, shadows: 0, budget: 4, emitters: 18, culled: 14 },
+  high: { active: 12, shadows: 2, budget: 12, emitters: 18, culled: 6 },
+  stable: true,
+  far: { active: 0, shadows: 0, budget: 12, emitters: 18, culled: 18 },
+  glowing: true,
+  day: 0,
+  forced: 1,
+  hidden: 0,
+  perf: true,
+  restored: true
+}
+PASS stable camera-distance budgets / day-night / manual override / visibility / memory-first
+PASS real UI / numeric commit / one-step undo-redo / date controls / transformed dual palace lamps / .previz package reload
+EXPORT {
+  video: { size: 1043, frames: 1, iso: 2, exposure: 5.65685424949238 },
+  editor: 2.82842712474619,
+  during: { exposure: 5.65685424949238, iso: 2, active: 2 },
+  restored: 2.82842712474619,
+  png: true
+}
+PASS old-project compatibility; no browser / shader errors
+
+=== lod-final-model-instancing-regression.txt ===
+PASS building render-only instancing / pixels / original picking + gizmo / move undo-redo / material + hidden fallback / rebuild / archive / disposal / negative scale + callbacks / failure restoration {
+  entry: 'http:',
+  dense: {
+    calls: { samples: 3, mean: 1586, p50: 1586, p95: 1586, max: 1586 },
+    triangles: { samples: 3, mean: 344078, p50: 344078, p95: 344078, max: 344078 }
+  },
+  before: { calls: 320, triangles: 20150 },
+  after: { calls: 142, triangles: 20150 },
+  pixels: {
+    mean: 0.00005769230769230769,
+    changedFraction: 0.000003205128205128205,
+    max: 4
+  },
+  instanceDisposals: 43,
+  objectIds: 3,
+  groups: 43
+}
+
+=== lod-final-performance-regression.txt ===
+PASS performance: real intervals / bounded sampling / multipass / renderer restore / stable instancing and preview buffers / mesh disposal / undo-quality lifecycle / isolated cancellable four-fixture benchmarks / autosave protection / JSON archive roundtrip
+{
+  "comparison": {
+    "legacyUnchanged": [
+      57.89999999990687,
+      34.700000000186265,
+      27.199999999720603,
+      35.89999999990687,
+      13.800000000279397
+    ],
+    "inPlaceUnchanged": [
+      0.8999999999068677,
+      0.6999999997206032,
+      0.40000000037252903,
+      0.39999999990686774,
+      0.599999999627471
+    ],
+    "legacyChanged": [
+      19.100000000093132,
+      16.399999999906868,
+      16.59999999962747,
+      18.5,
+      14.100000000093132
+    ],
+    "inPlaceChanged": [
+      13.299999999813735,
+      19.800000000279397,
+      6.400000000372529,
+      16.899999999906868,
+      6.399999999906868
+    ],
+    "plants": 400,
+    "iterations": 12
+  },
+  "residency": [
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 4,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 4,
+      "programs": 22
+    },
+    {
+      "geometries": 31,
+      "textures": 7,
+      "programs": 22
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "town",
+      "calls": 584,
+      "triangles": 117230,
+      "p50": 20.800000000279397,
+      "p95": 22.600000000093132,
+      "archiveBytes": 2243
+    },
+    {
+      "id": "dense",
+      "calls": 1586,
+      "triangles": 344078,
+      "p50": 44.10000000009313,
+      "p95": 51.39999999990687,
+      "archiveBytes": 2277
+    },
+    {
+      "id": "terrain",
+      "calls": 177,
+      "triangles": 646522,
+      "p50": 2.6999999997206032,
+      "p95": 3.8999999999068677,
+      "archiveBytes": 41627
+    },
+    {
+      "id": "night",
+      "calls": 722,
+      "triangles": 66226,
+      "p50": 25.300000000279397,
+      "p95": 61.5,
+      "archiveBytes": 2241
+    }
+  ]
+}
+
+=== lod-final-pick-dev.txt ===
+PASS pick spatial index / original exact raycast + editing + archive {
+  "entry": "http:",
+  "offline": false,
+  "comparisons": 68,
+  "objectHits": 42,
+  "fixtures": [
+    {
+      "fixture": "dense",
+      "roots": 121,
+      "candidates": 3.5510204081632653,
+      "cold": 29.5,
+      "legacy": {
+        "samples": 30,
+        "mean": 1.0983673469401058,
+        "p50": 1.0816326530612246,
+        "p95": 1.1918367347014802,
+        "max": 1.29795918367537
+      },
+      "index": {
+        "samples": 30,
+        "mean": 0.08204081632532687,
+        "p50": 0.07959183673279321,
+        "p95": 0.10204081632653061,
+        "max": 0.10612244897388987
+      },
+      "ratio": 0.07469342251832306
+    }
+  ]
+}
+
+=== lod-final-pick-file.txt ===
+PASS pick spatial index / original exact raycast + editing + archive {
+  "entry": "file:",
+  "offline": true,
+  "comparisons": 68,
+  "objectHits": 42,
+  "fixtures": [
+    {
+      "fixture": "dense",
+      "roots": 121,
+      "candidates": 3.5510204081632653,
+      "cold": 23.200000000186265,
+      "legacy": {
+        "samples": 30,
+        "mean": 1.1118367346934974,
+        "p50": 1.0489795918348341,
+        "p95": 1.3999999999923973,
+        "max": 1.4265306122525006
+      },
+      "index": {
+        "samples": 30,
+        "mean": 0.09020408163430028,
+        "p50": 0.07755102041386525,
+        "p95": 0.14081632653821488,
+        "max": 0.17551020408353332
+      },
+      "ratio": 0.08113069016303644
+    }
+  ]
+}
+
+=== lod-final-pick-spatial-index.test.txt ===
+PASS 647 exact-pick comparisons / ties / ignore / hidden / layers / near-far / keys / shots / ground / terrain / transforms / descendants / geometry / delete / dynamic fallback / instances / custom raycasts / singular / failure / toggle / release
+
+=== lod-final-project-resources-regression.txt ===
+PASS companion OBJ/MTL/PNG; deduplicated embedded assets; fresh-registry archive roundtrip; actual texture image, transform and independent material policies; undo refs; invalid load preserves scene; Share absent 928392
+PASS IndexedDB reload restores model resources and appearance
+PASS library rebuild/performance mode/global reset + actual UI; no page errors
+
+=== lod-final-render-effects.test.txt ===
+PASS defaults/clamps, finite clustered geometry + source immutability, seam attributes, shared cache, near/far + selected/dynamic/transparent fallback, tiny-detail restore, release
+
+=== lod-final-road-diagnostics-regression.txt ===
+PASS road diagnostics: signed metric grade / read-only / cancel + stale guard / terrain / actual underside clearance + lateral checks / at-grade exclusion / hidden road / derived following / actual blocked pier location / native UI + focus / comparison / archive / helper exclusion {
+  entry: 'http:',
+  slope: {
+    length: 60,
+    length3D: 60.29925372672529,
+    minY: 0,
+    maxY: 6,
+    maxGrade: 10.000000000000144,
+    verticalSegments: 0,
+    maxIntrusion: -0.24482221138598304,
+    minClearance: null,
+    terrainSamples: 711,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  buried: {
+    length: 50,
+    length3D: 50,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: 1.8299999970197678,
+    minClearance: null,
+    terrainSamples: 612,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  low: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.699999982118606,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  high: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 7.699999982118605,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  edge: {
+    length: 60,
+    length3D: 60,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.680000001192093,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  follow: {
+    length: 60,
+    length3D: 60,
+    minY: 3,
+    maxY: 3,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.17000004768371557,
+    minClearance: null,
+    terrainSamples: 729,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  underJunction: {
+    length: 12,
+    length3D: 12,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -0.1700000029802322,
+    minClearance: 2.7799999895691867,
+    terrainSamples: 153,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  outside: {
+    length: 30,
+    length3D: 30,
+    minY: 0,
+    maxY: 0,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: null,
+    minClearance: null,
+    terrainSamples: 0,
+    terrainOutside: 369,
+    builtSupports: 0,
+    blockedSupports: 0
+  },
+  blocked: {
+    length: 90,
+    length3D: 90,
+    minY: 7,
+    maxY: 7,
+    maxGrade: 0,
+    verticalSegments: 0,
+    maxIntrusion: -7.170000002980231,
+    minClearance: null,
+    terrainSamples: 1089,
+    terrainOutside: 0,
+    builtSupports: 0,
+    blockedSupports: 7
+  },
+  cancelled: true,
+  staleCancelled: true
+}
+
+=== lod-final-road-diagnostics.test.txt ===
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
+
+=== lod-final-terrain-roads-regression.txt ===
+{
+  "local": {
+    "paint": 0.6499999761581421,
+    "far": 0,
+    "heightSame": true,
+    "refined": 257,
+    "height": 0,
+    "paintRetained": true,
+    "saved": true
+  },
+  "cliffBefore": 1.446441332248135,
+  "cliffAfter": 0.6890171364770395,
+  "slopeFinite": true,
+  "hills": {
+    "center": 4.010477632073795,
+    "terrain": 4,
+    "actual": 4.180477828979492,
+    "finite": true,
+    "verts": 93840
+  },
+  "raised": 6.010477632073795,
+  "undo": 4.011176479003009,
+  "redo": 6.011176479003009,
+  "bridge": {
+    "junctions": 0,
+    "count": 16,
+    "status": {
+      "built": 8,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 54,
+          "point": [
+            0,
+            9,
+            -1
+          ]
+        }
+      ]
+    },
+    "collision": false,
+    "buildingCollision": false,
+    "blocked": 4,
+    "regenerated": true,
+    "lowBuildingCollision": false
+  },
+  "plants": {
+    "deleted": true,
+    "clearRetained": true
+  },
+  "fill": {
+    "crossing": 0,
+    "away": 8.979999542236328,
+    "remote": 0
+  },
+  "archive": {
+    "mode": "fixed",
+    "height": 8.979999542236328,
+    "n": 97
+  }
+}
+Extra checks {
+  holes: 0,
+  buried: 0,
+  minClear: 0.17003919194661393,
+  junctions: 1,
+  initial: true,
+  deleted: true,
+  oneUndo: true,
+  restored: true,
+  redone: true,
+  selfCollision: false,
+  supportCount: 20,
+  editLevel: 8,
+  editMode: 'fixed',
+  overflowHeight: 100
+}
+PASS local splat materials, refinement, steep smoothing, following roads, grade separation, full-volume pier collisions, vegetation clearance, safe embankment, undo/redo and archive
+
+=== lod-final-window-lights-regression.txt ===
+PASS window emission / ordinary and instanced rooms + city grid / deterministic seed / no geometry or real lights / opaque instancing / gray shader chain / Basic restore / bounded variants / per-object controls / undo-redo / archive / old project / native UI + day-night + locked / cleanup {
+  entry: 'http:',
+  brightness: { mean: 1.1195416666666667, changed: 4642 },
+  dark: { calls: 306, triangles: 10202 },
+  bright: { calls: 306, triangles: 10202 },
+  batched: { calls: 113, triangles: 10202 },
+  unbatched: { calls: 306, triangles: 10202 },
+  lights: 13,
+  ordinaryUnits: 7,
+  proceduralSurfaces: 5,
+  legacyPreserved: true,
+  archive: true
+}
+
+=== lod-final-window-lights.test.txt ===
+PASS window settings / deterministic occupancy / metadata scope / no source mutation / bounded material pairs / unchanged geometry / gray + legacy restore / day-night factor / release

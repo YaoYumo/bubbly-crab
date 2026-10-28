@@ -76,7 +76,7 @@ export function buildDemo(app) {
   app.setMotion(crowd, { active: false, anim: 'talk', speed: 0.8 });
   const car2 = add('env', 'car', '轿车', -70, 6.2, 0, { color: '#8a2f2f' });
   app.setMotion(car2, {
-    active: true, autoFace: true, easing: 'linear', loop: true,
+    active: true, autoFace: true, faceOffset: -Math.PI / 2, easing: 'linear', loop: true,
     keys: [{ t: 0, p: [-72, 0, 6.2] }, { t: 0.5, p: [0, 0, 6.2] }, { t: 1, p: [72, 0, 6.2] }],
   });
 

@@ -1,0 +1,185 @@
+PASS 40 graded diagonal endpoint freeway ports: both endpoint directions / sides / creation orders, including 10-degree plan angle
+PASS narrow endpoint deck/rounding tolerance / finite target / distant endpoints and real grade separation rejected
+PASS independent near-side freeway ports / opposite carriageway + median half-plane / no transverse mouth curb / no freeway pedestrian markings / grade separation
+PASS 60 acute/short/wide/graded plans / horizontal unit frames / bounded real endpoints / grade-invariant XZ mouths
+PASS triangle-level prism subtraction / preserved median and opposing slab / normals, UVs, material groups
+PASS explicit screen-offset Y grip hit target distinct from planar point
+PASS junction asphalt subtraction, area conservation and sidewalk ray coverage: 6 angles × T/four-way × unequal widths
+PASS: all 36 road-type pairs × 2 angles; asphalt priority independent of order; crosswalk geometry only on asphalt; stop lines preserved
+PASS road elevation presets / exact endpoints + original corners / input validation / grade shear + full-width section heights / lamp spacing, side, grade, gaps and bounded instances
+
+> previz-lab@1.6.2 test:desktop
+> node test/desktop.test.mjs
+
+PASS desktop config schema, minimal local capability allowlist, native isolation, name sanitization, exact chunk/partial writes, cancel, failures/close cleanup, queue budget/order/recovery. NOT native Windows execution.
+
+> previz-lab@1.6.2 test:editor-expansion:pure
+> node test/editor-expansion.test.mjs
+
+PASS primitive schema/security + resolved references + authorized directing + model front axes + time-matched motion heading + grounded smooth walk { soleRange: 0.0026530407933716207, maxKneeStep: 0.011824471089129762 }
+PASS range interaction: scoped/coalesced renders, native-change ordering, pointer IDs, cancel/lost capture/blur, held keyboard keys, fast next gesture, detached panels
+PASS radial placement: viewport edges, off-screen anchors, compact fallback
+PASS radial guards: explain busy/tool/playback states without dropping safety
+
+> previz-lab@1.6.2 all
+> npm run build && npm run build:single
+
+
+> previz-lab@1.6.2 build
+> vite build
+
+vite v5.4.10 building for production...
+transforming...
+✓ 199 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                              5.89 kB │ gzip:   2.66 kB
+dist/assets/preview-CD09Artc.png            21.89 kB
+dist/assets/lantern-river-DwdSUSns.webp     23.97 kB
+dist/assets/cyber-rain-D2GUFibG.webp        33.96 kB
+dist/assets/wood-preview-VM_cfdbP.png       41.26 kB
+dist/assets/index-CqAuepLP.css              77.50 kB │ gzip:  14.74 kB
+dist/assets/MTLLoader-CLjfL8sj.js            4.11 kB │ gzip:   1.67 kB
+dist/assets/OBJLoader-za3Zt-9w.js            8.74 kB │ gzip:   2.92 kB
+dist/assets/GLTFLoader-pcUlRt-y.js          44.89 kB │ gzip:  13.28 kB
+dist/assets/FBXLoader-Dj2iR78k.js           47.78 kB │ gzip:  16.04 kB
+dist/assets/index-CmMCPj7_.js            2,525.54 kB │ gzip: 975.34 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.18s
+
+> previz-lab@1.6.2 build:single
+> node scripts/build-single.mjs
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✔ 已生成 previz-lab.html（2913 KB，含全部 three.js 与加载器，可离线双击打开）
+
+> previz-lab@1.6.2 build:desktop
+> node scripts/build-desktop.mjs
+
+vite v5.4.10 building for desktop...
+transforming...
+✓ 199 modules transformed.
+rendering chunks...
+computing gzip size...
+desktop/dist/index.html                              5.89 kB │ gzip:   2.66 kB
+desktop/dist/assets/preview-CD09Artc.png            21.89 kB
+desktop/dist/assets/lantern-river-DwdSUSns.webp     23.97 kB
+desktop/dist/assets/cyber-rain-D2GUFibG.webp        33.96 kB
+desktop/dist/assets/wood-preview-VM_cfdbP.png       41.26 kB
+desktop/dist/assets/index-CqAuepLP.css              77.50 kB │ gzip:  14.74 kB
+desktop/dist/assets/index-Dphg_Ony.js                1.26 kB │ gzip:   0.48 kB
+desktop/dist/assets/core-B9ij_roJ.js                 1.92 kB │ gzip:   0.87 kB
+desktop/dist/assets/MTLLoader-BmtpbeRA.js            4.11 kB │ gzip:   1.66 kB
+desktop/dist/assets/index-DN3Mz2zv.js                7.63 kB │ gzip:   2.04 kB
+desktop/dist/assets/OBJLoader-CIfyFGAB.js            8.74 kB │ gzip:   2.92 kB
+desktop/dist/assets/window-DUwF__2R.js              15.46 kB │ gzip:   3.90 kB
+desktop/dist/assets/GLTFLoader-CvZBGSkb.js          44.89 kB │ gzip:  13.28 kB
+desktop/dist/assets/FBXLoader-XdkuSTw3.js           47.78 kB │ gzip:  16.04 kB
+desktop/dist/assets/index-CWi6Pot0.js            2,504.92 kB │ gzip: 968.45 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.22s
+{
+  "sourceCommit": null,
+  "cargoLock": null,
+  "frontendBytes": 2921779,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/FBXLoader-XdkuSTw3.js",
+      "bytes": 47775,
+      "sha256": "e7ca9189e715c02371d07623c8ba511ab989c2711157d0e28cf466dbc95937c8"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-CvZBGSkb.js",
+      "bytes": 44891,
+      "sha256": "6941f224b6471d70fbabfee14a13392cc8b9ce2f37a598ede91b76b9edfc4d7f"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-BmtpbeRA.js",
+      "bytes": 4112,
+      "sha256": "7f709fe6b5bc5468bc4cd73b992bb2c141ed93773a5496db30d03f441266a94f"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-CIfyFGAB.js",
+      "bytes": 8741,
+      "sha256": "e78f4e87a5369935fe769b06186be15c194fa5f40cb5128045762ef91c122a63"
+    },
+    {
+      "path": "desktop/dist/assets/core-B9ij_roJ.js",
+      "bytes": 1915,
+      "sha256": "05401f8b053174dfeac7305d5f641c48db6c63d18272d010674fcc0c789484db"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/index-CWi6Pot0.js",
+      "bytes": 2585181,
+      "sha256": "226114b20762247bb1295ff620ced201abc61408f1cfd81a7b398aaaa5fba0f8"
+    },
+    {
+      "path": "desktop/dist/assets/index-CqAuepLP.css",
+      "bytes": 77503,
+      "sha256": "1afe4d9815cb1a66128b91cb5cbe97d5891fc74daf680902759c9ef4857bdd66"
+    },
+    {
+      "path": "desktop/dist/assets/index-DN3Mz2zv.js",
+      "bytes": 7629,
+      "sha256": "fcc6062c5d9b0a800e0c231113c501e2027bfcb5944e1e79b883fab912c98b2a"
+    },
+    {
+      "path": "desktop/dist/assets/index-Dphg_Ony.js",
+      "bytes": 1257,
+      "sha256": "64e3bf21bd992336d52559fe3073417a0cbd663a75b56be9cff93eb4207f5b56"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-DUwF__2R.js",
+      "bytes": 15464,
+      "sha256": "2f7f706d0e08356c21ce019947191d9da21948789df3d888f9e3eaf0ee1cf7ad"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "bf5729b1e32d4e7dc617a3c88535a08d8ba23693c97a609ed03207cf7569174b"
+    }
+  ],
+  "installers": [],
+  "binaries": [],
+  "nativeArtifactsPresent": false,
+  "installerIncludesWebView2": false,
+  "missingWebView2Policy": "download-bootstrapper-on-install; internet required only if runtime is absent",
+  "modelWeightsIncluded": false,
+  "localInferenceEngine": null,
+  "isolatedLoopbackHelper": [],
+  "inferenceRuntime": [],
+  "signed": false,
+  "note": "Frontend sizes only. No native installer has been built in this environment."
+}

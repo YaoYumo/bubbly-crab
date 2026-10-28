@@ -1,0 +1,18 @@
+{
+  "selectedRebuildStableIdUndoRedo": true,
+  "existingMetadataPreserved": true,
+  "metadataPatchRefused": true,
+  "selectedOnlyEditApplied": true,
+  "unselectedEditRefused": true,
+  "parallelRefused": true,
+  "referencePNGAndTerrainMutex": true,
+  "exactGroundY": 4,
+  "sourceResourcesNotDisposed": true,
+  "fourPrepareDiscardCycles": true,
+  "protectedRoadSegmentRefused": true,
+  "concurrentEditPreserved": true,
+  "importedRollback": true,
+  "personPhaseRestored": true,
+  "importedResourceAndTerrainUndoRedo": true,
+  "errors": []
+}

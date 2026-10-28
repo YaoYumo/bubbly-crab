@@ -1,0 +1,303 @@
+{
+  "platform": "Linux software WebGL, not native Windows GPU acceptance",
+  "decks": [
+    {
+      "duplicateRampDeck": 0,
+      "width": 20,
+      "side": -1,
+      "reverse": false,
+      "holes": 0,
+      "maxDelta": 2.980227620241749e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980228,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0005632511369491888
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 20,
+      "side": -1,
+      "reverse": true,
+      "holes": 0,
+      "maxDelta": 2.980227620241749e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980228,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0005632511369491888
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 20,
+      "side": 1,
+      "reverse": false,
+      "holes": 0,
+      "maxDelta": 2.980227620241749e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980228,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0005664605306422155
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 20,
+      "side": 1,
+      "reverse": true,
+      "holes": 0,
+      "maxDelta": 2.980227620241749e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980228,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0005664605306422155
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 34,
+      "side": -1,
+      "reverse": false,
+      "holes": 0,
+      "maxDelta": 2.9802311729554276e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980231,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0003897335056157192
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 34,
+      "side": -1,
+      "reverse": true,
+      "holes": 0,
+      "maxDelta": 2.9802311729554276e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980231,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0003897335056157192
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 34,
+      "side": 1,
+      "reverse": false,
+      "holes": 0,
+      "maxDelta": 2.9802311729554276e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980231,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.00032498587789775435
+    },
+    {
+      "duplicateRampDeck": 0,
+      "width": 34,
+      "side": 1,
+      "reverse": true,
+      "holes": 0,
+      "maxDelta": 2.9802311729554276e-9,
+      "patchAbove": 1.4901164746561335e-9,
+      "mouthTop": 8.170000002980231,
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.00032498587789775435
+    }
+  ],
+  "gradedHost": {
+    "maxDeckMismatch": 0.000022991141579886687,
+    "nodes": 2,
+    "highway": 1,
+    "street": 1,
+    "maxSeam": 0.0013749233188678767
+  },
+  "spirals": [
+    {
+      "width": 20,
+      "side": -1,
+      "reverse": false,
+      "actualGrade": 0.1111994539045397,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 26.899999999999995,
+        "flatEnd": 26.89999999999992,
+        "radius": 12,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000001908992663501863
+    },
+    {
+      "width": 20,
+      "side": -1,
+      "reverse": true,
+      "actualGrade": 0.11119945390453509,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 26.899999999999995,
+        "flatEnd": 26.89999999999992,
+        "radius": 12,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000010578618839407472
+    },
+    {
+      "width": 20,
+      "side": 1,
+      "reverse": false,
+      "actualGrade": 0.1111994539045397,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 26.899999999999995,
+        "flatEnd": 26.89999999999992,
+        "radius": 12,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000001911580957525416
+    },
+    {
+      "width": 20,
+      "side": 1,
+      "reverse": true,
+      "actualGrade": 0.11119945390453509,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 26.899999999999995,
+        "flatEnd": 26.89999999999992,
+        "radius": 12,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000010587104829984373
+    },
+    {
+      "width": 34,
+      "side": -1,
+      "reverse": false,
+      "actualGrade": 0.07115423275134655,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 39.65999999999999,
+        "flatEnd": 39.660000000000224,
+        "radius": 16.799999999999997,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0002778791131607672
+    },
+    {
+      "width": 34,
+      "side": -1,
+      "reverse": true,
+      "actualGrade": 0.07115423275134475,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 39.65999999999999,
+        "flatEnd": 39.66000000000025,
+        "radius": 16.799999999999997,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000277879113161128
+    },
+    {
+      "width": 34,
+      "side": 1,
+      "reverse": false,
+      "actualGrade": 0.07115423275134655,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 39.65999999999999,
+        "flatEnd": 39.660000000000224,
+        "radius": 16.799999999999997,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.0002778791131607672
+    },
+    {
+      "width": 34,
+      "side": 1,
+      "reverse": true,
+      "actualGrade": 0.07115423275134475,
+      "routing": {
+        "mode": "auto",
+        "shape": "spiral",
+        "flatStart": 39.65999999999999,
+        "flatEnd": 39.66000000000025,
+        "radius": 16.799999999999997,
+        "turns": 1.0451672353008665,
+        "clearance": 5.5,
+        "nominalHeadroom": 4.5
+      },
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000277879113161128
+    }
+  ],
+  "atomic": true,
+  "blockedAtomic": true,
+  "lifecycle": {
+    "oneUndo": true,
+    "undo": true,
+    "redo": true,
+    "sameId": true,
+    "savedRouting": true,
+    "ports": {
+      "nodes": 2,
+      "highway": 1,
+      "street": 1,
+      "maxSeam": 0.000001911580957525416
+    }
+  },
+  "errors": [],
+  "csp": []
+}

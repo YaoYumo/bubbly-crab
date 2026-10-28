@@ -1,0 +1,77 @@
+{
+  "version": "1.7.0",
+  "status": "frontend-and-windows-build-install-smoke-passed",
+  "modes": [
+    "Vite web",
+    "compiled desktop with CSP",
+    "compiled file HTML with network disabled"
+  ],
+  "platform": "Linux Chromium 131 / software WebGL; not native user Windows hardware",
+  "tests": [
+    "A/B road and point selection with actual pointer events and section number input in all three modes",
+    "Four automatic flat/graded road-mode/point-mode scenes, fixed hosts, one-step undo-redo, exact saved section/path/provenance",
+    "Near-side highway ramp, original median and opposite lane retained; no sidewalk; independent shoulder/sidewalk widths",
+    "Locked targets rejected atomically, bounded acute core with actual seam rays",
+    "40 pure 3D endpoint contact cases, finite-target negatives; 60 grade-invariant acute plans",
+    "12 graded ramp networks per mode, both orders/directions, upper/lower mouths, seam rays, incremental reflow, save-load",
+    "Old independent green Y grips, actual blue XZ edits, curved highway, true underpasses, self-stacked ramp, lamps and terrain supports in all modes",
+    "Real road reselection/type/section fields and per-field undo-redo; offline properties",
+    "Terrain road adaptation and safe supports/fill; 84 model variants, heading and furniture/building constructs, actual model/road dragging",
+    "16 actual range drags, radial menu and mocked native scene chat (not GGUF inference)",
+    "Exact batching/subdivision geometry hash and pixelDifference0, draw calls356->82; not a GPU benchmark"
+  ],
+  "harnessNotes": [
+    "Compatibility log ends with a missing cached Chromium executable for performance test (launched without the wrapper). The corrected invocation with test/withchrome.sh completed successfully in performance.txt. All preceding compatibility tests completed successfully.",
+    "Product render settings were not changed. Road browser tests reduce pixel ratio to 0.5 and pause rendering outside gestures to run under software WebGL."
+  ],
+  "limitations": [
+    "Not native user Windows UI, RTX4070Ti performance or real GGUF inference acceptance",
+    "Connection search is bounded scene-layout geometry, not civil-engineering/traffic planning",
+    "Generated connection provenance is saved, but is not a live constraint after host road edits"
+  ],
+  "testedSource": "0b64d35d236c6bbd178448c9a3c87cd5673057ec",
+  "windows": {
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY",
+    "runId": 40479315968,
+    "jobId": 122105336205,
+    "artifactId": 12721973481,
+    "artifactBytes": 23594389,
+    "artifactUploadDigest": "sha256:87dc77127f30e858d0c924c06e5286169677aefebcae5e064f5d297a864ae2e5",
+    "artifactExpiresAt": "2027-01-25T09:14:47Z",
+    "installer": {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.0_x64-setup.exe",
+      "bytes": 20991268,
+      "sha256": "e53b014bef3552a278523e892871661e69c974d4273b0d111adf90f47c85b52c"
+    },
+    "frontendPathBytesSHA256Match": true,
+    "frontendFileCount": 15,
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "installedHelper": {
+      "status": "PASS_INSTALLED_LOOPBACK_HELPER",
+      "probe": true,
+      "chunkedHealth": true,
+      "unicodeChatRoundTrip": true,
+      "proxyEnvironmentIgnored": true,
+      "noRedirect": true,
+      "malformedInputRejected": true,
+      "socketTimeout": true,
+      "childTerminationDoesNotTerminateTestHost": true,
+      "realAstrillDllInjected": false,
+      "realGGUFInferenceVerified": false
+    },
+    "independentlyRedownloadedInstallerHash": false
+  }
+}

@@ -1,0 +1,8 @@
+PASS idle scheduling/dedupe/cancel/error/drain, cold precise fallback, warm/refit/deep invalidation/stale/moving roots, deferred LOD/revision/cache retention/release/ownership, EBML duration
+PASS defaults/clamps, finite clustered geometry + source immutability, seam attributes, shared cache, near/far + selected/dynamic/transparent fallback, tiny-detail restore, release
+PASS 647 exact-pick comparisons / ties / ignore / hidden / layers / near-far / keys / shots / ground / terrain / transforms / descendants / geometry / delete / dynamic fallback / instances / custom raycasts / singular / failure / toggle / release
+PASS window settings / deterministic occupancy / metadata scope / no source mutation / bounded material pairs / unchanged geometry / gray + legacy restore / day-night factor / release
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
+PASS junction asphalt subtraction, area conservation and sidewalk ray coverage: 6 angles × T/four-way × unequal widths

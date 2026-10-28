@@ -1,0 +1,104 @@
+{
+  "objects": 3,
+  "messages": [
+    {
+      "role": "user",
+      "text": "建三座中式大殿，留出间距"
+    },
+    {
+      "role": "assistant",
+      "text": "按你的要求完成调整。\n已完成：新增 3，调整 0，删除 0。 可撤销。"
+    },
+    {
+      "role": "user",
+      "text": "把刚才第一个大殿右移5米，再加一座"
+    },
+    {
+      "role": "assistant",
+      "text": "按你的要求完成调整。\n已完成：新增 1，调整 1，删除 0。 可撤销。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "帮我生成不存在的东西"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：不存在或不支持的搭景资产：made-up:model"
+    },
+    {
+      "role": "user",
+      "text": "生成一条机械龙"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：目录中没有机械龙，不能假装生成。"
+    },
+    {
+      "role": "user",
+      "text": "锁定的模型也搬过去"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：无权修改对象：chat_obj_1gwmu"
+    },
+    {
+      "role": "user",
+      "text": "清空这些建筑"
+    },
+    {
+      "role": "assistant",
+      "text": "已取消删除，场景没有改变。"
+    },
+    {
+      "role": "user",
+      "text": "确认清空这些建筑"
+    },
+    {
+      "role": "assistant",
+      "text": "按你的要求完成调整。\n已完成：新增 0，调整 0，删除 3。 可撤销。"
+    },
+    {
+      "role": "assistant",
+      "text": "已撤销上一步。"
+    },
+    {
+      "role": "user",
+      "text": "再添加一个"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：已停止"
+    },
+    {
+      "role": "user",
+      "text": "再试一次"
+    },
+    {
+      "role": "assistant",
+      "text": "未完成：已停止"
+    }
+  ],
+  "ipc": [
+    "local_ai_status",
+    "local_ai_open_folder",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_chat",
+    "local_ai_stop",
+    "local_ai_chat",
+    "local_ai_stop",
+    "local_ai_status"
+  ],
+  "csp": [],
+  "errors": [],
+  "realGGUF": false
+}

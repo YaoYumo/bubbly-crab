@@ -1,0 +1,33 @@
+PASS 40 graded diagonal endpoint freeway ports: both endpoint directions / sides / creation orders, including 10-degree plan angle
+PASS narrow endpoint deck/rounding tolerance / finite target / distant endpoints and real grade separation rejected
+PASS independent near-side freeway ports / opposite carriageway + median half-plane / no transverse mouth curb / no freeway pedestrian markings / grade separation
+PASS 60 acute/short/wide/graded plans / horizontal unit frames / bounded real endpoints / grade-invariant XZ mouths
+PASS triangle-level prism subtraction / preserved median and opposing slab / normals, UVs, material groups
+PASS explicit screen-offset Y grip hit target distinct from planar point
+PASS road elevation presets / exact endpoints + original corners / input validation / grade shear + full-width section heights / lamp spacing, side, grade, gaps and bounded instances
+interchange {"junctions":0,"gaps":[0,0],"hits":[8.19000000298023,0.19000000298023223],"bridge":{"built":10,"blocked":0,"plantsRemoved":0,"blockedAt":[]},"lamps":[10,10],"supportClear":true}
+PASS stacked interchange / two independently raycastable decks / no planar gaps / full-volume support avoidance
+PASS actual road lamp toggle / separate manual lamp / live range retained / spacing and side one-step undo-redo / glow / type edit / save-load
+PASS real ramp preset / smooth height transition / low and high T-junctions / raycast paved grade / atomic undo-redo
+PASS loop ramp underpass then valid join on the same road / self-stacked alignment preserves both elevations
+PASS real Shift height drag / stable XZ + settings / per-point numeric editing / high-level preset / cancel restores undo and camera targets / lock guard
+PASS new fixed-height mouse drawing / ground-off supports / backwards-compatible lamps off / no JS or CSP errors
+PASS direct green Y grip, no Shift / only one Y changes / undo-redo-save-load / perspective
+PASS direct green Y grip, no Shift / only one Y changes / undo-redo-save-load / top
+PASS direct green Y grip, no Shift / only one Y changes / undo-redo-save-load / follow
+PASS real blue XZ-only drag / active draft single Y grip / cancel restores original + undo stack / locked grips hidden
+PASS 8 real freeway mesh scenes / either creation order and side / continuous median + opposing lane / branch removed from median / open near-side port / no pavement holes
+PASS real curved freeway / both creation orders / unmodified median and opposite lane / branch does not reappear over curved median
+PASS same-level freeway crossing rejected without opening a median / draft and undo retained
+acute max height delta 0.07000013455362453
+PASS 12 actual acute/short/graded mesh scenes / bounded endpoints / raycast seam coverage
+PASS {"yaw":0,"angle":90} [[[0.45882396671195114,0.5411760332880489]],[[0.903922589123249,1]]]
+PASS {"yaw":0,"angle":90,"miss":0.01} [[[0.45882396671195114,0.5411760332880489]],[[0.9039979222416878,1]]]
+PASS {"yaw":37,"angle":90,"reverse":true,"stemFirst":true} [[[0,0.09607741095478695]],[[0.45882396671195114,0.5411760332880489]]]
+PASS {"yaw":90,"angle":90,"miss":0.01,"reverse":true} [[[0.45882396671195114,0.5411760332880489]],[[0,0.09600207775831224]]]
+PASS {"yaw":37,"angle":60,"stemFirst":true} [[[0.8391317371418352,1]],[[0.42986753991380244,0.5411062264850872]]]
+PASS {"yaw":0,"angle":30} [[[0.351177730256536,0.5405465403384262]],[[0.6640505866706372,1]]]
+PASS {"yaw":0,"angle":90,"draw":true} [[[0.45882396671195114,0.5411760332880489]],[[0.903922589123249,1]]]
+PASS {"yaw":37,"angle":90,"draw":true,"stemFirst":true,"reverse":true,"miss":0.01} [[[0,0.09600207775831224]],[[0.45882396671195114,0.5411760332880489]]]
+PASS: T junction restore/draw, reversed endpoints/order, rotation, acute angles, near-miss endpoints; no page errors
+PASS real mouse draw / Enter / Esc / reselect; auto object tab; type and numeric width; actual cap + mesh width; stable name / ID / selection

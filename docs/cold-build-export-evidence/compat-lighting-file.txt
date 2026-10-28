@@ -1,0 +1,10 @@
+PASS offline shipped UI / lamp parameters / undo-redo / real light and shadow map / WB-IBL separation / .previz reload / PNG ISO consistency {
+  lit: 1,
+  shadowMap: true,
+  noRebake: true,
+  project: true,
+  exposure: 2,
+  during: 4,
+  after: 2,
+  png: true
+}

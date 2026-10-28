@@ -1,0 +1,12 @@
+PASS AI scene {
+  sourceUnchangedByPreview: true,
+  staleRefused: true,
+  injectedRollback: true,
+  oneUndoRedo: true,
+  lockedRefused: true,
+  cameras: 4,
+  motionSecondsToNormalized: true,
+  referenceProvenance: true,
+  cancelled: true,
+  catalogEntries: 203
+}

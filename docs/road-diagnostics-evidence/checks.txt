@@ -1,0 +1,17 @@
+PASS road-diagnostics.test.mjs | node
+PASS road-diagnostics-regression.mjs | dev and real file with browser offline
+PASS road-properties-regression.mjs | dev
+PASS terrain-roads-regression.mjs | dev
+PASS road-planning-regression.mjs | dev
+PASS road-performance-regression.mjs | dev
+PASS model-instancing-regression.mjs | dev
+PASS performance-regression.mjs | dev assertions and final JSON
+PASS road-properties-offline.mjs | file
+PASS road-planning-offline.mjs | file
+PASS lighting-offline.mjs | file
+PASS junction-surface.test.mjs | node
+PASS junction-regression.mjs | real file, original 6 angles x 3 distances x 2 tilts x 4 sidewalk corners
+PASS npm run build | production
+PASS npm run build:single | production
+
+Not a full historical suite. Performance assertions completed after the outer serial batch wait timed out; continuation was observed to completion via PASS output and final JSON, without rerunning the active test. Its original child exit code was not retained by the timed-out shell.

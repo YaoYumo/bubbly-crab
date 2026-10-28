@@ -1,0 +1,671 @@
+{
+  "date": "2026-10-20",
+  "scope": "第二批首版：可复用数据关系、受控时序及配方生成时诊断；未扩展AI v1和真实外部推理",
+  "build": {
+    "path": "previz-lab.html",
+    "bytes": 2250848,
+    "sha256": "3ba2d84c7253cdc179f6f57889b7c11082f3a8ddb7478f8932415851101c1bd1"
+  },
+  "units": {
+    "spatial-dynamics.test.mjs": "PASS: chains, face/distance/keep-out, nonmutation, cycles/conflicts, malformed/budget/prototype, swept crossings, 3 corridors, max vehicle dimensions, schedule/seams, legacy gait speed",
+    "scene-recipes.test.mjs": "PASS 210 layouts via new relation/dynamics checks",
+    "showcase.test.mjs": "PASS 253 authored assets",
+    "towngen.mjs": "ALL PASS",
+    "townbuild.mjs": "ALL PASS",
+    "weather-volume.test.mjs": "PASS",
+    "ai-scene.test.mjs": "PASS; protocol fixtures only"
+  },
+  "browser": {
+    "dev": {
+      "mode": "dev",
+      "results": [
+        {
+          "kind": "cyber-rain",
+          "relations": {
+            "version": 1,
+            "entities": 72,
+            "rules": 14,
+            "anchors": 14,
+            "reserved": 0,
+            "issues": [],
+            "ok": true
+          },
+          "dynamics": {
+            "version": 1,
+            "routes": 10,
+            "samples": 2410,
+            "sweeps": 22080,
+            "corridorSamples": 1446,
+            "vehiclePairs": 6,
+            "warnings": [
+              {
+                "code": "timeline-seam",
+                "subject": "node-66",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-67",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-68",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-69",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-70",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-71",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              }
+            ],
+            "method": "241 path samples plus swept chords against tower AABBs; synchronous vehicle spheres advisory, no pedestrian navigation"
+          },
+          "runtimeRateAndPhase": true,
+          "roundtrip": true,
+          "undoRedo": true
+        },
+        {
+          "kind": "lantern-river",
+          "relations": {
+            "version": 1,
+            "entities": 140,
+            "rules": 80,
+            "anchors": 20,
+            "reserved": 60,
+            "issues": [],
+            "ok": true
+          },
+          "dynamics": {
+            "version": 1,
+            "routes": 9,
+            "samples": 2169,
+            "sweeps": 0,
+            "corridorSamples": 1446,
+            "vehiclePairs": 0,
+            "warnings": [
+              {
+                "code": "timeline-seam",
+                "subject": "node-134",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-135",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-136",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-137",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-138",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-139",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              }
+            ],
+            "method": "241 path samples plus swept chords against tower AABBs; synchronous vehicle spheres advisory, no pedestrian navigation"
+          },
+          "runtimeRateAndPhase": true,
+          "roundtrip": true,
+          "undoRedo": true
+        }
+      ],
+      "previewPure": true,
+      "manualTimingControls": true,
+      "errors": []
+    },
+    "offline": {
+      "mode": "file",
+      "results": [
+        {
+          "kind": "cyber-rain",
+          "relations": {
+            "version": 1,
+            "entities": 72,
+            "rules": 14,
+            "anchors": 14,
+            "reserved": 0,
+            "issues": [],
+            "ok": true
+          },
+          "dynamics": {
+            "version": 1,
+            "routes": 10,
+            "samples": 2410,
+            "sweeps": 22080,
+            "corridorSamples": 1446,
+            "vehiclePairs": 6,
+            "warnings": [
+              {
+                "code": "timeline-seam",
+                "subject": "node-66",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-67",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-68",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-69",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-70",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-71",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              }
+            ],
+            "method": "241 path samples plus swept chords against tower AABBs; synchronous vehicle spheres advisory, no pedestrian navigation"
+          },
+          "runtimeRateAndPhase": true,
+          "roundtrip": true,
+          "undoRedo": true
+        },
+        {
+          "kind": "lantern-river",
+          "relations": {
+            "version": 1,
+            "entities": 140,
+            "rules": 80,
+            "anchors": 20,
+            "reserved": 60,
+            "issues": [],
+            "ok": true
+          },
+          "dynamics": {
+            "version": 1,
+            "routes": 9,
+            "samples": 2169,
+            "sweeps": 0,
+            "corridorSamples": 1446,
+            "vehiclePairs": 0,
+            "warnings": [
+              {
+                "code": "timeline-seam",
+                "subject": "node-134",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-135",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-136",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-137",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-138",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              },
+              {
+                "code": "timeline-seam",
+                "subject": "node-139",
+                "message": "非整数倍率在整段时间轴循环处可能跳回；路线自身循环连续"
+              }
+            ],
+            "method": "241 path samples plus swept chords against tower AABBs; synchronous vehicle spheres advisory, no pedestrian navigation"
+          },
+          "runtimeRateAndPhase": true,
+          "roundtrip": true,
+          "undoRedo": true
+        }
+      ],
+      "previewPure": true,
+      "manualTimingControls": true,
+      "errors": []
+    }
+  },
+  "compatibility": {
+    "recipes": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "kind": "cyber-rain",
+            "models": 90,
+            "objects": 90,
+            "options": {
+              "seed": 82,
+              "size": 320,
+              "density": 0.65,
+              "floors": 30,
+              "cars": 8,
+              "people": 20,
+              "riverWidth": 20,
+              "lanterns": 108,
+              "weather": "rain",
+              "lighting": "night",
+              "fog": 0.017,
+              "opening": "street",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          },
+          {
+            "kind": "lantern-river",
+            "models": 162,
+            "objects": 168,
+            "options": {
+              "seed": 42,
+              "size": 320,
+              "density": 0.65,
+              "floors": 34,
+              "cars": 9,
+              "people": 28,
+              "riverWidth": 16,
+              "lanterns": 120,
+              "weather": "none",
+              "lighting": "night",
+              "fog": 0.0024,
+              "opening": "river",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          }
+        ],
+        "previewPure": true,
+        "manualOverrides": true,
+        "cancelledQueue": true,
+        "injectedRollback": true,
+        "legacyRouting": true,
+        "errors": []
+      },
+      "offline": {
+        "mode": "file",
+        "results": [
+          {
+            "kind": "cyber-rain",
+            "models": 90,
+            "objects": 90,
+            "options": {
+              "seed": 82,
+              "size": 320,
+              "density": 0.65,
+              "floors": 30,
+              "cars": 8,
+              "people": 20,
+              "riverWidth": 20,
+              "lanterns": 108,
+              "weather": "rain",
+              "lighting": "night",
+              "fog": 0.017,
+              "opening": "street",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          },
+          {
+            "kind": "lantern-river",
+            "models": 162,
+            "objects": 168,
+            "options": {
+              "seed": 42,
+              "size": 320,
+              "density": 0.65,
+              "floors": 34,
+              "cars": 9,
+              "people": 28,
+              "riverWidth": 16,
+              "lanterns": 120,
+              "weather": "none",
+              "lighting": "night",
+              "fog": 0.0024,
+              "opening": "river",
+              "walkRate": 1,
+              "trafficRate": 1,
+              "stagger": false,
+              "palette": "cyan"
+            },
+            "undoRedo": true,
+            "roundtrip": true
+          }
+        ],
+        "previewPure": true,
+        "manualOverrides": true,
+        "cancelledQueue": true,
+        "injectedRollback": true,
+        "legacyRouting": true,
+        "errors": []
+      }
+    },
+    "showcases": {
+      "dev": {
+        "mode": "dev",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      },
+      "offline": {
+        "mode": "offline",
+        "results": [
+          {
+            "id": "cyber-rain",
+            "report": {
+              "id": "cyber-rain",
+              "models": 91,
+              "shots": 3,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 91,
+            "shots": 3,
+            "moving": 29,
+            "routeSamples": 6989,
+            "roundtrip": true
+          },
+          {
+            "id": "lantern-river",
+            "report": {
+              "id": "lantern-river",
+              "models": 162,
+              "shots": 4,
+              "missing": 0,
+              "targetMiss": 0
+            },
+            "objects": 168,
+            "shots": 4,
+            "moving": 31,
+            "routeSamples": 7471,
+            "roundtrip": true
+          }
+        ],
+        "undo": true,
+        "errors": []
+      }
+    },
+    "aiSafety": {
+      "dev": {
+        "selectedRebuildStableIdUndoRedo": true,
+        "existingMetadataPreserved": true,
+        "metadataPatchRefused": true,
+        "selectedOnlyEditApplied": true,
+        "unselectedEditRefused": true,
+        "parallelRefused": true,
+        "referencePNGAndTerrainMutex": true,
+        "exactGroundY": 4,
+        "sourceResourcesNotDisposed": true,
+        "fourPrepareDiscardCycles": true,
+        "protectedRoadSegmentRefused": true,
+        "concurrentEditPreserved": true,
+        "importedRollback": true,
+        "personPhaseRestored": true,
+        "importedResourceAndTerrainUndoRedo": true,
+        "errors": []
+      },
+      "offline": {
+        "selectedRebuildStableIdUndoRedo": true,
+        "existingMetadataPreserved": true,
+        "metadataPatchRefused": true,
+        "selectedOnlyEditApplied": true,
+        "unselectedEditRefused": true,
+        "parallelRefused": true,
+        "referencePNGAndTerrainMutex": true,
+        "exactGroundY": 4,
+        "sourceResourcesNotDisposed": true,
+        "fourPrepareDiscardCycles": true,
+        "protectedRoadSegmentRefused": true,
+        "concurrentEditPreserved": true,
+        "importedRollback": true,
+        "personPhaseRestored": true,
+        "importedResourceAndTerrainUndoRedo": true,
+        "errors": []
+      }
+    },
+    "referenceUIOffline": {
+      "entry": "file",
+      "frames": 2,
+      "captureButton": true,
+      "overlayRemoved": true,
+      "nativeZIPDownload": true,
+      "attemptContainsOriginalZIP": true,
+      "attemptContainsResult": true,
+      "attemptContainsReview": true,
+      "errors": []
+    },
+    "weatherOffline": {
+      "mode": "file",
+      "results": [
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "points",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1.75,
+          "above": 4053,
+          "below": 3947,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 80,
+          "above": 4000,
+          "below": 4000,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 220,
+          "above": 4008,
+          "below": 3992,
+          "particles": 8000
+        },
+        {
+          "type": "rain",
+          "style": "streaks",
+          "y": 1200,
+          "above": 4038,
+          "below": 3962,
+          "particles": 8000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1.75,
+          "above": 6082,
+          "below": 5918,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 80,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 220,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "storm",
+          "style": "points",
+          "y": 1200,
+          "above": 5954,
+          "below": 6046,
+          "particles": 12000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1.75,
+          "above": 2033,
+          "below": 1967,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 80,
+          "above": 1978,
+          "below": 2022,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 220,
+          "above": 1977,
+          "below": 2023,
+          "particles": 4000
+        },
+        {
+          "type": "snow",
+          "style": "points",
+          "y": 1200,
+          "above": 2021,
+          "below": 1979,
+          "particles": 4000
+        }
+      ],
+      "errors": []
+    }
+  },
+  "visualReview": {
+    "reviewed": true,
+    "entry": "single-file offline",
+    "paths": [
+      ".shots/dynamics-plan-cyber-rain.png",
+      ".shots/dynamics-plan-lantern-river.png"
+    ],
+    "notes": "中文可读；布局草图和提示可见、弹层底栏保持可操作；临时CJK字体不打包"
+  },
+  "limits": [
+    "关系求解为生成时求解／预检，非编辑期持续约束或实时重挂。",
+    "face/distance为编程API并经纯测，未开放任意关系自然语言或导入UI。",
+    "保守AABB、采样弦线扫掠及包围球接近提示，不是通用mesh连续碰撞证明或交通导航。",
+    "错峰由种子确定，非自动避碰；非整数倍率有整段时间轴循环跳回提示。",
+    "时间轴标记仍为原路线参数位置，非错峰后的经过时刻。",
+    "生成来源图／报告为静态快照，编辑后可能过期。",
+    "原motion.speed步态语义保持；没有schedule的旧工程路径不变。",
+    "无真实AI／付费服务调用，未扩AI v1白名单；无本轮全场性能或长视频新验收。"
+  ],
+  "commands": [
+    "node test/spatial-dynamics.test.mjs",
+    "node test/scene-recipes.test.mjs",
+    "FONTCONFIG_PATH=/tmp/fonts bash test/withchrome.sh node test/spatial-dynamics-regression.mjs",
+    "FONTCONFIG_PATH=/tmp/fonts TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome.sh node test/spatial-dynamics-regression.mjs",
+    "npm run all"
+  ]
+}

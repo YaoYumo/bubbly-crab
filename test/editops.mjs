@@ -17,7 +17,7 @@ const R = { errors, checks: {} };
 const ck = (n, v) => { R.checks[n] = !!v; };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
+await page.goto((process.env.URL || 'http://localhost:5174/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
 await page.waitForFunction(() => window.__previzBooted && window.app && window.__scenes, { timeout: 180000 });
 await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* ignore */ } });
 await wait(400);

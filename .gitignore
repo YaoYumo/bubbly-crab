@@ -24,3 +24,31 @@ Thumbs.db
 npm-debug.log*
 yarn-error.log*
 *.log
+
+# 渲染台输出（本地生成，不入版本库）
+shots/
+
+# Local AI weights, binaries, machine paths and scratch data (never bundle/commit)
+local-ai/config.local.json
+local-ai/models/**
+local-ai/runtimes/**
+local-ai/cache/**
+local-ai/logs/**
+!local-ai/models/.gitkeep
+!local-ai/runtimes/.gitkeep
+!local-ai/cache/.gitkeep
+!local-ai/logs/.gitkeep
+
+# Native desktop build products (never commit installers or Rust target cache)
+src-tauri/target/
+src-tauri/gen/
+desktop/dist/
+
+# Reproducible, user-facing model exports (not source-controlled assets)
+model-exports/
+
+# Bundled inference binaries are pinned/fetched in CI, not committed.
+src-tauri/resources/llama/
+**/models/*.gguf
+
+src-tauri/resources/loopback/

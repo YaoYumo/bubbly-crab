@@ -113,8 +113,16 @@ function buildBunker(p) {
     g.add(box(0.9, 0.16, 0.16, M.metal(0x3a4048, 0.4, 0.6), p.w * 0.2, p.h + 0.75, 0));
   }
   if (p.rubble) {
+    // 碎块沿墙脚一圈、咬进墙身 10cm —— 旧版随机散到 2m 外成悬浮独立块
     const rng = makeRng(p.seed);
-    for (let i = 0; i < 8; i++) g.add(box(0.4 + rng() * 0.9, 0.2 + rng() * 0.4, 0.4 + rng() * 0.8, c, (rng() - 0.5) * p.w * 2, 0.12, (rng() - 0.5) * p.d * 1.6));
+    for (let i = 0; i < 8; i++) {
+      const rx = 0.4 + rng() * 0.9, rz = 0.4 + rng() * 0.8;
+      const along = (rng() - 0.5) * 0.8;
+      const side = i % 4;
+      const px = side < 2 ? (side === 0 ? 1 : -1) * (p.w / 2 + 0.1) : along * p.w * 0.5;
+      const pz = side < 2 ? along * p.d * 0.5 : (side === 2 ? 1 : -1) * (p.d / 2 + 0.1);
+      g.add(box(rx, 0.2 + rng() * 0.4, rz, c, px, 0.12, pz));
+    }
   }
   return shade(g);
 }
@@ -160,17 +168,22 @@ function buildArtillery(p) {
   const m = M.paint(new THREE.Color(p.color).getHex(), 0.6, 0.3);
   const dark = M.dark(0x22262c, 0.7);
   g.add(box(2.4, 0.5, 3.2, m, 0, 0.7, 0));
-  for (const s of [-1, 1]) for (const z of [-1, 1]) g.add(box(0.18, 1.4, 0.18, dark, s * 1.2, 0.35, z * 1.7));
+  for (const s of [-1, 1]) for (const z of [-1, 1]) g.add(box(0.18, 1.4, 0.18, dark, s * 1.2, 0.7, z * 1.7));
   for (const s of [-1, 1]) {
     const w = cyl(0.55, 0.55, 0.3, dark, 14, s * 1.25, 0.55, 0);
     w.rotation.z = Math.PI / 2;
     g.add(w);
   }
-  const bar = cyl(0.13, 0.16, p.barrel, m, 12, 0, 1.5, -p.barrel * 0.42);
-  bar.rotation.x = Math.PI / 2 - p.elev;
-  g.add(bar);
+  // 炮管绕炮架枢轴仰俯：几何平移到「尾端在枢轴」，再整体旋转 —— 旧版绕自身中心转，炮管飞出炮架
+  const piv = new THREE.Group();
+  piv.position.set(0, 1.05, 0.7);
+  piv.rotation.x = -(Math.PI / 2 - p.elev);
+  const bar = cyl(0.13, 0.16, p.barrel, m, 12);
+  bar.geometry.translate(0, p.barrel / 2 - 0.3, 0);
+  piv.add(bar);
+  piv.add(cyl(0.2, 0.24, 0.5, dark, 10, 0, p.barrel - 0.15, 0));          // 炮口箍（同轴套在管口）
+  g.add(piv);
   g.add(box(0.6, 0.5, 0.8, m, 0, 1.2, 1.2));
-  g.add(cyl(0.2, 0.24, 0.5, dark, 10, 0, 1.5 + p.barrel * 0.42 * Math.sin(p.elev), -p.barrel * 0.85 * Math.cos(p.elev)));
   return shade(g);
 }
 function buildTent(p) {
@@ -331,19 +344,24 @@ function buildWatchtower(p) {
       g.add(b);
       const b2 = box(0.09, 0.09, W, m, s * W / 2, y, 0);
       g.add(b2);
-      const d = box(W * 1.4, 0.07, 0.07, m, 0, y - 1.1, s * W / 2);
-      d.rotation.z = s * 0.5;
+      // 斜撑：从下一道横杆（第一道从地面起）斜拉到这一道，长度/角度按实际层高算
+      // 旧版是定长 W×1.4 定角 0.5rad 的杆，最下一根会斜插到地面以下 1m
+      const y0 = k === 0 ? 0 : 1.1 + (k - 1) * 2.2, hb = y - y0;
+      const d = box(Math.hypot(W, hb), 0.07, 0.07, m, 0, (y0 + y) / 2, s * W / 2);
+      d.rotation.z = s * Math.atan2(hb, W);
       g.add(d);
     }
   }
-  g.add(box(W + 1.2, 0.16, W + 1.2, M.paint(0x3a4048, 0.7), 0, H + 0.6, 0));
-  g.add(box(W + 0.6, 1.1, W + 0.6, M.paint(0x2f353d, 0.75), 0, H + 1.3, 0));
-  const roof = cone((W + 1.6) * 0.85, 0.9, M.paint(0x454c55, 0.7), 4, 0, H + 2.3, 0);
+  // 平台 / 岗亭 / 屋顶一层压一层坐在柱顶上（旧版平台悬在柱顶上方 0.6m，岗亭又离平台 0.07m，整组浮空）
+  const deckY = H + 0.08;
+  g.add(box(W + 1.2, 0.16, W + 1.2, M.paint(0x3a4048, 0.7), 0, deckY, 0));
+  g.add(box(W + 0.6, 1.1, W + 0.6, M.paint(0x2f353d, 0.75), 0, deckY + 0.63, 0));
+  const roof = cone((W + 1.6) * 0.85, 0.9, M.paint(0x454c55, 0.7), 4, 0, deckY + 1.63, 0);
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
   if (p.light) {
     const lm = M.glow(p.lightColor, 2.6);
-    g.add(box(0.5, 0.4, 0.5, lm, 0, H + 1.0, W / 2 + 0.7));
+    g.add(box(0.5, 0.4, 0.5, lm, 0, deckY + 0.63, W / 2 + 0.55));
     g.userData.glow = [lm];
   }
   return shade(g);
@@ -396,27 +414,33 @@ function buildWreck(p) {
 function buildPlanet(p) {
   const g = new THREE.Group();
   const geo = new THREE.SphereGeometry(p.r, 48, 32);
-  const cv = document.createElement('canvas');
-  cv.width = 512; cv.height = 256;
-  const cx = cv.getContext('2d');
-  const a = new THREE.Color(p.color), b = new THREE.Color(p.color2);
-  const rng = makeRng(p.seed);
-  cx.fillStyle = `#${b.getHexString()}`; cx.fillRect(0, 0, 512, 256);
-  for (let i = 0; i < 90; i++) {
-    const t = rng();
-    const c = a.clone().lerp(b, t);
-    cx.fillStyle = `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${0.25 + rng() * 0.5})`;
-    cx.beginPath();
-    cx.ellipse(rng() * 512, 30 + rng() * 196, 20 + rng() * 120, 8 + rng() * 26, rng() * 0.5, 0, Math.PI * 2);
-    cx.fill();
+  // Node 无 document：回退纯色材质，保证出图/体检流水线能构建（浏览器仍走程序化云带贴图）
+  let mat;
+  if (typeof document !== 'undefined' && document.createElement) {
+    const cv = document.createElement('canvas');
+    cv.width = 512; cv.height = 256;
+    const cx = cv.getContext('2d');
+    const a = new THREE.Color(p.color), b = new THREE.Color(p.color2);
+    const rng = makeRng(p.seed);
+    cx.fillStyle = `#${b.getHexString()}`; cx.fillRect(0, 0, 512, 256);
+    for (let i = 0; i < 90; i++) {
+      const t = rng();
+      const c = a.clone().lerp(b, t);
+      cx.fillStyle = `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${0.25 + rng() * 0.5})`;
+      cx.beginPath();
+      cx.ellipse(rng() * 512, 30 + rng() * 196, 20 + rng() * 120, 8 + rng() * 26, rng() * 0.5, 0, Math.PI * 2);
+      cx.fill();
+    }
+    for (let i = 0; i < 340; i++) {
+      cx.fillStyle = `rgba(0,0,0,${rng() * 0.16})`;
+      cx.fillRect(rng() * 512, rng() * 256, 2 + rng() * 16, 2 + rng() * 6);
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, metalness: 0, emissive: new THREE.Color(p.night), emissiveIntensity: p.nightI });
+  } else {
+    mat = new THREE.MeshStandardMaterial({ color: new THREE.Color(p.color).lerp(new THREE.Color(p.color2), 0.45), roughness: 0.92, metalness: 0, emissive: new THREE.Color(p.night), emissiveIntensity: p.nightI });
   }
-  for (let i = 0; i < 340; i++) {
-    cx.fillStyle = `rgba(0,0,0,${rng() * 0.16})`;
-    cx.fillRect(rng() * 512, rng() * 256, 2 + rng() * 16, 2 + rng() * 6);
-  }
-  const tex = new THREE.CanvasTexture(cv);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.92, metalness: 0, emissive: new THREE.Color(p.night), emissiveIntensity: p.nightI });
   const m = new THREE.Mesh(geo, mat);
   m.rotation.z = p.tilt;
   g.add(m);
@@ -501,8 +525,11 @@ function buildShip(p) {
   }
   const eng = M.glow(p.engine, p.engineGlow);
   for (const s of [-1, 1]) {
-    g.add(cyl(W * 0.16, W * 0.19, L * 0.16, dark, 12, -L * 0.44, 0, s * W * 0.34)).rotation.z = Math.PI / 2;
-    g.add(cyl(W * 0.13, W * 0.13, 0.12, eng, 12, -L * 0.52, 0, s * W * 0.34)).rotation.z = Math.PI / 2;
+    // g.add() 返回的是 g 自己：链式写 .rotation 会把整架飞机转 90°，发动机只能先建后设
+    const nac = cyl(W * 0.16, W * 0.19, L * 0.16, dark, 12, -L * 0.44, 0, s * W * 0.34);
+    nac.rotation.z = Math.PI / 2; g.add(nac);
+    const noz = cyl(W * 0.13, W * 0.13, 0.12, eng, 12, -L * 0.52, 0, s * W * 0.34);
+    noz.rotation.z = Math.PI / 2; g.add(noz);
   }
   if (p.turrets) for (const s of [-1, 1]) {
     g.add(cyl(W * 0.14, W * 0.18, H * 0.24, dark, 10, s * L * 0.16, H * 0.5, 0));
@@ -541,7 +568,16 @@ function buildFighter(p) {
     noz.rotation.z = Math.PI / 2;
     g.add(noz);
   }
-  return shade(g);
+  // 落地：旧版整机以原点为中心、机腹沉地 1.4m；现包围盒归零 + 两条着陆撬把机身支到 y=0
+  g.updateMatrixWorld(true);
+  const bb = new THREE.Box3().setFromObject(g);
+  const root = new THREE.Group();
+  g.position.y -= bb.min.y;
+  root.add(g);
+  const lift = -bb.min.y;
+  const skidH = lift - L * 0.11 + 0.03;                       // 撬顶咬入机腹 3cm
+  for (const s of [-1, 1]) root.add(box(L * 0.55, skidH, 0.07, dark, -L * 0.06, skidH / 2, s * L * 0.07));
+  return shade(root);
 }
 function buildStation(p) {
   const g = new THREE.Group();
@@ -585,7 +621,9 @@ function buildDome(p) {
   g.add(planeXZ(p.r * 2, p.r * 2, M.paint(new THREE.Color(p.floor).getHex(), 0.9), 0, 0.52, 0));
   if (p.tubes) for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2;
-    const t = cyl(p.r * 0.16, p.r * 0.16, p.r * 1.6, glass, 12, Math.cos(a) * p.r * 0.7, 0.5, Math.sin(a) * p.r * 0.7);
+    const tr = p.r * 0.08;
+    // 管道收进穹顶 footprint、落在基座顶（旧版粗管半埋地下、外端伸出基座悬空）
+    const t = cyl(tr, tr, p.r * 0.8, glass, 12, Math.cos(a) * p.r * 0.55, tr + 0.2, Math.sin(a) * p.r * 0.55);
     t.rotation.z = Math.PI / 2; t.rotation.y = -a;
     g.add(t);
   }
@@ -632,7 +670,9 @@ function buildTurret(p) {
   const head = new THREE.Group();
   head.add(box(p.base * 1.1, p.base * 0.62, p.base * 1.2, m, 0, 0, 0));
   for (const s of [-1, 1]) {
+    // 炮管水平指向前方（旧版漏转 90°，竖直插地）
     const b = cyl(p.base * 0.12, p.base * 0.14, p.barrel, dark, 10, s * p.base * 0.3, 0, p.barrel / 2 + p.base * 0.4);
+    b.rotation.x = Math.PI / 2;
     head.add(b);
   }
   head.position.y = 1.0;
@@ -655,11 +695,14 @@ function buildPylon(p) {
     g.add(box(p.w * (1 - t * 0.42), 1.5, p.w * (1 - t * 0.42), stone, 0, 0.8 + i * 1.5, 0));
   }
   const em = M.glow(p.beam, p.glow);
-  g.add(box(p.w * 0.34, p.beamH, p.w * 0.34, em, 0, 0.8 + n * 1.5 + p.beamH / 2, 0));
-  const shell = new THREE.Mesh(new THREE.SphereGeometry(p.shield, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.beam), transparent: true, opacity: p.shieldOp, wireframe: true }));
-  shell.position.y = p.shield * 0.35;
-  shell.scale.y = 0.72;
-  g.add(shell);
+  const topY = 0.05 + 1.5 * n;                                       // 最上一节的顶面
+  g.add(box(p.w * 0.34, p.beamH, p.w * 0.34, em, 0, topY + p.beamH / 2, 0));   // 光柱落在塔顶（旧版悬空 0.75m）
+  if (p.shield > 0.05) {                                             // 半径 0 时不必建一个退化球
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(p.shield, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.beam), transparent: true, opacity: p.shieldOp, wireframe: true }));
+    shell.position.y = p.shield * 0.35;
+    shell.scale.y = 0.72;
+    g.add(shell);
+  }
   g.userData.glow = [em];
   return shade(g);
 }
@@ -700,19 +743,23 @@ function buildDebris(p) {
 function buildPortal(p) {
   const g = new THREE.Group();
   const em = new THREE.MeshStandardMaterial({ color: 0x0c1418, roughness: 0.4, emissive: new THREE.Color(p.color), emissiveIntensity: p.glow, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+  // 门环立在基座上、基座落地（旧版整门沉到地下 p.r 米）
+  const cy = p.r + 0.24;
   const ringM = new THREE.Mesh(new THREE.TorusGeometry(p.r, p.tube, 12, 44), em);
   ringM.rotation.x = 0;
+  ringM.position.y = cy;
   g.add(ringM);
   const disc = new THREE.Mesh(new THREE.CircleGeometry(p.r * 0.94, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(p.color), transparent: true, opacity: p.fill, side: THREE.DoubleSide, depthWrite: false }));
+  disc.position.y = cy;
   g.add(disc);
   for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    const rune = box(0.24, 0.7, 0.12, em, Math.cos(a) * p.r * 1.12, Math.sin(a) * p.r * 1.12, 0);
+    const a = (i / 6) * Math.PI * 2;                    // 0° 起布：最低符文在 ±60°，不埋进基座
+    const rune = box(0.24, 0.7, 0.12, em, Math.cos(a) * p.r * 1.12, cy + Math.sin(a) * p.r * 1.12, 0);
     rune.rotation.z = a;
     g.add(rune);
   }
   const stone = M.stone(0x8f8a80, 0.94);
-  g.add(box(p.r * 2.4, 0.28, p.r * 1.2, stone, 0, -p.r - 0.14, 0));
+  g.add(box(p.r * 2.4, 0.28, p.r * 1.2, stone, 0, 0.14, 0));
   g.userData.glow = [em];
   return shade(g, true, false);
 }
@@ -736,7 +783,8 @@ function buildGlyph(p) {
     g.add(t);
   }
   if (p.pillars) g.add(ring((i, a) => {
-    const q = box(r * 0.14, r * (0.5 + (i % 2) * 0.2), r * 0.14, M.stone(0x8f8a80, 0.94), 0, r * 0.25, 0);
+    const hh = r * (0.5 + (i % 2) * 0.2);
+    const q = box(r * 0.14, hh, r * 0.14, M.stone(0x8f8a80, 0.94), 0, hh / 2, 0);   // 柱底落地（旧版高柱沉地 0.6m）
     q.rotation.y = -a;
     return q;
   }, p.runes, r * 1.24));

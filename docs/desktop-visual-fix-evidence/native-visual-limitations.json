@@ -1,0 +1,14 @@
+{
+  "nativeVisualComparisonCompleted": false,
+  "errors": [
+    {
+      "title": "Installed WebView2 probe error",
+      "message": "TypeError: Failed to fetch browser webSocket URL from http://localhost:9222/json/version: fetch failed\n    at node:internal/deps/undici/undici:15270:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getWSEndpoint (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:67:24)\n    at async getConnectionTransport (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:54:31)\n    at async _connectToBrowser (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:24:50)\n    at async file:///D:/a/bubbly-crab/bubbly-crab/test/windows-desktop-ui.mjs:21:15"
+    },
+    {
+      "title": "Installed WebView2 probe error",
+      "message": "TypeError: Failed to fetch browser webSocket URL from http://localhost:9223/json/version: fetch failed\n    at node:internal/deps/undici/undici:15270:13\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async getWSEndpoint (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:67:24)\n    at async getConnectionTransport (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:54:31)\n    at async _connectToBrowser (file:///D:/a/bubbly-crab/bubbly-crab/node_modules/puppeteer-core/lib/esm/puppeteer/common/BrowserConnector.js:24:50)\n    at async file:///D:/a/bubbly-crab/bubbly-crab/test/windows-desktop-ui.mjs:21:15"
+    }
+  ],
+  "note": "Do not equate installation/window pass with actual UI visual verification. Release CDP endpoints were unreachable; production debug permissions were not loosened."
+}

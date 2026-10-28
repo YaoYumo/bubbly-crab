@@ -1,0 +1,28 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "themeControlsTopLeft": true,
+  "customPreviewCancelSaveReload": true,
+  "themeDoesNotChangeProject": true,
+  "library": {
+    "height": 322.25,
+    "top": 211.75,
+    "bottom": 534,
+    "barBottom": 211.75,
+    "visible": 4,
+    "options": 17
+  },
+  "scroll": {
+    "topStable": true,
+    "lastVisible": true,
+    "scrolled": true
+  },
+  "shortWindow": true,
+  "waterDefaultsOff": true,
+  "repeatedWaterToggle": true,
+  "levelDoesNotEnableWater": true,
+  "waterUndoRedoAndSavedSetting": true,
+  "generationRespectsWaterOff": true,
+  "missingLegacyFlagOff": true,
+  "errors": [],
+  "csp": []
+}

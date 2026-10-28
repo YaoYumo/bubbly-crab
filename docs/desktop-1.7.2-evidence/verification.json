@@ -1,0 +1,72 @@
+{
+  "version": "1.7.2",
+  "sourceCommit": "5ea6da1192b8b8a3499cbd7803c79d14ee8bd708",
+  "runId": 40615714226,
+  "jobId": 122577594428,
+  "artifact": {
+    "id": 12785421284,
+    "node_id": "MDg6QXJ0aWZhY3QxMjc4NTQyMTI4NA==",
+    "name": "previz-lab-windows-x64-unsigned",
+    "size_in_bytes": 23595716,
+    "url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12785421284",
+    "archive_download_url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12785421284/zip",
+    "expired": false,
+    "digest": "sha256:7be7ec7438ae2c01aeb615123259cbdb996a14025388937e1292834615c2e599",
+    "created_at": "2026-10-28T01:39:53Z",
+    "updated_at": "2026-10-28T01:39:53Z",
+    "expires_at": "2027-01-26T01:33:05Z",
+    "workflow_run": {
+      "id": 40615714226,
+      "repository_id": 1412714078,
+      "head_repository_id": 1412714078,
+      "head_branch": "arena/3f9ececc-bubbly-crab",
+      "head_sha": "5ea6da1192b8b8a3499cbd7803c79d14ee8bd708"
+    }
+  },
+  "frontendPathBytesSHA256Match": true,
+  "frontendFileCount": 15,
+  "installer": {
+    "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.7.2_x64-setup.exe",
+    "bytes": 20984914,
+    "sha256": "b082140c140a86a48b009996598eb06dfcf5645f05fa9fc460c10772805179e3"
+  },
+  "windowsSmoke": {
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY"
+  },
+  "threeModeEvidence": "../road-spiral-evidence/",
+  "localChecks": [
+    "npm run test:road-spiral (web, file, desktop CSP)",
+    "node test/road-connector.test.mjs",
+    "node test/road-3d-contact.test.mjs",
+    "node test/road-junction-corrections.test.mjs",
+    "node test/freeway-median-surface.test.mjs",
+    "road-connector-regression.mjs (web)",
+    "road-ramp-routing-regression.mjs (web, file, desktop CSP)",
+    "road-3d-contact-regression.mjs (web)",
+    "road-junction-corrections-regression.mjs (web)",
+    "freeway-median-regression.mjs (web)",
+    "npm run test:desktop",
+    "npm run all",
+    "npm run build:desktop"
+  ],
+  "limits": [
+    "Windows runner install/window/helper/engine and model-folder reinstall fixture, not user-machine GPU/full UI or real GGUF inference acceptance",
+    "Installer hashes recovered from ordered CI inventory annotations; no independent binary re-download",
+    "No model weights bundled; unsigned x64 NSIS installer",
+    "Spiral geometry is bounded layout search, not traffic/civil-engineering or certified headroom design"
+  ]
+}

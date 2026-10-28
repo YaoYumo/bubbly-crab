@@ -1,9 +1,10 @@
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 // ---------------------------------------------------------------------------
 // 人物模型：程序化骨架 + 动作库（用于 AI 视频的动作参考）
 // 单位：米。朝向：+Z 为前方。
 // ---------------------------------------------------------------------------
 import * as THREE from 'three';
-import { M, shade } from './assets.js';
+import { M, shade } from './mat.js';   // 不从 assets.js 导入：assets→city→character 成环会触发 TDZ
 import { clamp, lerp, makeRng } from './util.js';
 import { mul, Q } from './detail.js';
 
@@ -36,11 +37,11 @@ function mat(color, rough = 0.72, metal = 0.02, det = null) {
 }
 
 function limb(r1, r2, len, material) {
-  const rc = Math.max(6, Math.round(mul(10)));   // 四肢是画面里面积最大的部分，段数按精度档走
-  const g = new THREE.CapsuleGeometry(Math.max(0.008, r1), Math.max(0.01, len), Math.max(2, Math.round(mul(4))), rc);
-  const m = new THREE.Mesh(g, material);
-  m.position.y = -len / 2 - r1 * 0.2;
-  return m;
+  const segments=Math.max(8,Math.round(mul(10)));
+  const shaft=new THREE.CylinderGeometry(r1,r2,len,segments);shaft.translate(0,-len/2,0);
+  const upper=new THREE.SphereGeometry(r1,segments,8),lower=new THREE.SphereGeometry(r2,segments,8);lower.translate(0,-len,0);
+  const geometry=mergeGeometries([shaft,upper,lower]);shaft.dispose();upper.dispose();lower.dispose();
+  const mesh=new THREE.Mesh(geometry,material);mesh.scale.z=.92;return mesh;
 }
 
 /** 构建单个角色骨架 */
@@ -51,7 +52,7 @@ export function makeRig(p = {}) {
   const B = clamp(p.build ?? 1, 0.6, 1.6);
   const legLen = H * 0.47, torsoH = H * 0.31, neck = H * 0.035;
   const headR = H * 0.072;
-  const armU = H * 0.17, armF = H * 0.155, thighR = H * 0.062 * B, armR = H * 0.042 * B;
+  const armU = H * 0.17, armF = H * 0.155, thighR = H * 0.052 * B, armR = H * 0.033 * B;
   const hipW = H * 0.088 * B, shW = H * 0.115 * B;
 
   const skinM = mat(p.skin || '#d8a484', 0.68, 0.02, 'skin');
@@ -67,9 +68,9 @@ export function makeRig(p = {}) {
   hips.add(new THREE.Mesh(new THREE.CapsuleGeometry(H * 0.07 * B, H * 0.05, 3, Math.max(6, Math.round(mul(10)))), botM).translateY(0.01));
 
   const torso = new THREE.Group(); torso.position.y = H * 0.04; hips.add(torso);
-  const chest = new THREE.Mesh(new THREE.CapsuleGeometry(H * 0.105 * B, torsoH * 0.62, 4, Math.max(8, Math.round(mul(12)))), topM);
-  chest.position.y = torsoH * 0.5; chest.scale.set(1.06, 1, 0.82);
-  torso.add(chest);
+  const profile=[[0,0],[H*.075*B,0],[H*.082*B,torsoH*.18],[H*.108*B,torsoH*.60],[H*.115*B,torsoH*.80],[H*.102*B,torsoH*.93],[H*.06*B,torsoH],[0,torsoH]].map(([x,y])=>new THREE.Vector2(x,y));
+  const chest=new THREE.Mesh(new THREE.LatheGeometry(profile,Math.max(12,Math.round(mul(16)))),topM);
+  chest.scale.z=.72;torso.add(chest);
   if (p.dress === 'skirt') {
     const sk = new THREE.Mesh(new THREE.ConeGeometry(H * 0.135 * B, H * 0.2, 18, 1, true), topM);
     sk.position.y = torsoH * 0.14; sk.rotation.x = PI; torso.add(sk);
@@ -83,21 +84,21 @@ export function makeRig(p = {}) {
   head.add(skull);
   if (rich) {
     // 五官：眼白+瞳孔、眉、鼻、耳、下颌 —— 特写时决定「像不像人」
-    const eo = headR * 0.2, es = Math.max(6, Math.round(mul(10)));
+    const eo = headR * 0.12, es = Math.max(6, Math.round(mul(10)));
     for (const s of [-1, 1]) {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(eo, es, Math.max(5, es - 3)), mat('#f3efe8', 0.3));
-      eye.position.set(s * headR * 0.36, headR * 1.0, headR * 0.78); head.add(eye);
+      eye.scale.set(1.15,.65,.25); eye.position.set(s * headR * 0.36, headR * 1.0, headR * .965); head.add(eye);
       const pup = new THREE.Mesh(new THREE.SphereGeometry(eo * 0.5, es, Math.max(5, es - 3)), eyeM);
-      pup.position.set(s * headR * 0.36, headR * 1.0, headR * 0.93); head.add(pup);
+      pup.scale.set(1,.9,.2); pup.position.set(s * headR * 0.36, headR * 1.0, headR * .995); head.add(pup);
       const brow = new THREE.Mesh(new THREE.BoxGeometry(headR * 0.34, headR * 0.07, headR * 0.1), hairM);
-      brow.position.set(s * headR * 0.38, headR * 1.24, headR * 0.82); brow.rotation.z = -s * 0.12; head.add(brow);
+      brow.position.set(s * headR * 0.38, headR * 1.24, headR * 0.94); brow.rotation.z = -s * 0.12; head.add(brow);
       const ear = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.19, 12, 8), skinM);
       ear.position.set(s * headR * 0.88, headR * 0.9, 0); ear.scale.set(0.5, 1.15, 0.8); head.add(ear);
     }
-    const nose = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.14, headR * 0.36, 10), skinM);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.10, headR * 0.22, 10), skinM);
     nose.rotation.x = Math.PI / 2; nose.position.set(0, headR * 0.86, headR * 0.95); head.add(nose);
     const mouth = new THREE.Mesh(new THREE.BoxGeometry(headR * 0.34, headR * 0.06, headR * 0.08), lipM);
-    mouth.position.set(0, headR * 0.62, headR * 0.86); head.add(mouth);
+    mouth.position.set(0, headR * 0.62, headR * 0.95); head.add(mouth);
     const jaw = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.62, Math.max(8, sd - 6), 8), skinM);
     jaw.scale.set(1, 0.72, 0.9); jaw.position.set(0, headR * 0.52, headR * 0.16); head.add(jaw);
     const neckM = new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.34, headR * 0.42, neck * 1.8, Math.max(8, Math.round(mul(12)))), skinM);
@@ -105,24 +106,29 @@ export function makeRig(p = {}) {
   }
   const hs = p.hairStyle || 'short';
   if (hs === 'short') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.05, 20, 14, 0, PI * 2, 0, PI * 0.62), hairM);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.05, 20, 14, 0, PI * 2, 0, PI * 0.38), hairM);
     cap.position.y = headR * 0.98; head.add(cap);
   } else if (hs === 'long') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.06, 20, 14, 0, PI * 2, 0, PI * 0.7), hairM);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.06, 20, 14, 0, PI * 2, 0, PI * 0.38), hairM);
     cap.position.y = headR * 0.95; head.add(cap);
     const back = new THREE.Mesh(new THREE.BoxGeometry(headR * 1.6, headR * 1.7, headR * 0.5), hairM);
     back.position.set(0, headR * 0.35, -headR * 0.78); head.add(back);
   } else if (hs === 'bun') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.04, 20, 14, 0, PI * 2, 0, PI * 0.55), hairM);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.04, 20, 14, 0, PI * 2, 0, PI * 0.38), hairM);
     cap.position.y = headR * 1.0; head.add(cap);
     head.add(new THREE.Mesh(new THREE.SphereGeometry(headR * 0.45, 14, 10), hairM).translateY(headR * 1.9).translateZ(-headR * 0.2));
   } else if (hs === 'cap') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.12, 20, 14, 0, PI * 2, 0, PI * 0.55), mat(p.hat || p.hair || '#f2e6c0', 0.5));
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 1.12, 20, 14, 0, PI * 2, 0, PI * 0.44), mat(p.hat || p.hair || '#f2e6c0', 0.5));
     cap.position.y = headR * 1.0; head.add(cap);
     const brim = new THREE.Mesh(new THREE.BoxGeometry(headR * 1.5, 0.026, headR * 0.8), mat(p.hat || p.hair || '#f2e6c0', 0.5));
-    brim.position.set(0, headR * 1.02, headR * 0.9); head.add(brim);
+    brim.position.set(0, headR * 1.3, headR * 0.9); head.add(brim);
   }
 
+  if(['short','long','bun'].includes(hs)) {
+    // Back/sides can descend below the brows; the front hairline must NOT.
+    const backHair=new THREE.Mesh(new THREE.SphereGeometry(headR*1.05,20,10,PI,PI,PI*.38,PI*.32),hairM);
+    backHair.position.y=headR*.98;head.add(backHair);
+  }
   const mkArm = (s) => {
     const sh = new THREE.Group(); sh.position.set(s * shW, torsoH * 0.95, 0); torso.add(sh);
     sh.add(limb(armR, armR * 0.9, armU, topM));
@@ -154,16 +160,16 @@ export function makeRig(p = {}) {
     const hp = new THREE.Group(); hp.position.set(s * hipW, -H * 0.01, 0); hips.add(hp);
     hp.add(limb(thighR, thighR * 0.82, legLen * 0.5, botM));
     const kn = new THREE.Group(); kn.position.y = -legLen * 0.5; hp.add(kn);
-    kn.add(limb(thighR * 0.8, thighR * 0.6, legLen * 0.44, botM));
+    kn.add(limb(thighR * 0.8, H * .025 * Math.sqrt(B), legLen * 0.44, botM));
     const an = new THREE.Group(); an.position.y = -legLen * 0.44; kn.add(an);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(thighR * 1.5, H * 0.036, thighR * 3.1), shoeM);
-    foot.position.set(0, -H * 0.017 + 0.005, thighR * 0.72);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(thighR * 1.5, H * 0.036, thighR * 2.65), shoeM);
+    foot.position.set(0, -H * 0.017 + 0.005, thighR * 0.65);
     an.add(foot);
     if (rich) {
       const toe = new THREE.Mesh(new THREE.SphereGeometry(thighR * 0.62, Math.max(8, Math.round(mul(12))), 8), shoeM);
-      toe.scale.set(1.1, 0.5, 1.15); toe.position.set(0, -H * 0.015 + 0.004, thighR * 2.0); an.add(toe);
-      const sole = new THREE.Mesh(new THREE.BoxGeometry(thighR * 1.58, 0.014, thighR * 3.2), mat('#0d0f12', 0.9));
-      sole.position.set(0, -H * 0.034 + 0.005, thighR * 0.72); an.add(sole);
+      toe.scale.set(1.1, 0.5, 1.15); toe.position.set(0, -H * 0.015 + 0.004, thighR * 1.55); an.add(toe);
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(thighR * 1.58, 0.014, thighR * 2.75), mat('#0d0f12', 0.9));
+      sole.position.set(0, -H * 0.034 + 0.005, thighR * 0.65); an.add(sole);
     }
     return { hp, kn, an };
   };
@@ -171,8 +177,8 @@ export function makeRig(p = {}) {
   const rig = { H, B, legLen, torsoH, headR, hips, torso, neckG, head, armL: A.sh, foreL: A.el, handL: A.wr, armR: B2.sh, foreR: B2.el, handR: B2.wr, legL: L.hp, kneeL: L.kn, footL: L.an, legR: R.hp, kneeR: R.kn, footR: R.an };
 
   if (rich) {                                   // 领口 + 腰带：躯干不再只是两根胶囊
-    const col = new THREE.Mesh(new THREE.TorusGeometry(H * 0.072 * B, H * 0.012, Math.max(4, Math.round(mul(5))), Math.max(10, Math.round(mul(16)))), topM);
-    col.rotation.x = Math.PI / 2; col.position.y = torsoH * 0.92; torso.add(col);
+    const col = new THREE.Mesh(new THREE.TorusGeometry(H * 0.035 * B, H * 0.006, Math.max(4, Math.round(mul(5))), Math.max(10, Math.round(mul(16)))), topM);
+    col.rotation.x = Math.PI / 2; col.position.y = torsoH; torso.add(col);
     const belt = new THREE.Mesh(new THREE.CylinderGeometry(H * 0.074 * B, H * 0.074 * B, H * 0.022, Math.max(10, Math.round(mul(16)))), shoeM);
     belt.position.y = torsoH * 0.16; torso.add(belt);
   }
@@ -216,13 +222,15 @@ export function poseFor(name, ph, amp = 1) {
   const a = amp;
   switch (name) {
     case 'walk': {
+      s.walkPhase = ph;
       const sw = 0.62 * a;
       s.lLx = -S(ph) * sw; s.lRx = -S(ph + PI) * sw;
-      s.kLx = clamp(-S(ph - 0.9) * 0.9, 0, 1.5) * a; s.kRx = clamp(-S(ph + PI - 0.9) * 0.9, 0, 1.5) * a;
+      s.kLx = Math.pow(Math.max(0, -S(ph - 0.9)), 2) * .7 * a; s.kRx = Math.pow(Math.max(0, -S(ph + PI - 0.9)), 2) * .7 * a;
       s.aRx = -S(ph + PI) * 0.46 * a; s.aLx = -S(ph) * 0.46 * a;
       s.fLx = -0.22 * a - clamp(S(ph), 0, 1) * 0.3; s.fRx = -0.22 * a - clamp(S(ph + PI), 0, 1) * 0.3;
       s.hipY2 = S(ph) * 0.085 * a; s.torsoY = -S(ph) * 0.07 * a;
-      s.hipY = Math.abs(S(ph * 2)) * 0.028 * a; s.rootY = Math.abs(S(ph * 2)) * 0.022 * a;
+      // Two contacts per stride, smooth velocity at heel strike; no double root bounce.
+      s.hipY = (1 - C(ph * 2)) * 0.003 * a; s.rootY = 0;
       s.torsoX = 0.05 * a; s.headY = -S(ph) * 0.03;
       break;
     }
@@ -232,7 +240,7 @@ export function poseFor(name, ph, amp = 1) {
       s.kLx = clamp(-S(ph - 1.1) * 1.8, 0, 2.2) * a; s.kRx = clamp(-S(ph + PI - 1.1) * 1.8, 0, 2.2) * a;
       s.aRx = -S(ph + PI) * 0.95 * a; s.aLx = -S(ph) * 0.95 * a;
       s.fLx = -0.95 * a; s.fRx = -0.95 * a;
-      s.hipY = Math.abs(S(ph * 2)) * 0.075 * a; s.rootY = Math.abs(S(ph * 2)) * 0.06 * a;
+      s.hipY = (1-C(ph*2)) * .017 * a; s.rootY = (1-C(ph*2)) * .012 * a;
       s.torsoX = 0.22 * a; s.hipY2 = S(ph) * 0.1 * a;
       break;
     }
@@ -240,7 +248,7 @@ export function poseFor(name, ph, amp = 1) {
       s.lLx = -S(ph) * 0.4; s.lRx = -S(ph + PI) * 0.4;
       s.kLx = clamp(-S(ph - 0.8) * 0.7, 0, 1.2); s.kRx = clamp(-S(ph + PI - 0.8) * 0.7, 0, 1.2);
       s.aLx = -0.5; s.aRx = -0.35; s.fLx = -1.0; s.fRx = -0.85;
-      s.torsoX = 0.24; s.rootY = -0.09; s.hipY = Math.abs(S(ph * 2)) * 0.015;
+      s.torsoX = 0.24; s.rootY = -0.09; s.hipY = (1-C(ph*2)) * .004;
       s.headY = S(ph * 0.4) * 0.3;
       break;
     }
@@ -371,6 +379,21 @@ export function applyPose(rig, s) {
   // hipY2 = 骨盆左右摆动（绕自身 Z）
   rig.hips.rotation.z = (s.hipY2 || 0) * 0.5;
   rig.hips.rotation.y = (s.hipY2 || 0) * 0.8;
+  if(s.walkPhase !== undefined) {
+    // Flat-ground two-link gait: stance foot stays at the rest sole height,
+    // swing foot clears the floor smoothly, pelvis does not bounce twice/step.
+    rig.hips.position.y = rig.legLen - rig.H*.03;
+    rig.hips.rotation.z = Math.sin(s.walkPhase)*.012;
+    rig.hips.rotation.y = Math.sin(s.walkPhase)*.025;
+    const upper=rig.legLen*.5,lower=rig.legLen*.44,ankleY=rig.legLen*.06-rig.H*.01;
+    for(const [leg,knee,foot,phase] of [[rig.legL,rig.kneeL,rig.footL,s.walkPhase],[rig.legR,rig.kneeR,rig.footR,s.walkPhase+PI]]) {
+      const z=rig.H*.125*Math.cos(phase),y=ankleY+rig.H*.04*Math.max(0,-Math.sin(phase))**2;
+      const down=rig.hips.position.y-rig.H*.01-y,d=Math.min(upper+lower-.00001,Math.hypot(down,z));
+      const bend=Math.acos(clamp((d*d-upper*upper-lower*lower)/(2*upper*lower),-1,1));
+      const hip=-Math.atan2(z,down)-Math.atan2(lower*Math.sin(bend),upper+lower*Math.cos(bend));
+      leg.rotation.x=hip;knee.rotation.x=bend;foot.rotation.x=-hip-bend;
+    }
+  }
 }
 
 export function buildHuman(p = {}) {
@@ -541,4 +564,27 @@ export function updateChar(root, dt, dist = 0, speedMul = 1) {
 export function setCharAnim(root, anim) {
   if (!root.userData.humans) return;
   for (const h of root.userData.humans) h.anim = anim;
+}
+
+// Additive absolute-time pose sampler for compiled behavior sequences only.
+// Existing characters/crowds keep updateChar's incremental phase semantics.
+export function applyAbsoluteCharPose(root, anim, phase) {
+  root.userData.animPhase = phase;
+  for (const h of root.userData.humans || []) {
+    h.anim = anim;
+    h.ph = undefined;
+    h.dist = 0;
+    const p = poseFor(anim, phase * (h.rate ?? 1) + (h.off ?? 0), 1);
+    applyPose(h.rig, p);
+    const inner = h.inner || h.rig.hips?.parent;
+    if (inner) { inner.position.y = p.rootY || 0; inner.rotation.x = p.rootX || 0; }
+  }
+}
+
+// Path poses use distance from the path start, so seeking/exporting/replaying a
+// loop cannot inject a huge incremental stride from a teleport back to frame 0.
+export function applyPathCharPose(root, anim, distance, speed = 1, time = 0) {
+  const stride = STRIDE[anim];
+  const phase = stride > 0 ? distance / stride * PI * 2 : time * (['dance','cheer'].includes(anim)?4.2:2);
+  applyAbsoluteCharPose(root, anim, phase * (Number.isFinite(speed)?speed:1));
 }

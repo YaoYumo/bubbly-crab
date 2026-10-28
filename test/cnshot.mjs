@@ -2,7 +2,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
-const URL0 = process.env.URL || 'http://localhost:5173/';
+const URL0 = process.env.URL || 'http://localhost:5174/';
 const OUT = 'test/out';
 fs.mkdirSync(OUT, { recursive: true });
 const b = await puppeteer.launch({ headless: true, args: ['--enable-unsafe-swiftshader', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox', '--disable-dev-shm-usage'] });

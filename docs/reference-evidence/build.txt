@@ -1,0 +1,36 @@
+
+> previz-lab@1.0.0 all
+> npm run build && npm run build:single
+
+
+> previz-lab@1.0.0 build
+> vite build
+
+vite v5.4.10 building for production...
+transforming...
+✓ 121 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                         5.89 kB │ gzip:   2.66 kB
+dist/assets/index-CLcAbSUk.css         54.28 kB │ gzip:  10.40 kB
+dist/assets/MTLLoader-DXyTniwa.js       4.11 kB │ gzip:   1.66 kB
+dist/assets/OBJLoader-B7BqtFpH.js       8.74 kB │ gzip:   2.92 kB
+dist/assets/GLTFLoader-BLXo2ZVH.js     44.89 kB │ gzip:  13.28 kB
+dist/assets/FBXLoader-DDF-gAZG.js      47.78 kB │ gzip:  16.04 kB
+dist/assets/index-DudhvadL.js       1,836.78 kB │ gzip: 589.78 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.83s
+
+> previz-lab@1.0.0 build:single
+> node scripts/build-single.mjs
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✔ 已生成 previz-lab.html（2023 KB，含全部 three.js 与加载器，可离线双击打开）

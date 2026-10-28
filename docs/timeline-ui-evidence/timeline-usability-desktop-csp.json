@@ -1,0 +1,87 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "initial": {
+    "panel": {
+      "x": 0,
+      "y": 768,
+      "w": 1440,
+      "h": 232
+    },
+    "track": {
+      "x": 64,
+      "y": 847,
+      "w": 1355,
+      "h": 111
+    },
+    "clip": {
+      "x": 65,
+      "y": 853,
+      "w": 676.5,
+      "h": 99
+    },
+    "trim": {
+      "x": 66,
+      "y": 854,
+      "w": 14,
+      "h": 97
+    },
+    "ruler": {
+      "x": 65,
+      "y": 817,
+      "w": 1353,
+      "h": 24
+    },
+    "keyHidden": true,
+    "videoKeyCount": 0,
+    "keys": 0,
+    "documentWidth": 1440
+  },
+  "taller": {
+    "panel": {
+      "x": 0,
+      "y": 699,
+      "w": 1440,
+      "h": 301
+    },
+    "track": {
+      "x": 64,
+      "y": 778,
+      "w": 1355,
+      "h": 180
+    },
+    "clip": {
+      "x": 65,
+      "y": 784,
+      "w": 676.5,
+      "h": 168
+    },
+    "trim": {
+      "x": 66,
+      "y": 785,
+      "w": 14,
+      "h": 166
+    },
+    "ruler": {
+      "x": 65,
+      "y": 748,
+      "w": 1353,
+      "h": 24
+    },
+    "keyHidden": true,
+    "videoKeyCount": 0,
+    "keys": 0,
+    "documentWidth": 1440
+  },
+  "hiddenKeysByDefault": true,
+  "selectedKeysOnly": true,
+  "noKeysOnVideoTrack": true,
+  "clickWithoutEdit": true,
+  "rulerScrubAndSplit": true,
+  "zoomScrollCoordinates": true,
+  "zoomedTrim": true,
+  "noFocusScrollJump": true,
+  "resizableTrack": true,
+  "narrowWindows": true,
+  "csp": [],
+  "errors": []
+}

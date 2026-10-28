@@ -1,3 +1,4 @@
+import { DESKTOP_BUILD, requireWebGateway } from './desktop-runtime.js';
 // ---------------------------------------------------------------------------
 // Seedance 2.0 API 服务 — 直接调用 Volcengine Ark API
 // ---------------------------------------------------------------------------
@@ -26,11 +27,12 @@ const RES_MAP = {
 
 export class SeedanceService {
   constructor() {
-    this.apiKey = localStorage.getItem('seedance_api_key') || '';
+    this.apiKey = DESKTOP_BUILD ? '' : (localStorage.getItem('seedance_api_key') || '');
     this.tasks = [];
   }
 
   setKey(key) {
+    requireWebGateway();
     this.apiKey = key.trim();
     localStorage.setItem('seedance_api_key', this.apiKey);
   }
@@ -38,6 +40,7 @@ export class SeedanceService {
   hasKey() { return !!this.apiKey; }
 
   async _fetch(path, opts = {}) {
+    requireWebGateway();
     const headers = { 'Content-Type': 'application/json' };
     if (this.apiKey) headers['Authorization'] = `Bearer ${this.apiKey}`;
     try {

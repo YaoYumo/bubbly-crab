@@ -18,7 +18,7 @@ page.on('console', (m) => {
   if (m.type() === 'warning' && /被忽略/.test(m.text())) errors.push('IGNORED-PARAM: ' + m.text());   // 模板写了运镜不认的参数 → 静默失效，必须当成缺陷
 });
 
-await page.goto((process.env.URL || 'http://localhost:5173/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
+await page.goto((process.env.URL || 'http://localhost:5174/') + '?fresh=1', { waitUntil: 'networkidle2', timeout: 120000 });
 await page.waitForFunction(() => window.__previzBooted && window.app && window.__scenes, { timeout: 180000 });
 await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* ignore */ } });
 await new Promise((r) => setTimeout(r, 400));

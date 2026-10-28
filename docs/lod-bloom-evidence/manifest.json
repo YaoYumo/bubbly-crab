@@ -1,0 +1,222 @@
+{
+  "date": "2026-10-18",
+  "branch": "arena/3f9ececc-bubbly-crab",
+  "scope": "Opt-in static library-building screen/distance LOD (tiny component culling + bounded vertex clustering), and independent opt-in HDR global Bloom. Original source IDs/geometry/picking/edit/project assets retained. Both default off; rendering settings archived with undo. No character/vegetation/imported general LOD, topology-preserving decimation, selective-window Bloom, real-light/GI/cloud extension or model-library edits.",
+  "artifact": {
+    "path": "previz-lab.html",
+    "bytes": 1908778,
+    "sha256": "c1418901c01ef3b0c06cef60871cb253dba8b0ff927d671337c7eb3a5192b5f8"
+  },
+  "checks": [
+    {
+      "name": "render-effects.test.mjs",
+      "scope": "Node settings/clamps, clustered geometry/source arrays, cache sharing, near/far/selected/dynamic/transparent cases, release",
+      "status": "PASS"
+    },
+    {
+      "name": "render-effects-regression.mjs",
+      "scope": "final DEV and network-offline final file: 12 buildings, 35 LOD warmup renders, each LOD/Bloom path 8 warmup + 30 submission samples; pixels/draw/triangles, shared instancing and failure restoration, orthographic, original geometry/IDs/pick/gizmo, quality/DPR, HDR capability bypass, Basic pause, zero exact bypass, DOF/anamorphic, stable repeated framed targets, decoded nonempty PNG, one-frame video, combined active effects, undo/real archive, legacy defaults/native controls/dispose",
+      "status": "PASS"
+    },
+    {
+      "name": "pick-spatial-index.test.mjs",
+      "scope": "Node original 647 semantic comparisons",
+      "status": "PASS"
+    },
+    {
+      "name": "pick-spatial-index-regression.mjs",
+      "scope": "DEV and final file PICK_SMOKE=1: original exact result/edit/undo/archive/resource/native pointer/gizmo assertions; one dense fixture with 1 render warmup + 1 sample, picking still 8+30 batches; not a current four-fixture long run",
+      "status": "PASS"
+    },
+    {
+      "name": "model-instancing-regression.mjs",
+      "scope": "final DEV, unchanged original pixel/draw/identity/edit/ownership assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "performance-regression.mjs",
+      "scope": "final DEV, unchanged isolation/lifecycle and four fixed fixtures 2 warmup + 3 render samples, effects off",
+      "status": "PASS"
+    },
+    {
+      "name": "window-lights.test.mjs",
+      "scope": "Node",
+      "status": "PASS"
+    },
+    {
+      "name": "window-lights-regression.mjs",
+      "scope": "final DEV and final file, unchanged original assertions",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-regression.mjs",
+      "scope": "final DEV",
+      "status": "PASS"
+    },
+    {
+      "name": "lighting-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics.test.mjs",
+      "scope": "Node",
+      "status": "PASS"
+    },
+    {
+      "name": "road-diagnostics-regression.mjs",
+      "scope": "final DEV and final file",
+      "status": "PASS"
+    },
+    {
+      "name": "junction-surface.test.mjs",
+      "scope": "Node original area/ray assertions; not original multi-angle pixel gate",
+      "status": "PASS"
+    },
+    {
+      "name": "terrain-roads-regression.mjs",
+      "scope": "final DEV",
+      "status": "PASS"
+    },
+    {
+      "name": "project-resources-regression.mjs",
+      "scope": "final DEV, source assets/material policies/archive/undo/durable reload",
+      "status": "PASS"
+    },
+    {
+      "name": "road-properties-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "road-planning-offline.mjs",
+      "scope": "final file",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build",
+      "scope": "production, existing chunk-size warning retained",
+      "status": "PASS"
+    },
+    {
+      "name": "npm run build:single",
+      "scope": "final offline artifact, existing chunk-size warning retained",
+      "status": "PASS"
+    },
+    {
+      "name": "node --check",
+      "scope": "12 feature/integration/test modules",
+      "status": "PASS"
+    },
+    {
+      "name": "git diff --check / bash -n test/runsuite.sh",
+      "scope": "workspace / runner syntax",
+      "status": "PASS"
+    }
+  ],
+  "executionNote": "Final acceptance batch exited 0 after final source changes and final builds; exact final artifact passed DEV and real network-offline file feature tests plus all listed compatibility gates. No old regression thresholds/assertions/sample counts were reduced. Earlier candidate runs are not used as final release measurements. CPU/driver wall-clock samples are software-renderer observations, not hardware FPS promises. LOD did not improve mean submission consistently across entries; cold preparation can be slower. Bloom adds postprocessing cost. Video is only a nonempty one-frame smoke, not long-form decoded video validation. No full historical suite or original multi-angle junction pixel gate rerun; earlier evidence directories remain historical snapshots.",
+  "measurementNotes": [
+    "Chromium 131 / ANGLE SwiftShader. 12 Adobe buildings, 400x260, fixed view, no shadows. Different scene from the historical four-fixture baseline.",
+    "LOD 35 warmup renders before geometry/pixel comparison; submission timing each path 8 warmup + 30 renders. Bloom each path 8+30. Paths run sequentially. CPU/driver submission wall-clock, not GPU duration/FPS.",
+    "LOD 40286 -> 35102 submitted triangles, 282 -> 276 calls; combined Bloom 35116/290. Tiny component omission and approximation can change silhouette/shadows. Cold construction soft budget is not a hard time cap.",
+    "Bloom alone 282 -> 296 calls, adding 14 full-screen triangles/passes; shared screen output and HDR capability fallback tested.",
+    "Fixed four-fixture compatibility baseline explicitly turns both effects off, retaining calls/triangles 584/117230, 1586/344078, 177/646522, 722/66226 (2+3 short samples this stage).",
+    "LOD derived attribute/index arrays bounded around 8 MiB / 128 source cache entries; not total heap or VRAM. Original resources not disposed."
+  ],
+  "evidence": {
+    "checks.txt": {
+      "bytes": 2994,
+      "sha256": "2868bc945eb6fe511e12cd3342f726a8344ad8a33c1ede274d69d69a354adf5b"
+    },
+    "compatibility-log.txt": {
+      "bytes": 17279,
+      "sha256": "f059fbb829ddc507d9c28040dd75c3048cb0e48712d6f2d817668b52e4358d29"
+    },
+    "dev-log.txt": {
+      "bytes": 3864,
+      "sha256": "e03cbbead0afede6263ee48027256713c071406a0743de9b8e26d79c6543b90b"
+    },
+    "dev.json": {
+      "bytes": 3846,
+      "sha256": "4cc4d3dfc376a48ffa389133a938675469d99ca1838d10fd28dc541ea0016408"
+    },
+    "file-log.txt": {
+      "bytes": 3891,
+      "sha256": "2d3b48d8289d64f4bd68ee3a4222852b3663392da9abf3e1c2ef5b181b40fc64"
+    },
+    "file.json": {
+      "bytes": 3873,
+      "sha256": "ec8a1ca95c611be931f115b3315732fbb4a1204e6b7f3a1adb3715572a8a6c4e"
+    },
+    "instancing-dev.json": {
+      "bytes": 583,
+      "sha256": "8fa69e061b86629e57718a2de2ceae427fb6d6e445ab1d297b50d543b53bdf46"
+    },
+    "performance-dev.json": {
+      "bytes": 45933,
+      "sha256": "4af9af820b0d1081bfafa03828349b9fd882c36c00521b7fc1665547b4d617ad"
+    },
+    "pick-dev-smoke.json": {
+      "bytes": 24492,
+      "sha256": "c4c7b191a792b75c56817420f0def4a700933ef659f33f04b5740a60d67138d4"
+    },
+    "pick-file-smoke.json": {
+      "bytes": 24246,
+      "sha256": "45deccd7ced85ef742e0355732cb977805afcfa0287befe38ed9266b828647a0"
+    }
+  },
+  "sources": {
+    "src/render-lod.js": {
+      "bytes": 13853,
+      "sha256": "293a6f47cb58a9719f11a24dd63c0e643ceea83baf3d888f29daff2a3d2625fd"
+    },
+    "src/render-effects.js": {
+      "bytes": 4181,
+      "sha256": "f5e7aac792f8d65456a45cd75df22c2e3af2b68d5d51d876ff380ceff5e03178"
+    },
+    "src/render-effects-ui.js": {
+      "bytes": 3336,
+      "sha256": "5ee5557eb694a8573187ab7f6ecc93cc7b2918c9a636307323cf4d052255d3a4"
+    },
+    "src/stage.js": {
+      "bytes": 32273,
+      "sha256": "e6b3df745ee39da9717bd2792d7ffff95ba588e700ab136c715d91d80f1ced92"
+    },
+    "src/app.js": {
+      "bytes": 68995,
+      "sha256": "2c0b5a18525f149eae8486c184399d35547054aed7839a5fda87038be18181c9"
+    },
+    "src/model-instancing.js": {
+      "bytes": 15048,
+      "sha256": "3649f4cbece70562d697464d365674a2f29aaa2b4f7e9f9f50e6af12b55136e8"
+    },
+    "src/panels.js": {
+      "bytes": 129521,
+      "sha256": "a5182dbe4ba6245f41d4bb9969ab6a6cbb9d637de61126f96d5e95d5b687fa31"
+    },
+    "src/performance-ui.js": {
+      "bytes": 13443,
+      "sha256": "73423500f1d1be9e74b721c301bc4f38f0da2be216d9cab3b6f6c526e2ac9457"
+    },
+    "src/performance-monitor.js": {
+      "bytes": 12885,
+      "sha256": "81b5eba336bbe36404749933b688de962ac1a4f1bfec7b355d9cf7c13fa65d4d"
+    },
+    "src/performance-benchmarks.js": {
+      "bytes": 10516,
+      "sha256": "8116d0392a6c4c826dd23d037017632e12d697b0e64d0f2985ce6712cbd176c3"
+    },
+    "test/render-effects.test.mjs": {
+      "bytes": 4270,
+      "sha256": "7169f6a0674d81b3a51a9d51c65443ae3bd7e3d001b91e6f76bd490ac860cb60"
+    },
+    "test/render-effects-regression.mjs": {
+      "bytes": 17116,
+      "sha256": "586c5f8a56f3b1569d897c4bc0a340b5bb09bd5f0f5e3a5b14f48ee634e290c3"
+    },
+    "test/runsuite.sh": {
+      "bytes": 1616,
+      "sha256": "3121da3b563a8105afc301ad795f2d19d95e4a1100c0082ecbb4ad25ea932f29"
+    }
+  }
+}

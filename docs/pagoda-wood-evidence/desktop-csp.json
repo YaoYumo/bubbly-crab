@@ -1,0 +1,24 @@
+{
+  "platform": "Linux Chromium, not native Windows",
+  "adjacentVariant": true,
+  "oldAndGrayBuildersRetained": true,
+  "sourceParts": 531,
+  "triangles": 34392,
+  "materialRoles": 9,
+  "realTextureMaps": true,
+  "inspectorColorControls": true,
+  "independentColors": true,
+  "duplicateDeleteUndo": true,
+  "qualityAndGlobalMaterialSwitch": true,
+  "jsonAndProject": true,
+  "raycastPick": true,
+  "pngBytes": 107046,
+  "video": {
+    "size": 16433,
+    "mode": "webcodecs",
+    "frames": 2
+  },
+  "errors": [],
+  "csp": [],
+  "outbound": []
+}

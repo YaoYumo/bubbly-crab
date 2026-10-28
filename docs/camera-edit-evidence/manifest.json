@@ -1,0 +1,19 @@
+{
+  "version": "1.1.0",
+  "date": "2026-10-21",
+  "appSourceCommit": "d2feb66327ccda1b1c88513c89e586077e77f784",
+  "nativeBuildRun": 39569611883,
+  "nativeJob": 119120211627,
+  "artifact": 12331486397,
+  "downloadURL": "https://github.com/YaoYumo/bubbly-crab/actions/runs/39569611883/artifacts/12331486397",
+  "artifactBytes": 4090416,
+  "artifactExpires": "2027-01-19T08:29:09Z",
+  "nativeValidation": "INSTALL_AND_WINDOW_LIVENESS_ONLY",
+  "nativeCameraEditingValidated": false,
+  "nativeVisualsValidated": false,
+  "nativeDiskSaveValidated": false,
+  "userGPUVideoValidated": false,
+  "browserValidation": "Linux Chromium: web, offline HTML, Tauri-CSP frontend; NOT native WebView2",
+  "singleShotReferenceRegression": "offline HTML PASS; web full regression timed out at gateway-discovery because the 5176 gateway was not started",
+  "notes": "Extra package/local-restore and visible-control regression assertions were added after the native app source commit; no subsequent app/runtime code change."
+}

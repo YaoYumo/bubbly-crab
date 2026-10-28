@@ -1,0 +1,26 @@
+[package]
+name = "previz-lab"
+version = "1.9.0"
+description = "Local 3D camera and character reference workbench with isolated offline GGUF terrain and scene chat"
+authors = ["PREVIZ LAB contributors"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.3", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "=2.12.4", features = [] }
+tauri-plugin-dialog = "=2.8.3"
+tauri-plugin-fs = "=2.7.1"
+
+tokio = { version = "1", features = ["time"] }
+getrandom = "0.3"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

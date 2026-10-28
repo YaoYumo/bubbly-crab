@@ -12,7 +12,11 @@
  * 编辑交互由 Stage 的 host 捕获层接管（画笔激活时禁用轨道控制）。
  */
 import * as THREE from 'three';
+import { TerrainWorkflow } from './terrain-workflow.js';
+import { generateHeightfield, cleanGeneration } from './terrain-generation.js';
+import { automaticSurface, cleanSurface } from './terrain-surface.js';
 import { clamp, smoothNoise, makeRng } from './util.js';
+import { terrainMaterial, setTerrainPalette, TERRAIN_MATERIALS, packWeights, unpackWeights } from './terrain-materials.js';
 
 export const BIOMES = {
   grass: { name: '草地', low: '#4f7a3c', mid: '#6f9a4a', high: '#8d9b7a', rock: '#6b6459', snow: '#e8eef0' },
@@ -28,9 +32,12 @@ export const TOOLS = [
   { id: 'raise', name: '抬起', icon: '⛰' },
   { id: 'lower', name: '压低', icon: '↧' },
   { id: 'smooth', name: '平滑', icon: '≈' },
+  { id: 'slope', name: '坡度缓和', icon: '∠' },
   { id: 'flatten', name: '抹平', icon: '▭' },
   { id: 'noise', name: '噪声', icon: '∿' },
   { id: 'plateau', name: '高原台地', icon: '⌂' },
+  { id: 'material', name: '涂材质', icon: '▧' },
+  { id: 'roadfill', name: '路基填充', icon: '▰' },
 ];
 
 export const TERRAIN_GEN = {
@@ -50,15 +57,19 @@ export class Terrain {
     this.n = 97;                 // 网格单边顶点数（奇数，中心正好落在整数上）
     this.size = 160;             // 世界单位（米）
     this.h = new Float32Array(this.n * this.n);
+    this.weights = new Float32Array(this.n * this.n * 6);
     this.biome = 'grass';
+    this.autoSurface = cleanSurface();
+    this.generation = cleanGeneration();
     this.enabled = true;
     this.exaggerate = 1;         // 高度夸张（不改变存下来的数据）
-    this.state = { water: true, waterY: 0.06, brushSize: 9, brushStrength: 0.6 };
+    this.state = { water: false, waterY: 0.06, brushSize: 9, brushStrength: 0.6, brushFalloff: .65, flattenHeight: 0, material: 'grass', maxSlope: 20 };
     this.rng = makeRng(20260924);
 
     this._buildMesh();
     this.setWater();
     this._bindPaint();
+    this.workflow = new TerrainWorkflow(this);
     app.bus.on('dirty', () => this.app.saveLocal?.());
   }
 
@@ -68,7 +79,13 @@ export class Terrain {
     geo.rotateX(-Math.PI / 2);
     this.colors = new Float32Array(this.n * this.n * 3);
     geo.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
-    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.02, side: THREE.FrontSide });
+    const mat = terrainMaterial();
+    if (this.weights?.length !== this.n*this.n*6) this.weights = new Float32Array(this.n*this.n*6);
+    geo.setAttribute('terrainWeightsA', new THREE.BufferAttribute(new Float32Array(this.n*this.n*3),3));
+    geo.setAttribute('terrainWeightsB', new THREE.BufferAttribute(new Float32Array(this.n*this.n*3),3));
+    this.autoWeights = new Float32Array(this.n*this.n*6);
+    geo.setAttribute('terrainAutoA', new THREE.BufferAttribute(new Float32Array(this.n*this.n*3),3));
+    geo.setAttribute('terrainAutoB', new THREE.BufferAttribute(new Float32Array(this.n*this.n*3),3));
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.receiveShadow = true;
     this.mesh.castShadow = false;
@@ -96,9 +113,11 @@ export class Terrain {
     }
     this.water.position.y = this.state.waterY;
     this.water.visible = this.enabled && this.state.water;
+    this.workflow?.syncOverlay();
   }
 
   dispose() {
+    this.workflow?.dispose();
     for (const o of [this.mesh, this.water, this._ring]) {
       if (!o) continue;
       o.parent?.remove(o);
@@ -111,6 +130,12 @@ export class Terrain {
 
   /** 高度数据 → 网格顶点（含夸张系数） */
   refresh() {
+    const stage=this.app.stage;
+    if(stage.terrainExtent!==this.size){
+      stage.terrainExtent=this.size;
+      stage.orbit.maxDistance=Math.max(900,this.size*2);
+      stage.view.far=Math.max(3000,this.size*4);stage.view.updateProjectionMatrix();
+    }
     const pos = this.mesh.geometry.attributes.position;
     let lo = 0;
     const ex = this.exaggerate || 1;
@@ -123,7 +148,8 @@ export class Terrain {
     // 地面压在容器最低点之下：地形覆盖不到的远景仍然有地面接阴影，但不会在山谷里顶穿地形
     if (this.app?.stage?.setGroundY) this.app.stage.setGroundY(this.enabled ? lo - 0.35 : -0.035);
     this.mesh.geometry.computeVertexNormals();
-    this._applyVertexColors();
+    this.mesh.geometry.computeBoundingBox(); this.mesh.geometry.computeBoundingSphere();
+    this.refreshSurface();
     this.mesh.visible = this.enabled;
     this.water.visible = this.enabled && this.state.water;
 
@@ -143,8 +169,9 @@ export class Terrain {
   setBiome(id) {
     if (!BIOMES[id]) return;
     this.biome = id;
-    this._applyVertexColors();
-    this.app.bus.emit('terrain');
+    this.refreshSurface();
+    this.app.bus.emit('terrain-material');
+    this.app.saveLocal?.();
   }
 
   setBrush(o = {}) {
@@ -156,22 +183,28 @@ export class Terrain {
   setWater(force) {
     this.state.water = force == null ? this.state.water : !!force;
     this.water.visible = this.enabled && this.state.water;
+    this.refreshSurface();
+    this.app.bus.emit('terrain');
   }
 
   /** 水面高度（相对平均地面），-999 表示关闭 */
-  setWaterLevel(v) {
+  setWaterLevel(v, { enable = true } = {}) {
+    if (!Number.isFinite(v)) return;
     if (v <= -900) { this.state.water = false; }
-    else { this.state.water = true; this.state.waterY = clamp(v, -6, 30); }
+    else { if (enable) this.state.water = true; this.state.waterY = clamp(v, -6, 30); }
     this.water.position.y = this.state.waterY;
     this.water.visible = this.enabled && this.state.water;
+    this.refreshSurface();
+    this.app.bus.emit('terrain');
   }
 
   setResolution(n) {
-    n = clamp(Math.round(n), 33, 161) | 1;
+    n = clamp(Math.round(n), 33, 513) | 1;
     if (n === this.n) return;
-    const old = { n: this.n, h: this.h };
+    const old = { n: this.n, h: this.h, weights: this.weights };
     this.n = n;
     this.h = new Float32Array(n * n);
+    this.weights = new Float32Array(n*n*6);
     for (let j = 0; j < n; j++) {
       for (let i = 0; i < n; i++) {
         const u = i / (n - 1), v = j / (n - 1);
@@ -181,18 +214,22 @@ export class Terrain {
         const a = old.h[y * old.n + x], b = old.h[y * old.n + Math.min(old.n - 1, x + 1)];
         const c = old.h[Math.min(old.n - 1, y + 1) * old.n + x], d = old.h[Math.min(old.n - 1, y + 1) * old.n + Math.min(old.n - 1, x + 1)];
         this.h[j * n + i] = (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
+        for(let k=0;k<6;k++){
+          const a=old.weights[(y*old.n+x)*6+k],b=old.weights[(y*old.n+x+1)*6+k],c=old.weights[((y+1)*old.n+x)*6+k],d=old.weights[((y+1)*old.n+x+1)*6+k];
+          this.weights[(j*n+i)*6+k]=(a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy;
+        }
       }
     }
     this.app.stage.world.remove(this.mesh);
-    this.mesh.geometry.dispose();
+    this.mesh.geometry.dispose(); this.mesh.material.dispose();
     this._buildMesh();
     this.refresh();
   }
 
   setSize(size) {
-    this.size = clamp(size, 40, 600);
+    this.size = clamp(size, 40, 4096);
     this.app.stage.world.remove(this.mesh);
-    this.mesh.geometry.dispose();
+    this.mesh.geometry.dispose(); this.mesh.material.dispose();
     this._buildMesh();
     this.refresh();
     this.app.bus.emit('terrain');
@@ -241,82 +278,34 @@ export class Terrain {
   }
 
   // ================= 生成 =================
-  generate(kind = 'hills', amp = 3) {
-    const n = this.n, h = this.h;
-    const cell = this.size / (n - 1);
-    const rng = this.rng;
-    h.fill(0);
-    const noise = (x, z, f) => smoothNoise(x * f, z * f);
-    if (kind === 'plain') {
-      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) h[j * n + i] = noise(i * cell * 0.045, j * cell * 0.045, 1) * amp * 0.16;
-    } else if (kind === 'hills') {
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const x = i * cell * 0.035, z = j * cell * 0.035;
-          h[j * n + i] = (noise(x, z, 1) * 1.0 + noise(x * 2.3, z * 2.3, 1) * 0.45 + noise(x * 5.1, z * 5.1, 1) * 0.16) * amp;
-        }
-      }
-    } else if (kind === 'ridge') {
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const x = i * cell * 0.03, z = j * cell * 0.03;
-          const r = Math.abs(Math.sin(x * 0.6 + noise(x, z, 1) * 1.2));
-          h[j * n + i] = (Math.pow(r, 0.55) * 1.1 + noise(x * 3, z * 3, 1) * 0.16) * amp * 1.6;
-        }
-      }
-    } else if (kind === 'island') {
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const px = (i / (n - 1) - 0.5) * 2, pz = (j / (n - 1) - 0.5) * 2;
-          const d = Math.hypot(px, pz);
-          const fall = clamp(1.25 - d * 1.25, 0, 1);
-          const x = i * cell * 0.05, z = j * cell * 0.05;
-          h[j * n + i] = (noise(x, z, 1) * 0.7 + noise(x * 2.6, z * 2.6, 1) * 0.3) * amp * 1.6 * fall - (1 - fall) * amp * 0.55;
-        }
-      }
-      this.state.waterY = amp * 0.06;
-      this.state.water = true;
-      this.water.position.y = this.state.waterY;
-    } else if (kind === 'craters') {
-      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) h[j * n + i] = noise(i * cell * 0.05, j * cell * 0.05, 1) * amp * 0.25;
-      const count = 9;
-      for (let k = 0; k < count; k++) {
-        const cx = rng() * this.size - this.size / 2, cz = rng() * this.size - this.size / 2;
-        const r = (3 + rng() * 9);
-        const depth = amp * (0.7 + rng() * 0.7);
-        for (let j = 0; j < n; j++) {
-          for (let i = 0; i < n; i++) {
-            const x = -this.size / 2 + i * cell, z = -this.size / 2 + j * cell;
-            const d = Math.hypot(x - cx, z - cz) / r;
-            if (d > 2) continue;
-            h[j * n + i] += (-Math.exp(-d * d * 2.2) * depth + Math.exp(-Math.pow(d - 1.05, 2) * 12) * depth * 0.34);
-          }
-        }
-      }
-    } else if (kind === 'canyon') {
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const x = i * cell, z = j * cell;
-          const path = Math.sin(z * 0.03 + noise(x * 0.01, z * 0.01, 1) * 2.2) * this.size * 0.16;
-          const d = Math.abs(x - path) / (this.size * 0.12);
-          const wall = clamp(d, 0, 1);
-          h[j * n + i] = (-Math.exp(-d * d * 1.8) * amp * 1.1 + Math.pow(wall, 0.7) * amp * 0.85 + noise(x * 0.04, z * 0.04, 1) * amp * 0.14);
-        }
-      }
-    } else if (kind === 'plateau') {
-      for (let j = 0; j < n; j++) {
-        for (let i = 0; i < n; i++) {
-          const x = i * cell * 0.04, z = j * cell * 0.04;
-          const base = noise(x, z, 1);
-          const steps = Math.round(base * 4) / 4;
-          h[j * n + i] = (steps * 0.9 + noise(x * 4, z * 4, 1) * 0.06) * amp * 1.7;
-        }
-      }
-    }
-    this.refresh();
-    this.app.bus.emit('terrain');
-    this.app.bus.emit('objects');
-    this.app.markDirty?.();
+  generate(kind = this.generation.kind, amp = this.generation.amp, seed = this.generation.seed) {
+    if(!Object.hasOwn(TERRAIN_GEN,kind))return false;
+    this._cancelStroke?.();
+    this.app.vegetationBrush?.stop();
+    if(this.app.roadBrush?._editBackup)this.app.roadBrush.cancelEdit();else this.app.roadBrush?.stop();
+    this.app.state.terrainTool=null;this.refreshUI();
+    this.app.beginOp('生成地形与自动地貌');
+    const result=generateHeightfield(this.n,this.size,{kind,amp,seed});
+    this.generation=result.settings;this.h=result.h;this.autoSurface.enabled=true;
+    if(result.waterY!==undefined){this.state.waterY=result.waterY;this.water.position.y=result.waterY;}
+    this.enabled=true;this.refresh();
+    this.app.bus.emit('terrain');this.app.bus.emit('objects');this.app.saveLocal?.();
+    return true;
+  }
+
+  setAutoSurface(patch={}) {
+    this.autoSurface=cleanSurface({...this.autoSurface,...patch});
+    this.refreshSurface();this.app.bus.emit('terrain-material');this.app.saveLocal?.();
+  }
+  refreshSurface() {
+    this.autoWeights=automaticSurface(this.h,this.n,this.size,this.exaggerate||1,this.biome,this.autoSurface,{enabled:this.state.water,level:this.state.waterY},this.autoWeights);
+    const a=this.mesh.geometry.attributes.terrainAutoA,b=this.mesh.geometry.attributes.terrainAutoB;
+    for(let i=0;i<this.n*this.n;i++){a.setXYZ(i,this.autoWeights[i*6],this.autoWeights[i*6+1],this.autoWeights[i*6+2]);b.setXYZ(i,this.autoWeights[i*6+3],this.autoWeights[i*6+4],this.autoWeights[i*6+5]);}
+    a.needsUpdate=b.needsUpdate=true;
+    setTerrainPalette(this.mesh.material,BIOMES[this.biome]||BIOMES.grass,this.biome);
+    this._refreshWeights();
+    if(this.autoSurface.enabled){this.colors.fill(1);this.mesh.geometry.attributes.color.needsUpdate=true;}else this._applyVertexColors();
+    this.app.lighting?.physical?.color.patch(this.mesh.material);
   }
 
   /** 挖一个平滑凹地（池塘 / 河湾 / 弹坑），半径 r、深度 depth */
@@ -400,12 +389,18 @@ export class Terrain {
   }
 
   // ================= 绘制 =================
-  paintAt(x, z, dir = 1) {
-    const tool = this.app.state.terrainTool;
+  paintAt(x, z, dir = 1, options = {}) {
+    const tool = options.tool || this.app.state.terrainTool;
     if (!tool || !this.enabled) return;
     const n = this.n, cell = this.size / (n - 1);
     const r = Math.max(cell, this.state.brushSize);
     const s = this.state.brushStrength * dir;
+    if(tool==='roadfill'){this.app.roadTerrain?.fillAt(x,z,r,Math.abs(s));if(options.refresh!==false)this.refresh();return;}
+    const src=tool==='smooth'?Float32Array.from(this.h):this.h;
+    const integral=tool==='smooth'?new Float64Array((n+1)*(n+1)):null;
+    if(integral)for(let j=0;j<n;j++){let row=0;for(let i=0;i<n;i++){row+=src[j*n+i];integral[(j+1)*(n+1)+i+1]=row+integral[j*(n+1)+i+1];}}
+    const smoothRadius=Math.max(1,Math.min(10,Math.round(r/cell*.3)));
+    const layer=TERRAIN_MATERIALS.findIndex(m=>m.id===this.state.material);
     // 世界坐标 → 顶点下标：i = (x + size/2) / cell（与 _uv 同一套映射）
     const [cx, cz] = this._uv(x, z);
     const rr = r / cell;
@@ -414,24 +409,29 @@ export class Terrain {
     const j0 = Math.max(0, Math.floor(cz - rr));
     const j1 = Math.min(n - 1, Math.ceil(cz + rr));
     const h = this.h;
-    const avg = this.heightAt(x, z);
+    const avg = (this.state.flattenHeight ?? this.heightAt(x,z)) / this.exaggerate;
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
         const px = -this.size / 2 + i * cell, pz = -this.size / 2 + j * cell;
         const w = clamp(1 - Math.hypot(px - x, pz - z) / r, 0, 1);
-        const fall = w * w * (3 - 2 * w);
+        const edge=clamp(w / Math.max(.02,this.state.brushFalloff??.65),0,1);
+        const fall = edge * edge * (3 - 2 * edge);
         const idx = j * n + i;
-        if (tool === 'raise') h[idx] += s * fall * cell * 1.6;
-        else if (tool === 'lower') h[idx] -= s * fall * cell * 1.6;
+        if (tool === 'raise') h[idx] += s * fall * .65 / this.exaggerate;
+        else if (tool === 'lower') h[idx] -= s * fall * .65 / this.exaggerate;
         else if (tool === 'smooth') {
           const a = h[idx];
-          let sum = 0, cnt = 0;
-          for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
-            const jj = j + dj, ii = i + di;
-            if (jj < 0 || ii < 0 || jj >= n || ii >= n) continue;
-            sum += h[jj * n + ii]; cnt++;
-          }
-          h[idx] = a + (sum / Math.max(1, cnt) - a) * clamp(fall * s * 1.6, 0, 1);
+          const x0=Math.max(0,i-smoothRadius),x1=Math.min(n-1,i+smoothRadius)+1,z0=Math.max(0,j-smoothRadius),z1=Math.min(n-1,j+smoothRadius)+1;
+          const sum=integral[z1*(n+1)+x1]-integral[z0*(n+1)+x1]-integral[z1*(n+1)+x0]+integral[z0*(n+1)+x0],cnt=(x1-x0)*(z1-z0);
+          h[idx] = a + (sum / Math.max(1, cnt) - a) * clamp(fall * Math.abs(s) * 1.6, 0, 1);
+        } else if (tool === 'slope') {
+          const anchor=(this._slopeAnchor??this.heightAt(x,z))/this.exaggerate;
+          const limit=Math.hypot(px-x,pz-z)*Math.tan((this.state.maxSlope??20)*Math.PI/180)/this.exaggerate;
+          h[idx]+=(clamp(src[idx],anchor-limit,anchor+limit)-h[idx])*clamp(fall*Math.abs(s)*1.8,0,1);
+        } else if (tool === 'material' && layer>=0) {
+          const amount=clamp(fall*Math.abs(s)*.65,0,1);
+          for(let k=0;k<6;k++)this.weights[idx*6+k]*=1-amount;
+          if(dir>0)this.weights[idx*6+layer]+=amount;
         } else if (tool === 'flatten') {
           h[idx] += (avg - h[idx]) * clamp(fall * s * 1.8, 0, 1);
         } else if (tool === 'noise') {
@@ -443,7 +443,7 @@ export class Terrain {
         }
       }
     }
-    this.refresh();
+    if(options.refresh!==false){if(tool==='material')this._refreshWeights();else this.refresh();}
   }
 
   /** 全图平滑 N 轮（3×3 均值），用于削掉笔刷留下的尖刺 */
@@ -475,6 +475,21 @@ export class Terrain {
     const hit = raycaster.intersectObject(this.mesh, false)[0];
     if (!hit) return null;
     return out.copy(hit.point);
+  }
+
+  _refreshWeights(){
+    const a=this.mesh.geometry.attributes.terrainWeightsA,b=this.mesh.geometry.attributes.terrainWeightsB;
+    for(let i=0;i<this.n*this.n;i++){a.setXYZ(i,this.weights[i*6],this.weights[i*6+1],this.weights[i*6+2]);b.setXYZ(i,this.weights[i*6+3],this.weights[i*6+4],this.weights[i*6+5]);}
+    a.needsUpdate=b.needsUpdate=true;
+  }
+  activateTool(id){
+    if (this.workflow?.busy) { this.app.notify?.('请先完成或取消地形任务', 'warn'); return false; }
+    this.workflow?.cancelErosionPreview();
+    this.workflow?.cancelDraft();
+    this._cancelStroke?.();
+    this.app.vegetationBrush?.stop();this.app.roadPlanning?.setPicking(false);this.app.roadConnector?.setPicking(null);
+    if(this.app.roadBrush?._editBackup)this.app.roadBrush.cancelEdit();else this.app.roadBrush?.stop();
+    this.app.state.terrainTool=id===this.app.state.terrainTool?null:id;this.refreshUI();
   }
 
   // ================= 着色 =================
@@ -519,6 +534,11 @@ export class Terrain {
     return typeof btoa === 'function' ? btoa(bin) : Buffer.from(u8).toString('base64');
   }
 
+  packFloat32(){
+    const bytes=new Uint8Array(this.h.buffer,this.h.byteOffset,this.h.byteLength);let bin='';
+    for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(bin);
+  }
+
   unpack(data) {
     const n = this.n;
     if (typeof data !== 'string') return;
@@ -536,30 +556,46 @@ export class Terrain {
   toJSON() {
     return {
       n: this.n, size: this.size, biome: this.biome, enabled: this.enabled,
+      workflow: this.workflow?.toJSON(),
+      autoSurface: {...this.autoSurface}, generation: {...this.generation},
       exaggerate: this.exaggerate, water: this.state.water, waterY: this.state.waterY,
       brushSize: this.state.brushSize, brushStrength: this.state.brushStrength,
-      h64: this.pack(),
+      maxSlope: this.state.maxSlope, brushFalloff: this.state.brushFalloff, flattenHeight: this.state.flattenHeight, material: this.state.material,
+      p64: this.weights.some(v=>v>0)?packWeights(this.weights):undefined,
+      h32: (this.workflow?.precise || this.h.some(v=>v < -327.68 || v > 327.67))?this.packFloat32():undefined,
+      h64: (this.workflow?.precise || this.h.some(v=>v < -327.68 || v > 327.67))?undefined:this.pack(),
     };
   }
 
   fromJSON(d = {}) {
     if (!d || typeof d !== 'object') { this.refresh(); return; }
     this.biome = BIOMES[d.biome] ? d.biome : this.biome;
-    if (d.size) this.size = clamp(d.size, 40, 600);
+    this.autoSurface=cleanSurface(d.autoSurface||{enabled:false});
+    this.generation=cleanGeneration(d.generation);
+    if (d.size) this.size = clamp(d.size, 40, 4096);
     if (d.exaggerate) this.exaggerate = clamp(d.exaggerate, 0.2, 3);
-    if (d.n && d.n !== this.n) { this.n = clamp(Math.round(d.n), 33, 161) | 1; this.h = new Float32Array(this.n * this.n); }
+    if (d.n && d.n !== this.n) { this.n = clamp(Math.round(d.n), 33, 513) | 1; this.h = new Float32Array(this.n * this.n); }
+    this.weights = unpackWeights(d.p64, this.n*this.n*6);
+    this.state.maxSlope=clamp(d.maxSlope??20,5,60);
+    this.state.brushFalloff = clamp(d.brushFalloff ?? .65,.02,1); this.state.flattenHeight = d.flattenHeight ?? 0;
+    this.state.material = TERRAIN_MATERIALS.some(m=>m.id===d.material)?d.material:'grass';
     this.enabled = d.enabled !== false;
-    this.state.water = d.water !== false;
+    this.state.water = d.water === true;
     this.state.waterY = d.waterY ?? this.state.waterY;
     this.state.brushSize = d.brushSize ?? this.state.brushSize;
     this.state.brushStrength = d.brushStrength ?? this.state.brushStrength;
     this.app.stage.world.remove(this.mesh);
-    this.mesh.geometry?.dispose();
+    this.mesh.geometry?.dispose(); this.mesh.material?.dispose();
     this._buildMesh();
     this.water.position.y = this.state.waterY;
-    if (d.h64) this.unpack(d.h64);
+    if (d.h32) {
+      try { const bin=atob(d.h32); if(bin.length!==this.n*this.n*4)throw new Error('地形高度尺寸不匹配'); const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0)); const heights=new Float32Array(bytes.buffer); if(!heights.every(Number.isFinite))throw new Error('无效地形高度'); this.h.set(heights); } catch(e){console.warn('terrain float32',e);}
+      this.refresh();
+    } else if (d.h64) this.unpack(d.h64);
     else this.refresh();
-    this.app.bus.emit('terrain');
+    this.workflow?.restore(d.workflow);
+    // A restored snapshot already contains authored transforms/heights; don't refit them again.
+    this.app.bus.emit('terrain', { restored: true });
   }
 
   // ================= UI 同步 =================
@@ -568,8 +604,11 @@ export class Terrain {
   }
 
   _syncBrushUI() {
+    if (!this.app.state.terrainTool && this._ring) this._ring.visible = false;
     const host = this.app.panels?.terrainHost;
     if (!host) return;
+    host.querySelectorAll('[data-field="target"] input').forEach(e=>{if(document.activeElement!==e)e.value=this.state.flattenHeight;});
+    host.querySelectorAll('[data-terrain-radius]').forEach(e=>{if(document.activeElement!==e)e.value=this.state.brushSize;});
     host.querySelectorAll('[data-tsize]').forEach((e) => { e.textContent = `${this.state.brushSize.toFixed(1)} m`; });
     host.querySelectorAll('[data-tstrength]').forEach((e) => { e.textContent = this.state.brushStrength.toFixed(2); });
     host.querySelectorAll('.brushgrid .bchip').forEach((b) => b.classList.toggle('on', b.dataset.brush === this.app.state.terrainTool));
@@ -577,73 +616,68 @@ export class Terrain {
 
   // ================= 指针接管 =================
   _bindPaint() {
-    // 在 stage.host 的捕获阶段拦截：地形画笔激活时接管指针，轨道控制/点选都不会抢走
-    const st = this.app.stage;
-    const host = st.host || st.canvas.parentElement;
-    if (!host) return;
-    let painting = 0;
-    let lastMove = 0;
-    const active = () => !!this.app.state.terrainTool && !this.app.state.playing;
-    const aim = (ev) => {
-      const r = st.canvas.getBoundingClientRect();
-      st.pointer.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
-      return st.groundPoint(0);
+    const st=this.app.stage,host=st.host||st.canvas.parentElement;
+    if(!host)return;
+    let stroke=null;
+    const active=()=>!!this.app.state.terrainTool&&!this.app.state.playing&&!this.app.state.preview&&!this.app.suspended&&this.enabled;
+    const aim=ev=>this.pointerPoint(ev);
+    const stamp=(ev,p)=>{
+      if(!p)return;
+      const prev=stroke.last||p,d=Math.hypot(prev.x-p.x,prev.z-p.z),steps=Math.min(48,Math.max(1,Math.ceil(d/Math.max(.3,this.state.brushSize*.18))));
+      for(let i=1;i<=steps;i++){const q=prev.clone().lerp(p,i/steps);this.paintAt(q.x,q.z,ev.shiftKey?-1:1,{refresh:false,tool:ev.altKey?'smooth':this.app.state.terrainTool});}
+      if(ev.altKey || this.app.state.terrainTool!=='material')stroke.heightChanged=true;
+      if(ev.altKey||this.app.state.terrainTool!=='material')this.refresh();else this._refreshWeights();
+      stroke.last=p.clone();st.view.invalidate?.();
     };
-    const stroke = (ev, dir) => {
-      const p = aim(ev);
-      if (!p || !isFinite(p.x)) return;
-      this.paintAt(p.x, p.z, dir);
+    this._cancelStroke=()=>{
+      if(!stroke)return;const old=stroke;stroke=null;this._strokeActive=false;this.h=old.h;this.weights=old.weights;this.refresh();
+      if(old.undo){this.app._undo=old.undoEntries;this.app._undoBytes=this.app._undo.reduce((n,u)=>n+(u.size||0),0);this.app._undoAvail=this.app._undo.length;this.app._redo=old.redo;this.app._redoAvail=old.redo.length;this.app.bus.emit('undoable');}
+      st.orbit.enabled=old.orbit;try{host.releasePointerCapture(old.pointer);}catch{}this._slopeAnchor=null;
     };
-    host.addEventListener('pointerdown', (ev) => {
-      if (ev.button !== 0 || !active()) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (st.orbit) st.orbit.enabled = false;
-      painting = ev.shiftKey ? -1 : 1;
-      if (this.app.beginOp) this.app.beginOp('地形笔刷', 'brush:' + Date.now(), true);   // 一次落笔 = 撤销栈上的一步
-      try { host.setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-      stroke(ev, painting);
-    }, true);
-    host.addEventListener('pointermove', (ev) => {
-      if (active()) this._cursor(ev);
-      if (!painting) return;
-      const now = performance.now();
-      if (now - lastMove < 14) return;
-      lastMove = now;
-      stroke(ev, painting);
-    }, true);
-    const end = (ev) => {
-      if (!painting) return;
-      painting = 0;
-      if (st.orbit) st.orbit.enabled = true;
-      try { host.releasePointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
-      this.app.bus.emit('terrain');
-      this.app.bus.emit('objects');
-      this.app.markDirty?.();
-    };
-    host.addEventListener('pointerup', end, true);
-    host.addEventListener('pointercancel', end, true);
-    host.addEventListener('pointerleave', () => { if (this._ring) this._ring.visible = false; }, true);
+    host.addEventListener('pointerdown',ev=>{
+      if(ev.button!==0||!active())return;const p=aim(ev);if(!p)return;
+      ev.preventDefault();ev.stopImmediatePropagation();
+      if(ev.ctrlKey||ev.metaKey){this.state.flattenHeight=p.y;this.refreshUI();this.app.bus.emit('terrain-brush');return;}
+      this._strokeActive=true;this._slopeAnchor=p.y;
+      stroke={h:this.h.slice(),weights:this.weights.slice(),orbit:st.orbit.enabled,pointer:ev.pointerId,undoLength:this.app._undo?.length||0,undoEntries:[...(this.app._undo||[])],redo:[...(this.app._redo||[])]};
+      stroke.undo=this.app.beginOp?.(this.app.state.terrainTool==='material'?'局部地形材质':'地形笔刷','',true);
+      st.orbit.enabled=false;try{host.setPointerCapture(ev.pointerId);}catch{}stamp(ev,p);
+    },true);
+    host.addEventListener('pointermove',ev=>{if(active())this._cursor(ev);if(stroke){ev.preventDefault();ev.stopImmediatePropagation();stamp(ev,aim(ev));}},true);
+    const end=ev=>{if(!stroke)return;if(!this.h.some((v,i)=>v!==stroke.h[i])&&!this.weights.some((v,i)=>v!==stroke.weights[i])){this._cancelStroke();return;}const old=stroke;stroke=null;this._strokeActive=false;this._slopeAnchor=null;st.orbit.enabled=old.orbit;try{host.releasePointerCapture(old.pointer);}catch{}if(old.heightChanged){this.app.bus.emit('terrain');this.app.bus.emit('objects');}else this.app.bus.emit('terrain-material');this.app.saveLocal?.();ev.stopImmediatePropagation();};
+    host.addEventListener('pointerup',end,true);host.addEventListener('pointercancel',()=>this._cancelStroke(),true);
+    host.addEventListener('lostpointercapture',()=>{if(stroke)this._cancelStroke();},true);
+    host.addEventListener('pointerleave',()=>{if(this._ring)this._ring.visible=false;},true);
+    window.addEventListener('keydown',ev=>{if(ev.key==='Escape')this._cancelStroke();});
+    host.addEventListener('wheel',ev=>{if(active()&&ev.altKey){ev.preventDefault();ev.stopImmediatePropagation();this.setBrush({size:this.state.brushSize*(ev.deltaY>0?.9:1.1)});}}, {capture:true,passive:false});
+  }
+
+  pointerPoint(ev) {
+    const st=this.app.stage,r=st.canvas.getBoundingClientRect();
+    st.pointer.set((ev.clientX-r.left)/r.width*2-1,-(ev.clientY-r.top)/r.height*2+1);
+    st.raycaster.setFromCamera(st.pointer,st.view);
+    return this.raycastToGround(st.raycaster);
   }
 
   _cursor(ev) {
     const st = this.app.stage;
-    const r = st.canvas.getBoundingClientRect();
-    st.pointer.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
-    const p = st.groundPoint(0);
+    const p = this.pointerPoint(ev);
     if (!p || !isFinite(p.x)) return;
     if (!this._ring) {
-      const geo = new THREE.RingGeometry(0.86, 1, 64);
+      const geo = new THREE.RingGeometry(0.975, 1, 96);
       geo.rotateX(-Math.PI / 2);
+      geo.userData.flatPositions=geo.attributes.position.array.slice();
       const mat = new THREE.MeshBasicMaterial({ color: 0x7ce0b0, transparent: true, opacity: 0.7, depthTest: false, side: THREE.DoubleSide });
       this._ring = new THREE.Mesh(geo, mat);
       this._ring.renderOrder = 720;
       this._ring.userData.pickIgnore = true;
       st.world.add(this._ring);
     }
-    this._ring.visible = true;
-    this._ring.position.set(p.x, Math.max(0, this.heightAt(p.x, p.z)) + 0.14, p.z);
-    this._ring.scale.setScalar(this.state.brushSize);
+    this._ring.visible = this.guides !== false && !this.app.state.preview;
+    this._ring.position.set(p.x, this.heightAt(p.x, p.z) + 0.14, p.z);
+    const pos=this._ring.geometry.attributes.position,flat=this._ring.geometry.userData.flatPositions,radius=this.state.brushSize;
+    for(let i=0;i<pos.count;i++){const x=flat[i*3]*radius,z=flat[i*3+2]*radius;pos.setXYZ(i,x,this.heightAt(p.x+x,p.z+z)-this.heightAt(p.x,p.z),z);}
+    pos.needsUpdate=true;this._ring.geometry.computeBoundingSphere();this._ring.scale.setScalar(1);
   }
 }
 

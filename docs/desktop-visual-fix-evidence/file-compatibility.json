@@ -1,0 +1,55 @@
+{
+  "mode": "file-offline",
+  "core": {
+    "status": "PASS",
+    "media": {
+      "video": {
+        "frames": 32,
+        "seconds": 8,
+        "bytes": 39996,
+        "actions": [
+          "walk",
+          "wave",
+          "run"
+        ]
+      },
+      "reference": {
+        "frames": 16,
+        "keyframes": 3,
+        "bytes": 233177,
+        "repeatedFirstLastPixelsEqual": true
+      },
+      "cancellationAndFailureRestore": true
+    },
+    "points": 7,
+    "coverage": {
+      "static": 1,
+      "obstacles": 1,
+      "ground": 0,
+      "aboveBelow": 0,
+      "dynamic": 0,
+      "effects": 0,
+      "hidden": 0
+    },
+    "checks": [
+      "readonly preview",
+      "stale/tamper",
+      "warning/duration confirmation",
+      "no-undo and partial / post-append rollback",
+      "one-step undo/redo",
+      "seek and loop",
+      "hold",
+      "save/load",
+      "invalid load fail closed",
+      "read-only keys / transforms",
+      "duplicate independence",
+      "busy / terrain / unknown guards",
+      "legacy mover",
+      "PNG / multi-frame / failed PNG restore",
+      "32-frame WebCodecs / cancelled / failed video restore",
+      "16-frame reference normal + gray + depth/ID/mask, repeat pixel equality"
+    ]
+  },
+  "ui": "PASS: form, standalone preview, local playback, mandatory confirmation, single undo, responsive 1440/800/390, close cleanup",
+  "errors": []
+}

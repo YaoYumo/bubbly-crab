@@ -1,0 +1,11 @@
+{
+  "entry": "dev",
+  "frames": 2,
+  "captureButton": true,
+  "overlayRemoved": true,
+  "nativeZIPDownload": true,
+  "attemptContainsOriginalZIP": true,
+  "attemptContainsResult": true,
+  "attemptContainsReview": true,
+  "errors": []
+}

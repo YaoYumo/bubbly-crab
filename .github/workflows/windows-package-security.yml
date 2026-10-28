@@ -1,0 +1,31 @@
+name: Verify blocked Windows package
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena/3f9ececc-bubbly-crab]
+    paths:
+      - .github/workflows/windows-package-security.yml
+      - scripts/windows-security-scan.ps1
+permissions:
+  contents: read
+  actions: read
+jobs:
+  scan-original-package:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact artifact hashes and scan with Microsoft Defender
+        shell: powershell
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./scripts/windows-security-scan.ps1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-package-security-report
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            .shots/windows-security-scan.json
+            .shots/security-scan-output.txt

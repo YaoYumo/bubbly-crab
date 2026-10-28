@@ -1,0 +1,24 @@
+{
+  "version": "1.0.1",
+  "binarySourceCommit": "85ab5e5423d3f074d8b226eef63912ca8f308030",
+  "buildRun": 39562665642,
+  "buildResult": "Rust/NSIS succeeded; additional native visual probe failed to connect, not a visual pass",
+  "installVerificationRun": 39564517313,
+  "installVerificationConclusion": "success",
+  "nativeVisualComparisonCompleted": false,
+  "browserWithTauriStyleNonceVisualChecks": "PASS: theme colors, lighting gradients, camera SVG/name/color tags, nameplate data and HUD; no CSP violations",
+  "webAndFileCompatibility": "PASS",
+  "downloadURL": "https://github.com/YaoYumo/bubbly-crab/actions/runs/39564517313/artifacts/12328269364",
+  "downloadZIPBytes": 1924254,
+  "artifactExpiresAt": "2027-01-19T07:47:52Z",
+  "installer": {
+    "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.0.1_x64-setup.exe",
+    "bytes": 1916775,
+    "sha256": "8e451276dda34af57a3d5a0507ee7949a301ff3fd608bf08a982fcb68f00a2a1"
+  },
+  "note": "UI/stylesheet-only fix; no scene data migrations, model changes, broad native permissions or external model calls. Actual user-machine appearance still needs confirmation.",
+  "offlineHTML": {
+    "bytes": 2329780,
+    "sha256": "748481202d9533615df921cc45de0d971f3a755b3e624c832df25ec83cc197ed"
+  }
+}

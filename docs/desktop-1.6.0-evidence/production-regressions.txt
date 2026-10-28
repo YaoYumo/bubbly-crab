@@ -1,0 +1,15 @@
+interchange {"junctions":0,"gaps":[0,0],"hits":[8.19000000298023,0.19000000298023223],"bridge":{"built":10,"blocked":0,"plantsRemoved":0,"blockedAt":[]},"lamps":[10,10],"supportClear":true}
+PASS stacked interchange / two independently raycastable decks / no planar gaps / full-volume support avoidance
+PASS actual road lamp toggle / separate manual lamp / live range retained / spacing and side one-step undo-redo / glow / type edit / save-load
+PASS real ramp preset / smooth height transition / low and high T-junctions / raycast paved grade / atomic undo-redo
+PASS loop ramp underpass then valid join on the same road / self-stacked alignment preserves both elevations
+PASS real Shift height drag / stable XZ + settings / per-point numeric editing / high-level preset / cancel restores undo and camera targets / lock guard
+PASS new fixed-height mouse drawing / ground-off supports / backwards-compatible lamps off / no JS or CSP errors
+interchange {"junctions":0,"gaps":[0,0],"hits":[8.19000000298023,0.19000000298023223],"bridge":{"built":10,"blocked":0,"plantsRemoved":0,"blockedAt":[]},"lamps":[10,10],"supportClear":true}
+PASS stacked interchange / two independently raycastable decks / no planar gaps / full-volume support avoidance
+PASS actual road lamp toggle / separate manual lamp / live range retained / spacing and side one-step undo-redo / glow / type edit / save-load
+PASS real ramp preset / smooth height transition / low and high T-junctions / raycast paved grade / atomic undo-redo
+PASS loop ramp underpass then valid join on the same road / self-stacked alignment preserves both elevations
+PASS real Shift height drag / stable XZ + settings / per-point numeric editing / high-level preset / cancel restores undo and camera targets / lock guard
+PASS new fixed-height mouse drawing / ground-off supports / backwards-compatible lamps off / no JS or CSP errors
+PASS desktop conversation + terrain + roads + grid30 with mocked native IPC: auto load/submit, mixed add+edit, one undo, invalid/unsupported/locked atomic rejection, destructive confirmation accept+decline, cancellation, folder, no blueprint/preview, no CSP/browser errors. NOT real model inference.

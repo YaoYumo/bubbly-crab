@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 const b = await puppeteer.launch({ headless: true, args: ['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--no-sandbox','--disable-dev-shm-use'] });
 const p = await b.newPage();
-await p.goto('http://localhost:5173/?fresh=1', { waitUntil: 'networkidle2', timeout: 180000 });
+await p.goto('http://localhost:5174/?fresh=1', { waitUntil: 'networkidle2', timeout: 180000 });
 await p.waitForFunction(() => window.__previzBooted && window.__t?.LIB_INDEX, { timeout: 180000 });
 const out = await p.evaluate(() => {
   const { THREE, LIB_INDEX, defaultsFor, setDetailLevel } = window.__t;

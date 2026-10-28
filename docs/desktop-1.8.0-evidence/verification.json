@@ -1,0 +1,66 @@
+{
+  "version": "1.8.0",
+  "sourceCommit": "42cd8ba5b8045d9003bae4c0097d06da0017f830",
+  "runId": 40626116895,
+  "jobId": 122611324862,
+  "artifact": {
+    "id": 12789666810,
+    "node_id": "MDg6QXJ0aWZhY3QxMjc4OTY2NjgxMA==",
+    "name": "previz-lab-windows-x64-unsigned",
+    "size_in_bytes": 23607990,
+    "url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12789666810",
+    "archive_download_url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12789666810/zip",
+    "expired": false,
+    "digest": "sha256:5d4c970c3ad5b69f41d9056b4b6597367e30b60419bf1cd2d8612db689432c36",
+    "created_at": "2026-10-28T03:26:54Z",
+    "updated_at": "2026-10-28T03:26:54Z",
+    "expires_at": "2027-01-26T03:20:27Z",
+    "workflow_run": {
+      "id": 40626116895,
+      "repository_id": 1412714078,
+      "head_repository_id": 1412714078,
+      "head_branch": "arena/3f9ececc-bubbly-crab",
+      "head_sha": "42cd8ba5b8045d9003bae4c0097d06da0017f830"
+    }
+  },
+  "frontendHashesMatch": 15,
+  "nativeSmoke": {
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY"
+  },
+  "threeModeEvidence": "../road-traffic-evidence/",
+  "localChecks": [
+    "traffic.test.mjs",
+    "road-traffic-regression.mjs (web / offline file / desktop CSP, including real PNG and GPU backwards seek)",
+    "road-connector.test.mjs",
+    "road-spiral.test.mjs",
+    "road-spiral-regression.mjs (web / file / desktop CSP)",
+    "road-3d-contact-regression.mjs (web, 12 scenes)",
+    "road-junction-corrections-regression.mjs (web, grips / freeway / acute)",
+    "road-ramp-routing-regression.mjs (web, 8 scenes)",
+    "freeway-median-regression.mjs (12 WebGL camera angles + negative control)",
+    "road-performance-regression.mjs (exact geometry / supports / caching / attribution)",
+    "npm run test:desktop",
+    "npm run all",
+    "npm run build:desktop"
+  ],
+  "limits": [
+    "Windows smoke checks install, native window liveness, installed engine/helper and model-folder reinstall fixture; NOT full UI, disk-save, RTX4070Ti performance or real GGUF acceptance",
+    "Installer hashes recovered from ordered CI annotations; no independent binary re-download",
+    "Unsigned x64 NSIS, no bundled GGUF weights; WebView2 download only if missing",
+    "Simplified traffic preview and bounded road geometry are not engineering certification"
+  ]
+}

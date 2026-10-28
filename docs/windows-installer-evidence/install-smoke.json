@@ -1,0 +1,12 @@
+{
+  "platform": "Windows GitHub runner x64",
+  "installed": true,
+  "installExitCode": 0,
+  "processStayedAlive": true,
+  "nativeWindowCreated": true,
+  "windowTitle": "PREVIZ LAB · 桌面预检版",
+  "fullyFunctionalUIValidated": false,
+  "nativeDiskSaveValidated": false,
+  "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+  "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY"
+}

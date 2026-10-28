@@ -1,0 +1,401 @@
+{
+  "sourceCommit": "2bd694b5fcae60289e9fc198154696d30491e8ce",
+  "cargoLock": {
+    "path": "src-tauri/Cargo.lock",
+    "bytes": 107886,
+    "sha256": "9120ef50c44cf67fe6e7bdde8f1b684396ef94832edfe20f8260ad7a0b8ceadf"
+  },
+  "frontendBytes": 2919255,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/core-B9ij_roJ.js",
+      "bytes": 1915,
+      "sha256": "05401f8b053174dfeac7305d5f641c48db6c63d18272d010674fcc0c789484db"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/FBXLoader-B03W7cKg.js",
+      "bytes": 47775,
+      "sha256": "f706fdb0796b2bed11d9126a8ae6686f09c9b7618fef3de8eee22ae8993c4ad5"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-D2ZC_CyF.js",
+      "bytes": 44891,
+      "sha256": "4130528d6ba262105595975eac5c36c1e9649329bbe2c7db7ceebb0b6083671b"
+    },
+    {
+      "path": "desktop/dist/assets/index-CqAuepLP.css",
+      "bytes": 77503,
+      "sha256": "1afe4d9815cb1a66128b91cb5cbe97d5891fc74daf680902759c9ef4857bdd66"
+    },
+    {
+      "path": "desktop/dist/assets/index-DN3Mz2zv.js",
+      "bytes": 7629,
+      "sha256": "fcc6062c5d9b0a800e0c231113c501e2027bfcb5944e1e79b883fab912c98b2a"
+    },
+    {
+      "path": "desktop/dist/assets/index-Dphg_Ony.js",
+      "bytes": 1257,
+      "sha256": "64e3bf21bd992336d52559fe3073417a0cbd663a75b56be9cff93eb4207f5b56"
+    },
+    {
+      "path": "desktop/dist/assets/index-DqBU1lpz.js",
+      "bytes": 2582657,
+      "sha256": "484a029a22344b009d71344caf0d8ae6a80d41e6855a2b61b6f8e182d0078101"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-BAc7gbrr.js",
+      "bytes": 4112,
+      "sha256": "4b4351db5dc29cf7c9c413c208bfd11a91f15c4314bcd681e0400b010bfc7f90"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-trvBzyE4.js",
+      "bytes": 8741,
+      "sha256": "ae67504857a197075384c64dd8498d4da566b6757ffc0aa0bd86dfc8880caaa2"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-DUwF__2R.js",
+      "bytes": 15464,
+      "sha256": "2f7f706d0e08356c21ce019947191d9da21948789df3d888f9e3eaf0ee1cf7ad"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "5cc9b688eeb0e92736330e0fa1f2de99ee564540924fdc620dcbae255690ac64"
+    }
+  ],
+  "installers": [
+    {
+      "path": "src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.6.1_x64-setup.exe",
+      "bytes": 20972964,
+      "sha256": "d863d4217156a9fdb32bda47dbe266b59ebabf523e4b248e14adfe777ecb7acb"
+    }
+  ],
+  "binaries": [
+    {
+      "path": "src-tauri/target/release/previz-lab.exe",
+      "bytes": 4681728,
+      "sha256": "dde98979c186d2cdb46b27e8eb98b5d91f566008bdb3482fcb672491a1559b00"
+    }
+  ],
+  "nativeArtifactsPresent": true,
+  "installerIncludesWebView2": false,
+  "missingWebView2Policy": "download-bootstrapper-on-install; internet required only if runtime is absent",
+  "modelWeightsIncluded": false,
+  "localInferenceEngine": {
+    "tag": "b11829",
+    "sha256": "839ff55ce9cbee6a099b403b640ca6b694ee5d74b815e39f77fc5d2b20962f0d",
+    "archive": "llama-b11829-bin-win-vulkan-x64.zip",
+    "modelWeightsIncluded": false
+  },
+  "isolatedLoopbackHelper": [
+    {
+      "path": "src-tauri/resources/loopback/previz-loopback.exe",
+      "bytes": 173056,
+      "sha256": "fc098b4646f9583e87777c279268540ced7d0f3cd2c66df30ba3106c34661910"
+    },
+    {
+      "path": "src-tauri/resources/loopback/previz-loopback.pdb",
+      "bytes": 1388544,
+      "sha256": "927ae55301f36ced047c4d2e7d811654a9224df1dc2067b1a589263b9d5d6a71"
+    }
+  ],
+  "inferenceRuntime": [
+    {
+      "path": "src-tauri/resources/llama/engine-source.json",
+      "bytes": 193,
+      "sha256": "83175a3a0d3eebb8761cde3bf861fcf2fda16309fc0191780c1f48565f065352"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-base.dll",
+      "bytes": 805376,
+      "sha256": "910e7b39eb64b64b387e0508f0481987f27410503668065785b4a1fe0fd1cac8"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-alderlake.dll",
+      "bytes": 1419264,
+      "sha256": "a5dd8f508fd8c1cc4f912f3d61c3c8544a23e4c0428a9c5b6d12ef9330022009"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-cannonlake.dll",
+      "bytes": 1613824,
+      "sha256": "1bb121751722fb7aad079595e2ceea6edf82ce3ff1d41d5a6dda85441109173e"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-cascadelake.dll",
+      "bytes": 1587200,
+      "sha256": "b90309553cd479a876ad60b6598e00e78e418380e89703409c1d91b51263c0b8"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-cooperlake.dll",
+      "bytes": 1596416,
+      "sha256": "10939aa1a2b7a9c5548e40679bdb9829e618ba562639e56436abb0c9b177260a"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-haswell.dll",
+      "bytes": 1424384,
+      "sha256": "4b05b494b6afb27550d4fe1a52adcfc90712992e958b7909351deb0bbf35a6c8"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-icelake.dll",
+      "bytes": 1593344,
+      "sha256": "76902a357f74400af95f9a99b007d78a90fdd037b6c92e6fd163adebd902afd4"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-ivybridge.dll",
+      "bytes": 1305600,
+      "sha256": "78072c987b886c43f321a93be701c78ae5635632a24b8bcc22bfe0120e5578b3"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-piledriver.dll",
+      "bytes": 1298432,
+      "sha256": "6275ae738c6faa87dd856bb78c4c01800ee2f3220161803cdae6f05188e8cf59"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-sandybridge.dll",
+      "bytes": 1294848,
+      "sha256": "f38da45535732dba8d6262ecc1be8be648b43427c796b56ecee2b638ae132c4d"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-sapphirerapids.dll",
+      "bytes": 1873408,
+      "sha256": "330aa4c74518acc1050c8bd38829500007c42eceef04cddf92d65f3dee2b99cd"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-skylakex.dll",
+      "bytes": 1607168,
+      "sha256": "e640410f1a95f97692944007d4ad06462385d39c91583adbf42413ca1c173fa2"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-sse42.dll",
+      "bytes": 920576,
+      "sha256": "5b773b832b282b0478586a0668c7e1b3267c0640292aaf69073d9ed170c39038"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-x64.dll",
+      "bytes": 913920,
+      "sha256": "1288f93b5fed4d6ea45e4db074acf387e6a5916494d5bfe14449faf7c746ba5d"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-cpu-zen4.dll",
+      "bytes": 1603072,
+      "sha256": "15cfe061f7bf8cf4b75f52643dc400c64d41213f8496a4a757675236a13e89ee"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-rpc-server.exe",
+      "bytes": 117248,
+      "sha256": "65ecb6988b86f29077f6aea016207a2dfe15d17a8b2f92a032710d429d77e00a"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-rpc.dll",
+      "bytes": 231424,
+      "sha256": "5d4ffb22bb8d92cf495928b0d8d6575644a1a5f4fb46d321b0bd71a9cf6aa2b5"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml-vulkan.dll",
+      "bytes": 41530368,
+      "sha256": "48f4f36281dc784fb504d0b491a928954e58235694d821a2879ef8e33a511a47"
+    },
+    {
+      "path": "src-tauri/resources/llama/ggml.dll",
+      "bytes": 78848,
+      "sha256": "f180845535ee13fc098849f3407e7f6efefb695bd09d006617c44f82fab2db8c"
+    },
+    {
+      "path": "src-tauri/resources/llama/libomp.dll",
+      "bytes": 768000,
+      "sha256": "a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c"
+    },
+    {
+      "path": "src-tauri/resources/llama/LICENSE-llama.cpp.txt",
+      "bytes": 1078,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    {
+      "path": "src-tauri/resources/llama/LICENSE-LLVM-OpenMP",
+      "bytes": 19741,
+      "sha256": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-batched-bench-impl.dll",
+      "bytes": 61952,
+      "sha256": "950c956e816b39b65ea13b4b0b520c443a21ea12b590c06e8376ede893bba4ef"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-batched-bench.exe",
+      "bytes": 9216,
+      "sha256": "d78881234d74b5a4e13a4e0497359837357bedabbca133eae43ea070831e03aa"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-bench-impl.dll",
+      "bytes": 404480,
+      "sha256": "1c1a280bfb5aad8ad2d65ce850be4eefb8090bfa88aca5ea2eaee6cbbd9e799b"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-bench.exe",
+      "bytes": 9216,
+      "sha256": "d40f65ac8406c53bdf509c4eb7641504a3deed81c5b8356a227f904ec90205af"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-cli-impl.dll",
+      "bytes": 3364864,
+      "sha256": "d0122e980057b499197311fd40fd8bc63dd69cd181791c7e77e6ae6a406759fe"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-cli.exe",
+      "bytes": 9216,
+      "sha256": "e0a41e92ad32a79267a004e55e083b0dcbdef4e4770fdafa187764aeb5d25518"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-common.dll",
+      "bytes": 8211968,
+      "sha256": "f18cd0d92f234f09498e45f62d7d6e8fff6b2a53e69be8157c9e7f929219a676"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-completion-impl.dll",
+      "bytes": 140800,
+      "sha256": "d56cf7c048221fa8070eb09cb2bd67baef3df4e4421710b270cbf27547759531"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-completion.exe",
+      "bytes": 9216,
+      "sha256": "bfecc031180f1cb0bcbfefae8ccf2c6f108a40e9fd2434d0b058cb47706ea1c1"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-connect.exe",
+      "bytes": 11473920,
+      "sha256": "9f2bdd778f96971995a80add8d6b2478c156f799933337a19dbf80cdaad21b1d"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-fit-params-impl.dll",
+      "bytes": 43520,
+      "sha256": "f19fc4a69db10a33b79b5fb86b28647cbe661421edf49ef30c7f1d7f57404aea"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-fit-params.exe",
+      "bytes": 9216,
+      "sha256": "27bc728ad5037481c3d0cb9c51f0c7877cb534b6ba71266eb2e71e769e9c1c4e"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-gemma3-cli.exe",
+      "bytes": 27136,
+      "sha256": "ecdbd1bfb150f23490e6dbd243dd391fe988d6250d18ea332a90b8504919f9ac"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-gguf-split.exe",
+      "bytes": 60416,
+      "sha256": "4eb8063a5b704210d47c8eb3d9a7f840d48ccad26ffb2e04e0349b2fdc37d83e"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-imatrix.exe",
+      "bytes": 252928,
+      "sha256": "4ed47f9ca043b617b2d6c6410b6b2c66f46d9aae6b10fa76085d941006767462"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-llava-cli.exe",
+      "bytes": 27136,
+      "sha256": "ecdbd1bfb150f23490e6dbd243dd391fe988d6250d18ea332a90b8504919f9ac"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-minicpmv-cli.exe",
+      "bytes": 27136,
+      "sha256": "ecdbd1bfb150f23490e6dbd243dd391fe988d6250d18ea332a90b8504919f9ac"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-mtmd-cli.exe",
+      "bytes": 97280,
+      "sha256": "3d03b8598d975fd854348e27064feac59433393a1d5b2adc0fb647e54359481c"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-mtmd-debug.exe",
+      "bytes": 55808,
+      "sha256": "a67dbc90a9129cc8e95cf2dfa0ec85b48b0096da0c0f236b788edb27ebe763e2"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-perplexity-impl.dll",
+      "bytes": 197632,
+      "sha256": "e5046a766387b2f4900f114f0fa2e484c24f39e3ee59160a20b4b216df7bfa0e"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-perplexity.exe",
+      "bytes": 9216,
+      "sha256": "75d52b5345af317851aff50c54682ebd0ea04a7f2168d8c7f7bbab61c7a1af81"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-quantize-impl.dll",
+      "bytes": 137216,
+      "sha256": "416938a0acc3c75166bc7e50d95f0e3aa6a4545ce012a1016474f42ca5bd2e4a"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-quantize.exe",
+      "bytes": 9216,
+      "sha256": "2016ecd10af34e8daceea2de01b33c0af4783105a07d716a78e5b8bf593a3ecd"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-qwen2vl-cli.exe",
+      "bytes": 27136,
+      "sha256": "ecdbd1bfb150f23490e6dbd243dd391fe988d6250d18ea332a90b8504919f9ac"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-results.exe",
+      "bytes": 46592,
+      "sha256": "7edb6b6c3e02e6eda97e70eb6ff4d83c36803d988087c6f65f7e47870ef253dd"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-server-impl.dll",
+      "bytes": 9605120,
+      "sha256": "c07338a64136b7748a3ea681d2764e3c1475283d2c05f1cb66e2ee9bed3d2d2f"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-server.exe",
+      "bytes": 9216,
+      "sha256": "d9e6c5678a62da1d757f3773e822d439b6935ffac0386cc33aefa30b79da4848"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-tokenize.exe",
+      "bytes": 58880,
+      "sha256": "3ee96c8421118cf1e63f53a715ddee82c325bae3ed5009bdb85e949a30584bea"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama-tts.exe",
+      "bytes": 42496,
+      "sha256": "d95dc1ac04027b35902aa29411d4c9c098b8f5e629d1f0379d9339c03d32c3e8"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama.dll",
+      "bytes": 3607040,
+      "sha256": "5987a7ff433f4eb97137c6386c8e11f282054988f6f9af84aa35398d81a98fac"
+    },
+    {
+      "path": "src-tauri/resources/llama/llama.exe",
+      "bytes": 104960,
+      "sha256": "433d9f16cc579dda76bc49b57f3956cd9f06fdc2481f8a83138ccad26cf9a1c7"
+    },
+    {
+      "path": "src-tauri/resources/llama/mtmd.dll",
+      "bytes": 1932288,
+      "sha256": "4605f11a529ac86eb6bdead7e2d6873129101fce5690c6f019131b6ce68054b0"
+    }
+  ],
+  "signed": false,
+  "note": "Unsigned Windows artifacts found on disk; this inventory alone does not prove a fresh build or native/manual acceptance."
+}

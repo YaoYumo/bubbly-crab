@@ -1,0 +1,168 @@
+
+> previz-lab@1.6.1 test:desktop
+> node test/desktop.test.mjs
+
+PASS desktop config schema, minimal local capability allowlist, native isolation, name sanitization, exact chunk/partial writes, cancel, failures/close cleanup, queue budget/order/recovery. NOT native Windows execution.
+
+> previz-lab@1.6.1 all
+> npm run build && npm run build:single
+
+
+> previz-lab@1.6.1 build
+> vite build
+
+vite v5.4.10 building for production...
+transforming...
+✓ 198 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                              5.89 kB │ gzip:   2.66 kB
+dist/assets/preview-CD09Artc.png            21.89 kB
+dist/assets/lantern-river-DwdSUSns.webp     23.97 kB
+dist/assets/cyber-rain-D2GUFibG.webp        33.96 kB
+dist/assets/wood-preview-VM_cfdbP.png       41.26 kB
+dist/assets/index-CqAuepLP.css              77.50 kB │ gzip:  14.74 kB
+dist/assets/MTLLoader-B280lbQ3.js            4.11 kB │ gzip:   1.67 kB
+dist/assets/OBJLoader-DKHrzt3b.js            8.74 kB │ gzip:   2.92 kB
+dist/assets/GLTFLoader-C1ig-heD.js          44.89 kB │ gzip:  13.28 kB
+dist/assets/FBXLoader-DOzMfi_0.js           47.78 kB │ gzip:  16.04 kB
+dist/assets/index-Ce7U9Fmz.js            2,523.01 kB │ gzip: 974.22 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.14s
+
+> previz-lab@1.6.1 build:single
+> node scripts/build-single.mjs
+
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✔ 已生成 previz-lab.html（2911 KB，含全部 three.js 与加载器，可离线双击打开）
+
+> previz-lab@1.6.1 build:desktop
+> node scripts/build-desktop.mjs
+
+vite v5.4.10 building for desktop...
+transforming...
+✓ 198 modules transformed.
+rendering chunks...
+computing gzip size...
+desktop/dist/index.html                              5.89 kB │ gzip:   2.66 kB
+desktop/dist/assets/preview-CD09Artc.png            21.89 kB
+desktop/dist/assets/lantern-river-DwdSUSns.webp     23.97 kB
+desktop/dist/assets/cyber-rain-D2GUFibG.webp        33.96 kB
+desktop/dist/assets/wood-preview-VM_cfdbP.png       41.26 kB
+desktop/dist/assets/index-CqAuepLP.css              77.50 kB │ gzip:  14.74 kB
+desktop/dist/assets/index-Dphg_Ony.js                1.26 kB │ gzip:   0.48 kB
+desktop/dist/assets/core-B9ij_roJ.js                 1.92 kB │ gzip:   0.87 kB
+desktop/dist/assets/MTLLoader-BAc7gbrr.js            4.11 kB │ gzip:   1.66 kB
+desktop/dist/assets/index-DN3Mz2zv.js                7.63 kB │ gzip:   2.04 kB
+desktop/dist/assets/OBJLoader-trvBzyE4.js            8.74 kB │ gzip:   2.92 kB
+desktop/dist/assets/window-DUwF__2R.js              15.46 kB │ gzip:   3.90 kB
+desktop/dist/assets/GLTFLoader-D2ZC_CyF.js          44.89 kB │ gzip:  13.28 kB
+desktop/dist/assets/FBXLoader-B03W7cKg.js           47.78 kB │ gzip:  16.04 kB
+desktop/dist/assets/index-DqBU1lpz.js            2,502.40 kB │ gzip: 967.37 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.12s
+{
+  "sourceCommit": null,
+  "cargoLock": null,
+  "frontendBytes": 2919255,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/FBXLoader-B03W7cKg.js",
+      "bytes": 47775,
+      "sha256": "f706fdb0796b2bed11d9126a8ae6686f09c9b7618fef3de8eee22ae8993c4ad5"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-D2ZC_CyF.js",
+      "bytes": 44891,
+      "sha256": "4130528d6ba262105595975eac5c36c1e9649329bbe2c7db7ceebb0b6083671b"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-BAc7gbrr.js",
+      "bytes": 4112,
+      "sha256": "4b4351db5dc29cf7c9c413c208bfd11a91f15c4314bcd681e0400b010bfc7f90"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-trvBzyE4.js",
+      "bytes": 8741,
+      "sha256": "ae67504857a197075384c64dd8498d4da566b6757ffc0aa0bd86dfc8880caaa2"
+    },
+    {
+      "path": "desktop/dist/assets/core-B9ij_roJ.js",
+      "bytes": 1915,
+      "sha256": "05401f8b053174dfeac7305d5f641c48db6c63d18272d010674fcc0c789484db"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/index-CqAuepLP.css",
+      "bytes": 77503,
+      "sha256": "1afe4d9815cb1a66128b91cb5cbe97d5891fc74daf680902759c9ef4857bdd66"
+    },
+    {
+      "path": "desktop/dist/assets/index-DN3Mz2zv.js",
+      "bytes": 7629,
+      "sha256": "fcc6062c5d9b0a800e0c231113c501e2027bfcb5944e1e79b883fab912c98b2a"
+    },
+    {
+      "path": "desktop/dist/assets/index-Dphg_Ony.js",
+      "bytes": 1257,
+      "sha256": "64e3bf21bd992336d52559fe3073417a0cbd663a75b56be9cff93eb4207f5b56"
+    },
+    {
+      "path": "desktop/dist/assets/index-DqBU1lpz.js",
+      "bytes": 2582657,
+      "sha256": "484a029a22344b009d71344caf0d8ae6a80d41e6855a2b61b6f8e182d0078101"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-DUwF__2R.js",
+      "bytes": 15464,
+      "sha256": "2f7f706d0e08356c21ce019947191d9da21948789df3d888f9e3eaf0ee1cf7ad"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "5cc9b688eeb0e92736330e0fa1f2de99ee564540924fdc620dcbae255690ac64"
+    }
+  ],
+  "installers": [],
+  "binaries": [],
+  "nativeArtifactsPresent": false,
+  "installerIncludesWebView2": false,
+  "missingWebView2Policy": "download-bootstrapper-on-install; internet required only if runtime is absent",
+  "modelWeightsIncluded": false,
+  "localInferenceEngine": null,
+  "isolatedLoopbackHelper": [],
+  "inferenceRuntime": [],
+  "signed": false,
+  "note": "Frontend sizes only. No native installer has been built in this environment."
+}

@@ -1,0 +1,128 @@
+NOTE: Initial aggregate command below passed the pure/property/terrain checks, then the Node performance command lacked its image-URL loader and stopped before that performance test ran. The proper reproducible invocation is `bash test/withchrome.sh node --experimental-loader ./test/assets-only-loader.mjs test/road-performance-regression.mjs`; its successful full run is in additional-compatibility.txt. This was a harness setup failure, not suppressed or reported as a product pass.
+
+PASS independent near-side freeway ports / opposite carriageway + median half-plane / no transverse mouth curb / no freeway pedestrian markings / grade separation
+PASS 60 acute/short/wide/graded plans / horizontal unit frames / bounded real endpoints / grade-invariant XZ mouths
+PASS triangle-level prism subtraction / preserved median and opposing slab / normals, UVs, material groups
+PASS explicit screen-offset Y grip hit target distinct from planar point
+PASS road elevation presets / exact endpoints + original corners / input validation / grade shear + full-width section heights / lamp spacing, side, grade, gaps and bounded instances
+PASS: all 36 road-type pairs × 2 angles; asphalt priority independent of order; crosswalk geometry only on asphalt; stop lines preserved
+PASS junction asphalt subtraction, area conservation and sidewalk ray coverage: 6 angles × T/four-way × unequal widths
+PASS metric horizontal distance / signed percent grade / affine transform / vertical segment / world triangle surfaces + underside / bounded spatial index
+PASS upper-facing surfaces / mirrored normals / actual saddle-terrain triangle vs bilinear / outside extent excluded
+PASS threshold input validation and clamping
+
+> previz-lab@1.6.0 test:desktop
+> node test/desktop.test.mjs
+
+PASS desktop config schema, minimal local capability allowlist, native isolation, name sanitization, exact chunk/partial writes, cancel, failures/close cleanup, queue budget/order/recovery. NOT native Windows execution.
+
+> previz-lab@1.6.0 test:editor-expansion:pure
+> node test/editor-expansion.test.mjs
+
+PASS primitive schema/security + resolved references + authorized directing + model front axes + time-matched motion heading + grounded smooth walk { soleRange: 0.0026530407933716207, maxKneeStep: 0.011824471089129762 }
+PASS range interaction: scoped/coalesced renders, native-change ordering, pointer IDs, cancel/lost capture/blur, held keyboard keys, fast next gesture, detached panels
+PASS radial placement: viewport edges, off-screen anchors, compact fallback
+PASS radial guards: explain busy/tool/playback states without dropping safety
+PASS pure conversational terrain: seeded generation, exact world amplitude, local-only edits, river carving/removal, water default, no live mutation, bounds/lock/cancel rejection; grid and private-vs-v1 envelope. NOT real LLM inference.
+PASS screenshot regressions: empty unsupported/terrain never dereference missing operations; literal 20m/5m + curved path compiled on a copy, no global flood, no asset fallback, bounded river-only protocol.
+PASS camera edit validation, boundary/gap/end sampling, stable IDs, immutable data, authoring and locks
+PASS real mouse draw / Enter / Esc / reselect; auto object tab; type and numeric width; actual cap + mesh width; stable name / ID / selection
+PASS slider one-step undo / redo; repeated Esc + real reselection; save / load
+PASS T rebuild / material priority / crosswalk policy; cancel restores properties; camera target; locked + unfinished drawing protection; redo cleared
+PASS road property regression, no page errors
+{
+  "local": {
+    "paint": 0.6499999761581421,
+    "far": 0,
+    "heightSame": true,
+    "refined": 257,
+    "height": 0,
+    "paintRetained": true,
+    "saved": true
+  },
+  "cliffBefore": 1.446441332248135,
+  "cliffAfter": 0.6890171364770395,
+  "slopeFinite": true,
+  "hills": {
+    "center": 4.010477632073795,
+    "terrain": 4,
+    "actual": 4.180477828979492,
+    "finite": true,
+    "verts": 93840
+  },
+  "raised": 6.010477632073795,
+  "undo": 4.011176479003009,
+  "redo": 6.011176479003009,
+  "bridge": {
+    "junctions": 0,
+    "count": 16,
+    "status": {
+      "built": 8,
+      "blocked": 1,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 54,
+          "point": [
+            0,
+            9,
+            -1
+          ]
+        }
+      ]
+    },
+    "collision": false,
+    "buildingCollision": false,
+    "blocked": 4,
+    "regenerated": true,
+    "lowBuildingCollision": false
+  },
+  "plants": {
+    "deleted": true,
+    "clearRetained": true
+  },
+  "fill": {
+    "crossing": 0,
+    "away": 8.979999542236328,
+    "remote": 0
+  },
+  "archive": {
+    "mode": "fixed",
+    "height": 8.979999542236328,
+    "n": 97
+  }
+}
+Extra checks {
+  holes: 0,
+  buried: 0,
+  minClear: 0.17003919194661393,
+  junctions: 1,
+  initial: true,
+  deleted: true,
+  oneUndo: true,
+  restored: true,
+  redone: true,
+  selfCollision: false,
+  supportCount: 20,
+  editLevel: 8,
+  editMode: 'fixed',
+  overflowHeight: 100
+}
+PASS local splat materials, refinement, steep smoothing, following roads, grade separation, full-volume pier collisions, vegetation clearance, safe embankment, undo/redo and archive
+node:internal/modules/esm/get_format:219
+  throw new ERR_UNKNOWN_FILE_EXTENSION(ext, filepath);
+        ^
+
+TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".png" for /home/user/bubbly-crab/src/user-models/pagoda/preview.png
+    at Object.getFileProtocolModuleFormat [as file:] (node:internal/modules/esm/get_format:219:9)
+    at defaultGetFormat (node:internal/modules/esm/get_format:245:36)
+    at defaultLoadSync (node:internal/modules/esm/load:162:16)
+    at ModuleLoader.load (node:internal/modules/esm/loader:831:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:609:31)
+    at #createModuleJob (node:internal/modules/esm/loader:640:36)
+    at #getJobFromResolveResult (node:internal/modules/esm/loader:353:34)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:321:41) {
+  code: 'ERR_UNKNOWN_FILE_EXTENSION'
+}
+
+Node.js v22.22.3

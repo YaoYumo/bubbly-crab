@@ -1,0 +1,11 @@
+{
+  "result": {
+    "size": 4096,
+    "n": 97,
+    "far": 16384,
+    "skyRadius": 13926.4,
+    "cameraDistance": 4164.132562731403,
+    "triangles": 19650
+  },
+  "errors": []
+}

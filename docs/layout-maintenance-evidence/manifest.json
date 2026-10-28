@@ -1,0 +1,158 @@
+{
+  "date": "2026-10-21",
+  "stage": "第三阶段：编辑后诊断与静态组合件联动首版",
+  "realModelInference": false,
+  "chargedServiceCalls": 0,
+  "navigationImplemented": false,
+  "playbackRigImplemented": false,
+  "features": [
+    "on-demand read-only bounded diagnostics and stale reports",
+    "stable ID attachment metadata for two approved freshly generated recipe kits",
+    "explicit manual bind/detach/sync and default-off edit-completion following",
+    "manual sync one undo; automatic follow shares original host edit undo",
+    "current AI relation diagnostic records persisted in project, not automatically converted into rigs",
+    "atomic rollback and protected geometry checks without cloning circular userData or disposing shared resources"
+  ],
+  "single": {
+    "path": "previz-lab.html",
+    "bytes": 2292708,
+    "sha256": "de07380b9ea5abd0a695bff315c411c398d64dd44178b127a5d644c02f96af78"
+  },
+  "sources": {
+    "src/layout-attachments.js": "4fac40d8ddab86711719fda783d96b4f2591b650eaa566a1da3e5612b93df900",
+    "src/layout-maintenance.js": "3aa449c404d2f6f7a9a2ca4e4557c326d89cb5da922cb48b069ef25e5104fc2a",
+    "src/layout-maintenance-ui.js": "f6f4df5373db3f3cea9c9c7c01ce9d5a851daa8ac6975f05de065d01f6d448b2",
+    "src/app.js": "ccc84b53028328472d8512fd7c6fc19dd54f0a687c7f1b19754fbe107b1d9abf",
+    "src/panels.js": "26a53892bfd131104f2d666d5356cdfa74b72ceefa493cd263527d076dd4c315",
+    "src/scenes.js": "c6797198414af7bf7a7f0834df1bef2862658181ae25c27aca7a8b4e94e49da0",
+    "src/ai-scene-format.js": "d6a245fc3b0d153580cbb8d6f671d2dddd567c7fd0657afd1a06e2e69dd7633b",
+    "src/ai-scene-workflow.js": "dc6f46b6974d6660ae480547827c63cae96fc86fdfe967d269f5aaa2581dc62c",
+    "src/styles.css": "553c0347dc7aeabf039880ee3441bda67d4754c98decc60e35d7c5dd31f4bd40"
+  },
+  "finalBuildBrowserReports": {
+    "DEV": "dev.json",
+    "fileOffline": "file.json",
+    "capturesUnhandledPageErrors": true
+  },
+  "tests": [
+    {
+      "command": "node test/layout-maintenance.test.mjs",
+      "result": "PASS",
+      "coverage": [
+        "transforms/chains/depth",
+        "cycles/locks/guards/budgets",
+        "circular userData and instanced geometry prediction",
+        "transaction rollback including undo failure",
+        "route timing/risk and incomplete budget status",
+        "relation-slot replacement and malformed metadata"
+      ]
+    },
+    {
+      "command": "bash test/withchrome.sh node test/layout-maintenance-regression.mjs",
+      "result": "PASS",
+      "mode": "DEV"
+    },
+    {
+      "command": "TEST_FILE_URL=file:///home/user/bubbly-crab/previz-lab.html bash test/withchrome.sh node test/layout-maintenance-regression.mjs",
+      "result": "PASS",
+      "mode": "file offline"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/scene-recipes-regression.mjs",
+      "result": "PASS",
+      "coverage": "both actual recipe UIs, new stable links/default-off/initial alignment, JSON/portable archive, undo/redo and rollback"
+    },
+    {
+      "command": "node test/scene-recipes.test.mjs",
+      "result": "PASS",
+      "seededLayouts": 210
+    },
+    {
+      "command": "node test/spatial-dynamics.test.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "node test/ai-scene-relations.test.mjs",
+      "result": "PASS",
+      "realInference": false
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-relations-regression.mjs",
+      "result": "PASS",
+      "modes": [
+        "DEV",
+        "file offline"
+      ]
+    },
+    {
+      "command": "node test/ai-scene.test.mjs",
+      "result": "PASS",
+      "realInference": false
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-regression.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-safety-regression.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-simple-ui-regression.mjs",
+      "result": "PASS",
+      "modes": [
+        "DEV",
+        "file offline"
+      ]
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-api-ui-regression.mjs",
+      "result": "PASS",
+      "realInference": false
+    },
+    {
+      "command": "npm run test:local-ai-verify",
+      "result": "PASS",
+      "realInference": false
+    },
+    {
+      "command": "npm run test:local-ai",
+      "result": "PASS",
+      "realInference": false
+    },
+    {
+      "command": "npm run all",
+      "result": "PASS",
+      "warnings": [
+        "existing large chunk warning"
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "limits": {
+    "objects": 2000,
+    "attachments": 256,
+    "AIRecords": 128,
+    "staticPairChecks": 20000,
+    "polylineSweeps": 20000,
+    "pathKeys": 256,
+    "listedIssues": 200,
+    "predictedMeshesOrInstances": 25000,
+    "uncachedBoundingVertices": 3000000
+  },
+  "boundaries": [
+    "Not a full historical or cross-device/GPU acceptance",
+    "Only visible static library AABBs and keypoint polylines for generic geometry risk checks; unsupported/hidden/imported/road/terrain geometry is not fully covered",
+    "Legacy sceneKit-only projects require explicit manual binding; no guessed load-time migration",
+    "No complete scene optimizer, semantic door anchors, arbitrary nonuniform parent shear, automatic navigation or multi-step actions",
+    "Loads, undo/redo and AI application never trigger extra follow mutations; AI record persistence is diagnostics only"
+  ],
+  "developmentNotes": [
+    "Initial strict float equality assertions were changed to numerical tolerance",
+    "A fake test asset initially omitted visible:true and was correctly excluded from the static obstacle scope; fixture corrected, all tests rerun",
+    "Final guard, slot-merge and UI refinements were followed by rebuilt DEV/file maintenance tests and file relation/UI regressions"
+  ]
+}

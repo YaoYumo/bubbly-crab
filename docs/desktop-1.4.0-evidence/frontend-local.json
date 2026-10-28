@@ -1,0 +1,93 @@
+{
+  "sourceCommit": null,
+  "cargoLock": null,
+  "frontendBytes": 2862446,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/FBXLoader-Ddtgrw6-.js",
+      "bytes": 47775,
+      "sha256": "5ee93c798d3b6b829551d10b0d682c01a8931b77c0e62042759da5581a7a121c"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-JXugJnsj.js",
+      "bytes": 44891,
+      "sha256": "a4a08cad5eb2d263e3a827c11d93c37688ee5099f350546ac2be0850af154698"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-DkwuWA6r.js",
+      "bytes": 4112,
+      "sha256": "f2e11e2e44079b1eeff555d79da8374d7150e11213adbdc67270cc20abd3867b"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-CxkPboWt.js",
+      "bytes": 8741,
+      "sha256": "83e34158ced077ecd5413ee2fb57fea924589c33570f33ef66e8d1c60a102900"
+    },
+    {
+      "path": "desktop/dist/assets/core-B9ij_roJ.js",
+      "bytes": 1915,
+      "sha256": "05401f8b053174dfeac7305d5f641c48db6c63d18272d010674fcc0c789484db"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/index-C_GS9u_D.js",
+      "bytes": 2525848,
+      "sha256": "1b06c030d19ae1763378accea2f50af676ebae6b83897d828eaea03f0ede4f2c"
+    },
+    {
+      "path": "desktop/dist/assets/index-CqAuepLP.css",
+      "bytes": 77503,
+      "sha256": "1afe4d9815cb1a66128b91cb5cbe97d5891fc74daf680902759c9ef4857bdd66"
+    },
+    {
+      "path": "desktop/dist/assets/index-DN3Mz2zv.js",
+      "bytes": 7629,
+      "sha256": "fcc6062c5d9b0a800e0c231113c501e2027bfcb5944e1e79b883fab912c98b2a"
+    },
+    {
+      "path": "desktop/dist/assets/index-Dphg_Ony.js",
+      "bytes": 1257,
+      "sha256": "64e3bf21bd992336d52559fe3073417a0cbd663a75b56be9cff93eb4207f5b56"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-DUwF__2R.js",
+      "bytes": 15464,
+      "sha256": "2f7f706d0e08356c21ce019947191d9da21948789df3d888f9e3eaf0ee1cf7ad"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "5436298bb5aaa5082ae66e8d0619adacb26e59f8bcb9a8966b04225125c2106e"
+    }
+  ],
+  "installers": [],
+  "binaries": [],
+  "nativeArtifactsPresent": false,
+  "installerIncludesWebView2": false,
+  "missingWebView2Policy": "download-bootstrapper-on-install; internet required only if runtime is absent",
+  "modelWeightsIncluded": false,
+  "localInferenceEngine": null,
+  "isolatedLoopbackHelper": [],
+  "inferenceRuntime": [],
+  "signed": false,
+  "note": "Frontend sizes only. No native installer has been built in this environment."
+}

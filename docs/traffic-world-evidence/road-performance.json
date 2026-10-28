@@ -1,0 +1,62 @@
+{
+  "pixelDifference": 0,
+  "localRebuilt": 1,
+  "offRoadRebuilt": 0,
+  "unbatched": {
+    "calls": 356,
+    "triangles": 11462,
+    "attribution": {
+      "at": "2026-10-28T04:15:32.686Z",
+      "calls": 356,
+      "rows": [
+        {
+          "category": "road_brush",
+          "main": 177,
+          "shadow": 177,
+          "total": 354
+        },
+        {
+          "category": "天空 / 地面 / 辅助",
+          "main": 2,
+          "shadow": 0,
+          "total": 2
+        }
+      ],
+      "otherCalls": 0,
+      "note": "单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"
+    },
+    "shape": {
+      "hash": 1353071472,
+      "count": 17172
+    }
+  },
+  "batched": {
+    "calls": 82,
+    "triangles": 11462,
+    "attribution": {
+      "at": "2026-10-28T04:15:34.953Z",
+      "calls": 82,
+      "rows": [
+        {
+          "category": "road_brush",
+          "main": 40,
+          "shadow": 40,
+          "total": 80
+        },
+        {
+          "category": "天空 / 地面 / 辅助",
+          "main": 2,
+          "shadow": 0,
+          "total": 2
+        }
+      ],
+      "otherCalls": 0,
+      "note": "单帧 mesh 绘制回调归因，主场景 / 阴影分列；后处理、非 mesh 或本帧新增节点可能未归因，空绘制等会使差额为负。采样有额外开销，非 GPU 耗时。"
+    },
+    "shape": {
+      "hash": 1353071472,
+      "count": 17172
+    }
+  },
+  "supportCacheHits": 18
+}

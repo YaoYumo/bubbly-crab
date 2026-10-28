@@ -1,0 +1,8 @@
+{
+ "pass": 594,
+ "failCount": 1,
+ "libCount": 203,
+ "fails": [
+  "panels 载入失败（图标未校验）：localStorage is not defined"
+ ]
+}

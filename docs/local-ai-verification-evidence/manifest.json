@@ -1,0 +1,132 @@
+{
+  "date": "2026-10-20",
+  "scope": "第一阶段主动联调工具；未安装、下载或验证真实模型",
+  "currentPlan": {
+    "schema": "previz-local-ai-verification/1",
+    "action": "plan",
+    "evidenceSource": "not-run",
+    "runtime": "ollama",
+    "model": "",
+    "readyToConnect": false,
+    "status": "not-run",
+    "networkRequests": 0,
+    "inferenceRequests": 0,
+    "inferenceResponses": 0,
+    "realModelVerified": false,
+    "sceneApplied": false,
+    "automaticRetries": 0,
+    "limits": "Five synthetic blueprint tests only; no geometry, visual quality, navigation or full scene acceptance.",
+    "cases": [
+      {
+        "id": "chinese-placement",
+        "status": "not-run"
+      },
+      {
+        "id": "count-and-coordinates",
+        "status": "not-run"
+      },
+      {
+        "id": "selected-edit",
+        "status": "not-run"
+      },
+      {
+        "id": "unsupported-asset",
+        "status": "not-run"
+      },
+      {
+        "id": "untrusted-object-name",
+        "status": "not-run"
+      }
+    ]
+  },
+  "currentAttempt": {
+    "schema": "previz-local-ai-verification/1",
+    "action": "run",
+    "evidenceSource": "not-run",
+    "runtime": "ollama",
+    "model": "",
+    "readyToConnect": false,
+    "status": "blocked",
+    "networkRequests": 0,
+    "inferenceRequests": 0,
+    "inferenceResponses": 0,
+    "realModelVerified": false,
+    "sceneApplied": false,
+    "automaticRetries": 0,
+    "limits": "Five synthetic blueprint tests only; no geometry, visual quality, navigation or full scene acceptance.",
+    "cases": [
+      {
+        "id": "chinese-placement",
+        "status": "not-run"
+      },
+      {
+        "id": "count-and-coordinates",
+        "status": "not-run"
+      },
+      {
+        "id": "selected-edit",
+        "status": "not-run"
+      },
+      {
+        "id": "unsupported-asset",
+        "status": "not-run"
+      },
+      {
+        "id": "untrusted-object-name",
+        "status": "not-run"
+      }
+    ],
+    "reasons": [
+      "本地模型接口未启用",
+      "尚未填写运行时模型ID"
+    ]
+  },
+  "realModelInference": false,
+  "chargedServiceCalls": 0,
+  "tests": [
+    {
+      "command": "npm run test:local-ai-verify",
+      "result": "PASS",
+      "evidence": "local HTTP fixture only; five exact intent cases; opt-in, permissions, malformed, timeout, redirect, size, redaction, CLI guards"
+    },
+    {
+      "command": "npm run test:local-ai",
+      "result": "PASS",
+      "evidence": "configuration, loopback fixture, Vite privacy and existing auth/idempotency"
+    },
+    {
+      "command": "node test/ai-scene.test.mjs",
+      "result": "PASS",
+      "evidence": "existing gateway protocol fixture; shared transport regression"
+    },
+    {
+      "command": "bash test/withchrome.sh node test/ai-scene-api-ui-regression.mjs",
+      "result": "PASS",
+      "evidence": "mock API UI: 1 POST, 2 GET, no auto apply, no errors"
+    },
+    {
+      "command": "npm run test:local-ai-ui",
+      "result": "PASS",
+      "evidence": "DEV browser: no auto requests, no private config/weights requests, source unchanged, no errors"
+    },
+    {
+      "command": "npm run all",
+      "result": "PASS",
+      "warnings": [
+        "existing large chunk warning"
+      ]
+    }
+  ],
+  "single": {
+    "bytes": 2259768,
+    "sha256": "e837228a613ac807333f8f5f9603f3005a6810fe84c7d70378ffe88e66d32b67",
+    "frontendChanged": false
+  },
+  "limitations": [
+    "No live runtime inference",
+    "No full geometry/visual benchmark",
+    "No complex relation language layer or navigation implemented in this increment",
+    "No full historical regression suite",
+    "Cloud loopback is not the user computer"
+  ]
+}

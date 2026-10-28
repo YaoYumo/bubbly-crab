@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "enabled": false,
+  "runtime": "ollama",
+  "model": "",
+  "endpoint": "http://127.0.0.1:11434/v1/chat/completions",
+  "paths": {
+    "models": "./models",
+    "runtimes": "./runtimes",
+    "cache": "./cache",
+    "logs": "./logs"
+  },
+  "modelFile": "",
+  "jsonMode": true
+}

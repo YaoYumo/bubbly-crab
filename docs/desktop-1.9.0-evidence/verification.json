@@ -1,0 +1,69 @@
+{
+  "version": "1.9.0",
+  "sourceCommit": "a03ef75e23367708640f45b801594e994f2599bc",
+  "runId": 40631710776,
+  "jobId": 122629360845,
+  "artifact": {
+    "id": 12791827679,
+    "node_id": "MDg6QXJ0aWZhY3QxMjc5MTgyNzY3OQ==",
+    "name": "previz-lab-windows-x64-unsigned",
+    "size_in_bytes": 23615349,
+    "url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12791827679",
+    "archive_download_url": "https://api.github.com/repos/YaoYumo/bubbly-crab/actions/artifacts/12791827679/zip",
+    "expired": false,
+    "digest": "sha256:5df4cfd4b39f4a11994845825b9a2df9a61ee778e0b196956c70aa62f494046b",
+    "created_at": "2026-10-28T04:28:22Z",
+    "updated_at": "2026-10-28T04:28:22Z",
+    "expires_at": "2027-01-26T04:19:52Z",
+    "workflow_run": {
+      "id": 40631710776,
+      "repository_id": 1412714078,
+      "head_repository_id": 1412714078,
+      "head_branch": "arena/3f9ececc-bubbly-crab",
+      "head_sha": "a03ef75e23367708640f45b801594e994f2599bc"
+    }
+  },
+  "frontendHashesMatch": 15,
+  "nativeSmoke": {
+    "platform": "Windows GitHub runner x64",
+    "installed": true,
+    "installExitCode": 0,
+    "processStayedAlive": true,
+    "nativeWindowCreated": true,
+    "windowTitle": "PREVIZ LAB · 桌面预检版",
+    "fullyFunctionalUIValidated": false,
+    "nativeDiskSaveValidated": false,
+    "note": "Silent install and startup smoke only. User-machine acceptance still required.",
+    "installedLoopbackHelperValidated": true,
+    "installedEngineValidated": true,
+    "realGGUFInferenceValidated": false,
+    "userModelFolderPreservedOnReinstall": true,
+    "visualChecksValidated": false,
+    "status": "PASS_INSTALL_AND_WINDOW_LIVENESS_ONLY"
+  },
+  "threeModeEvidence": "../traffic-world-evidence/",
+  "localChecks": [
+    "traffic.test.mjs",
+    "traffic-flow.test.mjs (also Windows CI)",
+    "traffic-world-regression.mjs (web / offline file / desktop CSP)",
+    "road-traffic-regression.mjs (web / file / desktop CSP; final lane-position correction rechecked web)",
+    "road-spiral-regression.mjs (web)",
+    "road-elevation-regression.mjs (offline file, lamp/ramp/editor)",
+    "terrain-generation-regression.mjs (offline file)",
+    "road-ramp-routing-regression.mjs (web)",
+    "freeway-median-regression.mjs (12 WebGL angles and negative control)",
+    "road-performance-regression.mjs",
+    "terrain-import-river.test.mjs",
+    "local-scene-terrain.test.mjs",
+    "terrain-erosion.test.mjs",
+    "npm run test:desktop",
+    "npm run all",
+    "npm run build:desktop"
+  ],
+  "limits": [
+    "Windows install/window/helper/engine/model-folder fixture only, not full UI/native saves/RTX4070Ti performance or real GGUF acceptance",
+    "Installer inventory recovered from ordered CI annotations, no independent binary re-download",
+    "Unsigned x64 NSIS with no model weights; missing WebView2 needs download",
+    "Light pools are CPU-prebaked falloff overlays, not occlusion/GI bake; memory labels distinguish JS heap and resource estimates from unreadable system totals"
+  ]
+}

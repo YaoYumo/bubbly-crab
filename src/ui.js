@@ -2,6 +2,7 @@
 // 轻量 UI 组件：schema 驱动的表单（物体属性 / 运镜 / 光影 / 导出 共用）
 // ---------------------------------------------------------------------------
 import { el, clear, fmt, clamp } from './util.js';
+import { isRangeInteracting } from './range-interaction.js';
 
 export function section(title, opts = {}) {
   const wrap = el('div', { class: 'sec' });
@@ -51,24 +52,30 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       const val = Number(getv() ?? 0);
       const num = el('input', {
         class: 'num', type: 'number', min: f.min, max: f.max, step: f.step ?? (f.t === 'int' ? 1 : 0.01), value: f.t === 'int' ? Math.round(val) : val,
-        oninput: (e) => { let v = parseFloat(e.target.value); if (Number.isNaN(v)) return; v = f.t === 'int' ? Math.round(v) : v; setv(clamp(v, f.min, f.max)); sync(); },
+        oninput: (e) => { if(f.commit)return; let v = parseFloat(e.target.value); if (Number.isNaN(v)) return; v = f.t === 'int' ? Math.round(v) : v; setv(clamp(v, f.min, f.max)); sync(); },
       });
       const rng = el('input', {
         class: 'rng', type: 'range', min: f.min, max: f.max, step: f.step ?? 0.01, value: f.t === 'int' ? Math.round(val) : val,
-        oninput: (e) => { const v = parseFloat(e.target.value); setv(f.t === 'int' ? Math.round(v) : v); sync(); },
+        oninput: (e) => { if(f.commit){num.value=e.target.value;return;} const v = parseFloat(e.target.value); setv(f.t === 'int' ? Math.round(v) : v); sync(); },
       });
+      if(f.commit)for(const control of [rng,num])control.addEventListener('change',e=>{const v=Number(e.target.value);if(Number.isFinite(v))setv(clamp(f.t==='int'?Math.round(v):v,f.min,f.max));});
       const grp = el('div', { class: 'rg' }, [rng, num]);
       input = grp;
-      sync = () => {
-        const v = Number(getv());
-        if (document.activeElement !== rng) rng.value = v;
-        if (document.activeElement !== num) num.value = f.t === 'int' ? Math.round(v) : +Number(v).toFixed(3);
+      sync = (force = false) => {
+        const v = Number(getv()), dragging = isRangeInteracting(rng);
+        if (!dragging && (force || document.activeElement !== rng)) rng.value = v;
+        if (document.activeElement !== num) num.value = dragging ? rng.value : f.t === 'int' ? Math.round(v) : +Number(v).toFixed(3);
       };
+      // Reconcile a commit-only preview after native change/cancel, not on each
+      // animation tick (which used to reset the paired number during a drag).
+      if (f.commit) rng.addEventListener('range-interaction-end', () => sync(true));
       refs.set(f.k, () => sync());
     } else if (f.t === 'bool') {
       const b = el('button', { class: 'sw', type: 'button', onclick: () => { setv(!getv()); sync(); } });
-      sync = () => b.classList.toggle('on', !!getv());
-      input = el('div', { class: 'sw-wrap' }, [b, el('span', { class: 'sw-l', text: f.on || '开' })]);
+      const label = el('span', { class: 'sw-l', text: f.on || '开' });
+      b.setAttribute('role', 'switch'); b.setAttribute('aria-label', f.l);
+      sync = () => { const on=!!getv();b.classList.toggle('on',on);b.setAttribute('aria-checked',String(on));if(f.off)label.textContent=on?(f.on||'开'):f.off; };
+      input = el('div', { class: 'sw-wrap' }, [b, label]);
       refs.set(f.k, sync);
     } else if (f.t === 'sel') {
       const s = el('select', {
@@ -85,6 +92,9 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       const i0 = el('input', { class: 'tx', type: 'text', maxlength: '12', placeholder: f.ph || '', value: String(getv() ?? ''), oninput: (e) => setv(e.target.value) });
       input = i0;
       refs.set(f.k, () => { if (document.activeElement !== i0) i0.value = String(getv() ?? ''); });
+    } else if (f.t === 'date') {
+      const d = el('input', { class: 'txt', type: 'date', value: getv() || '', onchange: e => { if (e.target.value) setv(e.target.value); } });
+      input = d; refs.set(f.k, () => { if (document.activeElement !== d) d.value = getv() || ''; });
     } else if (f.t === 'color') {
       const c = el('input', { class: 'col', type: 'color', value: toHex(getv() ?? '#ffffff'), oninput: (e) => setv(e.target.value) });
       input = el('div', { class: 'col-wrap' }, [c, el('span', { class: 'col-h', text: toHex(getv() ?? '#ffffff') })]);
@@ -133,6 +143,7 @@ export function buildForm(fields, state, onInput, ctx = {}) {
       continue;
     }
     const row = rowOf(f.l, input, f.help);
+    if(f.k)row.dataset.field=f.k;
     if (f.class) row.classList.add(f.class);
     visible.set(row, f);
     root.appendChild(row);

@@ -1,7 +1,11 @@
 // ---------------------------------------------------------------------------
-// 导出：录制预览画布为视频（帧精确模式 + 自动模式回退），另支持单帧 PNG / 数据导出
+// 导出：录制预览画布为视频（手动请求采样 + 自动采样回退），另支持单帧 PNG / 数据导出
 // ---------------------------------------------------------------------------
+import * as THREE from 'three';
+import { Muxer, ArrayBufferTarget } from 'webm-muxer';
+import { setWebMDuration } from './webm-duration.js';
 import { downloadBlob, clamp } from './util.js';
+import { subjectRuntime, restoreSubjects } from './scene-runtime.js';
 
 const MIMES = [
   { m: 'video/mp4;codecs=avc1.42E01E', ext: 'mp4', l: 'MP4 / H.264' },
@@ -44,6 +48,10 @@ export class Exporter {
     st.tcHelper.visible = on && !!this.app.sel;
     st.selBox.visible = on && !!st.selected;
     st.selRing.visible = on && !!st.selected;
+    this.app.terrain?.workflow?.setGuides(on);
+    if (this.app.terrain) { this.app.terrain.guides=!!on; if (!on && this.app.terrain._ring) this.app.terrain._ring.visible=false; }
+    if (this.app.vegetationBrush) { this.app.vegetationBrush.guides = !!on; this.app.vegetationBrush.tick(); }
+    if (this.app.roadPlanning) { this.app.roadPlanning.guides = !!on; this.app.roadPlanning.tick(); }
     st.gridWanted = on && S.grid;
     if (st.syncGrid) st.syncGrid();
     st.frame.style.display = on ? '' : 'none';
@@ -59,181 +67,320 @@ export class Exporter {
     for (const so of this.app.objects) so._mgroup.visible = on && S.showHelpers && !!so.motion?.active;
   }
 
-  async run(opts = {}, onProgress = () => {}) {
-    if (this.running) return null;
-    let r = await this._record(opts, onProgress, 'manual');
-    if (!r || !r.size) {
-      onProgress({ i: 0, total: 1, phase: 'retry' });
-      r = await this._record(opts, onProgress, 'auto');
+  // Snapshot actual values, not inferred defaults. The same transaction serves
+  // video and both PNG APIs; cleanup runs even after renderer/recorder failures.
+  snapshot() {
+    const a = this.app, s = a.stage;
+    const visible = new Map();
+    s.scene.traverse((n) => visible.set(n, n.visible));
+    for (const n of [s.tcHelper, s.selBox, s.selRing]) if (n) visible.set(n, n.visible);
+    const props = (o, keys) => keys.map((k) => [o, k, o[k]]);
+    return {
+      subjects: subjectRuntime(a),
+      objectPoses: a.objects.map(o => [o, o.root.position.clone(), o.root.rotation.clone(), o.root.scale.clone(), Object.hasOwn(o, '_ty'), o._ty]),
+      props: [...props(a, ['suspended']), ...props(a.state, ['preview', 'playing', 'time', 'duration', 'showHelpers']),
+        ...props(s.previewControls, ['interacted']), ...props(s.orbit, ['enabled']), ...props(s, ['w', 'h', 'preview', 'aspect', 'exportRect', 'gridWanted', 'exporting', 'useComposer', 'dofParams']),
+        ...[a.terrain, a.terrain?.workflow, a.vegetationBrush, a.roadPlanning].filter(Boolean).flatMap((o) => props(o, ['guides']))],
+      size: s.renderer.getSize(new THREE.Vector2()), pr: s.renderer.getPixelRatio(),
+      viewport: s.renderer.getViewport(new THREE.Vector4()), scissor: s.renderer.getScissor(new THREE.Vector4()),
+      scissorTest: s.renderer.getScissorTest(), clearColor: s.renderer.getClearColor(new THREE.Color()), clearAlpha: s.renderer.getClearAlpha(),
+      focus: s.previewControls.focus.clone(), postSize: s.postSize?.clone(), camera: s.view.clone(), visible,
+      lodHistory: a.renderEffects && { levels: a.renderEffects.lod.levels, culled: a.renderEffects.lod.culled },
+      shotRuntime: a.shots.map((shot) => [shot, ['_lastT', '_dt', '_qPrev', '_aimPt', '_followPt', '_followTag', '_clrY', '_aimH', '_aimHAt', 'focusDist'].map((key) => [key, Object.hasOwn(shot, key), shot[key]?.clone?.() ?? shot[key]])]),
+      iso: a.lighting.isoMultiplier, exposure: s.renderer.toneMappingExposure,
+      frameClass: s.frame.className, frameStyle: s.frame.style.cssText,
+      tag: document.getElementById('shotTag'), tagStyle: document.getElementById('shotTag')?.style.cssText,
+    };
+  }
+  restore(r) {
+    const a = this.app, s = a.stage;
+    for (const [o, k, v] of r.props) o[k] = v;
+    // Restore dynamic poses/helpers at the original time as well as camera lens.
+    // A broken step() must not prevent the remaining cleanup.
+    try { a.step(0, true); } catch (_) { /* original error is reported by run() */ }
+    try { a.updateAspectOverlay(); } catch (_) { /* restore exact snapshot below */ }
+    for (const [o, k, v] of r.props) o[k] = v;
+    let failure;
+    const attempt = (fn) => { try { fn(); } catch (error) { failure ??= error; } };
+    attempt(() => a.traffic?.update(0, false));
+    attempt(() => s.renderer.setPixelRatio(r.pr));
+    attempt(() => s.renderer.setSize(r.size.x, r.size.y, false));
+    s.postSize = r.postSize ?? null;
+    attempt(() => s.syncPostSize());
+    attempt(() => { s.renderer.setViewport(r.viewport); s.renderer.setScissor(r.scissor); s.renderer.setScissorTest(r.scissorTest); });
+    attempt(() => s.renderer.setClearColor(r.clearColor, r.clearAlpha));
+    s.previewControls.focus.copy(r.focus);
+    for (const [shot, values] of r.shotRuntime) for (const [key, exists, value] of values) {
+      if (exists) shot[key] = value; else delete shot[key];
     }
+    if (r.lodHistory) Object.assign(a.renderEffects.lod, r.lodHistory);
+    attempt(() => {
+      for (const [o, pos, rot, scale, hasTY, ty] of r.objectPoses || []) {
+        if (!a.objects.includes(o)) continue;
+        o.root.position.copy(pos); o.root.rotation.copy(rot); o.root.scale.copy(scale);
+        if (hasTY) o._ty = ty; else delete o._ty;
+      }
+      restoreSubjects(a, r.subjects || []);
+      for (const [o] of r.objectPoses || []) o.root.updateMatrixWorld(true);
+    });
+    s.view.copy(r.camera);
+    s.view.updateMatrixWorld(true);
+    if (r.iso !== undefined) a.lighting.isoMultiplier = r.iso;
+    s.renderer.toneMappingExposure = r.exposure;
+    for (const [n, v] of r.visible) n.visible = v;
+    attempt(() => s.syncGrid?.());
+    s.frame.className = r.frameClass;
+    s.frame.style.cssText = r.frameStyle;
+    if (r.tag) r.tag.style.cssText = r.tagStyle;
+    try { a.bus.emit('time'); } catch (_) { /* observers do not own cleanup */ }
+    if (failure) throw failure;
+  }
+  setup(width, height) {
+    const a = this.app, s = a.stage;
+    a.suspended = true;
+    a.state.playing = false;
+    a.state.preview = !!a.activeShot;
+    a.state.showHelpers = false;
+    s.preview = a.state.preview;
+    s.exporting = true;
+    if (a.renderEffects) { a.renderEffects.lod.levels = new WeakMap(); a.renderEffects.lod.culled = new WeakSet(); }
+    s.previewControls.interacted = false;
+    for (const shot of a.shots) for (const key of ['_lastT', '_qPrev', '_aimPt', '_followPt', '_clrY']) shot[key] = null;
+    s.renderer.setPixelRatio(1);
+    s.renderer.setSize(width, height, false);
+    const aspect = a.exportAspectValue(), canvasAspect = width / height;
+    const k = !aspect || aspect >= canvasAspect ? 1 : aspect / canvasAspect;
+    const m = !aspect || aspect >= canvasAspect ? (aspect ? canvasAspect / aspect : 1) : 1;
+    s.exportRect = { W: width, H: height, k, m, vw: Math.max(2, Math.round(width * k)), vh: Math.max(2, Math.round(height * m)) };
+    s.w = s.exportRect.vw; s.h = s.exportRect.vh;
+    s.frame.classList.remove('on');
+    this.setGuides(false);
+  }
+  async run(opts = {}, onProgress = () => {}) {
+    if (this.running || this.app.behaviors?.busy || this.app.aiScene?.busy || this.app.stage.exportOwner || this.app.stage.exporting || this.app.terrain?.workflow?.busy || this.app.terrain?.workflow?.erosionPreview) return null;
+    this.running = true;
+    this.app.stage.exportOwner = this;
+    this.cancelled = false;
+    this.controller = new AbortController();
+    this.completedFrames = 0;
+    const suspended = this.app.suspended;
+    this.app.suspended = true;
+    let r;
+    try {
+      await this.app.terrain?.workflow?.ready();
+      r = await this.record(opts, onProgress);
+      if (!r.size && !this.cancelled) {
+        onProgress({ i: 0, total: 1, phase: 'retry' });
+        r = await this._record(opts, onProgress, 'auto');
+      }
+    } catch (error) {
+      r = this.cancelled ? { size: 0, cancelled: true, frames: this.completedFrames } : { size: 0, error: error.message || String(error) };
+      if (!this.cancelled) this.app.notify(`导出失败：${r.error}`, 'warn');
+    } finally {
+      this.app.suspended = suspended;
+      this.running = false;
+      delete this.app.stage.exportOwner;
+      this.controller = null;
+    }
+    if (this.cancelled) r = { size: 0, cancelled: true, frames: r?.frames ?? 0 };
+    // Publish/download only after all temporary state and tracks are restored.
+    if (r?.blob?.size && !r.cancelled && !r.error) {
+      r.url = URL.createObjectURL(r.blob);
+      try { const saved = await downloadBlob(r.blob, r.name); if (saved) { r.diskSave = saved.status; r.diskSaveError = saved.error; } }
+      catch (error) { URL.revokeObjectURL(r.url); return { size: 0, error: error.message }; }
+      if (this.last?.url) URL.revokeObjectURL(this.last.url);
+      this.last = r;
+    }
+    try { onProgress({ i: r?.frames ?? 0, total: r?.requestedFrames ?? 1,
+      phase: r?.cancelled ? 'cancelled' : r?.error ? 'error' : r?.size ? 'done' : 'empty', ...r, blob: undefined, url: undefined }); }
+    catch (_) { /* final observers cannot corrupt a completed export */ }
     return r;
   }
-
-  async _record(opts, onProgress, mode) {
-    const app = this.app;
-    const st = app.stage;
-    const { width = 1280, height = 720, fps = 30, bitrate = 8, loop = true } = opts;
-    const duration = clamp(opts.duration || app.state.duration, 0.2, 120);
-    const mime = bestMime();
-    if (!mime || typeof st.canvas.captureStream !== 'function') {
-      this.running = false;
-      app.notify('当前浏览器不支持画布录制（MediaRecorder / captureStream）。建议用 Chrome 或 Edge；也可先用「导出当前帧 PNG」。', 'warn');
-      return null;
+  async record(opts, onProgress) {
+    if (opts.encoder !== 'mediarecorder' && typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined') {
+      const width = Math.round(clamp(Number(opts.width) || 1280, 2, 4096));
+      const height = Math.round(clamp(Number(opts.height) || 720, 2, 4096));
+      const fps = clamp(Number(opts.fps) || 30, 1, 60), bitrate = clamp(Number(opts.bitrate) || 8, .1, 100);
+      for (const [codec, muxCodec] of [['vp09.00.10.08', 'V_VP9'], ['vp8', 'V_VP8']]) {
+        const config = { codec, width, height, framerate: fps, bitrate: Math.round(bitrate * 1e6), latencyMode: 'quality' };
+        let supported = false;
+        try { supported = (await VideoEncoder.isConfigSupported(config)).supported; } catch (_) { /* next codec */ }
+        this.controller.signal.throwIfAborted();
+        if (supported) return this.encode(opts, onProgress, config, muxCodec);
+      }
     }
-    this.running = true;
-    this.cancelled = false;
-    const restore = {
-      w: st.w, h: st.h, size: [st.renderer.domElement.width, st.renderer.domElement.height], pr: st.renderer.getPixelRatio(),
-      preview: app.state.preview, time: app.state.time, playing: app.state.playing, aspect: st.aspect, fov: st.view.fov,
-    };
-    app.suspended = true;
-    app.state.playing = false;
-    app.state.preview = true;
-    st.preview = true;
-    st.renderer.setPixelRatio(1);
-    st.renderer.setSize(width, height, false);
-    // 画幅黑边：把画面渲染进输出画布中央的「取景框」矩形，其余填黑，与预览逐像素一致
-    const t = app.exportAspectValue();
-    const c = width / height;
-    const k = !t || t >= c ? 1 : t / c;
-    const m = !t || t >= c ? (t ? c / t : 1) : 1;
-    const vw = Math.max(2, Math.round(width * k)), vh = Math.max(2, Math.round(height * m));
-    st.exportRect = { W: width, H: height, k, m, vw, vh };
-    st.w = vw; st.h = vh;
-    st.frame.classList.remove('on');
-    this.setGuides(false);
-
-    const canvas = st.canvas;
-    const stream = canvas.captureStream(mode === 'manual' ? 0 : fps);
-    const track = stream.getVideoTracks()[0];
-    const canManual = mode === 'manual' && track && typeof track.requestFrame === 'function';
-    let rec;
-    try {
-      rec = new MediaRecorder(stream, {
-        mimeType: mime.m || undefined,
-        videoBitsPerSecond: Math.round(bitrate * 1e6),
-      });
-    } catch (e) {
-      rec = new MediaRecorder(stream);
-    }
-    const chunks = [];
-    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
-    const finished = new Promise((res) => { rec.onstop = res; });
-    rec.onerror = (e) => console.warn('recorder error', e);
-    rec.start(300);
-
-    const total = Math.max(1, Math.round(duration * fps));
-    const frameMs = 1000 / fps;
-    let t0 = performance.now();
-    for (let i = 0; i < total; i++) {
-      if (this.cancelled) break;
-      app.state.time = loop ? (i / fps) % duration : Math.min((i / fps) % (duration + 1 / fps), duration);
-      app.step(1 / fps, true);
-      st.renderFramed(st.exportRect);
-      if (canManual) track.requestFrame();
-      onProgress({ i, total, phase: mode, size: 0 });
-      const wait = t0 + (i + 1) * frameMs - performance.now();
-      if (wait > 1) await new Promise((r) => setTimeout(r, wait));
-      else await new Promise((r) => requestAnimationFrame(() => r()));
-    }
-    await new Promise((r) => setTimeout(r, 220));
-    try { rec.stop(); } catch (e) { /* ignore */ }
-    await finished;
-    try { track.stop(); } catch (e) { /* ignore */ }
-
-    const blob = new Blob(chunks, { type: mime.m || 'video/webm' });
-    // 还原现场
-    st.exportRect = null;
-    st.renderer.setPixelRatio(restore.pr);
-    st.renderer.setSize(restore.w, restore.h, false);
-    st.w = restore.w; st.h = restore.h;
-    st.preview = restore.preview;
-    app.state.preview = restore.preview;
-    app.state.time = restore.time;
-    this.setGuides(true);
-    st.frame.style.display = '';
-    app.updateAspectOverlay();
-    app.bus.emit('time');
-    app.suspended = false;
-    this.running = false;
-
-    if (blob.size > 0) {
-      const name = `${(app.projectName || 'previz').replace(/\s+/g, '_')}_${(app.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.${mime.ext}`;
-      if (this.last?.url) URL.revokeObjectURL(this.last.url);
-      this.last = { blob, size: blob.size, name, url: URL.createObjectURL(blob), ext: mime.ext, mode, frames: total, seconds: duration };
-      downloadBlob(blob, name);
-      onProgress({ i: total, total, phase: 'done', size: blob.size });
-      return this.last;
-    }
-    onProgress({ i: total, total, phase: 'empty', size: 0 });
-    return { size: 0, mode };
+    this.app.notify('使用实时兼容录制：繁重场景可能丢帧或延长时长；固定时间戳编码不可用。', 'warn');
+    return this._record(opts, onProgress, 'manual');
   }
-
-  cancel() { this.cancelled = true; }
-
-  /** 当前帧 PNG（按导出分辨率离屏渲染）；opts.asDataUrl=true 时返回 dataURL（不下载） */
-  _stillDataUrl(opts) {
-    return new Promise((resolve) => {
-      const app = this.app, st = app.stage;
-      const W = opts.width || 1280, H = opts.height || 720;
-      const restore = { size: [st.w, st.h], pr: st.renderer.getPixelRatio(), preview: app.state.preview };
-      const t = app.exportAspectValue();
-      const c = W / H;
-      const k = !t || t >= c ? 1 : t / c;
-      const m = !t || t >= c ? (t ? c / t : 1) : 1;
-      app.state.preview = !!app.activeShot;
-      st.preview = app.state.preview;
-      st.renderer.setPixelRatio(1);
-      st.renderer.setSize(W, H, false);
-      st.exportRect = { W, H, k, m, vw: Math.max(2, Math.round(W * k)), vh: Math.max(2, Math.round(H * m)) };
-      st.w = st.exportRect.vw; st.h = st.exportRect.vh;
-      app.step(0, true);
-      st.renderFramed(st.exportRect);
-      const url = st.canvas.toDataURL('image/png');
-      st.exportRect = null;
-      st.renderer.setPixelRatio(restore.pr);
-      st.renderer.setSize(restore.size[0], restore.size[1], false);
-      st.w = restore.size[0]; st.h = restore.size[1];
-      app.state.preview = restore.preview;
-      st.preview = restore.preview;
-      this.setGuides(true);
-      app.updateAspectOverlay();
-      resolve(url);
+  async encode(opts, onProgress, config, muxCodec) {
+    const a = this.app, s = a.stage, signal = this.controller.signal;
+    const { width, height, framerate: fps } = config;
+    const duration = clamp(Number(opts.duration) || a.state.duration || 5, .2, 120);
+    const total = Math.max(1, Math.round(duration * fps)), restore = this.snapshot();
+    let encoder, frames = 0, encodedFrames = 0, maxQueue = 0, flushTimer;
+    const started = performance.now();
+    try {
+      this.setup(width, height);
+      onProgress({ i: 0, total, phase: 'prepare' });
+      await a.renderEffects?.lod.prewarm({ timeout: 1500, signal });
+      signal.throwIfAborted();
+      const target = new ArrayBufferTarget();
+      const muxer = new Muxer({ target, video: { codec: muxCodec, width, height, frameRate: fps }, firstTimestampBehavior: 'strict' });
+      encoder = new VideoEncoder({
+        output: (chunk, metadata) => {
+          try { muxer.addVideoChunk(chunk, metadata); encodedFrames++; }
+          catch (error) { this.controller?.abort(error); }
+        },
+        error: (error) => this.controller?.abort(error),
+      });
+      encoder.configure(config);
+      // Read an owned, immutable pixel snapshot. Do not let a queued encoder
+      // retain a live drawing-buffer surface that cleanup or the next frame resizes.
+      const gl = s.renderer.getContext();
+      const bottomUp = new Uint8Array(width * height * 4), topDown = new Uint8Array(bottomUp.length);
+      for (let i = 0; i < total; i++) {
+        signal.throwIfAborted();
+        a.state.time = i / fps;
+        a.step(1 / fps, true);
+        this.setGuides(false);
+        s.renderFramed(s.exportRect);
+        if (gl.isContextLost()) throw Error('WebGL 上下文已丢失');
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, bottomUp);
+        for (let y = 0; y < height; y++) topDown.set(bottomUp.subarray((height - y - 1) * width * 4, (height - y) * width * 4), y * width * 4);
+        const frame = new VideoFrame(topDown, { format: 'RGBA', codedWidth: width, codedHeight: height, timestamp: Math.round(i * 1e6 / fps), duration: Math.round((i + 1) * 1e6 / fps) - Math.round(i * 1e6 / fps) });
+        try { encoder.encode(frame, { keyFrame: i % Math.max(1, Math.round(fps * 2)) === 0 }); }
+        finally { frame.close(); }
+        maxQueue = Math.max(maxQueue, encoder.encodeQueueSize);
+        this.completedFrames = ++frames;
+        onProgress({ i: frames, total, phase: 'render', mode: 'webcodecs', size: 0 });
+        do { await this.wait(0, signal); } while (encoder.encodeQueueSize > 2);
+      }
+      await Promise.race([encoder.flush(), new Promise((_, reject) => { flushTimer = setTimeout(() => reject(Error('视频编码收尾超时')), 15000); })]);
+      signal.throwIfAborted();
+      if (encodedFrames !== frames) throw Error('编码帧数与渲染帧数不一致');
+      muxer.finalize();
+      setWebMDuration(target.buffer, total / fps * 1000);
+      const blob = new Blob([target.buffer], { type: 'video/webm' });
+      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.cameraEdit?.enabled && a.cameraEdit.clips.length ? 'camera-edit' : a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.webm`;
+      return { blob, size: blob.size, name, ext: 'webm', mode: 'webcodecs', codec: config.codec, frames, requestedFrames: total,
+        seconds: total / fps, requestedSeconds: duration, wallSeconds: (performance.now() - started) / 1000, width, height, fps, maxQueue, mime: 'video/webm' };
+    } finally {
+      clearTimeout(flushTimer);
+      if (encoder && encoder.state !== 'closed') encoder.close();
+      this.restore(restore);
+    }
+  }
+  async _record(opts, onProgress, requestedMode) {
+    const a = this.app, s = a.stage, signal = this.controller.signal;
+    const positive = (v, d, lo, hi) => clamp(Number.isFinite(+v) && +v > 0 ? +v : d, lo, hi);
+    const width = Math.round(positive(opts.width, 1280, 2, 4096));
+    const height = Math.round(positive(opts.height, 720, 2, 4096));
+    const fps = positive(opts.fps, 30, 1, 60), bitrate = positive(opts.bitrate, 8, .1, 100);
+    const duration = positive(opts.duration, a.state.duration || 5, .2, 120), loop = opts.loop !== false;
+    const mime = opts.format === 'webm' && typeof MediaRecorder !== 'undefined'
+      ? MIMES.find((c) => c.ext === 'webm' && MediaRecorder.isTypeSupported(c.m)) : bestMime();
+    if (!mime || typeof s.canvas.captureStream !== 'function') throw Error('浏览器不支持画布录制，请使用 Chrome / Edge 或导出 PNG');
+    const restore = this.snapshot();
+    let stream, rec, finish, stopTimer, recorderError, frames = 0, mode = requestedMode;
+    const total = Math.max(1, Math.round(duration * fps)), chunks = [];
+    try {
+      this.setup(width, height);
+      onProgress({ i: 0, total, phase: 'prepare' });
+      await a.renderEffects?.lod.prewarm({ timeout: 1500, signal });
+      signal.throwIfAborted();
+      stream = s.canvas.captureStream(mode === 'manual' ? 0 : fps);
+      let track = stream.getVideoTracks()[0];
+      if (!track) throw Error('未取得视频轨道');
+      if (mode === 'manual' && typeof track.requestFrame !== 'function') {
+        for (const t of stream.getTracks()) t.stop();
+        stream = s.canvas.captureStream(fps);
+        track = stream.getVideoTracks()[0];
+        mode = 'auto';
+      }
+      try { rec = new MediaRecorder(stream, { mimeType: mime.m || undefined, videoBitsPerSecond: Math.round(bitrate * 1e6) }); }
+      catch (_) { rec = new MediaRecorder(stream); }
+      rec.ondataavailable = (e) => { if (e.data?.size) chunks.push(e.data); };
+      finish = new Promise((resolve) => {
+        rec.onstop = resolve;
+        rec.onerror = (e) => {
+          recorderError = e.error || Error('MediaRecorder 录制失败');
+          this.controller?.abort(recorderError);
+          resolve();
+        };
+      });
+      rec.start(300);
+      const start = performance.now();
+      for (let i = 0; i < total; i++) {
+        signal.throwIfAborted();
+        a.state.time = loop ? (i / fps) % duration : Math.min(i / fps, duration);
+        a.step(1 / fps, true);
+        this.setGuides(false); // step updates shot helpers; hide them again before capture.
+        s.renderFramed(s.exportRect);
+        if (mode === 'manual') track.requestFrame();
+        frames++;
+        this.completedFrames = frames;
+        onProgress({ i: frames, total, phase: 'render', mode, size: 0 });
+        // MediaRecorder timestamps are wall-clock timestamps, NOT fixed frame PTS.
+        // Never claim frame-exact output; yield even when the renderer falls behind.
+        await this.wait(Math.max(0, start + (i + 1) * 1000 / fps - performance.now()), signal);
+      }
+      if (recorderError) throw recorderError;
+      rec.stop();
+      await Promise.race([finish, new Promise((_, reject) => { stopTimer = setTimeout(() => reject(Error('录制器停止超时')), 4000); })]);
+      if (recorderError) throw recorderError;
+      signal.throwIfAborted();
+      const actualMime = rec.mimeType || mime.m || 'video/webm';
+      const ext = actualMime.includes('mp4') ? 'mp4' : 'webm';
+      const blob = new Blob(chunks, { type: actualMime });
+      const name = `${(a.projectName || 'previz').replace(/\s+/g, '_')}_${(a.cameraEdit?.enabled && a.cameraEdit.clips.length ? 'camera-edit' : a.activeShot?.name || 'shot').replace(/\s+/g, '')}_${width}x${height}@${fps}.${ext}`;
+      return { blob, size: blob.size, name, ext, mode, frames, requestedFrames: total, seconds: duration,
+        wallSeconds: (performance.now() - start) / 1000, width, height, fps, mime: actualMime };
+    } finally {
+      clearTimeout(stopTimer);
+      if (rec && rec.state !== 'inactive') { try { rec.stop(); } catch (_) { /* cleanup */ } }
+      for (const track of stream?.getTracks() ?? []) { try { track.stop(); } catch (_) { /* all tracks */ } }
+      if (rec) rec.ondataavailable = rec.onstop = rec.onerror = null;
+      this.restore(restore);
+    }
+  }
+  wait(ms, signal) {
+    return new Promise((resolve, reject) => {
+      const abort = () => { clearTimeout(timer); reject(signal.reason); };
+      const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
+      if (signal.aborted) abort();
+      else signal.addEventListener('abort', abort, { once: true });
     });
   }
-  still(opts = {}) {
-    if (opts.asDataUrl) return this._stillDataUrl(opts);
-    const app = this.app, st = app.stage;
-    const W = opts.width || 1920, H = opts.height || 1080;
-    const restore = { size: [st.w, st.h], pr: st.renderer.getPixelRatio(), preview: app.state.preview, fov: st.view.fov };
-    app.state.preview = !!app.activeShot;
-    st.preview = app.state.preview;
-    st.renderer.setPixelRatio(1);
-    st.renderer.setSize(W, H, false);
-    const t2 = app.exportAspectValue();
-    const c2 = W / H;
-    const k2 = !t2 || t2 >= c2 ? 1 : t2 / c2;
-    const m2 = !t2 || t2 >= c2 ? (t2 ? c2 / t2 : 1) : 1;
-    st.exportRect = { W, H, k: k2, m: m2, vw: Math.max(2, Math.round(W * k2)), vh: Math.max(2, Math.round(H * m2)) };
-    st.w = st.exportRect.vw; st.h = st.exportRect.vh;
-    const old = app.state.showHelpers;
-    app.state.showHelpers = false;
-    this.setGuides(false);
-    st.frame.classList.remove('on');
-    app.step(0, true);
-    st.renderFramed(st.exportRect);
-    st.canvas.toBlob((b) => {
-      if (b) downloadBlob(b, `${(app.projectName || 'previz')}_frame_${Math.round(app.state.time * 100) / 100}s.png`);
-      st.exportRect = null;
-      st.renderer.setPixelRatio(restore.pr);
-      st.renderer.setSize(restore.size[0], restore.size[1], false);
-      st.w = restore.size[0]; st.h = restore.size[1];
-      app.state.showHelpers = old;
-      app.state.preview = restore.preview;
-      st.preview = restore.preview;
-      this.setGuides(true);
-      st.frame.classList.toggle('on', !!restore.preview);
-      app.updateAspectOverlay();
-    }, 'image/png');
+  cancel() { this.cancelled = true; this.controller?.abort(new DOMException('已取消导出', 'AbortError')); }
+
+  /** PNG APIs both return a Promise; failure returns null after restoring the scene. */
+  async still(opts = {}) {
+    if (this.running || this.app.behaviors?.busy || this.app.aiScene?.busy || this.app.stage.exportOwner || this.app.stage.exporting || this.app.terrain?.workflow?.busy || this.app.terrain?.workflow?.erosionPreview) return null;
+    this.running = true;
+    this.app.stage.exportOwner = this;
+    const a = this.app, s = a.stage;
+    let restore;
+    try {
+      await a.terrain?.workflow?.ready();
+      restore = this.snapshot();
+      this.setup(opts.width || (opts.asDataUrl ? 1280 : 1920), opts.height || (opts.asDataUrl ? 720 : 1080));
+      a.step(0, true);
+      this.setGuides(false);
+      s.renderFramed(s.exportRect);
+      if (opts.asDataUrl) return s.canvas.toDataURL('image/png');
+      const blob = await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(Error('PNG 编码超时')), 10000);
+        try { s.canvas.toBlob((b) => { clearTimeout(timer); b ? resolve(b) : reject(Error('PNG 编码失败')); }, 'image/png'); }
+        catch (e) { clearTimeout(timer); reject(e); }
+      });
+      downloadBlob(blob, `${a.projectName || 'previz'}_frame_${Math.round(a.state.time * 100) / 100}s.png`);
+      return blob;
+    } catch (error) {
+      a.notify(`PNG 导出失败：${error.message}`, 'warn');
+      return null;
+    } finally {
+      try { if (restore) this.restore(restore); }
+      finally { this.running = false; delete this.app.stage.exportOwner; }
+    }
   }
 }

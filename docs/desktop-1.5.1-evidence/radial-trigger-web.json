@@ -1,0 +1,16 @@
+{
+  "platform": "Linux Chromium, not native Windows mouse/trackpad",
+  "longStationaryRightHold": true,
+  "contextOnlyFallback": true,
+  "contextOnlyAndMissingUpAreSimulated": true,
+  "missingPointerupFallback": true,
+  "noDuplicateReopen": true,
+  "rightDownDoesNotOpen": true,
+  "rightPanAndReturnToStartPreserved": true,
+  "delayedPostPanSuppressed": true,
+  "blockedReasonVisible": true,
+  "blockedRoadDoesNotAddUndo": true,
+  "launcherAndRightClickRecover": true,
+  "errors": [],
+  "csp": []
+}

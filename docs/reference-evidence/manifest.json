@@ -1,0 +1,175 @@
+{
+  "date": "2026-10-19",
+  "scope": "Four-stage local reference workbench MVP; protocol fixtures only, NO real vendor inference / paid API validation.",
+  "offlineHTML": {
+    "path": "previz-lab.html",
+    "bytes": 2071098,
+    "sha256": "7d569db357a709f936bcd280585c08b68bcfff2930578102b9b48c586ace3c14"
+  },
+  "verified": {
+    "dev": "PASS",
+    "offlineFileNoNetwork": "PASS",
+    "exactDecode": {
+      "width": 320,
+      "height": 180,
+      "fps": 5,
+      "framesPerVideo": 3,
+      "requestedDuration": 0.6,
+      "streams": [
+        "normal",
+        "gray"
+      ],
+      "decoder": "FFmpeg actual rgb24 decode; all frames nonblack"
+    },
+    "depthFixture": {
+      "expectedMeters": 10,
+      "decodedMeters": 9.999450666829432,
+      "toleranceMeters": 0.005,
+      "id": 1,
+      "subjectMask": 1
+    },
+    "state": [
+      "success/cancel/injected error restore",
+      "source changes refused",
+      "same seed + same crowd starting pose repeats first PNG exactly",
+      "global keyboard and temporary autosave protection"
+    ],
+    "review": [
+      "local video upload",
+      "seek at .2s",
+      "scores/notes reload",
+      "native capture-button ZIP download",
+      "attempt ZIP contains original reference, review and result"
+    ],
+    "gateway": [
+      "unsupported video refused without POST",
+      "local BFF multipart/status/origin refusal/server-token isolation",
+      "UI fixture double click produces one POST",
+      "clone retains old attempt"
+    ],
+    "compatibility": [
+      "MediaRecorder manual stream/fallback/empty retry",
+      "selective Bloom including DOF, letterbox, injected error, resource plateau",
+      "terrain erosion preview/apply/undo/redo/resource ownership",
+      "pure Bloom/LOD/heightmap/erosion/cold-work"
+    ],
+    "notVerified": [
+      "real provider API/model availability or adherence",
+      "paid billing/remote cancel",
+      "max duration/resolution stress",
+      "cross-tab/server-side idempotent billing"
+    ]
+  },
+  "files": [
+    {
+      "path": "00000-depth.png",
+      "bytes": 9213,
+      "sha256": "29c943ddcf3e8260c0971d5d745d38b4d73dc28108d357dd3637927f9ca71b9b"
+    },
+    {
+      "path": "00000-gray.png",
+      "bytes": 8932,
+      "sha256": "bce2310b7f9555591f8c8b4900b1f33cd874a9c0dab4e07b1d1c41dee22af848"
+    },
+    {
+      "path": "00000-id.png",
+      "bytes": 3044,
+      "sha256": "e9fcf00dd817ee96a75e15e1fe29d6e8386e68975860d3d522e740641bb05115"
+    },
+    {
+      "path": "00000-normal.png",
+      "bytes": 47805,
+      "sha256": "c17455cf24c1322f89b85702c89910fd6701c0ff519c68f5c7587aada2bec482"
+    },
+    {
+      "path": "00000-subject.png",
+      "bytes": 2643,
+      "sha256": "a6e6887f29b96ca5f671467e41ba8d79d38909924ea32d0caab7ba52fd214e43"
+    },
+    {
+      "path": "build.txt",
+      "bytes": 1559,
+      "sha256": "48aab7a237e19579f4ada9bc5ed8c4214b1c7d0b3003aa84f2b0b5dd1cb2db3c"
+    },
+    {
+      "path": "compat-pure.txt",
+      "bytes": 2593,
+      "sha256": "b05c14ef6b5bcfe7d46b23415ae7d26e0750aef1bba77c7f0acf3afef5b0c376"
+    },
+    {
+      "path": "dev.json",
+      "bytes": 14176,
+      "sha256": "98a6fa55a212611b1f836ff314100cfdd7151f518a1b6b1735e7e3d0d1b837fb"
+    },
+    {
+      "path": "file.json",
+      "bytes": 14031,
+      "sha256": "dea585a1d2fd30c8b048ef4e71e24b1e7d4564648ac7cec272b1d7dda5b4297d"
+    },
+    {
+      "path": "gray-dev.webm",
+      "bytes": 18548,
+      "sha256": "80bfe81be70cf7cb36134305aebca494947b99cb0055fe2fb551842e4114f0f4"
+    },
+    {
+      "path": "gray-file.webm",
+      "bytes": 18548,
+      "sha256": "80bfe81be70cf7cb36134305aebca494947b99cb0055fe2fb551842e4114f0f4"
+    },
+    {
+      "path": "legacy-export.txt",
+      "bytes": 1253,
+      "sha256": "1a5b907fa9af3da59e12d44dee05a75b941b92ee82a8002c59eae79648fbbcb8"
+    },
+    {
+      "path": "normal-dev.webm",
+      "bytes": 24358,
+      "sha256": "b0e6faac582ced0a852679a098f00461661a3dd323f73b329b6f6b12b2f88603"
+    },
+    {
+      "path": "normal-file.webm",
+      "bytes": 24358,
+      "sha256": "b0e6faac582ced0a852679a098f00461661a3dd323f73b329b6f6b12b2f88603"
+    },
+    {
+      "path": "protocol.txt",
+      "bytes": 243,
+      "sha256": "7bed660747db8e8f2eb18b4eb99ed9767037ae86b478dcb1fb9ceb2101317b40"
+    },
+    {
+      "path": "review-dev.png",
+      "bytes": 168107,
+      "sha256": "89f89f1d02d1d1603b64544585b136ddf2063bd1cf3829b6bdcf5fd377281f74"
+    },
+    {
+      "path": "review-file.png",
+      "bytes": 165788,
+      "sha256": "53d34d0c155ee2deaf3bb37afe21f8116c84914d77edbf4b9c9b6876e1cb9b65"
+    },
+    {
+      "path": "selective-bloom.txt",
+      "bytes": 4331,
+      "sha256": "d327690de8f3d41d230556f2185476ba42f63b54b9fee2b30cf3cba77807fc8f"
+    },
+    {
+      "path": "terrain-erosion.txt",
+      "bytes": 2835,
+      "sha256": "e6a6aca421743229281fd2d78459f2661e56d701a9347c0a60518ea75fbdfeb6"
+    },
+    {
+      "path": "tools-dev.png",
+      "bytes": 69636,
+      "sha256": "50315274e2171725f48f384bfa997c1342a417abeb1affe53a1075874f5c64cf"
+    },
+    {
+      "path": "ui-dev.json",
+      "bytes": 235,
+      "sha256": "163417b9ef7a2c3d945fb5f18f8cf797bb786991ff1e743a9611278498c3f431"
+    },
+    {
+      "path": "ui-file.json",
+      "bytes": 236,
+      "sha256": "68d379955b4cab7435dff654c5cbf0027e180e139417678cb3352c5723b8f12c"
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+PASS real mouse draw / Enter / Esc / reselect; auto object tab; type and numeric width; actual cap + mesh width; stable name / ID / selection
+PASS slider one-step undo / redo; repeated Esc + real reselection; save / load
+PASS T rebuild / material priority / crosswalk policy; cancel restores properties; camera target; locked + unfinished drawing protection; redo cleared
+PASS road property regression, no page errors
+PASS PNG 8/16-bit five filters/CRC/Adler/precision/orientation/channels/opaque-alpha/cancel; bounded mapping; river validation/self-crossing, finite miter strip, lower-only/world-depth/source immutability/repeat-core/cancel
+PASS terrain import + manual river {
+  "entry": "http:",
+  "imported": {
+    "n": 65,
+    "size": 80,
+    "first": 2.152590274810791,
+    "center": 2.1526055335998535,
+    "last": 3
+  },
+  "overlay": {
+    "before": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "after": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "hidden": [
+      154,
+      194,
+      129,
+      255
+    ],
+    "texturePlateau": [
+      8,
+      8,
+      8,
+      8
+    ]
+  },
+  "river": {
+    "wet": [
+      106,
+      147,
+      166,
+      255
+    ],
+    "dry": [
+      254,
+      94,
+      80,
+      255
+    ],
+    "clickedPoints": 3,
+    "changed": 886,
+    "storedRivers": 1,
+    "preciseRoundtrip": true,
+    "previewPlateau": [
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      },
+      {
+        "geometries": 15,
+        "textures": 9
+      }
+    ],
+    "archiveBytes": 13287
+  },
+  "exports": {
+    "width": 480,
+    "height": 320,
+    "exportMutex": true,
+    "videoFrames": 2,
+    "videoBytes": 12342
+  },
+  "checks": [
+    "native file input 16-bit precision + independent mapping fields",
+    "height/overlay/river undo/redo + exact float32 archive roundtrip",
+    "PNG/JPEG overlay real pixels/opacity/global grey/Basic",
+    "viewport clicks + node form + preview/save/carve lower-only",
+    "cancel and stale-source refusal",
+    "export guides + mutex + selective Bloom isolation",
+    "four-cycle overlay texture / river preview resource plateau",
+    "PNG output + two-frame WebM + optional native true decode + clear/dispose"
+  ]
+}
+PASS AI safety {
+  selectedRebuildStableIdUndoRedo: true,
+  existingMetadataPreserved: true,
+  metadataPatchRefused: true,
+  selectedOnlyEditApplied: true,
+  unselectedEditRefused: true,
+  parallelRefused: true,
+  referencePNGAndTerrainMutex: true,
+  exactGroundY: 4,
+  sourceResourcesNotDisposed: true,
+  fourPrepareDiscardCycles: true,
+  protectedRoadSegmentRefused: true,
+  concurrentEditPreserved: true,
+  importedRollback: true,
+  personPhaseRestored: true,
+  importedResourceAndTerrainUndoRedo: true
+}
+core {
+  status: 'PASS',
+  media: {
+    video: { frames: 32, seconds: 8, bytes: 33947, actions: [Array] },
+    reference: {
+      frames: 16,
+      keyframes: 3,
+      bytes: 222459,
+      repeatedFirstLastPixelsEqual: true
+    },
+    cancellationAndFailureRestore: true
+  },
+  points: 7,
+  coverage: {
+    static: 1,
+    obstacles: 1,
+    ground: 0,
+    aboveBelow: 0,
+    dynamic: 0,
+    effects: 0,
+    hidden: 0
+  },
+  checks: [
+    'readonly preview',
+    'stale/tamper',
+    'warning/duration confirmation',
+    'no-undo and partial / post-append rollback',
+    'one-step undo/redo',
+    'seek and loop',
+    'hold',
+    'save/load',
+    'invalid load fail closed',
+    'read-only keys / transforms',
+    'duplicate independence',
+    'busy / terrain / unknown guards',
+    'legacy mover',
+    'PNG / multi-frame / failed PNG restore',
+    '32-frame WebCodecs / cancelled / failed video restore',
+    '16-frame reference normal + gray + depth/ID/mask, repeat pixel equality'
+  ]
+}
+{"mode":"dev","core":{"status":"PASS","media":{"video":{"frames":32,"seconds":8,"bytes":33947,"actions":["walk","wave","run"]},"reference":{"frames":16,"keyframes":3,"bytes":222459,"repeatedFirstLastPixelsEqual":true},"cancellationAndFailureRestore":true},"points":7,"coverage":{"static":1,"obstacles":1,"ground":0,"aboveBelow":0,"dynamic":0,"effects":0,"hidden":0},"checks":["readonly preview","stale/tamper","warning/duration confirmation","no-undo and partial / post-append rollback","one-step undo/redo","seek and loop","hold","save/load","invalid load fail closed","read-only keys / transforms","duplicate independence","busy / terrain / unknown guards","legacy mover","PNG / multi-frame / failed PNG restore","32-frame WebCodecs / cancelled / failed video restore","16-frame reference normal + gray + depth/ID/mask, repeat pixel equality"]},"ui":"PASS: form, standalone preview, local playback, mandatory confirmation, single undo, responsive 1440/800/390, close cleanup","errors":[]}
+PASS {"platform":"Linux Chromium, not native Windows","unifiedActual3DThumbnails":true,"customGroup":true,"importOBJMTLTexture":true,"importDoesNotChangeSceneOrUndo":true,"clickAndDragPlacement":true,"originalMaterialsRetained":true,"moveBetweenGroups":true,"reloadPersistence":true,"deleteUserEntry":true,"deleteDoesNotBreakSceneOrUndo":true,"portableProjectAfterDeletion":true,"hideAndRestoreBuiltins":true,"projectImportBlocked":true,"cancelDelete":true,"concurrentWriteGuard":true,"importGLBAndExternalGLTF":true,"deduplicatedResourceDeletionSafe":true,"readOnlyGuard":true,"errors":[],"csp":[]}
+PASS {"platform":"Linux Chromium, not native Windows","buildings":[{"key":"cn:hall:宫殿大殿","profiles":4},{"key":"cn:hall2:歇山殿宇","profiles":2},{"key":"cn:gate:城门楼","profiles":2},{"key":"cn:citywall:城墙敌台","profiles":2},{"key":"cn:earthterrace:夯土台基","profiles":2}],"parameterExtremes":true,"disableStairs":true,"tierLandings":true,"gateReverseSlope":true,"oldCNEntriesRetained":true,"allCNEntriesConstructed":19,"terraceExitOpen":true,"duplicateDeleteUndo":true,"jsonAndProject":true,"qualityRebuild":true,"pngBytes":175186,"video":{"size":19239,"frames":2},"errors":[],"outbound":[],"csp":[]}
+PASS {"platform":"Linux Chromium, not native Windows","core":{"seek":true,"boundaries":true,"loop":true,"selectionStable":true,"saveLoad":true,"previzPackage":true,"localRestore":true,"undoRedo":true,"deleteUndo":true,"reorder":true,"legacy":true,"referenceGuard":true,"singleShotReferenceWithRetainedCuts":true,"cancel":true,"failure":true,"exports":[{"mode":"webcodecs","frames":6,"size":26846,"cuts":[{"name":"Cut A","t":0,"source":0,"u":0},{"name":"Cut A","t":0.1,"source":0.1,"u":0.33333333333333337},{"name":"Cut A","t":0.2,"source":0.2,"u":0.6666666666666667},{"name":"Cut B","t":0.3,"source":0,"u":0},{"name":"Cut B","t":0.4,"source":0.10000000000000003,"u":0.3333333333333335},{"name":"Cut B","t":0.5,"source":0.2,"u":0.6666666666666667}],"decodedPixelDifference":2738034},{"mode":"manual","frames":6,"size":9664,"cuts":[{"name":"Cut A","t":0,"source":0,"u":0},{"name":"Cut A","t":0.1,"source":0.1,"u":0.33333333333333337},{"name":"Cut A","t":0.2,"source":0.2,"u":0.6666666666666667},{"name":"Cut B","t":0.3,"source":0,"u":0},{"name":"Cut B","t":0.4,"source":0.10000000000000003,"u":0.3333333333333335},{"name":"Cut B","t":0.5,"source":0.2,"u":0.6666666666666667}],"decodedPixelDifference":2735843}]},"visibleControls":true,"appendAssembleDropSplit":true,"pointerMoveTrim":true,"focusedDelete":true,"cspViolations":[],"layout":{"width":1440,"scroll":1440,"height":223,"scrollHeight":223}}
+PASS {"platform":"Linux Chromium, not native Windows","initial":{"panel":{"x":0,"y":768,"w":1440,"h":232},"track":{"x":64,"y":847,"w":1355,"h":111},"clip":{"x":65,"y":853,"w":676.5,"h":99},"trim":{"x":66,"y":854,"w":14,"h":97},"ruler":{"x":65,"y":817,"w":1353,"h":24},"keyHidden":true,"videoKeyCount":0,"keys":0,"documentWidth":1440},"taller":{"panel":{"x":0,"y":699,"w":1440,"h":301},"track":{"x":64,"y":778,"w":1355,"h":180},"clip":{"x":65,"y":784,"w":676.5,"h":168},"trim":{"x":66,"y":785,"w":14,"h":166},"ruler":{"x":65,"y":748,"w":1353,"h":24},"keyHidden":true,"videoKeyCount":0,"keys":0,"documentWidth":1440},"hiddenKeysByDefault":true,"selectedKeysOnly":true,"noKeysOnVideoTrack":true,"clickWithoutEdit":true,"rulerScrubAndSplit":true,"zoomScrollCoordinates":true,"zoomedTrim":true,"noFocusScrollJump":true,"resizableTrack":true,"narrowWindows":true,"csp":[],"errors":[]}
+PASS {"platform":"Linux Chromium, not native Windows","realPointerDrag":true,"draggableEnumeratedAttribute":true,"builtin":{"key":"cn:hall:宫殿大殿","position":[6.468153379109264,0,4.11027957170397],"onePlacement":true,"undoRedo":true},"label":{"key":"cn:hall2:歇山殿宇","position":[6.468153379109264,0,4.11027957170397],"onePlacement":true,"undoRedo":true},"imported":{"key":"userlib:model_38p3k","position":[6.468153379109264,0,4.11027957170397],"onePlacement":true,"undoRedo":true},"clickStillPlacesOnce":true,"dropOutsideDoesNotPlace":true,"cancelDoesNotPlace":true,"cardControlsGuarded":true,"errors":[],"csp":[]}

@@ -1,0 +1,106 @@
+{
+  "date": "2026-10-16",
+  "scope": "Road-only batching and incremental terrain/road updates; no building instancing or LOD.",
+  "environment": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/131.0.6778.0 Safari/537.36",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "visibility": "visible"
+  },
+  "measurement": {
+    "warmupFrames": 2,
+    "sampleFrames": 3,
+    "entry": "DEV http://localhost:5174/?fresh=1&benchmark=1",
+    "script": "test/measure-roads.mjs",
+    "note": "Short same-environment CPU/call comparison, not hardware FPS or stable p95."
+  },
+  "cpuCase": {
+    "terrain": {
+      "resolution": 129,
+      "generator": "hills",
+      "amplitude": 12,
+      "seed": 731
+    },
+    "roads": {
+      "count": 4,
+      "lengthM": 140,
+      "widthM": 8,
+      "type": "asphalt",
+      "mode": "follow",
+      "z": [
+        -45,
+        -15,
+        15,
+        45
+      ]
+    },
+    "brush": {
+      "tool": "raise",
+      "x": 35,
+      "z": 45,
+      "radiusM": 8,
+      "strength": 0.6,
+      "edits": 3
+    },
+    "beforeMedianMs": 911.6000000000058,
+    "afterMedianMs": 245.60000000009313,
+    "medianReductionPercent": 73.05835892934493,
+    "beforeRootReplacements": 12,
+    "afterRootReplacements": 3
+  },
+  "artifacts": {
+    "regression-dev.json": "Final source road-specific regression result.",
+    "regression-file.json": "Final built file:// road-specific regression result; TEST_FILE_URL explicitly set.",
+    "performance-dev.json": "Final source performance regression, 2+3 frames.",
+    "performance-file.json": "Final built file:// performance regression, 2+3 frames; TEST_FILE_URL explicitly set.",
+    "roads-before.json": "Original code-path baseline captured before changes.",
+    "roads-after.json": "Final code, including original per-part collision boxes and index/non-index split."
+  },
+  "knownGate": {
+    "test": "test/junction-regression.mjs",
+    "result": "FAIL; original gate not weakened",
+    "angle": 30,
+    "height": 600,
+    "corner": 3,
+    "rgb": [
+      118,
+      137,
+      156
+    ],
+    "comparisons": [
+      "same RGB with batching disabled",
+      "same RGB with batching disabled plus legacy subdivision/warp reference"
+    ],
+    "cause": "Unresolved far-view pixel coverage gate; no all-green claim."
+  },
+  "build": {
+    "file": "previz-lab.html",
+    "bytes": 1838435,
+    "sha256": "55559dadf38fd14405ef189972274bc1d7c64db5a9e7ce8a48e86720d2bdc380"
+  },
+  "validation": {
+    "passedDev": [
+      "road-performance-regression",
+      "performance-regression",
+      "terrain-roads-regression (rerun after collision-bounds fix)",
+      "road-endcap-regression",
+      "road-properties-regression",
+      "t-junction-regression",
+      "junction-material-regression",
+      "road-planning-regression"
+    ],
+    "passedFinalFile": [
+      "road-performance-regression",
+      "performance-regression",
+      "road-planning-offline",
+      "road-properties-offline",
+      "lighting-offline"
+    ],
+    "builds": [
+      "npm run build",
+      "npm run build:single"
+    ],
+    "fullLegacySuiteRun": false,
+    "finalDefault8Plus30Rerun": false
+  }
+}

@@ -1,0 +1,705 @@
+{
+  "platform": "Linux Chromium, NOT Windows or real GGUF",
+  "models": [
+    {
+      "group": "furniture",
+      "type": "clapboard_wall",
+      "mode": "default",
+      "vertices": 1008,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "clapboard_wall",
+      "mode": "min",
+      "vertices": 816,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "clapboard_wall",
+      "mode": "max",
+      "vertices": 1176,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "staircase",
+      "mode": "default",
+      "vertices": 2024,
+      "stairFloorSamples": 36,
+      "minY": -3.5762786759763188e-9
+    },
+    {
+      "group": "furniture",
+      "type": "staircase",
+      "mode": "min",
+      "vertices": 1112,
+      "stairFloorSamples": 18,
+      "minY": -2.980232241545089e-9
+    },
+    {
+      "group": "furniture",
+      "type": "staircase",
+      "mode": "max",
+      "vertices": 2632,
+      "stairFloorSamples": 48,
+      "minY": 0
+    },
+    {
+      "group": "furniture",
+      "type": "front_door",
+      "mode": "default",
+      "vertices": 1376,
+      "stairFloorSamples": 0,
+      "minY": -0.05000000074505806
+    },
+    {
+      "group": "furniture",
+      "type": "front_door",
+      "mode": "min",
+      "vertices": 1376,
+      "stairFloorSamples": 0,
+      "minY": -0.05000000074505806
+    },
+    {
+      "group": "furniture",
+      "type": "front_door",
+      "mode": "max",
+      "vertices": 1376,
+      "stairFloorSamples": 0,
+      "minY": -0.05000000074505806
+    },
+    {
+      "group": "furniture",
+      "type": "sash_window",
+      "mode": "default",
+      "vertices": 1008,
+      "stairFloorSamples": 0,
+      "minY": -0.2849999982118606
+    },
+    {
+      "group": "furniture",
+      "type": "sash_window",
+      "mode": "min",
+      "vertices": 1008,
+      "stairFloorSamples": 0,
+      "minY": -0.2849999982118606
+    },
+    {
+      "group": "furniture",
+      "type": "sash_window",
+      "mode": "max",
+      "vertices": 1008,
+      "stairFloorSamples": 0,
+      "minY": -0.2849999982118606
+    },
+    {
+      "group": "furniture",
+      "type": "dining_set",
+      "mode": "default",
+      "vertices": 2128,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "dining_set",
+      "mode": "min",
+      "vertices": 2128,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "dining_set",
+      "mode": "max",
+      "vertices": 2128,
+      "stairFloorSamples": 0,
+      "minY": -1.7881393449270533e-9
+    },
+    {
+      "group": "furniture",
+      "type": "four_poster_bed",
+      "mode": "default",
+      "vertices": 1936,
+      "stairFloorSamples": 0,
+      "minY": 6.705522526129215e-10
+    },
+    {
+      "group": "furniture",
+      "type": "four_poster_bed",
+      "mode": "min",
+      "vertices": 1936,
+      "stairFloorSamples": 0,
+      "minY": 6.705522526129215e-10
+    },
+    {
+      "group": "furniture",
+      "type": "four_poster_bed",
+      "mode": "max",
+      "vertices": 1936,
+      "stairFloorSamples": 0,
+      "minY": 6.705522526129215e-10
+    },
+    {
+      "group": "furniture",
+      "type": "sofa",
+      "mode": "default",
+      "vertices": 1740,
+      "stairFloorSamples": 0,
+      "minY": -2.980232310934028e-10
+    },
+    {
+      "group": "furniture",
+      "type": "sofa",
+      "mode": "min",
+      "vertices": 1740,
+      "stairFloorSamples": 0,
+      "minY": -2.980232310934028e-10
+    },
+    {
+      "group": "furniture",
+      "type": "sofa",
+      "mode": "max",
+      "vertices": 1740,
+      "stairFloorSamples": 0,
+      "minY": -2.980232310934028e-10
+    },
+    {
+      "group": "furniture",
+      "type": "rocking_chair",
+      "mode": "default",
+      "vertices": 2046,
+      "stairFloorSamples": 0,
+      "minY": 0
+    },
+    {
+      "group": "furniture",
+      "type": "rocking_chair",
+      "mode": "min",
+      "vertices": 2046,
+      "stairFloorSamples": 0,
+      "minY": 0
+    },
+    {
+      "group": "furniture",
+      "type": "rocking_chair",
+      "mode": "max",
+      "vertices": 2046,
+      "stairFloorSamples": 0,
+      "minY": 0
+    },
+    {
+      "group": "furniture",
+      "type": "roll_top_desk",
+      "mode": "default",
+      "vertices": 1816,
+      "stairFloorSamples": 0,
+      "minY": 8.940696724635266e-10
+    },
+    {
+      "group": "furniture",
+      "type": "roll_top_desk",
+      "mode": "min",
+      "vertices": 1816,
+      "stairFloorSamples": 0,
+      "minY": 8.940696724635266e-10
+    },
+    {
+      "group": "furniture",
+      "type": "roll_top_desk",
+      "mode": "max",
+      "vertices": 1816,
+      "stairFloorSamples": 0,
+      "minY": -3.3378600994282692e-9
+    },
+    {
+      "group": "furniture",
+      "type": "bookcase",
+      "mode": "default",
+      "vertices": 2172,
+      "stairFloorSamples": 0,
+      "minY": -7.450580569168253e-10
+    },
+    {
+      "group": "furniture",
+      "type": "bookcase",
+      "mode": "min",
+      "vertices": 2172,
+      "stairFloorSamples": 0,
+      "minY": -7.450580569168253e-10
+    },
+    {
+      "group": "furniture",
+      "type": "bookcase",
+      "mode": "max",
+      "vertices": 2172,
+      "stairFloorSamples": 0,
+      "minY": -2.3841857821338408e-8
+    },
+    {
+      "group": "bld",
+      "type": "wall",
+      "mode": "default",
+      "vertices": 528,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wall",
+      "mode": "min",
+      "vertices": 48,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wall",
+      "mode": "max",
+      "vertices": 1968,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wallcorner",
+      "mode": "default",
+      "vertices": 336,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wallcorner",
+      "mode": "min",
+      "vertices": 120,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wallcorner",
+      "mode": "max",
+      "vertices": 1416,
+      "stairFloorSamples": 0,
+      "minY": -2.98023217215615e-10
+    },
+    {
+      "group": "bld",
+      "type": "wallcrenel",
+      "mode": "default",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -1.1920928910669204e-8
+    },
+    {
+      "group": "bld",
+      "type": "wallcrenel",
+      "mode": "min",
+      "vertices": 48,
+      "stairFloorSamples": 0,
+      "minY": -2.980232227667301e-9
+    },
+    {
+      "group": "bld",
+      "type": "wallcrenel",
+      "mode": "max",
+      "vertices": 744,
+      "stairFloorSamples": 0,
+      "minY": 0
+    },
+    {
+      "group": "bld",
+      "type": "windowslider",
+      "mode": "default",
+      "vertices": 312,
+      "stairFloorSamples": 0,
+      "minY": -0.059999999329447745
+    },
+    {
+      "group": "bld",
+      "type": "windowslider",
+      "mode": "min",
+      "vertices": 312,
+      "stairFloorSamples": 0,
+      "minY": -0.059999999329447745
+    },
+    {
+      "group": "bld",
+      "type": "windowslider",
+      "mode": "max",
+      "vertices": 384,
+      "stairFloorSamples": 0,
+      "minY": -0.059999999329447745
+    },
+    {
+      "group": "bld",
+      "type": "windowarch",
+      "mode": "default",
+      "vertices": 310,
+      "stairFloorSamples": 0,
+      "minY": -0.07000000014901162
+    },
+    {
+      "group": "bld",
+      "type": "windowarch",
+      "mode": "min",
+      "vertices": 262,
+      "stairFloorSamples": 0,
+      "minY": -0.07000000014901162
+    },
+    {
+      "group": "bld",
+      "type": "windowarch",
+      "mode": "max",
+      "vertices": 382,
+      "stairFloorSamples": 0,
+      "minY": -0.07000000014901162
+    },
+    {
+      "group": "bld",
+      "type": "windowlouver",
+      "mode": "default",
+      "vertices": 312,
+      "stairFloorSamples": 0,
+      "minY": -0.049583021329617685
+    },
+    {
+      "group": "bld",
+      "type": "windowlouver",
+      "mode": "min",
+      "vertices": 192,
+      "stairFloorSamples": 0,
+      "minY": -0.04000000149011612
+    },
+    {
+      "group": "bld",
+      "type": "windowlouver",
+      "mode": "max",
+      "vertices": 696,
+      "stairFloorSamples": 0,
+      "minY": -1.490116086078075e-10
+    },
+    {
+      "group": "bld",
+      "type": "doorsingle",
+      "mode": "default",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": 1.907348634588857e-8
+    },
+    {
+      "group": "bld",
+      "type": "doorsingle",
+      "mode": "min",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -5.960464455334602e-9
+    },
+    {
+      "group": "bld",
+      "type": "doorsingle",
+      "mode": "max",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -2.8610229518832853e-8
+    },
+    {
+      "group": "bld",
+      "type": "doordouble",
+      "mode": "default",
+      "vertices": 336,
+      "stairFloorSamples": 0,
+      "minY": -4.7683716974944446e-9
+    },
+    {
+      "group": "bld",
+      "type": "doordouble",
+      "mode": "min",
+      "vertices": 336,
+      "stairFloorSamples": 0,
+      "minY": -5.960464455334602e-9
+    },
+    {
+      "group": "bld",
+      "type": "doordouble",
+      "mode": "max",
+      "vertices": 336,
+      "stairFloorSamples": 0,
+      "minY": -2.8610229296788248e-8
+    },
+    {
+      "group": "bld",
+      "type": "doorroll",
+      "mode": "default",
+      "vertices": 502,
+      "stairFloorSamples": 0,
+      "minY": 0
+    },
+    {
+      "group": "bld",
+      "type": "doorroll",
+      "mode": "min",
+      "vertices": 526,
+      "stairFloorSamples": 0,
+      "minY": -0.45
+    },
+    {
+      "group": "bld",
+      "type": "doorroll",
+      "mode": "max",
+      "vertices": 262,
+      "stairFloorSamples": 0,
+      "minY": -9.536743128535363e-8
+    },
+    {
+      "group": "bld",
+      "type": "roofgable",
+      "mode": "default",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.08169095121159535
+    },
+    {
+      "group": "bld",
+      "type": "roofgable",
+      "mode": "min",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.08169095121159535
+    },
+    {
+      "group": "bld",
+      "type": "roofgable",
+      "mode": "max",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.08169095121159535
+    },
+    {
+      "group": "bld",
+      "type": "roofhip",
+      "mode": "default",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.05052457211167816
+    },
+    {
+      "group": "bld",
+      "type": "roofhip",
+      "mode": "min",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.05052457211167816
+    },
+    {
+      "group": "bld",
+      "type": "roofhip",
+      "mode": "max",
+      "vertices": 168,
+      "stairFloorSamples": 0,
+      "minY": -0.05052457211167816
+    },
+    {
+      "group": "bld",
+      "type": "roofflat",
+      "mode": "default",
+      "vertices": 334,
+      "stairFloorSamples": 0,
+      "minY": -0.20000000149011612
+    },
+    {
+      "group": "bld",
+      "type": "roofflat",
+      "mode": "min",
+      "vertices": 214,
+      "stairFloorSamples": 0,
+      "minY": -0.07999999910593034
+    },
+    {
+      "group": "bld",
+      "type": "roofflat",
+      "mode": "max",
+      "vertices": 334,
+      "stairFloorSamples": 0,
+      "minY": -0.600000011920929
+    },
+    {
+      "group": "bld",
+      "type": "ceilingflat",
+      "mode": "default",
+      "vertices": 166,
+      "stairFloorSamples": 0,
+      "minY": -0.15999999955296515
+    },
+    {
+      "group": "bld",
+      "type": "ceilingflat",
+      "mode": "min",
+      "vertices": 166,
+      "stairFloorSamples": 0,
+      "minY": -0.07999999955296516
+    },
+    {
+      "group": "bld",
+      "type": "ceilingflat",
+      "mode": "max",
+      "vertices": 166,
+      "stairFloorSamples": 0,
+      "minY": -0.5399999995529652
+    },
+    {
+      "group": "bld",
+      "type": "ceilingbeam",
+      "mode": "default",
+      "vertices": 156,
+      "stairFloorSamples": 0,
+      "minY": -0.43000000178813935
+    },
+    {
+      "group": "bld",
+      "type": "ceilingbeam",
+      "mode": "min",
+      "vertices": 60,
+      "stairFloorSamples": 0,
+      "minY": -0.08999999932944774
+    },
+    {
+      "group": "bld",
+      "type": "ceilingbeam",
+      "mode": "max",
+      "vertices": 516,
+      "stairFloorSamples": 0,
+      "minY": -1.389999988079071
+    },
+    {
+      "group": "bld",
+      "type": "ceilinggrid",
+      "mode": "default",
+      "vertices": 564,
+      "stairFloorSamples": 0,
+      "minY": -0.13999999932944773
+    },
+    {
+      "group": "bld",
+      "type": "ceilinggrid",
+      "mode": "min",
+      "vertices": 276,
+      "stairFloorSamples": 0,
+      "minY": -0.09999999932944775
+    },
+    {
+      "group": "bld",
+      "type": "ceilinggrid",
+      "mode": "max",
+      "vertices": 756,
+      "stairFloorSamples": 0,
+      "minY": -0.4599999993294478
+    },
+    {
+      "group": "bld",
+      "type": "stairstraight",
+      "mode": "default",
+      "vertices": 2656,
+      "stairFloorSamples": 48,
+      "minY": 0
+    },
+    {
+      "group": "bld",
+      "type": "stairstraight",
+      "mode": "min",
+      "vertices": 680,
+      "stairFloorSamples": 9,
+      "minY": -1.4901161277114383e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairstraight",
+      "mode": "max",
+      "vertices": 4784,
+      "stairFloorSamples": 90,
+      "minY": -6.953875225645945e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairswitch",
+      "mode": "default",
+      "vertices": 3912,
+      "stairFloorSamples": 60,
+      "minY": -3.5762786898541066e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairswitch",
+      "mode": "min",
+      "vertices": 1784,
+      "stairFloorSamples": 18,
+      "minY": -1.4901161277114383e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairswitch",
+      "mode": "max",
+      "vertices": 8168,
+      "stairFloorSamples": 144,
+      "minY": 0
+    },
+    {
+      "group": "bld",
+      "type": "stairspiral",
+      "mode": "default",
+      "vertices": 7032,
+      "stairFloorSamples": 0,
+      "minY": -3.6425060745415294e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairspiral",
+      "mode": "min",
+      "vertices": 2052,
+      "stairFloorSamples": 0,
+      "minY": -4.967053879312289e-9
+    },
+    {
+      "group": "bld",
+      "type": "stairspiral",
+      "mode": "max",
+      "vertices": 13340,
+      "stairFloorSamples": 0,
+      "minY": -2.9802322831784522e-9
+    }
+  ],
+  "ai": {
+    "primitiveParts": 4,
+    "oneUndo": true,
+    "redo": true,
+    "motion": true,
+    "camera": true,
+    "environment": true,
+    "libraryRoundtrip": true,
+    "realGGUF": false,
+    "nativeCarFrontAxisSampled": true,
+    "legacyZeroFixed": true,
+    "walkSeekDeterministic": true,
+    "lockedRejected": true
+  },
+  "river": {
+    "realPointerDrag": true,
+    "heightPreserved": true,
+    "draftOnly": true,
+    "oneSaveUndo": true
+  },
+  "road": {
+    "realPointerDrag": true,
+    "selectShowsPoints": true,
+    "commitOnRelease": true,
+    "idPreserved": true,
+    "cancelRestoresPathAndUndo": true
+  },
+  "errors": []
+}

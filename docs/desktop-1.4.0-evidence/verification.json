@@ -1,0 +1,58 @@
+{
+  "sourceCommit": "8bfb30d6e54d5cd12cae7e34d5e066193ff64633",
+  "run": 39927759909,
+  "job": 120328250934,
+  "artifact": 12491075283,
+  "windowsBuildAndInstaller": true,
+  "frontendInventoryMatch": {
+    "files": 15,
+    "pathByteSHA256": true
+  },
+  "mockedConversation": {
+    "actualDesktopFrontend": true,
+    "realGGUFInference": false,
+    "terrainGeneration": true,
+    "localTerrain": true,
+    "candidateGroundSampling": true,
+    "independentRiverAndGlobalWater": true,
+    "roadAddEditRemove": true,
+    "gridCity": {
+      "buildings": 30,
+      "roads": 3,
+      "river": false
+    },
+    "oneUndoRedo": true,
+    "overwritingConfirmation": true,
+    "lockedHiddenRefused": true,
+    "restoredLockedTransformsUnchanged": true,
+    "staleAndTamperRefused": true,
+    "cancelledPreparation": true,
+    "injectedCommitRollback": true,
+    "atMostOneFormatRepair": true
+  },
+  "legacyBrowserChecks": [
+    "web AI scene",
+    "web AI recipes",
+    "web simple AI UI",
+    "web seeded terrain + PBR hand paint + manual water",
+    "web 16-bit import + overlay + manual river + export",
+    "web terrain-road following + piers + vegetation + embankment",
+    "desktop CSP themes/library/water",
+    "offline HTML AI safety",
+    "offline HTML real model pointer drag",
+    "desktop CSP model pointer drag",
+    "desktop frontend save/export mock native IPC"
+  ],
+  "nativeInstalledHelperFixture": true,
+  "realAstrillDLLInjected": false,
+  "realGGUFInference": false,
+  "rtx4070TiHardwareVerified": false,
+  "fullyFunctionalWindowsUIValidated": false,
+  "independentInstallerRedownloadHashVerified": false,
+  "notes": [
+    "Windows file hashes reported by successful CI; no second local download/hash verification.",
+    "Helper fixture uses loopback HTTP fixture; no model weights.",
+    "Primary legacy web suite ran before the metadata-only disabled-terrain fix; final offline/AI and desktop conversation use final matching frontend.",
+    "Native Windows CI executes 10 helper tests + 4 local message/model limits tests; local browser inference is mocked."
+  ]
+}

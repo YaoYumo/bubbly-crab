@@ -1,0 +1,81 @@
+{
+  "sourceCommit": null,
+  "frontendBytes": 2893094,
+  "frontend": [
+    {
+      "path": "desktop/dist/assets/FBXLoader-D2IRZWZW.js",
+      "bytes": 47775,
+      "sha256": "15780b2470563144a6993c7d7471fe42b01cc811227a56c396accd9db402bcfb"
+    },
+    {
+      "path": "desktop/dist/assets/GLTFLoader-CSDcPU8Z.js",
+      "bytes": 44891,
+      "sha256": "40a8719fca5616912786b01d871655c093ad9d2e547a22dde73a93793c3463c1"
+    },
+    {
+      "path": "desktop/dist/assets/MTLLoader-BiG4Yb4b.js",
+      "bytes": 4112,
+      "sha256": "d4be9cfa9746af44bf9f44c6e6f1631837bc92b507ee93b0d7a53dd36ab964a7"
+    },
+    {
+      "path": "desktop/dist/assets/OBJLoader-Dqa3O-FC.js",
+      "bytes": 8741,
+      "sha256": "bd71076d387ed22c766e3d827e91b76879d6e19e60517b6406972d1d444e53e7"
+    },
+    {
+      "path": "desktop/dist/assets/core-B9ij_roJ.js",
+      "bytes": 1915,
+      "sha256": "05401f8b053174dfeac7305d5f641c48db6c63d18272d010674fcc0c789484db"
+    },
+    {
+      "path": "desktop/dist/assets/cyber-rain-D2GUFibG.webp",
+      "bytes": 33962,
+      "sha256": "8640a444a96077c03f8d180957d78ae123ab0e1c6b1ad91e84a3b56665904d4f"
+    },
+    {
+      "path": "desktop/dist/assets/index-CqAuepLP.css",
+      "bytes": 77503,
+      "sha256": "1afe4d9815cb1a66128b91cb5cbe97d5891fc74daf680902759c9ef4857bdd66"
+    },
+    {
+      "path": "desktop/dist/assets/index-D9YWACXu.js",
+      "bytes": 2556496,
+      "sha256": "98749203f22724a575586b063946965c965c056d10516e6f80f991cd9a92ca99"
+    },
+    {
+      "path": "desktop/dist/assets/index-DN3Mz2zv.js",
+      "bytes": 7629,
+      "sha256": "fcc6062c5d9b0a800e0c231113c501e2027bfcb5944e1e79b883fab912c98b2a"
+    },
+    {
+      "path": "desktop/dist/assets/index-Dphg_Ony.js",
+      "bytes": 1257,
+      "sha256": "64e3bf21bd992336d52559fe3073417a0cbd663a75b56be9cff93eb4207f5b56"
+    },
+    {
+      "path": "desktop/dist/assets/lantern-river-DwdSUSns.webp",
+      "bytes": 23974,
+      "sha256": "7a9c4d02e8a7e50bbae87c379cf52ed5d6e7617ad116cc94f10a3d740f04b940"
+    },
+    {
+      "path": "desktop/dist/assets/preview-CD09Artc.png",
+      "bytes": 21891,
+      "sha256": "ae2bb10d8009d1475ca90fb813c4eee67da7b494e9741f23028d39974a8ecb5e"
+    },
+    {
+      "path": "desktop/dist/assets/window-DUwF__2R.js",
+      "bytes": 15464,
+      "sha256": "2f7f706d0e08356c21ce019947191d9da21948789df3d888f9e3eaf0ee1cf7ad"
+    },
+    {
+      "path": "desktop/dist/assets/wood-preview-VM_cfdbP.png",
+      "bytes": 41256,
+      "sha256": "37f4f0663fcdc7e5f9a222a75f8ee1bccedeb6e5b82cadbb211671db9d67948a"
+    },
+    {
+      "path": "desktop/dist/index.html",
+      "bytes": 6228,
+      "sha256": "a4e13739b41de93cb7a9d79187a39957c94083ed3d561b64442be8739719bfe0"
+    }
+  ]
+}

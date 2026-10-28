@@ -1,0 +1,136 @@
+{
+  "platform": "Linux Chromium software WebGL, not native Windows GPU acceptance",
+  "bridge": {
+    "status": {
+      "built": 7,
+      "blocked": 7,
+      "plantsRemoved": 0,
+      "blockedAt": [
+        {
+          "s": 3.5999999999999996,
+          "point": [
+            -21.12,
+            8,
+            8.159999999999998
+          ]
+        },
+        {
+          "s": 10.799999999999999,
+          "point": [
+            -15.36,
+            8,
+            12.479999999999999
+          ]
+        },
+        {
+          "s": 18,
+          "point": [
+            -9.599999999999998,
+            8,
+            16.8
+          ]
+        },
+        {
+          "s": 25.2,
+          "point": [
+            -3.840000000000002,
+            8,
+            21.119999999999997
+          ]
+        },
+        {
+          "s": 32.4,
+          "point": [
+            1.0086953030846255,
+            7.938875499116909,
+            26.32924948686586
+          ]
+        },
+        {
+          "s": 39.599999999999994,
+          "point": [
+            2.1930212829998412,
+            7.692736069419903,
+            33.31366786054367
+          ]
+        },
+        {
+          "s": 46.8,
+          "point": [
+            -0.7708048371057388,
+            7.283403794186991,
+            39.7475536324784
+          ]
+        }
+      ],
+      "requestedSpacing": 12,
+      "effectiveSpacing": 7.199999999999999,
+      "stations": [
+        58,
+        63.2,
+        70.4,
+        77.60000000000001,
+        84.80000000000001,
+        92.00000000000001,
+        99.20000000000002
+      ],
+      "maxSupportGap": 7.200000000000003
+    },
+    "markMinGap": 0.007999992692879071,
+    "markMaxGap": 0.03133333474397659,
+    "markMissing": false,
+    "intersections": 0,
+    "cached": true,
+    "marks": [
+      {
+        "guides": 4,
+        "zebra": 0,
+        "stop": 0
+      },
+      {
+        "guides": 4,
+        "zebra": 0,
+        "stop": 0
+      }
+    ],
+    "reloadedBuilt": 7,
+    "reloadedStations": true
+  },
+  "panel": {
+    "section": {
+      "laneCount": 4,
+      "laneWidth": 4.2,
+      "shoulderWidth": 0.8,
+      "sidewalkWidth": 1.8
+    },
+    "flashes": 0,
+    "oldInputConnected": true
+  },
+  "traffic": {
+    "redStopped": true,
+    "greenMoved": true,
+    "undoDisabled": true,
+    "redoEnabled": true,
+    "noSceneActors": true,
+    "settings": {
+      "enabled": true,
+      "vehicles": 24,
+      "pedestrians": 12,
+      "signals": true,
+      "seed": 17
+    },
+    "cars": 24,
+    "pedestrians": 12,
+    "heads": 9,
+    "noMotorwayPedestrians": true,
+    "noGardenCars": true,
+    "nativeInstancing": true,
+    "oneUndo": true,
+    "seed": 17
+  },
+  "exportSafe": true,
+  "pngSafe": true,
+  "gpuSeekSafe": true,
+  "errors": [],
+  "csp": []
+}
