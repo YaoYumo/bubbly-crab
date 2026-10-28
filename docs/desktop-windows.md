@@ -1,11 +1,22 @@
 # Windows 1.8.0：道路修复与自动交通
 
-本版将螺旋桥墩分布、汇入口导流标线、道路面板连续输入与自动交通合并交付。安装包构建结果及下载链接会随构建验收补充到此页；下面保留 1.7.2 历史验证，不应当作 1.8.0 的 Windows 实测。
+[下载 Windows 1.8.0 x64 安装包 ZIP](https://github.com/YaoYumo/bubbly-crab/actions/runs/40626116895/artifacts/12789666810)（可能需要登录 GitHub；保留至 2027-01-26）。
+
+解压后运行 `src-tauri/target/release/bundle/nsis/PREVIZ LAB_1.8.0_x64-setup.exe`。本版将螺旋桥墩分布、汇入口导流标线、道路面板连续输入与自动交通合并交付。
 
 - 自动交通默认关闭：选中道路，在右侧「自动交通」启用，设置车辆／行人数和自动信号。手摆装饰灯不接管自动控制。
 - 实例化交通随道路类型与路口接入关系运行，支持保存、撤销和时间轴／导出；不是工程级交通仿真。[操作与限制](automatic-traffic.md)。
 - 先保存工程、退出旧版，覆盖原安装目录。**models 内两个 GGUF 分片原名原位，不重下、移动、改名或合并。** 不捆绑模型权重。
 - Linux 网页／无网单 HTML／桌面 CSP 前端的四项综合回归通过，详见 [原始证据](road-traffic-evidence/)。这不等于原生 Windows / RTX4070Ti 或真实 GGUF 验收。
+
+### 1.8.0 构建与验收
+
+- 源码 `42cd8ba5b8045d9003bae4c0097d06da0017f830`；Windows CI [40626116895](https://github.com/YaoYumo/bubbly-crab/actions/runs/40626116895)，job `122611324862` 成功。15 个前端文件 SHA256 与本地最终构建完全一致。
+- ZIP 23,607,990 字节，GitHub digest `5d4c970c3ad5b69f41d9056b4b6597367e30b60419bf1cd2d8612db689432c36`。
+- 安装器 20,989,875 字节，SHA256 `8feefecb696a979e04de24e02d72e056112e06894f6237a12ef289793bfdaf5a`。
+- Windows 静默安装 exit 0、原生窗口／进程存活、安装后的隔离 helper／Vulkan 引擎、重装保留 models 哨兵通过。未实测原生完整 UI、原生保存、用户 RTX4070Ti 帧率或真实 GGUF 推理。
+- 未签名 x64 NSIS，不含模型权重；缺 WebView2 时安装器需要联网获取运行时。哈希取自 CI 原始 inventory annotations，未独立二次下载安装包核验。
+- [完整 Windows 原始证据](desktop-1.8.0-evidence/verification.json)、[三模式交通／道路证据](road-traffic-evidence/)。下方是旧版历史记录。
 
 ---
 
